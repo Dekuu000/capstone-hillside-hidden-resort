@@ -83,6 +83,22 @@ export function NewReservationPage() {
     // Calculate total
     const total = selectedUnits.reduce((sum, su) => sum + (su.unit.base_price * nights), 0);
 
+    // Calculate deposit based on primary unit type
+    function calculateDeposit(units: SelectedUnit[]): number {
+        if (units.length === 0) return 0;
+        const hasExclusiveAmenity = units.some(
+            u => u.unit.type === 'amenity' && /pavilion|function hall/i.test(u.unit.name)
+        );
+        const hasRoom = units.some(u => u.unit.type === 'room');
+        const hasCottage = units.some(u => u.unit.type === 'cottage');
+        if (hasExclusiveAmenity) return 1000;
+        if (hasRoom) return 1000;
+        if (hasCottage) return 500;
+        return 0;
+    }
+
+    const depositRequired = calculateDeposit(selectedUnits);
+
     // Add/remove units
     function addUnit(unit: Unit) {
         if (!selectedUnits.find(su => su.unit.unit_id === unit.unit_id)) {
@@ -124,7 +140,7 @@ export function NewReservationPage() {
                     nights,
                 })),
                 totalAmount: total,
-                depositRequired: total * 0.5,
+                depositRequired,
                 notes: `Walk-in: ${data.guestName}${data.guestPhone ? ` | Phone: ${data.guestPhone}` : ''}${data.guestEmail ? ` | Email: ${data.guestEmail}` : ''}${data.notes ? ` | Notes: ${data.notes}` : ''}`,
             });
 
@@ -368,8 +384,8 @@ export function NewReservationPage() {
                                     <span className="font-medium">₱{total.toLocaleString()}</span>
                                 </div>
                                 <div className="flex justify-between items-center mb-4">
-                                    <span className="text-gray-600">Required Deposit (50%)</span>
-                                    <span className="font-medium text-orange-600">₱{(total * 0.5).toLocaleString()}</span>
+                                    <span className="text-gray-600">Required Deposit</span>
+                                    <span className="font-medium text-orange-600">₱{depositRequired.toLocaleString()}</span>
                                 </div>
                                 <div className="flex justify-between items-center py-3 border-t border-gray-200">
                                     <span className="text-lg font-semibold text-gray-900">Total</span>

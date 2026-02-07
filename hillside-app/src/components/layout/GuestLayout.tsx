@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Calendar, User, LogOut } from 'lucide-react';
+import { Calendar, User, LogOut, Ticket } from 'lucide-react';
 import { useAuth, signOut } from '../../hooks/useAuth';
 
 interface GuestLayoutProps {
@@ -40,6 +40,13 @@ export function GuestLayout({ children }: GuestLayoutProps) {
                             >
                                 <Calendar className="w-5 h-5 mr-2" />
                                 <span className="font-medium">Book Now</span>
+                            </Link>
+                            <Link
+                                to="/tours"
+                                className="flex items-center text-gray-700 hover:text-primary transition-colors cursor-pointer"
+                            >
+                                <Ticket className="w-5 h-5 mr-2" />
+                                <span className="font-medium">Tours</span>
                             </Link>
                             <Link
                                 to="/my-bookings"
@@ -82,6 +89,13 @@ export function GuestLayout({ children }: GuestLayoutProps) {
                     >
                         <Calendar className="w-6 h-6" />
                         <span className="text-xs mt-1">Book</span>
+                    </Link>
+                    <Link
+                        to="/tours"
+                        className="flex flex-col items-center justify-center flex-1 text-gray-600 hover:text-primary cursor-pointer"
+                    >
+                        <Ticket className="w-6 h-6" />
+                        <span className="text-xs mt-1">Tours</span>
                     </Link>
                     <Link
                         to="/my-bookings"

@@ -9,6 +9,7 @@ import {
     QrCode,
     BarChart3,
     FileText,
+    Ticket,
     Menu,
     X,
     LogOut
@@ -23,6 +24,7 @@ const navigation = [
     { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
     { name: 'Units', href: '/admin/units', icon: Building2 },
     { name: 'Reservations', href: '/admin/reservations', icon: Calendar },
+    { name: 'Walk-in Tour', href: '/admin/tours/new', icon: Ticket },
     { name: 'Payments', href: '/admin/payments', icon: CreditCard },
     { name: 'Check-in', href: '/admin/scan', icon: QrCode },
     { name: 'Reports', href: '/admin/reports', icon: BarChart3 },

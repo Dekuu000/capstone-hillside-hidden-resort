@@ -69,6 +69,37 @@ export interface CheckinLog {
     remarks?: string;
 }
 
+export interface Service {
+    service_id: string;
+    service_name: string;
+    service_type: 'day_tour' | 'night_tour';
+    start_time: string;
+    end_time: string;
+    adult_rate: number;
+    kid_rate: number;
+    kid_age_rule?: string;
+    status: 'active' | 'inactive';
+    capacity_limit?: number;
+    description?: string;
+    created_at: string;
+    updated_at?: string;
+}
+
+export interface ServiceBooking {
+    service_booking_id: string;
+    service_id: string;
+    reservation_id: string;
+    guest_user_id: string;
+    visit_date: string;
+    adult_qty: number;
+    kid_qty: number;
+    adult_rate_snapshot: number;
+    kid_rate_snapshot: number;
+    total_amount: number;
+    status: 'pending_payment' | 'for_verification' | 'confirmed' | 'checked_in' | 'cancelled' | 'no_show';
+    created_at: string;
+}
+
 export interface AuditLog {
     audit_id: string;
     performed_by_user_id?: string;
@@ -113,6 +144,16 @@ export type Database = {
                 Row: CheckinLog;
                 Insert: Omit<CheckinLog, 'checkin_log_id'>;
                 Update: Partial<Omit<CheckinLog, 'checkin_log_id'>>;
+            };
+            services: {
+                Row: Service;
+                Insert: Omit<Service, 'service_id' | 'created_at' | 'updated_at'>;
+                Update: Partial<Omit<Service, 'service_id' | 'created_at'>>;
+            };
+            service_bookings: {
+                Row: ServiceBooking;
+                Insert: Omit<ServiceBooking, 'service_booking_id' | 'created_at'>;
+                Update: Partial<Omit<ServiceBooking, 'service_booking_id' | 'created_at'>>;
             };
             audit_logs: {
                 Row: AuditLog;

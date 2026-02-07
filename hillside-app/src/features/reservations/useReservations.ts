@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
-import type { Reservation, ReservationUnit, Unit } from '../../types/database';
+import type { Reservation, ReservationUnit, Unit, Service, ServiceBooking } from '../../types/database';
 import { createReservationSchema, validateNotes } from '../../lib/validation';
 import { handleSupabaseError, ReservationError, ErrorCodes } from '../../lib/errors';
 import { z } from 'zod';
@@ -8,6 +8,7 @@ import { z } from 'zod';
 // Types for extended reservation data
 export interface ReservationWithUnits extends Reservation {
     units: (ReservationUnit & { unit: Unit })[];
+    service_bookings?: (ServiceBooking & { service: Service })[];
     guest?: {
         name: string;
         email?: string;
@@ -28,6 +29,10 @@ export function useReservations(status?: Reservation['status']) {
                     units:reservation_units(
                         *,
                         unit:units(*)
+                    ),
+                    service_bookings:service_bookings(
+                        *,
+                        service:services(*)
                     )
                 `)
                 .order('created_at', { ascending: false });
@@ -58,6 +63,10 @@ export function useMyReservations() {
                     units:reservation_units(
                         *,
                         unit:units(*)
+                    ),
+                    service_bookings:service_bookings(
+                        *,
+                        service:services(*)
                     )
                 `)
                 .eq('guest_user_id', user.id)
@@ -83,6 +92,10 @@ export function useReservation(reservationId: string | undefined) {
                     units:reservation_units(
                         *,
                         unit:units(*)
+                    ),
+                    service_bookings:service_bookings(
+                        *,
+                        service:services(*)
                     )
                 `)
                 .eq('reservation_id', reservationId)
@@ -107,6 +120,10 @@ export function useReservationByCode(code: string | undefined) {
                     units:reservation_units(
                         *,
                         unit:units(*)
+                    ),
+                    service_bookings:service_bookings(
+                        *,
+                        service:services(*)
                     )
                 `)
                 .eq('reservation_code', code)
@@ -130,7 +147,15 @@ export function useAvailableUnits(checkIn: string, checkOut: string, unitType?: 
                     p_unit_type: unitType || null,
                 });
             if (error) throw error;
-            return data as Unit[];
+            const units = (data || []) as Unit[];
+            // De-duplicate by unit_id to guard against duplicate rows from RPC/join issues.
+            const uniqueById = new Map<string, Unit>();
+            for (const unit of units) {
+                if (!uniqueById.has(unit.unit_id)) {
+                    uniqueById.set(unit.unit_id, unit);
+                }
+            }
+            return Array.from(uniqueById.values());
         },
         enabled: !!checkIn && !!checkOut,
     });
@@ -283,16 +308,15 @@ export function useCancelReservation() {
 
     return useMutation({
         mutationFn: async (reservationId: string) => {
-            const { error } = await supabase
-                .from('reservations')
-                .update({ status: 'cancelled' })
-                .eq('reservation_id', reservationId);
-
+            const { error } = await supabase.rpc('cancel_reservation', {
+                p_reservation_id: reservationId,
+            });
             if (error) throw error;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['reservations'] });
             queryClient.invalidateQueries({ queryKey: ['available-units'] });
+            queryClient.invalidateQueries({ queryKey: ['my-reservations'] });
         },
     });
 }

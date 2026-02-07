@@ -9,9 +9,13 @@ import { GuestDashboard } from './pages/GuestDashboard';
 import { UnitsPage } from './pages/UnitsPage';
 import { UnitFormPage } from './pages/UnitFormPage';
 import { ReservationsPage } from './pages/ReservationsPage';
+import { PaymentsPage } from './pages/PaymentsPage';
+import { ReservationDetailsPage } from './pages/ReservationDetailsPage';
 import { NewReservationPage } from './pages/NewReservationPage';
 import { GuestBookingPage } from './pages/GuestBookingPage';
+import { GuestTourBookingPage } from './pages/GuestTourBookingPage';
 import { MyBookingsPage } from './pages/MyBookingsPage';
+import { AdminTourBookingPage } from './pages/AdminTourBookingPage';
 import { Loader2 } from 'lucide-react';
 import './index.css';
 
@@ -86,10 +90,34 @@ function App() {
             }
           />
           <Route
+            path="/admin/reservations/:reservationId"
+            element={
+              <ProtectedRoute requireAdmin>
+                <ReservationDetailsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/admin/reservations/new"
             element={
               <ProtectedRoute requireAdmin>
                 <NewReservationPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/payments"
+            element={
+              <ProtectedRoute requireAdmin>
+                <PaymentsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/tours/new"
+            element={
+              <ProtectedRoute requireAdmin>
+                <AdminTourBookingPage />
               </ProtectedRoute>
             }
           />
@@ -100,6 +128,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <GuestBookingPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/tours"
+            element={
+              <ProtectedRoute>
+                <GuestTourBookingPage />
               </ProtectedRoute>
             }
           />
@@ -136,4 +172,3 @@ function RoleBasedHome() {
 }
 
 export default App;
-

@@ -214,10 +214,21 @@ export function ReservationsPage() {
                                                                 {ru.unit?.name || 'Unit'}
                                                             </span>
                                                         ))}
-                                                        {reservation.units?.length > 2 && (
-                                                            <span className="text-gray-500 text-xs">
-                                                                +{reservation.units.length - 2} more
+                                                        {reservation.service_bookings?.slice(0, 1).map((sb) => (
+                                                            <span
+                                                                key={sb.service_booking_id}
+                                                                className="inline-block bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs mr-1 mb-1"
+                                                            >
+                                                                {sb.service?.service_name || 'Tour'}
                                                             </span>
+                                                        ))}
+                                                        {(reservation.units?.length || 0) > 2 && (
+                                                            <span className="text-gray-500 text-xs">
+                                                                +{(reservation.units?.length || 0) - 2} more
+                                                            </span>
+                                                        )}
+                                                        {!reservation.units?.length && !reservation.service_bookings?.length && (
+                                                            <span className="text-gray-400 text-xs">—</span>
                                                         )}
                                                     </div>
                                                 </td>
@@ -253,13 +264,13 @@ export function ReservationsPage() {
 
                                                         {/* Quick Actions */}
                                                         {reservation.status === 'for_verification' && (
-                                                            <button
-                                                                onClick={() => handleStatusChange(reservation.reservation_id, 'confirmed')}
+                                                            <Link
+                                                                to="/admin/payments"
                                                                 className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                                                                title="Confirm Payment"
+                                                                title="Review Payments"
                                                             >
                                                                 <CheckCircle className="w-4 h-4" />
-                                                            </button>
+                                                            </Link>
                                                         )}
 
                                                         {reservation.status === 'confirmed' && (
