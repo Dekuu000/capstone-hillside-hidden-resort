@@ -16,6 +16,7 @@ import {
     AlertCircle
 } from 'lucide-react';
 import type { Unit } from '../types/database';
+import { formatPeso } from '../lib/paymentUtils';
 
 type FilterType = 'all' | 'room' | 'cottage' | 'amenity';
 
@@ -193,7 +194,7 @@ export function UnitsPage() {
                                             </span>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-lg font-bold text-cta">₱{unit.base_price.toLocaleString()}</p>
+                                            <p className="text-lg font-bold text-cta">{formatPeso(unit.base_price)}</p>
                                             <p className="text-xs text-gray-500">per night</p>
                                         </div>
                                     </div>
@@ -261,3 +262,4 @@ export function UnitsPage() {
         </AdminLayout>
     );
 }
+

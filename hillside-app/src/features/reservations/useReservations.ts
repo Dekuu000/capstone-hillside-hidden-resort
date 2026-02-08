@@ -1,14 +1,24 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '../../lib/supabase';
-import type { Reservation, ReservationUnit, Unit, Service, ServiceBooking } from '../../types/database';
+import type { Reservation, ReservationUnit, Unit, Service, ServiceBooking, Payment } from '../../types/database';
 import { createReservationSchema, validateNotes } from '../../lib/validation';
 import { handleSupabaseError, ReservationError, ErrorCodes } from '../../lib/errors';
 import { z } from 'zod';
+import {
+    fetchReservations,
+    fetchMyReservations,
+    fetchReservation,
+    fetchReservationByCode,
+    fetchAvailableUnits,
+    createReservationAtomic,
+    cancelReservation,
+    updateReservationStatus,
+} from '../../services/reservationsService';
 
 // Types for extended reservation data
 export interface ReservationWithUnits extends Reservation {
     units: (ReservationUnit & { unit: Unit })[];
     service_bookings?: (ServiceBooking & { service: Service })[];
+    payments?: Payment[];
     guest?: {
         name: string;
         email?: string;
@@ -21,60 +31,21 @@ export function useReservations(status?: Reservation['status']) {
     return useQuery({
         queryKey: ['reservations', status],
         queryFn: async () => {
-            let query = supabase
-                .from('reservations')
-                .select(`
-                    *,
-                    guest:users!guest_user_id(name, email, phone),
-                    units:reservation_units(
-                        *,
-                        unit:units(*)
-                    ),
-                    service_bookings:service_bookings(
-                        *,
-                        service:services(*)
-                    )
-                `)
-                .order('created_at', { ascending: false });
-
-            if (status) {
-                query = query.eq('status', status);
-            }
-
-            const { data, error } = await query;
-            if (error) throw error;
+            const data = await fetchReservations(status);
             return data as ReservationWithUnits[];
         },
     });
 }
 
 // Fetch current user's reservations (guest view)
-export function useMyReservations() {
+export function useMyReservations(userId?: string) {
     return useQuery({
-        queryKey: ['my-reservations'],
+        queryKey: ['my-reservations', userId],
         queryFn: async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error('Not authenticated');
-
-            const { data, error } = await supabase
-                .from('reservations')
-                .select(`
-                    *,
-                    units:reservation_units(
-                        *,
-                        unit:units(*)
-                    ),
-                    service_bookings:service_bookings(
-                        *,
-                        service:services(*)
-                    )
-                `)
-                .eq('guest_user_id', user.id)
-                .order('created_at', { ascending: false });
-
-            if (error) throw error;
+            const data = await fetchMyReservations();
             return data as ReservationWithUnits[];
         },
+        enabled: !!userId,
     });
 }
 
@@ -84,23 +55,7 @@ export function useReservation(reservationId: string | undefined) {
         queryKey: ['reservations', reservationId],
         queryFn: async () => {
             if (!reservationId) return null;
-            const { data, error } = await supabase
-                .from('reservations')
-                .select(`
-                    *,
-                    guest:users!guest_user_id(name, email, phone),
-                    units:reservation_units(
-                        *,
-                        unit:units(*)
-                    ),
-                    service_bookings:service_bookings(
-                        *,
-                        service:services(*)
-                    )
-                `)
-                .eq('reservation_id', reservationId)
-                .single();
-            if (error) throw error;
+            const data = await fetchReservation(reservationId);
             return data as ReservationWithUnits;
         },
         enabled: !!reservationId,
@@ -113,22 +68,7 @@ export function useReservationByCode(code: string | undefined) {
         queryKey: ['reservations', 'code', code],
         queryFn: async () => {
             if (!code) return null;
-            const { data, error } = await supabase
-                .from('reservations')
-                .select(`
-                    *,
-                    units:reservation_units(
-                        *,
-                        unit:units(*)
-                    ),
-                    service_bookings:service_bookings(
-                        *,
-                        service:services(*)
-                    )
-                `)
-                .eq('reservation_code', code)
-                .single();
-            if (error) throw error;
+            const data = await fetchReservationByCode(code);
             return data as ReservationWithUnits;
         },
         enabled: !!code,
@@ -140,14 +80,7 @@ export function useAvailableUnits(checkIn: string, checkOut: string, unitType?: 
     return useQuery({
         queryKey: ['available-units', checkIn, checkOut, unitType],
         queryFn: async () => {
-            const { data, error } = await supabase
-                .rpc('get_available_units', {
-                    p_check_in: checkIn,
-                    p_check_out: checkOut,
-                    p_unit_type: unitType || null,
-                });
-            if (error) throw error;
-            const units = (data || []) as Unit[];
+            const units = (await fetchAvailableUnits(checkIn, checkOut, unitType)) as Unit[];
             // De-duplicate by unit_id to guard against duplicate rows from RPC/join issues.
             const uniqueById = new Map<string, Unit>();
             for (const unit of units) {
@@ -169,6 +102,7 @@ interface CreateReservationInput {
     units: { unitId: string; rateSnapshot: number; nights: number }[];
     totalAmount: number;
     depositRequired?: number;
+    expectedPayNow?: number;
     notes?: string;
 }
 
@@ -202,18 +136,20 @@ export function useCreateReservation() {
                 }
 
                 // Call atomic stored procedure
-                const { data, error } = await supabase.rpc('create_reservation_atomic', {
-                    p_guest_user_id: input.guestUserId,
-                    p_check_in: validated.checkInDate,
-                    p_check_out: validated.checkOutDate,
-                    p_unit_ids: validated.unitIds,
-                    p_rates: input.units.map(u => u.rateSnapshot),
-                    p_total_amount: totalAmount,
-                    p_deposit_required: input.depositRequired || totalAmount * 0.5,
-                    p_notes: validateNotes(validated.notes),
-                });
-
-                if (error) {
+                let data: any;
+                try {
+                    data = await createReservationAtomic({
+                        guestUserId: input.guestUserId,
+                        checkInDate: validated.checkInDate,
+                        checkOutDate: validated.checkOutDate,
+                        unitIds: validated.unitIds,
+                        rates: input.units.map(u => u.rateSnapshot),
+                        totalAmount,
+                        depositRequired: input.depositRequired || totalAmount * 0.5,
+                        expectedPayNow: input.expectedPayNow ?? undefined,
+                        notes: validateNotes(validated.notes),
+                    });
+                } catch (error) {
                     handleSupabaseError(error);
                 }
 
@@ -247,7 +183,6 @@ export function useCreateReservation() {
                 }
 
                 // Handle unexpected errors
-                console.error('Unexpected error in useCreateReservation:', error);
                 throw new ReservationError(
                     error instanceof Error ? error.message : 'Unknown error',
                     ErrorCodes.SYSTEM_ERROR,
@@ -256,17 +191,13 @@ export function useCreateReservation() {
                 );
             }
         },
-        onSuccess: (data) => {
+        onSuccess: () => {
             // Invalidate queries to refresh data
             queryClient.invalidateQueries({ queryKey: ['reservations'] });
             queryClient.invalidateQueries({ queryKey: ['available-units'] });
-
-            // Log success (optional)
-            console.log('Reservation created successfully:', data.reservation_code);
         },
-        onError: (error) => {
-            // Log error for debugging
-            console.error('Failed to create reservation:', error);
+        onError: () => {
+            // Intentionally no console logs here to keep output clean
         },
     });
 }
@@ -281,17 +212,7 @@ export function useUpdateReservationStatus() {
             status: Reservation['status'];
             notes?: string
         }) => {
-            const updates: Partial<Reservation> = { status };
-            if (notes) updates.notes = notes;
-
-            const { data, error } = await supabase
-                .from('reservations')
-                .update(updates)
-                .eq('reservation_id', reservationId)
-                .select()
-                .single();
-
-            if (error) throw error;
+            const data = await updateReservationStatus({ reservationId, status, notes });
             return data as Reservation;
         },
         onSuccess: (_, { reservationId }) => {
@@ -308,10 +229,7 @@ export function useCancelReservation() {
 
     return useMutation({
         mutationFn: async (reservationId: string) => {
-            const { error } = await supabase.rpc('cancel_reservation', {
-                p_reservation_id: reservationId,
-            });
-            if (error) throw error;
+            await cancelReservation(reservationId);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['reservations'] });

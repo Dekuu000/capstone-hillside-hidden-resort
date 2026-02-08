@@ -5,6 +5,7 @@ import { AdminLayout } from '../components/layout/AdminLayout';
 import { useAuth } from '../hooks/useAuth';
 import { useServices, useCreateTourReservation } from '../features/services/useServices';
 import { computeTourPricing } from '../lib/tourPricing';
+import { formatPeso } from '../lib/paymentUtils';
 
 export function AdminTourBookingPage() {
     const navigate = useNavigate();
@@ -145,21 +146,33 @@ export function AdminTourBookingPage() {
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Adults</label>
                             <input
-                                type="number"
-                                min="0"
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
                                 className="input w-full"
                                 value={adultQty}
-                                onChange={(e) => setAdultQty(Number(e.target.value))}
+                                onChange={(e) => {
+                                    const raw = e.target.value.replace(/[^\d]/g, '');
+                                    const normalized = raw.replace(/^0+(?=\d)/, '');
+                                    const next = normalized ? Number(normalized) : 0;
+                                    setAdultQty(Number.isFinite(next) ? next : 0);
+                                }}
                             />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Kids</label>
                             <input
-                                type="number"
-                                min="0"
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
                                 className="input w-full"
                                 value={kidQty}
-                                onChange={(e) => setKidQty(Number(e.target.value))}
+                                onChange={(e) => {
+                                    const raw = e.target.value.replace(/[^\d]/g, '');
+                                    const normalized = raw.replace(/^0+(?=\d)/, '');
+                                    const next = normalized ? Number(normalized) : 0;
+                                    setKidQty(Number.isFinite(next) ? next : 0);
+                                }}
                             />
                         </div>
                     </div>
@@ -201,7 +214,7 @@ export function AdminTourBookingPage() {
                                 <Ticket className="w-4 h-4" />
                                 <span>Total</span>
                             </div>
-                            <span className="text-lg font-semibold text-primary">₱{pricing.totalAmount.toLocaleString()}</span>
+                            <span className="text-lg font-semibold text-primary">{formatPeso(pricing.totalAmount)}</span>
                         </div>
                     </div>
 

@@ -12,6 +12,7 @@ CREATE OR REPLACE FUNCTION public.create_reservation_atomic(
   p_rates NUMERIC[],
   p_total_amount NUMERIC,
   p_deposit_required NUMERIC DEFAULT NULL,
+  p_expected_pay_now NUMERIC DEFAULT NULL,
   p_notes TEXT DEFAULT NULL
 ) RETURNS TABLE (
   reservation_id UUID,
@@ -34,6 +35,7 @@ DECLARE
   v_has_room BOOLEAN := FALSE;
   v_has_cottage BOOLEAN := FALSE;
   v_role TEXT;
+  v_expected_pay_now NUMERIC;
 BEGIN
   -- ====================
   -- Input Validation
@@ -161,6 +163,14 @@ BEGIN
     v_deposit := p_deposit_required;
   END IF;
 
+  v_expected_pay_now := v_deposit;
+  IF p_expected_pay_now IS NOT NULL THEN
+    IF p_expected_pay_now < v_deposit OR p_expected_pay_now > v_total THEN
+      RAISE EXCEPTION 'Expected pay now must be between % and %', v_deposit, v_total;
+    END IF;
+    v_expected_pay_now := p_expected_pay_now;
+  END IF;
+
   -- ====================
   -- Create Reservation
   -- ====================
@@ -174,6 +184,7 @@ BEGIN
     check_out_date,
     total_amount,
     deposit_required,
+    expected_pay_now,
     amount_paid_verified,
     status,
     notes,
@@ -185,11 +196,29 @@ BEGIN
     p_check_out,
     v_total,
     v_deposit,
+    v_expected_pay_now,
     0,
     'pending_payment',
     p_notes,
     NOW() + INTERVAL '24 hours'
   ) RETURNING reservations.reservation_id INTO v_reservation_id;
+
+  -- Create pending payment intent (guest online payments)
+  IF v_role != 'admin' AND v_expected_pay_now > 0 THEN
+    INSERT INTO public.payments (
+      reservation_id,
+      payment_type,
+      method,
+      amount,
+      status
+    ) VALUES (
+      v_reservation_id,
+      CASE WHEN v_expected_pay_now >= v_total THEN 'full' ELSE 'deposit' END,
+      'gcash',
+      v_expected_pay_now,
+      'pending'
+    );
+  END IF;
 
   -- ====================
   -- Insert Reservation Units

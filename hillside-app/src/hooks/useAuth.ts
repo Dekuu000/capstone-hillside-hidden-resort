@@ -43,32 +43,80 @@ export function useAuth() {
     }, []);
 
     async function fetchProfile(user: SupabaseUser) {
+        const name = (user.user_metadata?.name as string | undefined) || 'Guest User';
+        const phone = user.user_metadata?.phone as string | undefined;
+        const role = (user.user_metadata?.role as string | undefined)
+            || (user.app_metadata?.role as string | undefined)
+            || 'guest';
+        const fallbackProfile: User = {
+            user_id: user.id,
+            name,
+            role: role === 'admin' ? 'admin' : 'guest',
+            phone: phone || undefined,
+            email: user.email || undefined,
+            created_at: new Date().toISOString(),
+        };
+
         try {
-            console.log('Fetching profile for user:', user.id);
             const { data: profile, error } = await supabase
                 .from('users')
                 .select('*')
                 .eq('user_id', user.id)
-                .single();
+                .maybeSingle();
 
-            if (error) {
-                console.error('Profile fetch error:', error);
-                // Still set the user, but profile will be null
-                // This allows the user to be "logged in" even if profile fetch fails
-                setAuthState({ user, profile: null, loading: false, isAdmin: false });
+            if (!error && profile) {
+                setAuthState({
+                    user,
+                    profile,
+                    loading: false,
+                    isAdmin: profile?.role === 'admin',
+                });
                 return;
             }
 
-            console.log('Profile fetched:', profile);
+            // Attempt to create missing profile (self-insert)
+            const { error: insertError } = await supabase
+                .from('users')
+                .insert({
+                    user_id: user.id,
+                    name,
+                    phone: phone || null,
+                    email: user.email || null,
+                    role: fallbackProfile.role,
+                });
+
+            if (!insertError) {
+                const { data: created, error: selectError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .maybeSingle();
+
+                if (!selectError && created) {
+                    setAuthState({
+                        user,
+                        profile: created,
+                        loading: false,
+                        isAdmin: created.role === 'admin',
+                    });
+                    return;
+                }
+            }
+
+            // Fallback to metadata-based profile so the app can proceed
             setAuthState({
                 user,
-                profile,
+                profile: fallbackProfile,
                 loading: false,
-                isAdmin: profile?.role === 'admin',
+                isAdmin: fallbackProfile.role === 'admin',
             });
-        } catch (error) {
-            console.error('Error fetching profile:', error);
-            setAuthState({ user, profile: null, loading: false, isAdmin: false });
+        } catch {
+            setAuthState({
+                user,
+                profile: fallbackProfile,
+                loading: false,
+                isAdmin: fallbackProfile.role === 'admin',
+            });
         }
     }
 

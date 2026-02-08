@@ -3,8 +3,13 @@ import { Calendar, Clock, AlertCircle, Loader2 } from 'lucide-react';
 import { GuestLayout } from '../components/layout/GuestLayout';
 import { useMyReservations, type ReservationWithUnits, useCancelReservation } from '../features/reservations/useReservations';
 import { useSubmitPaymentProof } from '../features/payments/usePayments';
-import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
+import { computeBalance, computePayNow, formatPeso } from '../lib/paymentUtils';
+import { PayNowSelector } from '../components/payments/PayNowSelector';
+import { updatePaymentIntentAmount } from '../services/paymentsService';
+import { uploadPaymentProof } from '../services/storageService';
+import { StatusBadge } from '../components/badges/StatusBadge';
+import { formatDateLocal, formatDateTimeLocal, formatDateWithWeekday } from '../lib/validation';
 
 const STATUS_STYLES = {
     pending_payment: 'bg-yellow-100 text-yellow-800',
@@ -17,20 +22,33 @@ const STATUS_STYLES = {
 };
 
 export function MyBookingsPage() {
-    const { data: reservations, isLoading, error } = useMyReservations();
     const { user } = useAuth();
+    const { data: reservations, isLoading, error } = useMyReservations(user?.id);
     const submitPayment = useSubmitPaymentProof();
     const cancelReservation = useCancelReservation();
     const gcashNumber = import.meta.env.VITE_GCASH_NUMBER as string | undefined;
     const gcashName = import.meta.env.VITE_GCASH_NAME as string | undefined;
     const [paymentDrafts, setPaymentDrafts] = useState<Record<string, {
-        paymentType: 'deposit' | 'full';
+        payNow: number;
         referenceNo: string;
     }>>({});
     const [paymentErrors, setPaymentErrors] = useState<Record<string, string>>({});
+    const [payNowErrors, setPayNowErrors] = useState<Record<string, string>>({});
     const [paymentFiles, setPaymentFiles] = useState<Record<string, File | null>>({});
     const [uploading, setUploading] = useState<Record<string, boolean>>({});
     const [filter, setFilter] = useState<'all' | 'stays' | 'tours'>('all');
+    const errorMessage = (() => {
+        if (!error) return '';
+        if (error instanceof Error && error.message) return error.message;
+        const maybe = error as { message?: string; details?: string; hint?: string; code?: string };
+        const parts = [maybe?.message, maybe?.details, maybe?.hint, maybe?.code].filter(Boolean);
+        if (parts.length > 0) return parts.join(' | ');
+        try {
+            return JSON.stringify(error);
+        } catch {
+            return String(error);
+        }
+    })();
 
     const filteredReservations = reservations?.filter((r) => {
         const hasUnits = (r.units?.length || 0) > 0;
@@ -72,7 +90,14 @@ export function MyBookingsPage() {
                 {error && (
                     <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start">
                         <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 mr-3 flex-shrink-0" />
-                        <p className="text-sm text-red-800">Failed to load bookings. Please try again.</p>
+                        <div>
+                            <p className="text-sm text-red-800">Failed to load bookings. Please try again.</p>
+                            {errorMessage && (
+                                <p className="mt-1 text-xs text-red-700 break-words">
+                                    {errorMessage}
+                                </p>
+                            )}
+                        </div>
                     </div>
                 )}
 
@@ -93,18 +118,28 @@ export function MyBookingsPage() {
                 {!isLoading && !error && filteredReservations && filteredReservations.length > 0 && (
                     <div className="space-y-4">
                         {filteredReservations.map((reservation: ReservationWithUnits) => {
-                            const requiresFullPayment =
-                                (reservation.deposit_required || 0) >= reservation.total_amount
-                                && reservation.total_amount > 0;
-                            const defaultPaymentType: 'deposit' | 'full' =
-                                requiresFullPayment ? 'full' : ((reservation.deposit_required || 0) > 0 ? 'deposit' : 'full');
+                            const minimumDeposit = reservation.deposit_required || 0;
+                            const totalAmount = reservation.total_amount || 0;
+                            const expectedPayNow = (reservation as ReservationWithUnits & { expected_pay_now?: number }).expected_pay_now ?? minimumDeposit;
+                            const pendingPayment = reservation.payments?.find(p => p.status === 'pending');
+                            const pendingAmount = reservation.payments?.reduce((sum, payment) => {
+                                if (payment.status !== 'pending') return sum;
+                                return sum + (payment.amount || 0);
+                            }, 0) || 0;
+                            const verifiedAmount = reservation.amount_paid_verified || 0;
+                            const showPendingAmount = reservation.status === 'for_verification' && pendingAmount > 0;
+                            const proofLocked = !!pendingPayment && (!!pendingPayment.proof_url || !!pendingPayment.reference_no);
+                            const canEditAmount = reservation.status === 'pending_payment' && !proofLocked;
+                            const basePayNow = pendingPayment?.amount ?? expectedPayNow;
                             const draft = paymentDrafts[reservation.reservation_id] || {
-                                paymentType: defaultPaymentType,
+                                payNow: basePayNow,
                                 referenceNo: '',
                             };
-                            const amount = draft.paymentType === 'deposit'
-                                ? (reservation.deposit_required || 0)
-                                : reservation.total_amount;
+                            const rawPayNow = draft.payNow ?? basePayNow;
+                            const effectivePayNow = computePayNow(minimumDeposit, totalAmount, rawPayNow);
+                            const paymentType: 'deposit' | 'full' = effectivePayNow >= totalAmount ? 'full' : 'deposit';
+                            const balanceOnSite = computeBalance(totalAmount, effectivePayNow);
+                            const remainingBalance = Math.max(0, totalAmount - verifiedAmount);
 
                             return (
                             <div key={reservation.reservation_id} className="bg-white rounded-xl shadow-sm p-6">
@@ -114,20 +149,18 @@ export function MyBookingsPage() {
                                             <h3 className="text-lg font-semibold text-gray-900">
                                                 {reservation.reservation_code}
                                             </h3>
-                                            <span
-                                                className={`px-3 py-1 rounded-full text-xs font-medium ${STATUS_STYLES[reservation.status as keyof typeof STATUS_STYLES] || 'bg-gray-100 text-gray-800'
-                                                    }`}
-                                            >
-                                                {reservation.status.replace(/_/g, ' ').toUpperCase()}
-                                            </span>
+                                            <StatusBadge
+                                                label={reservation.status.replace(/_/g, ' ').toUpperCase()}
+                                                className={STATUS_STYLES[reservation.status as keyof typeof STATUS_STYLES] || 'bg-gray-100 text-gray-800'}
+                                            />
                                         </div>
                                         <p className="text-sm text-gray-500">
-                                            Booked on {new Date(reservation.created_at).toLocaleDateString()}
+                                            Booked on {formatDateLocal(reservation.created_at)}
                                         </p>
                                     </div>
                                     <div className="text-right">
                                         <p className="text-2xl font-bold text-primary">
-                                            ₱{reservation.total_amount.toLocaleString()}
+                                            {formatPeso(reservation.total_amount)}
                                         </p>
                                         <p className="text-sm text-gray-500">Total</p>
                                         {['pending_payment', 'for_verification', 'confirmed'].includes(reservation.status) && (
@@ -162,12 +195,7 @@ export function MyBookingsPage() {
                                         <div>
                                             <p className="text-xs text-gray-500">Check-in</p>
                                             <p className="font-medium text-gray-900">
-                                                {new Date(reservation.check_in_date).toLocaleDateString('en-US', {
-                                                    weekday: 'short',
-                                                    month: 'short',
-                                                    day: 'numeric',
-                                                    year: 'numeric'
-                                                })}
+                                                {formatDateWithWeekday(reservation.check_in_date)}
                                             </p>
                                         </div>
                                     </div>
@@ -176,12 +204,7 @@ export function MyBookingsPage() {
                                         <div>
                                             <p className="text-xs text-gray-500">Check-out</p>
                                             <p className="font-medium text-gray-900">
-                                                {new Date(reservation.check_out_date).toLocaleDateString('en-US', {
-                                                    weekday: 'short',
-                                                    month: 'short',
-                                                    day: 'numeric',
-                                                    year: 'numeric'
-                                                })}
+                                                {formatDateWithWeekday(reservation.check_out_date)}
                                             </p>
                                         </div>
                                     </div>
@@ -195,7 +218,7 @@ export function MyBookingsPage() {
                                             <p className="text-sm font-medium text-yellow-800">Payment Required</p>
                                             <p className="text-xs text-yellow-700 mt-1">
                                                 Complete payment before{' '}
-                                                {new Date(reservation.hold_expires_at).toLocaleString()}
+                                                {formatDateTimeLocal(reservation.hold_expires_at)}
                                             </p>
                                         </div>
                                     </div>
@@ -213,21 +236,34 @@ export function MyBookingsPage() {
                                     </div>
                                 )}
 
-                                {/* Deposit Info */}
+                                {/* Payment Summary */}
                                 <div className="border-t border-gray-200 pt-4">
-                                    <div className="flex justify-between items-center text-sm mb-2">
-                                        <span className="text-gray-600">Deposit Required</span>
-                                        <span className="font-medium">₱{(reservation.deposit_required || 0).toLocaleString()}</span>
-                                    </div>
                                     <div className="flex justify-between items-center text-sm">
-                                        <span className="text-gray-600">Amount Paid</span>
-                                        <span className={`font-medium ${(reservation.amount_paid_verified || 0) >= (reservation.deposit_required || 0)
+                                        <span className="text-gray-600">Amount Paid (Verified)</span>
+                                        <span className={`font-medium ${verifiedAmount >= (reservation.deposit_required || 0)
                                                 ? 'text-green-600'
                                                 : 'text-orange-600'
                                             }`}>
-                                            ₱{(reservation.amount_paid_verified || 0).toLocaleString()}
+                                            {formatPeso(verifiedAmount)}
                                         </span>
                                     </div>
+                                    {showPendingAmount && (
+                                        <div className="flex justify-between items-center text-sm mt-2">
+                                            <span className="text-gray-600">Amount Submitted (Pending)</span>
+                                            <span className="font-medium text-blue-600">
+                                                {formatPeso(pendingAmount)}
+                                            </span>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between items-center text-sm mt-2">
+                                        <span className="text-gray-600">Remaining Balance (On-site)</span>
+                                        <span className={`font-medium ${remainingBalance === 0 ? 'text-green-600' : 'text-orange-600'}`}>
+                                            {formatPeso(remainingBalance)}
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-2">
+                                        {remainingBalance === 0 ? 'No balance due.' : 'Pay this on arrival (on-site).'}
+                                    </p>
                                 </div>
 
                                 {/* Tour Details */}
@@ -242,11 +278,11 @@ export function MyBookingsPage() {
                                                             {sb.service?.service_name || 'Tour'}
                                                         </span>
                                                         <span className="text-blue-900">
-                                                            ₱{sb.total_amount.toLocaleString()}
+                                                            {formatPeso(sb.total_amount)}
                                                         </span>
                                                     </div>
                                                     <div className="text-blue-800 mt-1">
-                                                        Date: {new Date(sb.visit_date).toLocaleDateString()}
+                                                        Date: {formatDateLocal(sb.visit_date)}
                                                         {' '}• Adults: {sb.adult_qty} • Kids: {sb.kid_qty}
                                                     </div>
                                                 </div>
@@ -277,15 +313,8 @@ export function MyBookingsPage() {
                                             </div>
                                             <div className="mt-3 bg-blue-100/70 rounded-md p-2">
                                                 <p className="text-xs text-blue-700">Amount to send</p>
-                                                <p className="font-semibold">₱{amount.toLocaleString()} ({draft.paymentType})</p>
+                                                <p className="font-semibold">{formatPeso(rawPayNow)} ({paymentType === 'full' ? 'Full payment' : 'Deposit'})</p>
                                             </div>
-                                            {(reservation.service_bookings?.length || 0) > 0 && (reservation.units?.length || 0) === 0 && (
-                                                <p className="mt-2 text-xs text-blue-700">
-                                                    {reservation.total_amount <= 500
-                                                        ? 'Pay full online if total <= PHP 500'
-                                                        : 'Pay PHP 500 online, balance on-site'}
-                                                </p>
-                                            )}
                                         </div>
 
                                         {paymentErrors[reservation.reservation_id] && (
@@ -295,38 +324,136 @@ export function MyBookingsPage() {
                                         )}
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                            <div>
-                                                <label className="block text-xs font-medium text-gray-600 mb-1">Payment Type</label>
-                                                <select
-                                                    className="input w-full"
-                                                    value={draft.paymentType}
-                                                    onChange={(e) => {
-                                                        const paymentType = e.target.value as 'deposit' | 'full';
-                                                        setPaymentDrafts(prev => ({
-                                                            ...prev,
-                                                            [reservation.reservation_id]: {
-                                                                ...draft,
-                                                                paymentType,
-                                                            },
-                                                        }));
-                                                    }}
-                                                    disabled={(reservation.deposit_required || 0) <= 0 || requiresFullPayment}
-                                                >
-                                                    {!requiresFullPayment && (reservation.deposit_required || 0) > 0 && (
-                                                        <option value="deposit">Deposit</option>
-                                                    )}
-                                                    <option value="full">Full Payment</option>
-                                                </select>
-                                            </div>
-
-                                            <div>
-                                                <label className="block text-xs font-medium text-gray-600 mb-1">Amount</label>
-                                                <input
-                                                    className="input w-full"
-                                                    type="text"
-                                                    value={`₱${amount.toLocaleString()}`}
-                                                    readOnly
-                                                />
+                                            <div className="md:col-span-2">
+                                                {canEditAmount ? (
+                                                    <div className="space-y-2">
+                                                        <div className="flex items-center justify-between">
+                                                            <div>
+                                                                <p className="text-sm text-gray-700">Amount to send</p>
+                                                                <p className="text-xs text-gray-500">Edit before submitting proof.</p>
+                                                            </div>
+                                                            <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${paymentType === 'full' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+                                                                {paymentType === 'full' ? 'Full payment' : 'Deposit'}
+                                                            </span>
+                                                        </div>
+                                                        <PayNowSelector
+                                                            label=""
+                                                            value={rawPayNow}
+                                                            presets={[
+                                                                { label: 'Minimum', value: minimumDeposit },
+                                                                { label: 'Full', value: totalAmount },
+                                                            ]}
+                                                            onSelectPreset={async (value) => {
+                                                                setPaymentDrafts(prev => ({
+                                                                    ...prev,
+                                                                    [reservation.reservation_id]: {
+                                                                        ...draft,
+                                                                        payNow: value,
+                                                                    },
+                                                                }));
+                                                                setPayNowErrors(prev => ({
+                                                                    ...prev,
+                                                                    [reservation.reservation_id]: '',
+                                                                }));
+                                                                try {
+                                                                    await updatePaymentIntentAmount(reservation.reservation_id, value);
+                                                                } catch (err) {
+                                                                    setPaymentErrors(prev => ({
+                                                                        ...prev,
+                                                                        [reservation.reservation_id]: err instanceof Error ? err.message : 'Failed to update amount.',
+                                                                    }));
+                                                                }
+                                                            }}
+                                                            showCustomToggle={false}
+                                                            showCustomInput
+                                                            onCustomChange={(rawValue) => {
+                                                                const raw = rawValue.replace(/[^\d]/g, '');
+                                                                const next = raw ? Number(raw) : 0;
+                                                                if (!Number.isFinite(next)) {
+                                                                    setPayNowErrors(prev => ({
+                                                                        ...prev,
+                                                                        [reservation.reservation_id]: 'Enter a valid amount.',
+                                                                    }));
+                                                                    return;
+                                                                }
+                                                                setPaymentDrafts(prev => ({
+                                                                    ...prev,
+                                                                    [reservation.reservation_id]: {
+                                                                        ...draft,
+                                                                        payNow: next,
+                                                                    },
+                                                                }));
+                                                                if (next < minimumDeposit) {
+                                                                    setPayNowErrors(prev => ({
+                                                                        ...prev,
+                                                                        [reservation.reservation_id]: `Minimum deposit is ${formatPeso(minimumDeposit)}.`,
+                                                                    }));
+                                                                } else if (next > totalAmount) {
+                                                                    setPayNowErrors(prev => ({
+                                                                        ...prev,
+                                                                        [reservation.reservation_id]: `Cannot exceed total ${formatPeso(totalAmount)}.`,
+                                                                    }));
+                                                                } else {
+                                                                    setPayNowErrors(prev => ({
+                                                                        ...prev,
+                                                                        [reservation.reservation_id]: '',
+                                                                    }));
+                                                                }
+                                                            }}
+                                                            onCustomBlur={async () => {
+                                                                const next = computePayNow(minimumDeposit, totalAmount, rawPayNow);
+                                                                if (next !== rawPayNow) {
+                                                                    setPaymentDrafts(prev => ({
+                                                                        ...prev,
+                                                                        [reservation.reservation_id]: {
+                                                                            ...draft,
+                                                                            payNow: next,
+                                                                        },
+                                                                    }));
+                                                                }
+                                                                if (next !== rawPayNow || payNowErrors[reservation.reservation_id]) {
+                                                                    setPayNowErrors(prev => ({
+                                                                        ...prev,
+                                                                        [reservation.reservation_id]: '',
+                                                                    }));
+                                                                }
+                                                                try {
+                                                                    await updatePaymentIntentAmount(reservation.reservation_id, next);
+                                                                } catch (err) {
+                                                                    setPaymentErrors(prev => ({
+                                                                        ...prev,
+                                                                        [reservation.reservation_id]: err instanceof Error ? err.message : 'Failed to update amount.',
+                                                                    }));
+                                                                }
+                                                            }}
+                                                            error={payNowErrors[reservation.reservation_id]}
+                                                            helperText={`Minimum deposit is ${formatPeso(minimumDeposit)}. You may pay more now to reduce your on-site balance.`}
+                                                            min={minimumDeposit}
+                                                            max={totalAmount}
+                                                            step={10}
+                                                            showCurrencyPrefix
+                                                            inputWrapperClassName="w-full md:w-40"
+                                                        />
+                                                        <p className="text-xs text-gray-500">Pay later (on-site): {formatPeso(balanceOnSite)}</p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                                                        <div className="flex items-center justify-between">
+                                                            <div>
+                                                                <p className="text-sm text-gray-700">Amount to send</p>
+                                                                <p className="text-xs text-gray-500">
+                                                                    {proofLocked ? 'Amount is locked after proof submission.' : 'You selected this amount during booking.'}
+                                                                </p>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <p className="font-semibold text-gray-900">{formatPeso(effectivePayNow)}</p>
+                                                                <span className={`inline-flex mt-1 px-2 py-0.5 rounded-full text-xs font-semibold ${paymentType === 'full' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+                                                                    {paymentType === 'full' ? 'Full payment' : 'Deposit'}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
 
                                             <div>
@@ -380,6 +507,10 @@ export function MyBookingsPage() {
                                                     return;
                                                 }
                                                 const file = paymentFiles[reservation.reservation_id];
+                                                if (payNowErrors[reservation.reservation_id]) {
+                                                    setPaymentErrors(prev => ({ ...prev, [reservation.reservation_id]: 'Please fix the amount to send.' }));
+                                                    return;
+                                                }
                                                 if (!file) {
                                                     setPaymentErrors(prev => ({ ...prev, [reservation.reservation_id]: 'Please upload proof of payment.' }));
                                                     return;
@@ -389,22 +520,18 @@ export function MyBookingsPage() {
                                                     return;
                                                 }
                                                 try {
+                                                    if (canEditAmount && (!pendingPayment || pendingPayment.amount !== effectivePayNow)) {
+                                                        await updatePaymentIntentAmount(reservation.reservation_id, effectivePayNow);
+                                                    }
                                                     setUploading(prev => ({ ...prev, [reservation.reservation_id]: true }));
                                                     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
                                                     const path = `payments/${user.id}/${reservation.reservation_id}/${crypto.randomUUID()}-${safeName}`;
-                                                    const { error: uploadError } = await supabase
-                                                        .storage
-                                                        .from('payment-proofs')
-                                                        .upload(path, file, { upsert: false });
-
-                                                    if (uploadError) {
-                                                        throw uploadError;
-                                                    }
+                                                    await uploadPaymentProof(path, file);
 
                                                     await submitPayment.mutateAsync({
                                                         reservationId: reservation.reservation_id,
-                                                        paymentType: draft.paymentType,
-                                                        amount,
+                                                        paymentType,
+                                                        amount: effectivePayNow,
                                                         method: 'gcash',
                                                         referenceNo: draft.referenceNo.trim(),
                                                         proofUrl: path,
@@ -443,6 +570,7 @@ export function MyBookingsPage() {
         </GuestLayout>
     );
 }
+
 
 
 

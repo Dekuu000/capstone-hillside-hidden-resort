@@ -15,8 +15,11 @@ import {
     DoorClosed,
 } from 'lucide-react';
 import { AdminLayout } from '../components/layout/AdminLayout';
+import { StatusBadge } from '../components/badges/StatusBadge';
 import { useReservations, useUpdateReservationStatus, useCancelReservation } from '../features/reservations/useReservations';
 import type { Reservation } from '../types/database';
+import { calculateNights, formatDate } from '../lib/validation';
+import { formatPeso } from '../lib/paymentUtils';
 
 const STATUS_CONFIG: Record<Reservation['status'], { label: string; color: string; icon: typeof Clock }> = {
     pending_payment: { label: 'Pending Payment', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
@@ -47,25 +50,11 @@ export function ReservationsPage() {
         );
     });
 
-    function formatDate(dateStr: string) {
-        return new Date(dateStr).toLocaleDateString('en-PH', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-        });
-    }
-
-    function calculateNights(checkIn: string, checkOut: string) {
-        const start = new Date(checkIn);
-        const end = new Date(checkOut);
-        return Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-    }
-
     async function handleStatusChange(reservationId: string, newStatus: Reservation['status']) {
         try {
             await updateStatus.mutateAsync({ reservationId, status: newStatus });
-        } catch (err) {
-            console.error('Failed to update status:', err);
+        } catch {
+            // Intentionally silent; UI already reflects failure via query state
         }
     }
 
@@ -73,8 +62,8 @@ export function ReservationsPage() {
         if (window.confirm('Are you sure you want to cancel this reservation?')) {
             try {
                 await cancelReservation.mutateAsync(reservationId);
-            } catch (err) {
-                console.error('Failed to cancel:', err);
+            } catch {
+                // Intentionally silent; UI already reflects failure via query state
             }
         }
     }
@@ -182,6 +171,7 @@ export function ReservationsPage() {
                                         const statusConfig = STATUS_CONFIG[reservation.status];
                                         const StatusIcon = statusConfig.icon;
                                         const nights = calculateNights(reservation.check_in_date, reservation.check_out_date);
+                                        const remainingBalance = reservation.balance_due ?? Math.max(0, (reservation.total_amount || 0) - (reservation.amount_paid_verified || 0));
 
                                         return (
                                             <tr key={reservation.reservation_id} className="hover:bg-gray-50">
@@ -192,8 +182,12 @@ export function ReservationsPage() {
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <div>
-                                                        <p className="font-medium text-gray-900">{reservation.guest?.name || 'Unknown'}</p>
-                                                        <p className="text-sm text-gray-500">{reservation.guest?.email}</p>
+                                                        <p className="font-medium text-gray-900">
+                                                            {reservation.guest?.name || reservation.guest?.email || 'Unknown'}
+                                                        </p>
+                                                        {reservation.guest?.email && reservation.guest?.email !== reservation.guest?.name && (
+                                                            <p className="text-sm text-gray-500">{reservation.guest?.email}</p>
+                                                        )}
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4">
@@ -235,22 +229,23 @@ export function ReservationsPage() {
                                                 <td className="px-6 py-4">
                                                     <div>
                                                         <p className="font-semibold text-gray-900">
-                                                            ₱{reservation.total_amount.toLocaleString()}
+                                                            {formatPeso(reservation.total_amount)}
                                                         </p>
-                                                        {reservation.balance_due && reservation.balance_due > 0 && (
+                                                        {remainingBalance > 0 ? (
                                                             <p className="text-xs text-orange-600">
-                                                                Balance: ₱{reservation.balance_due.toLocaleString()}
+                                                                Remaining (on-site): {formatPeso(remainingBalance)}
                                                             </p>
+                                                        ) : (
+                                                            <p className="text-xs text-green-600">Paid in full</p>
                                                         )}
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <span
-                                                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${statusConfig.color}`}
-                                                    >
-                                                        <StatusIcon className="w-3.5 h-3.5" />
-                                                        {statusConfig.label}
-                                                    </span>
+                                                    <StatusBadge
+                                                        label={statusConfig.label}
+                                                        className={statusConfig.color}
+                                                        icon={StatusIcon}
+                                                    />
                                                 </td>
                                                 <td className="px-6 py-4 text-right">
                                                     <div className="flex items-center justify-end gap-2">
@@ -344,3 +339,5 @@ export function ReservationsPage() {
         </AdminLayout>
     );
 }
+
+

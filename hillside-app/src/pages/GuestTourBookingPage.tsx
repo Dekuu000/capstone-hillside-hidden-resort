@@ -4,7 +4,10 @@ import { CheckCircle, AlertCircle, Loader2, Ticket } from 'lucide-react';
 import { GuestLayout } from '../components/layout/GuestLayout';
 import { useAuth } from '../hooks/useAuth';
 import { useServices, useCreateTourReservation } from '../features/services/useServices';
-import { computeTourPricing, formatPeso } from '../lib/tourPricing';
+import { computeTourPricing } from '../lib/tourPricing';
+import { computeBalance, computePayNow, formatPeso } from '../lib/paymentUtils';
+import { PaymentSummaryBreakdown } from '../components/payments/PaymentSummaryBreakdown';
+import { PayNowSelector } from '../components/payments/PayNowSelector';
 
 export function GuestTourBookingPage() {
     const navigate = useNavigate();
@@ -21,8 +24,23 @@ export function GuestTourBookingPage() {
     const [isMobile, setIsMobile] = useState(false);
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [tempDate, setTempDate] = useState(visitDate);
+    const [payNow, setPayNow] = useState(0);
+    const [payNowError, setPayNowError] = useState<string | null>(null);
+    const [showCustomPayNow, setShowCustomPayNow] = useState(false);
     const [success, setSuccess] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
+    const servicesErrorMessage = (() => {
+        if (!error) return '';
+        if (error instanceof Error && error.message) return error.message;
+        const maybe = error as { message?: string; details?: string; hint?: string; code?: string };
+        const parts = [maybe?.message, maybe?.details, maybe?.hint, maybe?.code].filter(Boolean);
+        if (parts.length > 0) return parts.join(' | ');
+        try {
+            return JSON.stringify(error);
+        } catch {
+            return String(error);
+        }
+    })();
 
     const selectedService = services?.find(s => s.service_id === serviceId);
     const pricing = selectedService
@@ -38,9 +56,10 @@ export function GuestTourBookingPage() {
             depositRequired: 0,
             paymentMessage: 'Pay full online if total <= PHP 500; otherwise pay PHP 500 online and the rest on-site',
         };
-    const payNow = pricing.depositRequired;
-    const balanceOnSite = Math.max(0, pricing.totalAmount - payNow);
+    const minimumDeposit = pricing.depositRequired;
+    const balanceOnSite = computeBalance(pricing.totalAmount, payNow);
     const isFullPayment = pricing.totalAmount > 0 && payNow === pricing.totalAmount;
+    const canChoosePayNow = pricing.totalAmount > minimumDeposit;
 
     useEffect(() => {
         const mq = window.matchMedia('(max-width: 640px)');
@@ -49,6 +68,23 @@ export function GuestTourBookingPage() {
         mq.addEventListener('change', handleChange);
         return () => mq.removeEventListener('change', handleChange);
     }, []);
+
+    useEffect(() => {
+        if (!selectedService) {
+            setPayNow(0);
+            setPayNowError(null);
+            setShowCustomPayNow(false);
+            return;
+        }
+        const minPay = minimumDeposit;
+        const maxPay = pricing.totalAmount;
+        setPayNow((current) => {
+            const base = current > 0 ? current : minPay;
+            return computePayNow(minPay, maxPay, base);
+        });
+        setPayNowError(null);
+        setShowCustomPayNow(false);
+    }, [selectedService, minimumDeposit, pricing.totalAmount]);
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -74,6 +110,7 @@ export function GuestTourBookingPage() {
                 adultQty,
                 kidQty,
                 isAdvance: true,
+                expectedPayNow: payNow,
                 notes: notes || undefined,
             });
             setSuccess(true);
@@ -154,7 +191,12 @@ export function GuestTourBookingPage() {
                                 <Loader2 className="w-4 h-4 animate-spin" /> Loading services...
                             </div>
                         ) : error ? (
-                            <p className="text-sm text-red-600">Failed to load services.</p>
+                            <div className="text-sm text-red-600">
+                                <p>Failed to load services.</p>
+                                {servicesErrorMessage && (
+                                    <p className="mt-1 text-xs text-red-500 break-words">{servicesErrorMessage}</p>
+                                )}
+                            </div>
                         ) : (
                             <select
                                 className="input w-full"
@@ -196,13 +238,16 @@ export function GuestTourBookingPage() {
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Adults</label>
                             <input
-                                type="number"
-                                min="0"
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
                                 className="input w-full"
                                 value={adultQty}
                                 onChange={(e) => {
-                                    const next = Number(e.target.value);
-                                    if (!Number.isFinite(next) || next < 0) {
+                                    const raw = e.target.value.replace(/[^\d]/g, '');
+                                    const normalized = raw.replace(/^0+(?=\d)/, '');
+                                    const next = normalized ? Number(normalized) : 0;
+                                    if (!Number.isFinite(next)) {
                                         setAdultQty(0);
                                         setQtyError('Quantities must be 0 or greater.');
                                         return;
@@ -215,13 +260,16 @@ export function GuestTourBookingPage() {
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Kids</label>
                             <input
-                                type="number"
-                                min="0"
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
                                 className="input w-full"
                                 value={kidQty}
                                 onChange={(e) => {
-                                    const next = Number(e.target.value);
-                                    if (!Number.isFinite(next) || next < 0) {
+                                    const raw = e.target.value.replace(/[^\d]/g, '');
+                                    const normalized = raw.replace(/^0+(?=\d)/, '');
+                                    const next = normalized ? Number(normalized) : 0;
+                                    if (!Number.isFinite(next)) {
                                         setKidQty(0);
                                         setQtyError('Quantities must be 0 or greater.');
                                         return;
@@ -252,32 +300,70 @@ export function GuestTourBookingPage() {
                                     </div>
                                     <span className="font-medium text-gray-900">{formatPeso(pricing.totalAmount)}</span>
                                 </div>
-                                <div className="flex items-center justify-between rounded-md bg-white/70 px-3 py-2">
-                                    <div>
-                                        <p className="text-gray-700">Pay now (online)</p>
-                                        <p className="text-xs text-gray-500">Due today</p>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="font-semibold text-gray-900">{formatPeso(payNow)}</p>
-                                        <span
-                                            className={`inline-flex mt-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
-                                                isFullPayment ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
-                                            }`}
-                                        >
-                                            {isFullPayment ? 'Full payment' : 'Deposit'}
-                                        </span>
-                                    </div>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-gray-600">Pay later (on-site)</p>
-                                        <p className="text-xs text-gray-500">
-                                            {balanceOnSite === 0 ? 'No balance due' : 'Due on arrival'}
-                                        </p>
-                                    </div>
-                                    <span className="font-medium text-gray-900">{formatPeso(balanceOnSite)}</span>
-                                </div>
+                                <PaymentSummaryBreakdown
+                                    payNow={payNow}
+                                    balanceOnSite={balanceOnSite}
+                                    isFullPayment={isFullPayment}
+                                    className="bg-white/70"
+                                />
                             </div>
+                        )}
+                        {selectedService && canChoosePayNow && (
+                            <PayNowSelector
+                                value={payNow}
+                                presets={[
+                                    { label: 'Minimum', value: minimumDeposit },
+                                    { label: 'Half', value: Math.max(minimumDeposit, Math.round(pricing.totalAmount / 2)) },
+                                    { label: 'Full', value: pricing.totalAmount },
+                                ]}
+                                onSelectPreset={(value) => {
+                                    setPayNowError(null);
+                                    setPayNow(value);
+                                }}
+                                showCustomToggle
+                                customActive={showCustomPayNow}
+                                onToggleCustom={() => {
+                                    if (!showCustomPayNow) {
+                                        setPayNow(minimumDeposit);
+                                        setPayNowError(null);
+                                    }
+                                    setShowCustomPayNow((prev) => !prev);
+                                }}
+                                showCustomInput={showCustomPayNow}
+                                onCustomChange={(rawValue) => {
+                                    const raw = rawValue.replace(/[^\d]/g, '');
+                                    const next = raw ? Number(raw) : 0;
+                                    if (!Number.isFinite(next)) {
+                                        setPayNowError('Enter a valid amount.');
+                                        return;
+                                    }
+                                    setPayNow(next);
+                                    if (next < minimumDeposit) {
+                                        setPayNowError(`Minimum deposit is ${formatPeso(minimumDeposit)}.`);
+                                    } else if (next > pricing.totalAmount) {
+                                        setPayNowError(`Cannot exceed total ${formatPeso(pricing.totalAmount)}.`);
+                                    } else {
+                                        setPayNowError(null);
+                                    }
+                                }}
+                                onCustomBlur={() => {
+                                    const next = computePayNow(minimumDeposit, pricing.totalAmount, payNow);
+                                    if (next !== payNow) {
+                                        setPayNow(next);
+                                    }
+                                    setPayNowError(null);
+                                }}
+                                error={payNowError}
+                                helperText={`Minimum deposit is ${formatPeso(minimumDeposit)}. You may pay more now to reduce your on-site balance.`}
+                                min={minimumDeposit}
+                                max={pricing.totalAmount}
+                                step={10}
+                                showCurrencyPrefix
+                                inputWrapperClassName="w-full md:w-40"
+                            />
+                        )}
+                        {selectedService && !canChoosePayNow && (
+                            <p className="mt-3 text-xs text-gray-500">This booking requires full online payment.</p>
                         )}
                         <p className="mt-3 text-xs text-gray-500">
                             ₱500 and below: pay full online. Above ₱500: pay ₱500 deposit now, balance on-site.

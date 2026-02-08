@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { GuestLayout } from '../components/layout/GuestLayout';
 import { useAuth } from '../hooks/useAuth';
 import { Calendar, Clock, MapPin } from 'lucide-react';
@@ -17,9 +18,12 @@ export function GuestDashboard() {
                     <p className="mb-6 text-blue-100">
                         Enjoy breathtaking views, comfortable rooms, and unforgettable experiences.
                     </p>
-                    <button className="bg-cta hover:opacity-90 text-white px-8 py-3 rounded-lg font-semibold transition-all cursor-pointer">
+                    <Link
+                        to="/book"
+                        className="inline-flex bg-cta hover:opacity-90 text-white px-8 py-3 rounded-lg font-semibold transition-all cursor-pointer"
+                    >
                         Book Now
-                    </button>
+                    </Link>
                 </div>
 
                 {/* Info Cards */}
