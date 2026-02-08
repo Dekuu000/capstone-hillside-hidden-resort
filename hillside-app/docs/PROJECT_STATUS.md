@@ -3,7 +3,7 @@
 Last updated: 2026-02-08
 
 ## Where We Are Now
-Phase 4 (Payments + Tours) is complete. Core payment flows, tour booking, flexible deposits, and payment verification UX are implemented end-to-end. Next: Phase 5 (QR check-in/out).
+Phase 4 (Payments + Tours) is complete. Phase 5 (QR check-in/out) is in progress. Step 1–6 (DB/RPCs, admin scan flow, guest QR gating, check-in/out testing checklist, offline scan queue plan + MVP build) are implemented. Next: finalize offline queue UX and prepare deployment.
 
 ## Completed Work (Summary)
 - Phase 3 reservations: atomic availability checks, overlap prevention, reservation_units tracking
@@ -60,12 +60,15 @@ Storage:
 - update_payment_intent_amount (guest adjusts pay-now before proof)
 - record_on_site_payment (admin)
 - cancel_reservation (guest)
+- validate_qr_checkin (admin scan validation)
+- perform_checkin / perform_checkout (admin check-in/out)
 
 ## UI/UX State (Guest)
 - Tours page: Payment Summary card (Total / Pay now / Pay later) with preset buttons + custom amount
 - Book Now (units): same pay-now controls with min/max enforcement
 - My Bookings: editable amount before proof submission; locked after proof upload
 - Helper text: clear deposit rules and balance on-site messaging
+- QR visibility: shown only when confirmed or balance_due == 0; otherwise locked
 
 ## Next Steps (Phase 5+)
 1. QR check-in/out (admin scan)

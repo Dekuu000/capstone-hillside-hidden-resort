@@ -8,7 +8,10 @@ A blockchain-enabled PWA for guest check-in and reservation management with QR-b
 - Payment Workflows: Flexible deposit/full payments, proof upload, admin verification, on-site payments
 - Guest Self-Service: View bookings, submit proof, cancel eligible reservations
 - PWA: Installable progressive web app
-- Planned: QR check-in/out, reports + CSV export, blockchain audit trail, AI insights
+- QR check-in/out (Phase 5 in progress)
+  - Admin scan + validation + override check-in
+  - Guest QR locked until confirmed/paid
+- Planned: reports + CSV export, blockchain audit trail, AI insights
 
 ## Tech Stack
 - Frontend: React + TypeScript + Vite
@@ -99,7 +102,7 @@ See `../.agent/design-system/hillside-hidden-resort/MASTER.md` for complete guid
 - [x] Phase 2: Units management (admin CRUD)
 - [x] Phase 3: Reservations + availability engine
 - [x] Phase 4: Payments + tours + proof upload + verification
-- [ ] Phase 5: QR check-in/checkout (next)
+- [~] Phase 5: QR check-in/checkout (in progress)
 - [ ] Phase 6: Reports + CSV export + AI summaries
 - [ ] Phase 7: Blockchain audit trail
 - [ ] Phase 8: AI risk scoring + analytics
@@ -130,4 +133,4 @@ Academic/Educational Project - Hillside Hidden Resort
 
 ---
 
-Status: Phase 4 Complete | Next: Phase 5 (QR Check-in/Out)
+Status: Phase 4 Complete | Phase 5 in progress (QR Check-in/Out)

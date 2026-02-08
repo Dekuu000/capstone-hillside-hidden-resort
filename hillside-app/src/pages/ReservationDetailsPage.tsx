@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { AlertCircle, Loader2, CheckCircle, ExternalLink, XCircle } from 'lucide-react';
+import { AlertCircle, Loader2, CheckCircle, ExternalLink, XCircle, CreditCard, QrCode } from 'lucide-react';
 import { AdminLayout } from '../components/layout/AdminLayout';
-import { useReservation } from '../features/reservations/useReservations';
+import { useReservation, useValidateQrCheckin, usePerformCheckin, usePerformCheckout } from '../features/reservations/useReservations';
 import { usePaymentsByReservation, useRecordOnSitePayment, useVerifyPayment } from '../features/payments/usePayments';
 import { createPaymentProofSignedUrl } from '../services/storageService';
 import { formatDateLocal, formatDateTimeLocal, formatDateWithWeekday } from '../lib/validation';
@@ -14,13 +14,24 @@ export function ReservationDetailsPage() {
     const { data: payments } = usePaymentsByReservation(reservationId);
     const recordOnSite = useRecordOnSitePayment();
     const verifyPayment = useVerifyPayment();
+    const validateQr = useValidateQrCheckin();
+    const performCheckin = usePerformCheckin();
+    const performCheckout = usePerformCheckout();
 
     const [amount, setAmount] = useState('');
     const [method, setMethod] = useState<'cash' | 'gcash' | 'bank' | 'card'>('cash');
     const [referenceNo, setReferenceNo] = useState('');
     const [formError, setFormError] = useState<string | null>(null);
+    const [checkinError, setCheckinError] = useState<string | null>(null);
+    const [overrideReason, setOverrideReason] = useState('');
     const [proofLinks, setProofLinks] = useState<Record<string, string>>({});
     const [loadingProof, setLoadingProof] = useState<Record<string, boolean>>({});
+
+    useEffect(() => {
+        if (reservation?.reservation_code) {
+            validateQr.mutate(reservation.reservation_code);
+        }
+    }, [reservation?.reservation_code]);
 
     async function openProof(paymentId: string, proofPath?: string | null) {
         if (!proofPath) return;
@@ -62,6 +73,7 @@ export function ReservationDetailsPage() {
     }
 
     const balanceDue = Math.max(0, (reservation.total_amount || 0) - (reservation.amount_paid_verified || 0));
+    const checkinValidation = validateQr.data;
 
     return (
         <AdminLayout>
@@ -77,15 +89,25 @@ export function ReservationDetailsPage() {
                                     : ''}
                             </p>
                         </div>
-                        <div className="text-right">
+                        <div className="text-left sm:text-right">
                             <p className="text-2xl font-bold text-primary">{formatPeso(reservation.total_amount)}</p>
                             <p className="text-sm text-gray-500">Total</p>
-                            <Link
-                                to="/admin/payments"
-                                className="inline-flex items-center mt-3 px-3 py-2 text-sm font-semibold text-primary border border-primary/30 rounded-lg hover:bg-primary/5 transition-colors"
-                            >
-                                View All Payments
-                            </Link>
+                            <div className="mt-3 flex flex-col items-stretch sm:items-end gap-2 w-full">
+                                <Link
+                                    to="/admin/payments"
+                                    className="btn-secondary w-full sm:w-auto justify-center inline-flex items-center gap-2 px-4 py-2 text-sm sm:px-6 sm:py-3"
+                                >
+                                    <CreditCard className="w-4 h-4" />
+                                    View All Payments
+                                </Link>
+                                <Link
+                                    to="/admin/scan"
+                                    className="btn-primary w-full sm:w-auto justify-center inline-flex items-center gap-2 px-4 py-2 text-sm sm:px-6 sm:py-3"
+                                >
+                                    <QrCode className="w-4 h-4" />
+                                    Scan QR
+                                </Link>
+                            </div>
                         </div>
                     </div>
 
@@ -118,6 +140,93 @@ export function ReservationDetailsPage() {
                                 {balanceDue === 0 ? 'No balance due.' : 'Collect this on arrival.'}
                             </p>
                         </div>
+                    </div>
+
+                    {/* Check-in Actions */}
+                    <div className="mt-5 border-t border-gray-200 pt-4">
+                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                            <div>
+                                <p className="text-sm font-semibold text-gray-900">Check-in Actions</p>
+                                <p className="text-xs text-gray-500">
+                                    Check-in is allowed only on the reservation date and after payment verification.
+                                </p>
+                            </div>
+                            {reservation.status === 'checked_in' ? (
+                                <button
+                                    className="btn-secondary"
+                                    onClick={async () => {
+                                        setCheckinError(null);
+                                        try {
+                                            await performCheckout.mutateAsync(reservation.reservation_id);
+                                            await validateQr.mutateAsync(reservation.reservation_code);
+                                        } catch (err) {
+                                            setCheckinError(err instanceof Error ? err.message : 'Failed to check out.');
+                                        }
+                                    }}
+                                >
+                                    {performCheckout.isPending ? 'Checking out...' : 'Check-out'}
+                                </button>
+                            ) : (
+                                <div className="flex flex-col items-start md:items-end gap-2">
+                                    <button
+                                        className="btn-primary disabled:opacity-60 disabled:cursor-not-allowed"
+                                        onClick={async () => {
+                                            setCheckinError(null);
+                                            try {
+                                                await performCheckin.mutateAsync({
+                                                    reservationId: reservation.reservation_id,
+                                                    overrideReason: checkinValidation?.can_override ? overrideReason.trim() : null,
+                                                });
+                                                setOverrideReason('');
+                                                await validateQr.mutateAsync(reservation.reservation_code);
+                                            } catch (err) {
+                                                setCheckinError(err instanceof Error ? err.message : 'Check-in failed.');
+                                            }
+                                        }}
+                                        disabled={
+                                            performCheckin.isPending ||
+                                            (!checkinValidation?.allowed && !checkinValidation?.can_override) ||
+                                            (checkinValidation?.can_override && !overrideReason.trim())
+                                        }
+                                    >
+                                        {performCheckin.isPending
+                                            ? 'Checking in...'
+                                            : checkinValidation?.can_override
+                                                ? 'Force Check-in'
+                                                : 'Check-in'}
+                                    </button>
+                                    {!checkinValidation?.allowed && !checkinValidation?.can_override && reservation.check_in_date && (
+                                        <p className="text-xs text-gray-500">
+                                            Available on {formatDateWithWeekday(reservation.check_in_date)}.
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        {checkinValidation && !checkinValidation.allowed && (
+                            <div className="mt-3 text-sm text-yellow-800 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                                {checkinValidation.reason || 'Check-in is blocked by policy.'}
+                            </div>
+                        )}
+
+                        {checkinValidation?.can_override && reservation.status !== 'checked_in' && (
+                            <div className="mt-3">
+                                <label className="block text-xs font-medium text-gray-600 mb-1">Override Reason (required)</label>
+                                <textarea
+                                    className="input w-full min-h-[90px]"
+                                    value={overrideReason}
+                                    onChange={(e) => setOverrideReason(e.target.value)}
+                                    placeholder="Reason for admin override"
+                                />
+                            </div>
+                        )}
+
+                        {checkinError && (
+                            <div className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3">
+                                {checkinError}
+                            </div>
+                        )}
                     </div>
                 </div>
 

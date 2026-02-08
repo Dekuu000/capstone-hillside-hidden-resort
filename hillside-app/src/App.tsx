@@ -28,6 +28,7 @@ const PaymentsPage = lazy(() => import('./pages/PaymentsPage').then((m) => ({ de
 const ReservationDetailsPage = lazy(() => import('./pages/ReservationDetailsPage').then((m) => ({ default: m.ReservationDetailsPage })));
 const NewReservationPage = lazy(() => import('./pages/NewReservationPage').then((m) => ({ default: m.NewReservationPage })));
 const AdminTourBookingPage = lazy(() => import('./pages/AdminTourBookingPage').then((m) => ({ default: m.AdminTourBookingPage })));
+const AdminScanPage = lazy(() => import('./pages/AdminScanPage').then((m) => ({ default: m.AdminScanPage })));
 const GuestBookingPage = lazy(() => import('./pages/GuestBookingPage').then((m) => ({ default: m.GuestBookingPage })));
 const GuestTourBookingPage = lazy(() => import('./pages/GuestTourBookingPage').then((m) => ({ default: m.GuestTourBookingPage })));
 const MyBookingsPage = lazy(() => import('./pages/MyBookingsPage').then((m) => ({ default: m.MyBookingsPage })));
@@ -114,6 +115,14 @@ function App() {
               element={
                 <ProtectedRoute requireAdmin>
                   <PaymentsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/scan"
+              element={
+                <ProtectedRoute requireAdmin>
+                  <AdminScanPage />
                 </ProtectedRoute>
               }
             />

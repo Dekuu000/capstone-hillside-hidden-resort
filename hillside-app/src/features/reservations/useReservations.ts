@@ -12,6 +12,10 @@ import {
     createReservationAtomic,
     cancelReservation,
     updateReservationStatus,
+    validateQrCheckin,
+    performCheckin,
+    performCheckout,
+    type QrCheckinValidation,
 } from '../../services/reservationsService';
 
 // Types for extended reservation data
@@ -235,6 +239,44 @@ export function useCancelReservation() {
             queryClient.invalidateQueries({ queryKey: ['reservations'] });
             queryClient.invalidateQueries({ queryKey: ['available-units'] });
             queryClient.invalidateQueries({ queryKey: ['my-reservations'] });
+        },
+    });
+}
+
+// Validate QR check-in (admin)
+export function useValidateQrCheckin() {
+    return useMutation({
+        mutationFn: async (reservationCode: string) => {
+            const data = await validateQrCheckin(reservationCode);
+            return data as QrCheckinValidation;
+        },
+    });
+}
+
+// Perform check-in (admin)
+export function usePerformCheckin() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ reservationId, overrideReason }: { reservationId: string; overrideReason?: string | null }) => {
+            await performCheckin(reservationId, overrideReason);
+        },
+        onSuccess: (_, { reservationId }) => {
+            queryClient.invalidateQueries({ queryKey: ['reservations'] });
+            queryClient.invalidateQueries({ queryKey: ['reservations', reservationId] });
+        },
+    });
+}
+
+// Perform check-out (admin)
+export function usePerformCheckout() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (reservationId: string) => {
+            await performCheckout(reservationId);
+        },
+        onSuccess: (_, reservationId) => {
+            queryClient.invalidateQueries({ queryKey: ['reservations'] });
+            queryClient.invalidateQueries({ queryKey: ['reservations', reservationId] });
         },
     });
 }
