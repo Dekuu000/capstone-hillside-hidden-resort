@@ -1,20 +1,43 @@
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { AlertCircle, Loader2, CheckCircle } from 'lucide-react';
+import { Link, useParams } from 'react-router-dom';
+import { AlertCircle, Loader2, CheckCircle, ExternalLink, XCircle } from 'lucide-react';
 import { AdminLayout } from '../components/layout/AdminLayout';
 import { useReservation } from '../features/reservations/useReservations';
-import { usePaymentsByReservation, useRecordOnSitePayment } from '../features/payments/usePayments';
+import { usePaymentsByReservation, useRecordOnSitePayment, useVerifyPayment } from '../features/payments/usePayments';
+import { createPaymentProofSignedUrl } from '../services/storageService';
+import { formatDateLocal, formatDateTimeLocal, formatDateWithWeekday } from '../lib/validation';
+import { formatPeso } from '../lib/paymentUtils';
 
 export function ReservationDetailsPage() {
     const { reservationId } = useParams();
     const { data: reservation, isLoading, error } = useReservation(reservationId);
     const { data: payments } = usePaymentsByReservation(reservationId);
     const recordOnSite = useRecordOnSitePayment();
+    const verifyPayment = useVerifyPayment();
 
     const [amount, setAmount] = useState('');
     const [method, setMethod] = useState<'cash' | 'gcash' | 'bank' | 'card'>('cash');
     const [referenceNo, setReferenceNo] = useState('');
     const [formError, setFormError] = useState<string | null>(null);
+    const [proofLinks, setProofLinks] = useState<Record<string, string>>({});
+    const [loadingProof, setLoadingProof] = useState<Record<string, boolean>>({});
+
+    async function openProof(paymentId: string, proofPath?: string | null) {
+        if (!proofPath) return;
+        if (proofLinks[paymentId]) {
+            window.open(proofLinks[paymentId], '_blank', 'noopener,noreferrer');
+            return;
+        }
+
+        try {
+            setLoadingProof(prev => ({ ...prev, [paymentId]: true }));
+            const signedUrl = await createPaymentProofSignedUrl(proofPath, 600);
+            setProofLinks(prev => ({ ...prev, [paymentId]: signedUrl }));
+            window.open(signedUrl, '_blank', 'noopener,noreferrer');
+        } finally {
+            setLoadingProof(prev => ({ ...prev, [paymentId]: false }));
+        }
+    }
 
     if (isLoading) {
         return (
@@ -48,23 +71,32 @@ export function ReservationDetailsPage() {
                         <div>
                             <h1 className="text-2xl font-bold text-gray-900">{reservation.reservation_code}</h1>
                             <p className="text-gray-600 mt-1">
-                                {reservation.guest?.name || 'Guest'} • {reservation.guest?.email || ''}
+                                {reservation.guest?.name || reservation.guest?.email || 'Guest User'}
+                                {reservation.guest?.email && reservation.guest?.email !== reservation.guest?.name
+                                    ? ` • ${reservation.guest?.email}`
+                                    : ''}
                             </p>
                         </div>
                         <div className="text-right">
-                            <p className="text-2xl font-bold text-primary">₱{reservation.total_amount.toLocaleString()}</p>
+                            <p className="text-2xl font-bold text-primary">{formatPeso(reservation.total_amount)}</p>
                             <p className="text-sm text-gray-500">Total</p>
+                            <Link
+                                to="/admin/payments"
+                                className="inline-flex items-center mt-3 px-3 py-2 text-sm font-semibold text-primary border border-primary/30 rounded-lg hover:bg-primary/5 transition-colors"
+                            >
+                                View All Payments
+                            </Link>
                         </div>
                     </div>
 
                     <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="p-3 bg-gray-50 rounded-lg">
                             <p className="text-xs text-gray-500">Check-in</p>
-                            <p className="font-medium text-gray-900">{reservation.check_in_date}</p>
+                            <p className="font-medium text-gray-900">{formatDateWithWeekday(reservation.check_in_date)}</p>
                         </div>
                         <div className="p-3 bg-gray-50 rounded-lg">
                             <p className="text-xs text-gray-500">Check-out</p>
-                            <p className="font-medium text-gray-900">{reservation.check_out_date}</p>
+                            <p className="font-medium text-gray-900">{formatDateWithWeekday(reservation.check_out_date)}</p>
                         </div>
                         <div className="p-3 bg-gray-50 rounded-lg">
                             <p className="text-xs text-gray-500">Status</p>
@@ -72,18 +104,19 @@ export function ReservationDetailsPage() {
                         </div>
                     </div>
 
-                    <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="p-3 bg-gray-50 rounded-lg">
-                            <p className="text-xs text-gray-500">Deposit Required</p>
-                            <p className="font-medium text-gray-900">₱{(reservation.deposit_required || 0).toLocaleString()}</p>
+                            <p className="text-xs text-gray-500">Amount Paid (Verified)</p>
+                            <p className="font-medium text-gray-900">{formatPeso(reservation.amount_paid_verified || 0)}</p>
                         </div>
                         <div className="p-3 bg-gray-50 rounded-lg">
-                            <p className="text-xs text-gray-500">Amount Paid</p>
-                            <p className="font-medium text-gray-900">₱{(reservation.amount_paid_verified || 0).toLocaleString()}</p>
-                        </div>
-                        <div className="p-3 bg-gray-50 rounded-lg">
-                            <p className="text-xs text-gray-500">Balance Due</p>
-                            <p className="font-medium text-gray-900">₱{balanceDue.toLocaleString()}</p>
+                            <p className="text-xs text-gray-500">Remaining Balance (On-site)</p>
+                            <p className={`font-medium ${balanceDue === 0 ? 'text-green-700' : 'text-orange-700'}`}>
+                                {formatPeso(balanceDue)}
+                            </p>
+                            <p className="text-[11px] text-gray-500 mt-1">
+                                {balanceDue === 0 ? 'No balance due.' : 'Collect this on arrival.'}
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -114,10 +147,10 @@ export function ReservationDetailsPage() {
                                         <span className="font-medium text-blue-900">
                                             {sb.service?.service_name || 'Tour'}
                                         </span>
-                                        <span className="text-blue-900">₱{sb.total_amount.toLocaleString()}</span>
+                                        <span className="text-blue-900">{formatPeso(sb.total_amount)}</span>
                                     </div>
                                     <div className="text-blue-800 mt-1">
-                                        Date: {new Date(sb.visit_date).toLocaleDateString()}
+                                        Date: {formatDateLocal(sb.visit_date)}
                                         {' '}• Adults: {sb.adult_qty} • Kids: {sb.kid_qty}
                                     </div>
                                 </div>
@@ -207,7 +240,14 @@ export function ReservationDetailsPage() {
 
                 {/* Payment History */}
                 <div className="bg-white rounded-xl shadow-sm p-6">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-3">Payment History</h2>
+                    <div className="flex items-center justify-between mb-3">
+                        <h2 className="text-lg font-semibold text-gray-900">Payment History</h2>
+                        {['pending_payment', 'for_verification'].includes(reservation.status) && (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
+                                Pending Payment
+                            </span>
+                        )}
+                    </div>
                     {payments && payments.length > 0 ? (
                         <div className="overflow-x-auto">
                             <table className="w-full">
@@ -216,20 +256,73 @@ export function ReservationDetailsPage() {
                                         <th className="text-left px-4 py-3 text-sm font-semibold text-gray-900">Date</th>
                                         <th className="text-left px-4 py-3 text-sm font-semibold text-gray-900">Type</th>
                                         <th className="text-left px-4 py-3 text-sm font-semibold text-gray-900">Method</th>
+                                        {['pending_payment', 'for_verification'].includes(reservation.status) && (
+                                            <>
+                                                <th className="text-left px-4 py-3 text-sm font-semibold text-gray-900">Reference</th>
+                                                <th className="text-left px-4 py-3 text-sm font-semibold text-gray-900">Proof</th>
+                                            </>
+                                        )}
                                         <th className="text-left px-4 py-3 text-sm font-semibold text-gray-900">Amount</th>
                                         <th className="text-left px-4 py-3 text-sm font-semibold text-gray-900">Status</th>
+                                        {['pending_payment', 'for_verification'].includes(reservation.status) && (
+                                            <th className="text-right px-4 py-3 text-sm font-semibold text-gray-900">Actions</th>
+                                        )}
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
                                     {payments.map((p) => (
                                         <tr key={p.payment_id}>
                                             <td className="px-4 py-3 text-sm text-gray-700">
-                                                {new Date(p.created_at).toLocaleString()}
+                                                {formatDateTimeLocal(p.created_at)}
                                             </td>
                                             <td className="px-4 py-3 text-sm text-gray-700">{p.payment_type.replace('_', ' ')}</td>
                                             <td className="px-4 py-3 text-sm text-gray-700">{p.method}</td>
-                                            <td className="px-4 py-3 text-sm text-gray-700">₱{p.amount.toLocaleString()}</td>
+                                            {['pending_payment', 'for_verification'].includes(reservation.status) && (
+                                                <>
+                                                    <td className="px-4 py-3 text-sm text-gray-700">{p.reference_no || '—'}</td>
+                                                    <td className="px-4 py-3 text-sm text-gray-700">
+                                                        {p.proof_url ? (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => openProof(p.payment_id, p.proof_url)}
+                                                                className="inline-flex items-center gap-1 text-primary text-sm hover:underline"
+                                                                disabled={loadingProof[p.payment_id]}
+                                                            >
+                                                                {loadingProof[p.payment_id] ? 'Loading...' : 'View'}
+                                                                <ExternalLink className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        ) : (
+                                                            <span className="text-sm text-gray-400">—</span>
+                                                        )}
+                                                    </td>
+                                                </>
+                                            )}
+                                            <td className="px-4 py-3 text-sm text-gray-700">{formatPeso(p.amount)}</td>
                                             <td className="px-4 py-3 text-sm text-gray-700">{p.status}</td>
+                                            {['pending_payment', 'for_verification'].includes(reservation.status) && (
+                                                <td className="px-4 py-3 text-right">
+                                                    {p.status === 'pending' ? (
+                                                        <div className="flex items-center justify-end gap-2">
+                                                            <button
+                                                                onClick={() => verifyPayment.mutateAsync({ paymentId: p.payment_id, approved: true })}
+                                                                className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                                                title="Verify Payment"
+                                                            >
+                                                                <CheckCircle className="w-4 h-4" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => verifyPayment.mutateAsync({ paymentId: p.payment_id, approved: false })}
+                                                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                                title="Reject Payment"
+                                                            >
+                                                                <XCircle className="w-4 h-4" />
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-xs text-gray-400">—</span>
+                                                    )}
+                                                </td>
+                                            )}
                                         </tr>
                                     ))}
                                 </tbody>
@@ -243,3 +336,5 @@ export function ReservationDetailsPage() {
         </AdminLayout>
     );
 }
+
+

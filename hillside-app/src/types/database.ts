@@ -30,6 +30,7 @@ export interface Reservation {
     status: 'pending_payment' | 'for_verification' | 'confirmed' | 'checked_in' | 'checked_out' | 'cancelled' | 'no_show';
     total_amount: number;
     deposit_required?: number;
+    expected_pay_now?: number;
     amount_paid_verified?: number;
     balance_due?: number;
     hold_expires_at?: string;

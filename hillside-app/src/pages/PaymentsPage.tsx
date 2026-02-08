@@ -2,13 +2,16 @@ import { useState } from 'react';
 import { AlertCircle, CheckCircle, Loader2, XCircle, ExternalLink } from 'lucide-react';
 import { AdminLayout } from '../components/layout/AdminLayout';
 import { usePendingPayments, useVerifyPayment } from '../features/payments/usePayments';
-import { supabase } from '../lib/supabase';
+import { createPaymentProofSignedUrl } from '../services/storageService';
+import { formatPeso } from '../lib/paymentUtils';
 
 export function PaymentsPage() {
     const { data: payments, isLoading, error } = usePendingPayments();
     const verifyPayment = useVerifyPayment();
     const [proofLinks, setProofLinks] = useState<Record<string, string>>({});
     const [loadingProof, setLoadingProof] = useState<Record<string, boolean>>({});
+    const [search, setSearch] = useState('');
+    const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'verified' | 'rejected'>('pending');
 
     async function openProof(paymentId: string, proofPath?: string | null) {
         if (!proofPath) return;
@@ -19,15 +22,9 @@ export function PaymentsPage() {
 
         try {
             setLoadingProof(prev => ({ ...prev, [paymentId]: true }));
-            const { data, error: signedError } = await supabase
-                .storage
-                .from('payment-proofs')
-                .createSignedUrl(proofPath, 600);
-            if (signedError || !data?.signedUrl) {
-                throw signedError || new Error('Failed to generate signed URL');
-            }
-            setProofLinks(prev => ({ ...prev, [paymentId]: data.signedUrl }));
-            window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+            const signedUrl = await createPaymentProofSignedUrl(proofPath, 600);
+            setProofLinks(prev => ({ ...prev, [paymentId]: signedUrl }));
+            window.open(signedUrl, '_blank', 'noopener,noreferrer');
         } finally {
             setLoadingProof(prev => ({ ...prev, [paymentId]: false }));
         }
@@ -65,6 +62,31 @@ export function PaymentsPage() {
                     </div>
                 ) : (
                     <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                        <div className="p-4 border-b border-gray-200">
+                            <div className="flex flex-col md:flex-row md:items-center gap-3">
+                                <div className="relative max-w-sm w-full">
+                                    <input
+                                        type="text"
+                                        className="input w-full"
+                                        placeholder="Search reservation code..."
+                                        value={search}
+                                        onChange={(e) => setSearch(e.target.value)}
+                                    />
+                                </div>
+                                <div className="w-full md:w-48">
+                                    <select
+                                        className="input w-full"
+                                        value={statusFilter}
+                                        onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+                                    >
+                                        <option value="all">All statuses</option>
+                                        <option value="pending">Pending</option>
+                                        <option value="verified">Verified</option>
+                                        <option value="rejected">Rejected</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
                         <div className="overflow-x-auto">
                             <table className="w-full">
                                 <thead className="bg-gray-50 border-b border-gray-200">
@@ -80,7 +102,17 @@ export function PaymentsPage() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
-                                    {payments?.map((payment) => {
+                                    {payments
+                                        ?.filter((payment) => {
+                                            if (!search.trim()) return true;
+                                            const code = payment.reservation?.reservation_code || '';
+                                            return code.toLowerCase().includes(search.trim().toLowerCase());
+                                        })
+                                        .filter((payment) => {
+                                            if (statusFilter === 'all') return true;
+                                            return payment.status === statusFilter;
+                                        })
+                                        .map((payment) => {
                                         return (
                                             <tr key={payment.payment_id} className="hover:bg-gray-50">
                                                 <td className="px-6 py-4">
@@ -91,16 +123,19 @@ export function PaymentsPage() {
                                                 <td className="px-6 py-4">
                                                     <div>
                                                         <p className="font-medium text-gray-900">
-                                                            {payment.reservation?.guest?.name || 'Unknown'}
+                                                            {payment.reservation?.guest?.name || payment.reservation?.guest?.email || 'Unknown'}
                                                         </p>
-                                                        <p className="text-sm text-gray-500">
-                                                            {payment.reservation?.guest?.email || ''}
-                                                        </p>
+                                                        {payment.reservation?.guest?.email &&
+                                                        payment.reservation?.guest?.email !== payment.reservation?.guest?.name && (
+                                                            <p className="text-sm text-gray-500">
+                                                                {payment.reservation?.guest?.email || ''}
+                                                            </p>
+                                                        )}
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <span className="font-semibold text-gray-900">
-                                                        ₱{payment.amount.toLocaleString()}
+                                                        {formatPeso(payment.amount)}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">
@@ -169,3 +204,4 @@ export function PaymentsPage() {
         </AdminLayout>
     );
 }
+

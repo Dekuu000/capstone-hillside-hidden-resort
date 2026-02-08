@@ -175,7 +175,7 @@ export function isValidPhoneNumber(phone: string): boolean {
 export function calculateNights(checkIn: string, checkOut: string): number {
     const start = new Date(checkIn);
     const end = new Date(checkOut);
-    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffTime = end.getTime() - start.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
 }
@@ -193,6 +193,44 @@ export function formatDate(dateString: string): string {
         day: 'numeric',
         year: 'numeric'
     });
+}
+
+/**
+ * Format date using the user's locale (short numeric)
+ *
+ * @param dateString - Date in YYYY-MM-DD or ISO format
+ * @returns Localized date string (e.g., "2/8/2026")
+ */
+export function formatDateLocal(dateString: string): string {
+    const date = new Date(dateString);
+    return date.toLocaleDateString();
+}
+
+/**
+ * Format date with weekday label
+ *
+ * @param dateString - Date in YYYY-MM-DD or ISO format
+ * @returns Formatted date string with weekday (e.g., "Mon, Feb 8, 2026")
+ */
+export function formatDateWithWeekday(dateString: string): string {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+    });
+}
+
+/**
+ * Format datetime using the user's locale
+ *
+ * @param dateString - ISO date-time string
+ * @returns Localized date-time string
+ */
+export function formatDateTimeLocal(dateString: string): string {
+    const date = new Date(dateString);
+    return date.toLocaleString();
 }
 
 /**

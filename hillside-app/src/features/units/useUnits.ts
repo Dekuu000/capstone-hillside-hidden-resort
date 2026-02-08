@@ -1,21 +1,20 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '../../lib/supabase';
 import type { Unit } from '../../types/database';
+import {
+    createUnit,
+    fetchUnit,
+    fetchUnits,
+    softDeleteUnit,
+    toggleUnitStatus,
+    updateUnit,
+} from '../../services/unitsService';
 
 // Fetch all units (admin sees all, guests see only active)
 export function useUnits(type?: 'room' | 'cottage' | 'amenity') {
     return useQuery({
         queryKey: ['units', type],
         queryFn: async () => {
-            let query = supabase.from('units').select('*').order('created_at', { ascending: false });
-
-            if (type) {
-                query = query.eq('type', type);
-            }
-
-            const { data, error } = await query;
-            if (error) throw error;
-            return data as Unit[];
+            return await fetchUnits(type);
         },
     });
 }
@@ -26,13 +25,7 @@ export function useUnit(unitId: string | undefined) {
         queryKey: ['units', unitId],
         queryFn: async () => {
             if (!unitId) return null;
-            const { data, error } = await supabase
-                .from('units')
-                .select('*')
-                .eq('unit_id', unitId)
-                .single();
-            if (error) throw error;
-            return data as Unit;
+            return await fetchUnit(unitId);
         },
         enabled: !!unitId,
     });
@@ -44,13 +37,7 @@ export function useCreateUnit() {
 
     return useMutation({
         mutationFn: async (unit: Omit<Unit, 'unit_id' | 'created_at' | 'updated_at'>) => {
-            const { data, error } = await supabase
-                .from('units')
-                .insert(unit)
-                .select()
-                .single();
-            if (error) throw error;
-            return data as Unit;
+            return await createUnit(unit);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['units'] });
@@ -64,14 +51,7 @@ export function useUpdateUnit() {
 
     return useMutation({
         mutationFn: async ({ unitId, updates }: { unitId: string; updates: Partial<Unit> }) => {
-            const { data, error } = await supabase
-                .from('units')
-                .update(updates)
-                .eq('unit_id', unitId)
-                .select()
-                .single();
-            if (error) throw error;
-            return data as Unit;
+            return await updateUnit(unitId, updates);
         },
         onSuccess: (_, { unitId }) => {
             queryClient.invalidateQueries({ queryKey: ['units'] });
@@ -86,11 +66,7 @@ export function useDeleteUnit() {
 
     return useMutation({
         mutationFn: async (unitId: string) => {
-            const { error } = await supabase
-                .from('units')
-                .update({ is_active: false })
-                .eq('unit_id', unitId);
-            if (error) throw error;
+            await softDeleteUnit(unitId);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['units'] });
@@ -104,11 +80,7 @@ export function useToggleUnitStatus() {
 
     return useMutation({
         mutationFn: async ({ unitId, isActive }: { unitId: string; isActive: boolean }) => {
-            const { error } = await supabase
-                .from('units')
-                .update({ is_active: isActive })
-                .eq('unit_id', unitId);
-            if (error) throw error;
+            await toggleUnitStatus(unitId, isActive);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['units'] });

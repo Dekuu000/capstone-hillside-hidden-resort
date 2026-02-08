@@ -12,6 +12,7 @@ CREATE OR REPLACE FUNCTION public.create_tour_reservation_atomic(
   p_kid_qty INTEGER,
   p_is_advance BOOLEAN,
   p_deposit_override NUMERIC DEFAULT NULL,
+  p_expected_pay_now NUMERIC DEFAULT NULL,
   p_notes TEXT DEFAULT NULL
 ) RETURNS TABLE (
   reservation_id UUID,
@@ -28,6 +29,7 @@ DECLARE
   v_service public.services%ROWTYPE;
   v_adult_qty INTEGER := COALESCE(p_adult_qty, 0);
   v_kid_qty INTEGER := COALESCE(p_kid_qty, 0);
+  v_expected_pay_now NUMERIC;
 BEGIN
   IF p_guest_user_id IS NULL THEN
     RAISE EXCEPTION 'Guest user is required';
@@ -86,6 +88,14 @@ BEGIN
     v_deposit := p_deposit_override;
   END IF;
 
+  v_expected_pay_now := v_deposit;
+  IF p_expected_pay_now IS NOT NULL THEN
+    IF p_expected_pay_now < v_deposit OR p_expected_pay_now > v_total THEN
+      RAISE EXCEPTION 'Expected pay now must be between % and %', v_deposit, v_total;
+    END IF;
+    v_expected_pay_now := p_expected_pay_now;
+  END IF;
+
   v_code := public.generate_reservation_code();
 
   INSERT INTO public.reservations (
@@ -95,6 +105,7 @@ BEGIN
     check_out_date,
     total_amount,
     deposit_required,
+    expected_pay_now,
     amount_paid_verified,
     status,
     notes,
@@ -106,11 +117,29 @@ BEGIN
     (p_visit_date + INTERVAL '1 day')::date,
     v_total,
     v_deposit,
+    v_expected_pay_now,
     0,
     'pending_payment',
     p_notes,
     CASE WHEN p_is_advance THEN NOW() + INTERVAL '24 hours' ELSE NULL END
   ) RETURNING reservations.reservation_id INTO v_reservation_id;
+
+  -- Create pending payment intent for advance tours (guest online payments)
+  IF p_is_advance AND v_role != 'admin' AND v_expected_pay_now > 0 THEN
+    INSERT INTO public.payments (
+      reservation_id,
+      payment_type,
+      method,
+      amount,
+      status
+    ) VALUES (
+      v_reservation_id,
+      CASE WHEN v_expected_pay_now >= v_total THEN 'full' ELSE 'deposit' END,
+      'gcash',
+      v_expected_pay_now,
+      'pending'
+    );
+  END IF;
 
   INSERT INTO public.service_bookings (
     service_id,
