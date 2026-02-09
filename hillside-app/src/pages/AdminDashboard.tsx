@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { AdminLayout } from '../components/layout/AdminLayout';
 import { useAuth } from '../hooks/useAuth';
 import { Building2, Calendar, CreditCard, Users } from 'lucide-react';
@@ -58,15 +59,15 @@ export function AdminDashboard() {
                 <div className="bg-white rounded-xl shadow-md p-6">
                     <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <button className="btn-primary justify-center">
+                        <Link to="/admin/units" className="btn-primary justify-center inline-flex">
                             Manage Units
-                        </button>
-                        <button className="btn-secondary justify-center">
+                        </Link>
+                        <Link to="/admin/reservations" className="btn-secondary justify-center inline-flex">
                             View Reservations
-                        </button>
-                        <button className="btn-secondary justify-center">
+                        </Link>
+                        <Link to="/admin/scan" className="btn-secondary justify-center inline-flex">
                             Scan QR Code
-                        </button>
+                        </Link>
                     </div>
                 </div>
             </div>
