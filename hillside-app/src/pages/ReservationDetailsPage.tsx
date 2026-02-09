@@ -5,8 +5,7 @@ import { AdminLayout } from '../components/layout/AdminLayout';
 import { useReservation } from '../features/reservations/useReservations';
 import { usePaymentsByReservation, useRecordOnSitePayment, useVerifyPayment } from '../features/payments/usePayments';
 import { createPaymentProofSignedUrl } from '../services/storageService';
-import { formatDateLocal, formatDateTimeLocal, formatDateWithWeekday } from '../lib/validation';
-import { formatPeso } from '../lib/paymentUtils';
+import { formatDateLocal, formatDateTimeLocal, formatDateWithWeekday, formatPeso } from '../lib/formatting';
 
 export function ReservationDetailsPage() {
     const { reservationId } = useParams();

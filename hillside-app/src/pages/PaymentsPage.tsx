@@ -3,7 +3,7 @@ import { AlertCircle, CheckCircle, Loader2, XCircle, ExternalLink } from 'lucide
 import { AdminLayout } from '../components/layout/AdminLayout';
 import { usePendingPayments, useVerifyPayment } from '../features/payments/usePayments';
 import { createPaymentProofSignedUrl } from '../services/storageService';
-import { formatPeso } from '../lib/paymentUtils';
+import { formatPeso } from '../lib/formatting';
 
 export function PaymentsPage() {
     const { data: payments, isLoading, error } = usePendingPayments();

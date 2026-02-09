@@ -5,7 +5,7 @@ import { AdminLayout } from '../components/layout/AdminLayout';
 import { useAuth } from '../hooks/useAuth';
 import { useServices, useCreateTourReservation } from '../features/services/useServices';
 import { computeTourPricing } from '../lib/tourPricing';
-import { formatPeso } from '../lib/paymentUtils';
+import { formatPeso } from '../lib/formatting';
 
 export function AdminTourBookingPage() {
     const navigate = useNavigate();

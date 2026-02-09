@@ -14,7 +14,8 @@ import { PayNowSelector } from '../components/payments/PayNowSelector';
 import { useAvailableUnits, useCreateReservation } from '../features/reservations/useReservations';
 import { useAuth } from '../hooks/useAuth';
 import type { Unit } from '../types/database';
-import { computeBalance, computePayNow, computeUnitDeposit, formatPeso } from '../lib/paymentUtils';
+import { formatPeso } from '../lib/formatting';
+import { computeBalance, computePayNow, computeUnitDeposit } from '../lib/paymentUtils';
 import { calculateNights } from '../lib/validation';
 
 interface SelectedUnit {

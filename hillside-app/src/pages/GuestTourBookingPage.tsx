@@ -5,7 +5,8 @@ import { GuestLayout } from '../components/layout/GuestLayout';
 import { useAuth } from '../hooks/useAuth';
 import { useServices, useCreateTourReservation } from '../features/services/useServices';
 import { computeTourPricing } from '../lib/tourPricing';
-import { computeBalance, computePayNow, formatPeso } from '../lib/paymentUtils';
+import { formatPeso } from '../lib/formatting';
+import { computeBalance, computePayNow } from '../lib/paymentUtils';
 import { PaymentSummaryBreakdown } from '../components/payments/PaymentSummaryBreakdown';
 import { PayNowSelector } from '../components/payments/PayNowSelector';
 
