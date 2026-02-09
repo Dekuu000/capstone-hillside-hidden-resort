@@ -32,3 +32,8 @@ export interface RecordOnSitePaymentInput {
     method: 'cash' | 'gcash' | 'bank' | 'card';
     referenceNo?: string;
 }
+
+export interface UpdatePaymentIntentAmountInput {
+    reservationId: string;
+    amount: number;
+}

@@ -10,7 +10,7 @@ export async function fetchServices() {
     return data;
 }
 
-export async function createTourReservationAtomic(params: {
+export interface CreateTourReservationAtomicInput {
     guestUserId: string;
     serviceId: string;
     visitDate: string;
@@ -19,7 +19,9 @@ export async function createTourReservationAtomic(params: {
     isAdvance: boolean;
     expectedPayNow?: number;
     notes?: string | null;
-}) {
+}
+
+export async function createTourReservationAtomic(params: CreateTourReservationAtomicInput) {
     const { data, error } = await supabase.rpc('create_tour_reservation_atomic', {
         p_guest_user_id: params.guestUserId,
         p_service_id: params.serviceId,

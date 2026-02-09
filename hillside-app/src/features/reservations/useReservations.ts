@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { Reservation, ReservationUnit, Unit, Service, ServiceBooking, Payment } from '../../types/database';
+import type { Reservation, ReservationUnit, Unit, Service, ServiceBooking, Payment, CheckinLog } from '../../types/database';
 import { createReservationSchema, validateNotes } from '../../lib/validation';
 import { handleSupabaseError, ReservationError, ErrorCodes } from '../../lib/errors';
 import { z } from 'zod';
@@ -23,6 +23,7 @@ export interface ReservationWithUnits extends Reservation {
     units: (ReservationUnit & { unit: Unit })[];
     service_bookings?: (ServiceBooking & { service: Service })[];
     payments?: Payment[];
+    checkin_logs?: CheckinLog[];
     guest?: {
         name: string;
         email?: string;
@@ -256,8 +257,12 @@ export function useValidateQrCheckin() {
 // Perform check-in (admin)
 export function usePerformCheckin() {
     const queryClient = useQueryClient();
+
     return useMutation({
-        mutationFn: async ({ reservationId, overrideReason }: { reservationId: string; overrideReason?: string | null }) => {
+        mutationFn: async ({ reservationId, overrideReason }: {
+            reservationId: string;
+            overrideReason?: string | null;
+        }) => {
             await performCheckin(reservationId, overrideReason);
         },
         onSuccess: (_, { reservationId }) => {

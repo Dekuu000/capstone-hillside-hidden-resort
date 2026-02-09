@@ -134,6 +134,14 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/admin/scan"
+              element={
+                <ProtectedRoute requireAdmin>
+                  <AdminScanPage />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Guest Routes */}
             <Route

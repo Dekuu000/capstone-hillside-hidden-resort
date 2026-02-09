@@ -5,12 +5,12 @@ import { GuestLayout } from '../components/layout/GuestLayout';
 import { useMyReservations, type ReservationWithUnits, useCancelReservation } from '../features/reservations/useReservations';
 import { useSubmitPaymentProof } from '../features/payments/usePayments';
 import { useAuth } from '../hooks/useAuth';
-import { computeBalance, computePayNow, formatPeso } from '../lib/paymentUtils';
+import { formatDateLocal, formatDateTimeLocal, formatDateWithWeekday, formatPeso } from '../lib/formatting';
+import { computeBalance, computePayNow } from '../lib/paymentUtils';
 import { PayNowSelector } from '../components/payments/PayNowSelector';
 import { updatePaymentIntentAmount } from '../services/paymentsService';
 import { uploadPaymentProof } from '../services/storageService';
 import { StatusBadge } from '../components/badges/StatusBadge';
-import { formatDateLocal, formatDateTimeLocal, formatDateWithWeekday } from '../lib/validation';
 
 const STATUS_STYLES = {
     pending_payment: 'bg-yellow-100 text-yellow-800',
@@ -429,7 +429,7 @@ export function MyBookingsPage() {
                                                                     [reservation.reservation_id]: '',
                                                                 }));
                                                                 try {
-                                                                    await updatePaymentIntentAmount(reservation.reservation_id, value);
+                                                                    await updatePaymentIntentAmount({ reservationId: reservation.reservation_id, amount: value });
                                                                 } catch (err) {
                                                                     setPaymentErrors(prev => ({
                                                                         ...prev,
@@ -491,7 +491,7 @@ export function MyBookingsPage() {
                                                                     }));
                                                                 }
                                                                 try {
-                                                                    await updatePaymentIntentAmount(reservation.reservation_id, next);
+                                                                    await updatePaymentIntentAmount({ reservationId: reservation.reservation_id, amount: next });
                                                                 } catch (err) {
                                                                     setPaymentErrors(prev => ({
                                                                         ...prev,
@@ -594,7 +594,7 @@ export function MyBookingsPage() {
                                                 }
                                                 try {
                                                     if (canEditAmount && (!pendingPayment || pendingPayment.amount !== effectivePayNow)) {
-                                                        await updatePaymentIntentAmount(reservation.reservation_id, effectivePayNow);
+                                                        await updatePaymentIntentAmount({ reservationId: reservation.reservation_id, amount: effectivePayNow });
                                                     }
                                                     setUploading(prev => ({ ...prev, [reservation.reservation_id]: true }));
                                                     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');

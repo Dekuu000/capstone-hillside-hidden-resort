@@ -58,6 +58,7 @@ export async function fetchReservation(reservationId: string) {
         .select(`
             *,
             guest:users!guest_user_id(name, email, phone),
+            checkin_logs:checkin_logs(*),
             units:reservation_units(
                 *,
                 unit:units(*)

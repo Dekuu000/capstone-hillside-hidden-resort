@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Service } from '../../types/database';
-import { createTourReservationAtomic, fetchServices } from '../../services/servicesService';
+import { createTourReservationAtomic, fetchServices, type CreateTourReservationAtomicInput } from '../../services/servicesService';
 
 export function useServices() {
     return useQuery({
@@ -12,22 +12,11 @@ export function useServices() {
     });
 }
 
-interface CreateTourReservationInput {
-    guestUserId: string;
-    serviceId: string;
-    visitDate: string;
-    adultQty: number;
-    kidQty: number;
-    isAdvance: boolean;
-    expectedPayNow?: number;
-    notes?: string;
-}
-
 export function useCreateTourReservation() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async (input: CreateTourReservationInput) => {
+        mutationFn: async (input: CreateTourReservationAtomicInput) => {
             const data = await createTourReservationAtomic({
                 guestUserId: input.guestUserId,
                 serviceId: input.serviceId,

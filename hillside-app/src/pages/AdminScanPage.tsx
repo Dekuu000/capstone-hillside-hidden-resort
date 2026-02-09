@@ -4,8 +4,7 @@ import { AdminLayout } from '../components/layout/AdminLayout';
 import { usePerformCheckin, useValidateQrCheckin } from '../features/reservations/useReservations';
 import type { QrCheckinValidation } from '../services/reservationsService';
 import { AlertCircle, CheckCircle, Loader2, QrCode, Camera, WifiOff } from 'lucide-react';
-import { formatDateWithWeekday } from '../lib/validation';
-import { formatPeso } from '../lib/paymentUtils';
+import { formatDateWithWeekday, formatPeso } from '../lib/formatting';
 import { Html5Qrcode } from 'html5-qrcode';
 import { loadScanQueue, removeScanFromQueue, updateScanInQueue, upsertScanToQueue, type ScanQueueItem } from '../lib/offlineScanQueue';
 

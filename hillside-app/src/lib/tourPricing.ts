@@ -1,4 +1,4 @@
-import { computeTourMinimumDeposit, computeTourTotal, formatPeso } from './paymentUtils';
+import { computeTourMinimumDeposit, computeTourTotal } from './paymentUtils';
 
 export interface TourPricingInput {
     adultQty: number;
@@ -13,8 +13,6 @@ export interface TourPricingResult {
     depositRequired: number;
     paymentMessage: string;
 }
-
-export { formatPeso };
 
 export function computeTourPricing(input: TourPricingInput): TourPricingResult {
     const totalAmount = computeTourTotal(input.adultQty, input.kidQty, input.adultRate, input.kidRate);

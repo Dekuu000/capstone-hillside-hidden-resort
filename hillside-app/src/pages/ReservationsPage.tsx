@@ -18,8 +18,8 @@ import { AdminLayout } from '../components/layout/AdminLayout';
 import { StatusBadge } from '../components/badges/StatusBadge';
 import { useReservations, useUpdateReservationStatus, useCancelReservation } from '../features/reservations/useReservations';
 import type { Reservation } from '../types/database';
-import { calculateNights, formatDate } from '../lib/validation';
-import { formatPeso } from '../lib/paymentUtils';
+import { formatDate, formatPeso } from '../lib/formatting';
+import { calculateNights } from '../lib/validation';
 
 const STATUS_CONFIG: Record<Reservation['status'], { label: string; color: string; icon: typeof Clock }> = {
     pending_payment: { label: 'Pending Payment', color: 'bg-yellow-100 text-yellow-800', icon: Clock },

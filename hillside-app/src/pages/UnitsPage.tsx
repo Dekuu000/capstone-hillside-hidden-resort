@@ -16,7 +16,7 @@ import {
     AlertCircle
 } from 'lucide-react';
 import type { Unit } from '../types/database';
-import { formatPeso } from '../lib/paymentUtils';
+import { formatPeso } from '../lib/formatting';
 
 type FilterType = 'all' | 'room' | 'cottage' | 'amenity';
 

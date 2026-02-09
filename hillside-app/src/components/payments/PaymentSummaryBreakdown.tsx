@@ -1,4 +1,4 @@
-import { formatPeso } from '../../lib/paymentUtils';
+import { formatPeso } from '../../lib/formatting';
 
 interface PaymentSummaryBreakdownProps {
     payNow: number;

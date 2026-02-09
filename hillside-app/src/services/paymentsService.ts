@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import type { RecordOnSitePaymentInput, SubmitPaymentInput, UpdatePaymentIntentAmountInput, VerifyPaymentInput } from '../types/payments';
 
 export async function fetchPaymentsByReservation(reservationId: string) {
     const { data, error } = await supabase
@@ -28,14 +29,7 @@ export async function fetchPendingPayments() {
     return data;
 }
 
-export async function submitPaymentProof(params: {
-    reservationId: string;
-    paymentType: 'deposit' | 'full';
-    amount: number;
-    method: 'gcash';
-    referenceNo?: string;
-    proofUrl?: string;
-}) {
+export async function submitPaymentProof(params: SubmitPaymentInput) {
     const { data, error } = await supabase.rpc('submit_payment_proof', {
         p_reservation_id: params.reservationId,
         p_payment_type: params.paymentType,
@@ -48,7 +42,7 @@ export async function submitPaymentProof(params: {
     return data;
 }
 
-export async function verifyPayment(params: { paymentId: string; approved: boolean }) {
+export async function verifyPayment(params: VerifyPaymentInput) {
     const { error } = await supabase.rpc('verify_payment', {
         p_payment_id: params.paymentId,
         p_approved: params.approved,
@@ -56,12 +50,7 @@ export async function verifyPayment(params: { paymentId: string; approved: boole
     if (error) throw error;
 }
 
-export async function recordOnSitePayment(params: {
-    reservationId: string;
-    amount: number;
-    method: 'cash' | 'gcash' | 'bank' | 'card';
-    referenceNo?: string;
-}) {
+export async function recordOnSitePayment(params: RecordOnSitePaymentInput) {
     const { data, error } = await supabase.rpc('record_on_site_payment', {
         p_reservation_id: params.reservationId,
         p_amount: params.amount,
@@ -72,10 +61,10 @@ export async function recordOnSitePayment(params: {
     return data;
 }
 
-export async function updatePaymentIntentAmount(reservationId: string, amount: number) {
+export async function updatePaymentIntentAmount(params: UpdatePaymentIntentAmountInput) {
     const { error } = await supabase.rpc('update_payment_intent_amount', {
-        p_reservation_id: reservationId,
-        p_amount: amount,
+        p_reservation_id: params.reservationId,
+        p_amount: params.amount,
     });
     if (error) throw error;
 }

@@ -5,8 +5,23 @@ import { AdminLayout } from '../components/layout/AdminLayout';
 import { useReservation, useValidateQrCheckin, usePerformCheckin, usePerformCheckout } from '../features/reservations/useReservations';
 import { usePaymentsByReservation, useRecordOnSitePayment, useVerifyPayment } from '../features/payments/usePayments';
 import { createPaymentProofSignedUrl } from '../services/storageService';
-import { formatDateLocal, formatDateTimeLocal, formatDateWithWeekday } from '../lib/validation';
-import { formatPeso } from '../lib/paymentUtils';
+import type { CheckinLog } from '../types/database';
+import { formatDateLocal, formatDateTimeLocal, formatDateWithWeekday, formatPeso } from '../lib/formatting';
+
+function getLatestCheckinLog(logs?: CheckinLog[] | null) {
+    if (!logs || logs.length === 0) return null;
+    return logs.reduce<CheckinLog | null>((latest, log) => {
+        if (!latest) return log;
+        const latestTime = latest.checkin_time ? new Date(latest.checkin_time).getTime() : 0;
+        const currentTime = log.checkin_time ? new Date(log.checkin_time).getTime() : 0;
+        return currentTime > latestTime ? log : latest;
+    }, null);
+}
+
+function getOverrideReasonNote(log?: CheckinLog | null) {
+    if (!log?.remarks?.startsWith('Override check-in:')) return null;
+    return log.remarks.replace('Override check-in:', '').trim();
+}
 
 export function ReservationDetailsPage() {
     const { reservationId } = useParams();
@@ -74,6 +89,8 @@ export function ReservationDetailsPage() {
 
     const balanceDue = Math.max(0, (reservation.total_amount || 0) - (reservation.amount_paid_verified || 0));
     const checkinValidation = validateQr.data;
+    const latestCheckinLog = getLatestCheckinLog(reservation.checkin_logs);
+    const overrideReasonNote = getOverrideReasonNote(latestCheckinLog);
 
     return (
         <AdminLayout>
@@ -204,6 +221,17 @@ export function ReservationDetailsPage() {
                             )}
                         </div>
 
+                        {overrideReasonNote && (
+                            <div className="mt-3 rounded-lg border border-orange-200 bg-orange-50 p-3 text-sm text-orange-800">
+                                <p className="font-semibold text-orange-900">Forced check-in reason</p>
+                                <p className="mt-1">{overrideReasonNote}</p>
+                                {latestCheckinLog?.checkin_time && (
+                                    <p className="text-xs text-orange-700 mt-1">
+                                        Logged at {formatDateTimeLocal(latestCheckinLog.checkin_time)}
+                                    </p>
+                                )}
+                            </div>
+                        )}
                         {checkinValidation && !checkinValidation.allowed && (
                             <div className="mt-3 text-sm text-yellow-800 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                                 {checkinValidation.reason || 'Check-in is blocked by policy.'}
@@ -445,5 +473,3 @@ export function ReservationDetailsPage() {
         </AdminLayout>
     );
 }
-
-

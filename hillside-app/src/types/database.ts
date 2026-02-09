@@ -1,6 +1,43 @@
+export type UserRole = 'admin' | 'guest';
+export type UnitType = 'room' | 'cottage' | 'amenity';
+export type ReservationStatus =
+    | 'pending_payment'
+    | 'for_verification'
+    | 'confirmed'
+    | 'checked_in'
+    | 'checked_out'
+    | 'cancelled'
+    | 'no_show';
+export type PaymentType = 'deposit' | 'full' | 'on_site' | 'refund';
+export type PaymentMethod = 'gcash' | 'bank' | 'cash' | 'card';
+export type PaymentStatus = 'pending' | 'verified' | 'rejected';
+export type ServiceType = 'day_tour' | 'night_tour';
+export type ServiceStatus = 'active' | 'inactive';
+export type ServiceBookingStatus =
+    | 'pending_payment'
+    | 'for_verification'
+    | 'confirmed'
+    | 'checked_in'
+    | 'cancelled'
+    | 'no_show';
+export type AuditEntityType = 'reservation' | 'payment' | 'checkin' | 'unit';
+export type AuditAction =
+    | 'create'
+    | 'update'
+    | 'verify'
+    | 'cancel'
+    | 'checkin'
+    | 'checkout'
+    | 'reject'
+    | 'refund'
+    | 'record_on_site'
+    | 'change_unit'
+    | 'update_dates'
+    | 'update_status';
+
 export interface User {
     user_id: string;
-    role: 'admin' | 'guest';
+    role: UserRole;
     name: string;
     phone?: string;
     email?: string;
@@ -10,7 +47,7 @@ export interface User {
 export interface Unit {
     unit_id: string;
     name: string;
-    type: 'room' | 'cottage' | 'amenity';
+    type: UnitType;
     description?: string;
     base_price: number;
     capacity: number;
@@ -27,7 +64,7 @@ export interface Reservation {
     guest_user_id: string;
     check_in_date: string;
     check_out_date: string;
-    status: 'pending_payment' | 'for_verification' | 'confirmed' | 'checked_in' | 'checked_out' | 'cancelled' | 'no_show';
+    status: ReservationStatus;
     total_amount: number;
     deposit_required?: number;
     expected_pay_now?: number;
@@ -50,12 +87,12 @@ export interface ReservationUnit {
 export interface Payment {
     payment_id: string;
     reservation_id: string;
-    payment_type: 'deposit' | 'full' | 'on_site' | 'refund';
-    method: 'gcash' | 'bank' | 'cash' | 'card';
+    payment_type: PaymentType;
+    method: PaymentMethod;
     amount: number;
     reference_no?: string;
     proof_url?: string;
-    status: 'pending' | 'verified' | 'rejected';
+    status: PaymentStatus;
     verified_by_admin_id?: string;
     verified_at?: string;
     created_at: string;
@@ -73,13 +110,13 @@ export interface CheckinLog {
 export interface Service {
     service_id: string;
     service_name: string;
-    service_type: 'day_tour' | 'night_tour';
+    service_type: ServiceType;
     start_time: string;
     end_time: string;
     adult_rate: number;
     kid_rate: number;
     kid_age_rule?: string;
-    status: 'active' | 'inactive';
+    status: ServiceStatus;
     capacity_limit?: number;
     description?: string;
     created_at: string;
@@ -97,16 +134,16 @@ export interface ServiceBooking {
     adult_rate_snapshot: number;
     kid_rate_snapshot: number;
     total_amount: number;
-    status: 'pending_payment' | 'for_verification' | 'confirmed' | 'checked_in' | 'cancelled' | 'no_show';
+    status: ServiceBookingStatus;
     created_at: string;
 }
 
 export interface AuditLog {
     audit_id: string;
     performed_by_user_id?: string;
-    entity_type: 'reservation' | 'payment' | 'checkin' | 'unit';
+    entity_type: AuditEntityType;
     entity_id: string;
-    action: 'create' | 'update' | 'verify' | 'cancel' | 'checkin' | 'checkout' | 'reject' | 'refund' | 'record_on_site' | 'change_unit' | 'update_dates' | 'update_status';
+    action: AuditAction;
     data_hash: string;
     blockchain_tx_hash?: string;
     timestamp: string;
