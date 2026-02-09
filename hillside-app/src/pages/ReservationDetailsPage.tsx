@@ -5,6 +5,7 @@ import { AdminLayout } from '../components/layout/AdminLayout';
 import { useReservation, useValidateQrCheckin, usePerformCheckin, usePerformCheckout } from '../features/reservations/useReservations';
 import { usePaymentsByReservation, useRecordOnSitePayment, useVerifyPayment } from '../features/payments/usePayments';
 import { createPaymentProofSignedUrl } from '../services/storageService';
+import type { CheckinLog } from '../types/database';
 import { formatDateLocal, formatDateTimeLocal, formatDateWithWeekday, formatPeso } from '../lib/formatting';
 
 export function ReservationDetailsPage() {
@@ -73,12 +74,12 @@ export function ReservationDetailsPage() {
 
     const balanceDue = Math.max(0, (reservation.total_amount || 0) - (reservation.amount_paid_verified || 0));
     const checkinValidation = validateQr.data;
-    const latestCheckinLog = (reservation.checkin_logs || []).reduce((latest, log) => {
+    const latestCheckinLog = (reservation.checkin_logs || []).reduce<CheckinLog | null>((latest, log) => {
         if (!latest) return log;
         const latestTime = latest.checkin_time ? new Date(latest.checkin_time).getTime() : 0;
         const currentTime = log.checkin_time ? new Date(log.checkin_time).getTime() : 0;
         return currentTime > latestTime ? log : latest;
-    }, undefined as typeof reservation.checkin_logs extends (infer T)[] ? T | undefined : undefined);
+    }, null);
     const overrideReasonNote = latestCheckinLog?.remarks?.startsWith('Override check-in:')
         ? latestCheckinLog.remarks.replace('Override check-in:', '').trim()
         : null;
