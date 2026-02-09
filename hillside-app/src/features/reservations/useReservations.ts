@@ -275,7 +275,6 @@ export function usePerformCheckin() {
 // Perform check-out (admin)
 export function usePerformCheckout() {
     const queryClient = useQueryClient();
-
     return useMutation({
         mutationFn: async (reservationId: string) => {
             await performCheckout(reservationId);

@@ -119,6 +119,14 @@ function App() {
               }
             />
             <Route
+              path="/admin/scan"
+              element={
+                <ProtectedRoute requireAdmin>
+                  <AdminScanPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/admin/tours/new"
               element={
                 <ProtectedRoute requireAdmin>

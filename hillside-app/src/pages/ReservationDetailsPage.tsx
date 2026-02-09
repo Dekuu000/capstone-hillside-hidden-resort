@@ -232,7 +232,6 @@ export function ReservationDetailsPage() {
                                 )}
                             </div>
                         )}
-
                         {checkinValidation && !checkinValidation.allowed && (
                             <div className="mt-3 text-sm text-yellow-800 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                                 {checkinValidation.reason || 'Check-in is blocked by policy.'}

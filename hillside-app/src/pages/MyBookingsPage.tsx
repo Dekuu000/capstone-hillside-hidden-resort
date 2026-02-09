@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Calendar, Clock, AlertCircle, Loader2 } from 'lucide-react';
+import { Calendar, Clock, AlertCircle, Loader2, Download } from 'lucide-react';
+import { QRCodeCanvas } from 'qrcode.react';
 import { GuestLayout } from '../components/layout/GuestLayout';
 import { useMyReservations, type ReservationWithUnits, useCancelReservation } from '../features/reservations/useReservations';
 import { useSubmitPaymentProof } from '../features/payments/usePayments';
@@ -37,6 +38,19 @@ export function MyBookingsPage() {
     const [paymentFiles, setPaymentFiles] = useState<Record<string, File | null>>({});
     const [uploading, setUploading] = useState<Record<string, boolean>>({});
     const [filter, setFilter] = useState<'all' | 'stays' | 'tours'>('all');
+    const [cancelDialog, setCancelDialog] = useState<{
+        reservationId: string;
+        reservationCode: string;
+        amountPaid: number;
+        checkInDate?: string | null;
+    } | null>(null);
+    const [cancelAcknowledge, setCancelAcknowledge] = useState(false);
+    const [cancelError, setCancelError] = useState<string | null>(null);
+    const [cancelSuccess, setCancelSuccess] = useState<string | null>(null);
+    const [qrDownloadDialog, setQrDownloadDialog] = useState<{
+        reservationId: string;
+        reservationCode: string;
+    } | null>(null);
     const errorMessage = (() => {
         if (!error) return '';
         if (error instanceof Error && error.message) return error.message;
@@ -58,11 +72,21 @@ export function MyBookingsPage() {
         return true;
     });
 
+    const downloadQrCode = (reservationId: string, reservationCode: string) => {
+        const canvas = document.getElementById(`qr-${reservationId}`) as HTMLCanvasElement | null;
+        if (!canvas) return;
+        const url = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `hillside-qr-${reservationCode}.png`;
+        link.click();
+    };
+
     return (
         <GuestLayout>
             <div className="max-w-5xl mx-auto">
                 {/* Header */}
-                <div className="mb-8">
+                <div className="mb-6 md:mb-8">
                     <h1 className="text-3xl font-bold text-gray-900">My Bookings</h1>
                     <p className="text-gray-600 mt-1">View and manage your reservations</p>
                     <div className="mt-4 flex items-center gap-2">
@@ -98,6 +122,12 @@ export function MyBookingsPage() {
                                 </p>
                             )}
                         </div>
+                    </div>
+                )}
+
+                {cancelSuccess && (
+                    <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
+                        {cancelSuccess}
                     </div>
                 )}
 
@@ -140,10 +170,16 @@ export function MyBookingsPage() {
                             const paymentType: 'deposit' | 'full' = effectivePayNow >= totalAmount ? 'full' : 'deposit';
                             const balanceOnSite = computeBalance(totalAmount, effectivePayNow);
                             const remainingBalance = Math.max(0, totalAmount - verifiedAmount);
+                            const canShowQr = reservation.status === 'confirmed' || remainingBalance === 0;
+                            const checkInDate = reservation.check_in_date ? new Date(`${reservation.check_in_date}T00:00:00`) : null;
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+                            const isBeforeCheckIn = checkInDate ? checkInDate > today : false;
+                            const isCancellable = ['pending_payment', 'for_verification', 'confirmed'].includes(reservation.status) && isBeforeCheckIn;
 
                             return (
-                            <div key={reservation.reservation_id} className="bg-white rounded-xl shadow-sm p-6">
-                                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-4">
+                            <div key={reservation.reservation_id} className="bg-white rounded-xl shadow-sm p-4 md:p-6">
+                                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 pb-3 mb-3 border-b border-gray-100">
                                     <div>
                                         <div className="flex items-center gap-3 mb-2">
                                             <h3 className="text-lg font-semibold text-gray-900">
@@ -158,38 +194,41 @@ export function MyBookingsPage() {
                                             Booked on {formatDateLocal(reservation.created_at)}
                                         </p>
                                     </div>
-                                    <div className="text-right">
-                                        <p className="text-2xl font-bold text-primary">
-                                            {formatPeso(reservation.total_amount)}
-                                        </p>
-                                        <p className="text-sm text-gray-500">Total</p>
-                                        {['pending_payment', 'for_verification', 'confirmed'].includes(reservation.status) && (
+                                    <div className="sm:text-right flex flex-col items-start sm:items-end gap-1">
+                                        <div>
+                                            <p className="text-2xl font-bold text-primary">
+                                                {formatPeso(reservation.total_amount)}
+                                            </p>
+                                            <p className="text-sm text-gray-500">Total</p>
+                                        </div>
+                                        {isCancellable && (
                                             <>
                                                 <button
                                                     type="button"
-                                                    className="mt-3 inline-flex items-center px-3 py-2 text-sm font-semibold text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
+                                                    className="mt-2 inline-flex items-center px-3 py-2 text-sm font-semibold text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
                                                     onClick={async () => {
-                                                        if (!window.confirm('Cancel this booking? This action cannot be undone.')) return;
-                                                        try {
-                                                            await cancelReservation.mutateAsync(reservation.reservation_id);
-                                                        } catch (err) {
-                                                            setPaymentErrors(prev => ({
-                                                                ...prev,
-                                                                [reservation.reservation_id]: err instanceof Error ? err.message : 'Failed to cancel booking.',
-                                                            }));
-                                                        }
+                                                        setCancelError(null);
+                                                        setCancelSuccess(null);
+                                                        setCancelAcknowledge(false);
+                                                        setCancelDialog({
+                                                            reservationId: reservation.reservation_id,
+                                                            reservationCode: reservation.reservation_code,
+                                                            amountPaid: reservation.amount_paid_verified || 0,
+                                                            checkInDate: reservation.check_in_date,
+                                                        });
                                                     }}
                                                     disabled={cancelReservation.isPending}
                                                 >
                                                     {cancelReservation.isPending ? 'Cancelling...' : 'Cancel Booking'}
                                                 </button>
-                                                <p className="text-xs text-gray-500 mt-1">Available before check-in</p>
+                                                <p className="text-[11px] text-gray-500">No refunds for payments.</p>
+                                                <p className="text-[11px] text-gray-500">Cancelable until check-in date.</p>
                                             </>
                                         )}
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4 p-3 md:p-4 bg-gray-50 rounded-lg">
                                     <div className="flex items-center gap-2">
                                         <Calendar className="w-5 h-5 text-gray-400" />
                                         <div>
@@ -264,6 +303,40 @@ export function MyBookingsPage() {
                                     <p className="text-xs text-gray-500 mt-2">
                                         {remainingBalance === 0 ? 'No balance due.' : 'Pay this on arrival (on-site).'}
                                     </p>
+                                </div>
+
+                                {/* QR Code */}
+                                <div className="border-t border-gray-200 pt-4 mt-4">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <p className="text-sm font-semibold text-gray-900">Check-in QR</p>
+                                    </div>
+                                    {canShowQr ? (
+                                        <div className="flex flex-col md:flex-row md:items-center gap-3 items-center md:items-start bg-gray-50 rounded-lg p-3 md:p-0 md:bg-transparent md:rounded-none">
+                                            <button
+                                                type="button"
+                                                className="relative p-2 bg-gray-50 rounded-lg border border-transparent hover:border-primary/30 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer"
+                                                aria-label="Download QR code"
+                                                onClick={() => setQrDownloadDialog({
+                                                    reservationId: reservation.reservation_id,
+                                                    reservationCode: reservation.reservation_code,
+                                                })}
+                                            >
+                                                <QRCodeCanvas id={`qr-${reservation.reservation_id}`} value={reservation.reservation_code} size={160} />
+                                                <span className="absolute top-2 right-2 inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/90 text-gray-600 border border-gray-200">
+                                                    <Download className="w-3.5 h-3.5" />
+                                                </span>
+                                            </button>
+                                            <div className="text-sm text-gray-600 text-center md:text-left">
+                                                <p className="font-medium text-gray-900">Show this QR at the front desk.</p>
+                                                <p className="text-xs text-gray-500 mt-1">QR is valid only on your check-in date.</p>
+                                                <p className="text-xs text-gray-500 mt-1">Click to download.</p>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="p-3 bg-gray-50 rounded-lg text-sm text-gray-600">
+                                            QR available after payment is verified.
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Tour Details */}
@@ -564,6 +637,108 @@ export function MyBookingsPage() {
                             </div>
                             );
                         })}
+                    </div>
+                )}
+
+                {cancelDialog && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/40">
+                        <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-5">
+                            <h3 className="text-lg font-semibold text-gray-900">Cancel booking?</h3>
+                            <div className="mt-2 text-sm text-gray-600 space-y-2">
+                                <p>Cancelling will release your reservation slot.</p>
+                                <p>No-refund policy: Deposits/payments are non-refundable.</p>
+                                {cancelDialog.amountPaid > 0 && (
+                                    <div className="mt-2 rounded-lg bg-gray-50 border border-gray-200 p-3 text-sm">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-gray-600">Amount paid</span>
+                                            <span className="font-medium text-gray-900">{formatPeso(cancelDialog.amountPaid)}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between mt-1">
+                                            <span className="text-gray-600">Refund</span>
+                                            <span className="font-medium text-gray-900">{formatPeso(0)}</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <label className="mt-4 flex items-start gap-2 text-sm text-gray-700">
+                                <input
+                                    type="checkbox"
+                                    className="mt-1"
+                                    checked={cancelAcknowledge}
+                                    onChange={(e) => setCancelAcknowledge(e.target.checked)}
+                                />
+                                <span>I understand that payments are non-refundable.</span>
+                            </label>
+
+                            {cancelError && (
+                                <div className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-2">
+                                    {cancelError}
+                                </div>
+                            )}
+
+                            <div className="mt-4 flex items-center justify-end gap-2">
+                                <button
+                                    type="button"
+                                    className="btn-secondary"
+                                    onClick={() => {
+                                        setCancelDialog(null);
+                                        setCancelAcknowledge(false);
+                                    }}
+                                >
+                                    Go back
+                                </button>
+                                <button
+                                    type="button"
+                                    className="btn-primary"
+                                    disabled={!cancelAcknowledge || cancelReservation.isPending}
+                                    onClick={async () => {
+                                        setCancelError(null);
+                                        setCancelSuccess(null);
+                                        try {
+                                            await cancelReservation.mutateAsync(cancelDialog.reservationId);
+                                            setCancelDialog(null);
+                                            setCancelAcknowledge(false);
+                                            setCancelSuccess('Booking cancelled. No refunds apply to payments already made.');
+                                        } catch (err) {
+                                            setCancelError(err instanceof Error ? err.message : 'Failed to cancel booking.');
+                                        }
+                                    }}
+                                >
+                                    {cancelReservation.isPending ? 'Cancelling...' : 'Confirm cancel'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {qrDownloadDialog && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/40">
+                        <div className="w-full max-w-sm bg-white rounded-xl shadow-lg p-5">
+                            <h3 className="text-lg font-semibold text-gray-900">Download QR code?</h3>
+                            <p className="mt-2 text-sm text-gray-600">
+                                Save this QR and show it at the front desk on your check-in date.
+                            </p>
+                            <div className="mt-4 flex items-center justify-end gap-2">
+                                <button
+                                    type="button"
+                                    className="btn-secondary"
+                                    onClick={() => setQrDownloadDialog(null)}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    className="btn-primary"
+                                    onClick={() => {
+                                        downloadQrCode(qrDownloadDialog.reservationId, qrDownloadDialog.reservationCode);
+                                        setQrDownloadDialog(null);
+                                    }}
+                                >
+                                    Download
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>
