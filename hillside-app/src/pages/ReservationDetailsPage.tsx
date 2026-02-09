@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { AlertCircle, Loader2, CheckCircle, ExternalLink, XCircle } from 'lucide-react';
 import { AdminLayout } from '../components/layout/AdminLayout';
-import { useReservation } from '../features/reservations/useReservations';
+import { usePerformCheckin, useReservation } from '../features/reservations/useReservations';
 import { usePaymentsByReservation, useRecordOnSitePayment, useVerifyPayment } from '../features/payments/usePayments';
 import { createPaymentProofSignedUrl } from '../services/storageService';
 import { formatDateLocal, formatDateTimeLocal, formatDateWithWeekday, formatPeso } from '../lib/formatting';
@@ -13,6 +13,7 @@ export function ReservationDetailsPage() {
     const { data: payments } = usePaymentsByReservation(reservationId);
     const recordOnSite = useRecordOnSitePayment();
     const verifyPayment = useVerifyPayment();
+    const performCheckin = usePerformCheckin();
 
     const [amount, setAmount] = useState('');
     const [method, setMethod] = useState<'cash' | 'gcash' | 'bank' | 'card'>('cash');
@@ -20,6 +21,8 @@ export function ReservationDetailsPage() {
     const [formError, setFormError] = useState<string | null>(null);
     const [proofLinks, setProofLinks] = useState<Record<string, string>>({});
     const [loadingProof, setLoadingProof] = useState<Record<string, boolean>>({});
+    const [checkinReason, setCheckinReason] = useState('');
+    const [checkinError, setCheckinError] = useState<string | null>(null);
 
     async function openProof(paymentId: string, proofPath?: string | null) {
         if (!proofPath) return;
@@ -61,6 +64,10 @@ export function ReservationDetailsPage() {
     }
 
     const balanceDue = Math.max(0, (reservation.total_amount || 0) - (reservation.amount_paid_verified || 0));
+    const isInactive = ['cancelled', 'no_show', 'checked_out'].includes(reservation.status);
+    const showCheckinActions = !isInactive && reservation.status !== 'checked_in';
+    const canStandardCheckin = reservation.status === 'confirmed' && balanceDue === 0;
+    const canForceCheckin = balanceDue > 0;
 
     return (
         <AdminLayout>
@@ -119,6 +126,80 @@ export function ReservationDetailsPage() {
                         </div>
                     </div>
                 </div>
+
+                {showCheckinActions && (
+                    <div className="bg-white rounded-xl shadow-sm p-6">
+                        <h2 className="text-lg font-semibold text-gray-900">Check-in Actions</h2>
+                        <p className="text-sm text-gray-600 mt-1">
+                            Check-in is allowed only on the reservation date and after payment verification.
+                        </p>
+                        {checkinError && (
+                            <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
+                                {checkinError}
+                            </div>
+                        )}
+
+                        {canForceCheckin && (
+                            <div className="mt-4">
+                                <label className="block text-xs font-medium text-gray-600 mb-1">
+                                    Force check-in reason (required for override)
+                                </label>
+                                <textarea
+                                    className="input w-full min-h-[80px]"
+                                    value={checkinReason}
+                                    onChange={(e) => setCheckinReason(e.target.value)}
+                                    placeholder="Reason for forced check-in"
+                                />
+                            </div>
+                        )}
+
+                        <div className="mt-4 flex flex-wrap gap-2">
+                            <button
+                                type="button"
+                                disabled={!canStandardCheckin || performCheckin.isPending}
+                                className="btn-primary"
+                                onClick={async () => {
+                                    setCheckinError(null);
+                                    try {
+                                        await performCheckin.mutateAsync({
+                                            reservationId: reservation.reservation_id,
+                                        });
+                                    } catch (err) {
+                                        setCheckinError(err instanceof Error ? err.message : 'Check-in failed.');
+                                    }
+                                }}
+                            >
+                                {performCheckin.isPending ? 'Checking in...' : 'Check-in'}
+                            </button>
+
+                            {canForceCheckin && (
+                                <button
+                                    type="button"
+                                    disabled={performCheckin.isPending || !checkinReason.trim()}
+                                    className="btn-outline text-orange-700 border-orange-200 hover:bg-orange-50"
+                                    onClick={async () => {
+                                        setCheckinError(null);
+                                        const reason = checkinReason.trim();
+                                        if (!reason) {
+                                            setCheckinError('Override reason is required.');
+                                            return;
+                                        }
+                                        try {
+                                            await performCheckin.mutateAsync({
+                                                reservationId: reservation.reservation_id,
+                                                overrideReason: reason,
+                                            });
+                                        } catch (err) {
+                                            setCheckinError(err instanceof Error ? err.message : 'Force check-in failed.');
+                                        }
+                                    }}
+                                >
+                                    {performCheckin.isPending ? 'Checking in...' : 'Force Check-in'}
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                )}
 
                 {/* Units */}
                 <div className="bg-white rounded-xl shadow-sm p-6">

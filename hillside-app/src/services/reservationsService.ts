@@ -154,3 +154,14 @@ export async function updateReservationStatus(params: {
     if (error) throw error;
     return data;
 }
+
+export async function performCheckin(params: {
+    reservationId: string;
+    overrideReason?: string;
+}) {
+    const { error } = await supabase.rpc('perform_checkin', {
+        p_reservation_id: params.reservationId,
+        p_override_reason: params.overrideReason ?? null,
+    });
+    if (error) throw error;
+}

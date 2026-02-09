@@ -12,6 +12,7 @@ import {
     createReservationAtomic,
     cancelReservation,
     updateReservationStatus,
+    performCheckin,
 } from '../../services/reservationsService';
 
 // Types for extended reservation data
@@ -235,6 +236,24 @@ export function useCancelReservation() {
             queryClient.invalidateQueries({ queryKey: ['reservations'] });
             queryClient.invalidateQueries({ queryKey: ['available-units'] });
             queryClient.invalidateQueries({ queryKey: ['my-reservations'] });
+        },
+    });
+}
+
+// Perform check-in (admin)
+export function usePerformCheckin() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ reservationId, overrideReason }: {
+            reservationId: string;
+            overrideReason?: string;
+        }) => {
+            await performCheckin({ reservationId, overrideReason });
+        },
+        onSuccess: (_, { reservationId }) => {
+            queryClient.invalidateQueries({ queryKey: ['reservations'] });
+            queryClient.invalidateQueries({ queryKey: ['reservations', reservationId] });
         },
     });
 }
