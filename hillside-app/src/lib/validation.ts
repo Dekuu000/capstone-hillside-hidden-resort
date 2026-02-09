@@ -154,18 +154,6 @@ export function validateNotes(notes: string | undefined): string | undefined {
 }
 
 /**
- * Validates a phone number (Philippine format)
- * 
- * @param phone - Phone number string
- * @returns true if valid PH mobile number
- */
-export function isValidPhoneNumber(phone: string): boolean {
-    // Philippine mobile format: 09XX-XXX-XXXX
-    const phoneRegex = /^09\d{9}$/;
-    return phoneRegex.test(phone.replace(/[-\s]/g, ''));
-}
-
-/**
  * Calculate number of nights between two dates
  * 
  * @param checkIn - Check-in date string (YYYY-MM-DD)
@@ -231,19 +219,4 @@ export function formatDateWithWeekday(dateString: string): string {
 export function formatDateTimeLocal(dateString: string): string {
     const date = new Date(dateString);
     return date.toLocaleString();
-}
-
-/**
- * Validate that a date is not too far in the future
- * (e.g., prevent bookings more than 1 year ahead)
- * 
- * @param dateString - Date to validate
- * @param maxMonths - Maximum months in advance (default: 12)
- * @returns true if within allowed range
- */
-export function isWithinBookingWindow(dateString: string, maxMonths: number = 12): boolean {
-    const date = new Date(dateString);
-    const maxDate = new Date();
-    maxDate.setMonth(maxDate.getMonth() + maxMonths);
-    return date <= maxDate;
 }
