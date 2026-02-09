@@ -58,6 +58,7 @@ export async function fetchReservation(reservationId: string) {
         .select(`
             *,
             guest:users!guest_user_id(name, email, phone),
+            checkin_logs:checkin_logs(*),
             units:reservation_units(
                 *,
                 unit:units(*)
@@ -155,13 +156,40 @@ export async function updateReservationStatus(params: {
     return data;
 }
 
-export async function performCheckin(params: {
-    reservationId: string;
-    overrideReason?: string;
-}) {
+export interface QrCheckinValidation {
+    reservation_id: string | null;
+    reservation_code: string;
+    status: Reservation['status'] | null;
+    check_in_date: string | null;
+    check_out_date: string | null;
+    guest_name: string | null;
+    total_amount: number | null;
+    amount_paid_verified: number | null;
+    balance_due: number | null;
+    allowed: boolean;
+    can_override: boolean;
+    reason: string | null;
+}
+
+export async function validateQrCheckin(reservationCode: string) {
+    const { data, error } = await supabase.rpc('validate_qr_checkin', {
+        p_reservation_code: reservationCode,
+    });
+    if (error) throw error;
+    return (data && data[0]) as QrCheckinValidation;
+}
+
+export async function performCheckin(reservationId: string, overrideReason?: string | null) {
     const { error } = await supabase.rpc('perform_checkin', {
-        p_reservation_id: params.reservationId,
-        p_override_reason: params.overrideReason ?? null,
+        p_reservation_id: reservationId,
+        p_override_reason: overrideReason ?? null,
+    });
+    if (error) throw error;
+}
+
+export async function performCheckout(reservationId: string) {
+    const { error } = await supabase.rpc('perform_checkout', {
+        p_reservation_id: reservationId,
     });
     if (error) throw error;
 }

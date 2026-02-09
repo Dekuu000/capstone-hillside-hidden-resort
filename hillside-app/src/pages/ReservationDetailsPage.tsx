@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { AlertCircle, Loader2, CheckCircle, ExternalLink, XCircle } from 'lucide-react';
+import { AlertCircle, Loader2, CheckCircle, ExternalLink, XCircle, CreditCard, QrCode } from 'lucide-react';
 import { AdminLayout } from '../components/layout/AdminLayout';
-import { usePerformCheckin, useReservation } from '../features/reservations/useReservations';
+import { useReservation, useValidateQrCheckin, usePerformCheckin, usePerformCheckout } from '../features/reservations/useReservations';
 import { usePaymentsByReservation, useRecordOnSitePayment, useVerifyPayment } from '../features/payments/usePayments';
 import { createPaymentProofSignedUrl } from '../services/storageService';
 import { formatDateLocal, formatDateTimeLocal, formatDateWithWeekday, formatPeso } from '../lib/formatting';
@@ -13,16 +13,24 @@ export function ReservationDetailsPage() {
     const { data: payments } = usePaymentsByReservation(reservationId);
     const recordOnSite = useRecordOnSitePayment();
     const verifyPayment = useVerifyPayment();
+    const validateQr = useValidateQrCheckin();
     const performCheckin = usePerformCheckin();
+    const performCheckout = usePerformCheckout();
 
     const [amount, setAmount] = useState('');
     const [method, setMethod] = useState<'cash' | 'gcash' | 'bank' | 'card'>('cash');
     const [referenceNo, setReferenceNo] = useState('');
     const [formError, setFormError] = useState<string | null>(null);
+    const [checkinError, setCheckinError] = useState<string | null>(null);
+    const [overrideReason, setOverrideReason] = useState('');
     const [proofLinks, setProofLinks] = useState<Record<string, string>>({});
     const [loadingProof, setLoadingProof] = useState<Record<string, boolean>>({});
-    const [checkinReason, setCheckinReason] = useState('');
-    const [checkinError, setCheckinError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (reservation?.reservation_code) {
+            validateQr.mutate(reservation.reservation_code);
+        }
+    }, [reservation?.reservation_code]);
 
     async function openProof(paymentId: string, proofPath?: string | null) {
         if (!proofPath) return;
@@ -64,10 +72,16 @@ export function ReservationDetailsPage() {
     }
 
     const balanceDue = Math.max(0, (reservation.total_amount || 0) - (reservation.amount_paid_verified || 0));
-    const isInactive = ['cancelled', 'no_show', 'checked_out'].includes(reservation.status);
-    const showCheckinActions = !isInactive && reservation.status !== 'checked_in';
-    const canStandardCheckin = reservation.status === 'confirmed' && balanceDue === 0;
-    const canForceCheckin = balanceDue > 0;
+    const checkinValidation = validateQr.data;
+    const latestCheckinLog = (reservation.checkin_logs || []).reduce((latest, log) => {
+        if (!latest) return log;
+        const latestTime = latest.checkin_time ? new Date(latest.checkin_time).getTime() : 0;
+        const currentTime = log.checkin_time ? new Date(log.checkin_time).getTime() : 0;
+        return currentTime > latestTime ? log : latest;
+    }, undefined as typeof reservation.checkin_logs extends (infer T)[] ? T | undefined : undefined);
+    const overrideReasonNote = latestCheckinLog?.remarks?.startsWith('Override check-in:')
+        ? latestCheckinLog.remarks.replace('Override check-in:', '').trim()
+        : null;
 
     return (
         <AdminLayout>
@@ -83,15 +97,25 @@ export function ReservationDetailsPage() {
                                     : ''}
                             </p>
                         </div>
-                        <div className="text-right">
+                        <div className="text-left sm:text-right">
                             <p className="text-2xl font-bold text-primary">{formatPeso(reservation.total_amount)}</p>
                             <p className="text-sm text-gray-500">Total</p>
-                            <Link
-                                to="/admin/payments"
-                                className="inline-flex items-center mt-3 px-3 py-2 text-sm font-semibold text-primary border border-primary/30 rounded-lg hover:bg-primary/5 transition-colors"
-                            >
-                                View All Payments
-                            </Link>
+                            <div className="mt-3 flex flex-col items-stretch sm:items-end gap-2 w-full">
+                                <Link
+                                    to="/admin/payments"
+                                    className="btn-secondary w-full sm:w-auto justify-center inline-flex items-center gap-2 px-4 py-2 text-sm sm:px-6 sm:py-3"
+                                >
+                                    <CreditCard className="w-4 h-4" />
+                                    View All Payments
+                                </Link>
+                                <Link
+                                    to="/admin/scan"
+                                    className="btn-primary w-full sm:w-auto justify-center inline-flex items-center gap-2 px-4 py-2 text-sm sm:px-6 sm:py-3"
+                                >
+                                    <QrCode className="w-4 h-4" />
+                                    Scan QR
+                                </Link>
+                            </div>
                         </div>
                     </div>
 
@@ -125,81 +149,106 @@ export function ReservationDetailsPage() {
                             </p>
                         </div>
                     </div>
-                </div>
 
-                {showCheckinActions && (
-                    <div className="bg-white rounded-xl shadow-sm p-6">
-                        <h2 className="text-lg font-semibold text-gray-900">Check-in Actions</h2>
-                        <p className="text-sm text-gray-600 mt-1">
-                            Check-in is allowed only on the reservation date and after payment verification.
-                        </p>
-                        {checkinError && (
-                            <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
-                                {checkinError}
+                    {/* Check-in Actions */}
+                    <div className="mt-5 border-t border-gray-200 pt-4">
+                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                            <div>
+                                <p className="text-sm font-semibold text-gray-900">Check-in Actions</p>
+                                <p className="text-xs text-gray-500">
+                                    Check-in is allowed only on the reservation date and after payment verification.
+                                </p>
+                            </div>
+                            {reservation.status === 'checked_in' ? (
+                                <button
+                                    className="btn-secondary"
+                                    onClick={async () => {
+                                        setCheckinError(null);
+                                        try {
+                                            await performCheckout.mutateAsync(reservation.reservation_id);
+                                            await validateQr.mutateAsync(reservation.reservation_code);
+                                        } catch (err) {
+                                            setCheckinError(err instanceof Error ? err.message : 'Failed to check out.');
+                                        }
+                                    }}
+                                >
+                                    {performCheckout.isPending ? 'Checking out...' : 'Check-out'}
+                                </button>
+                            ) : (
+                                <div className="flex flex-col items-start md:items-end gap-2">
+                                    <button
+                                        className="btn-primary disabled:opacity-60 disabled:cursor-not-allowed"
+                                        onClick={async () => {
+                                            setCheckinError(null);
+                                            try {
+                                                await performCheckin.mutateAsync({
+                                                    reservationId: reservation.reservation_id,
+                                                    overrideReason: checkinValidation?.can_override ? overrideReason.trim() : null,
+                                                });
+                                                setOverrideReason('');
+                                                await validateQr.mutateAsync(reservation.reservation_code);
+                                            } catch (err) {
+                                                setCheckinError(err instanceof Error ? err.message : 'Check-in failed.');
+                                            }
+                                        }}
+                                        disabled={
+                                            performCheckin.isPending ||
+                                            (!checkinValidation?.allowed && !checkinValidation?.can_override) ||
+                                            (checkinValidation?.can_override && !overrideReason.trim())
+                                        }
+                                    >
+                                        {performCheckin.isPending
+                                            ? 'Checking in...'
+                                            : checkinValidation?.can_override
+                                                ? 'Force Check-in'
+                                                : 'Check-in'}
+                                    </button>
+                                    {!checkinValidation?.allowed && !checkinValidation?.can_override && reservation.check_in_date && (
+                                        <p className="text-xs text-gray-500">
+                                            Available on {formatDateWithWeekday(reservation.check_in_date)}.
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        {overrideReasonNote && (
+                            <div className="mt-3 rounded-lg border border-orange-200 bg-orange-50 p-3 text-sm text-orange-800">
+                                <p className="font-semibold text-orange-900">Forced check-in reason</p>
+                                <p className="mt-1">{overrideReasonNote}</p>
+                                {latestCheckinLog?.checkin_time && (
+                                    <p className="text-xs text-orange-700 mt-1">
+                                        Logged at {formatDateTimeLocal(latestCheckinLog.checkin_time)}
+                                    </p>
+                                )}
                             </div>
                         )}
 
-                        {canForceCheckin && (
-                            <div className="mt-4">
-                                <label className="block text-xs font-medium text-gray-600 mb-1">
-                                    Force check-in reason (required for override)
-                                </label>
+                        {checkinValidation && !checkinValidation.allowed && (
+                            <div className="mt-3 text-sm text-yellow-800 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                                {checkinValidation.reason || 'Check-in is blocked by policy.'}
+                            </div>
+                        )}
+
+                        {checkinValidation?.can_override && reservation.status !== 'checked_in' && (
+                            <div className="mt-3">
+                                <label className="block text-xs font-medium text-gray-600 mb-1">Override Reason (required)</label>
                                 <textarea
-                                    className="input w-full min-h-[80px]"
-                                    value={checkinReason}
-                                    onChange={(e) => setCheckinReason(e.target.value)}
-                                    placeholder="Reason for forced check-in"
+                                    className="input w-full min-h-[90px]"
+                                    value={overrideReason}
+                                    onChange={(e) => setOverrideReason(e.target.value)}
+                                    placeholder="Reason for admin override"
                                 />
                             </div>
                         )}
 
-                        <div className="mt-4 flex flex-wrap gap-2">
-                            <button
-                                type="button"
-                                disabled={!canStandardCheckin || performCheckin.isPending}
-                                className="btn-primary"
-                                onClick={async () => {
-                                    setCheckinError(null);
-                                    try {
-                                        await performCheckin.mutateAsync({
-                                            reservationId: reservation.reservation_id,
-                                        });
-                                    } catch (err) {
-                                        setCheckinError(err instanceof Error ? err.message : 'Check-in failed.');
-                                    }
-                                }}
-                            >
-                                {performCheckin.isPending ? 'Checking in...' : 'Check-in'}
-                            </button>
-
-                            {canForceCheckin && (
-                                <button
-                                    type="button"
-                                    disabled={performCheckin.isPending || !checkinReason.trim()}
-                                    className="btn-outline text-orange-700 border-orange-200 hover:bg-orange-50"
-                                    onClick={async () => {
-                                        setCheckinError(null);
-                                        const reason = checkinReason.trim();
-                                        if (!reason) {
-                                            setCheckinError('Override reason is required.');
-                                            return;
-                                        }
-                                        try {
-                                            await performCheckin.mutateAsync({
-                                                reservationId: reservation.reservation_id,
-                                                overrideReason: reason,
-                                            });
-                                        } catch (err) {
-                                            setCheckinError(err instanceof Error ? err.message : 'Force check-in failed.');
-                                        }
-                                    }}
-                                >
-                                    {performCheckin.isPending ? 'Checking in...' : 'Force Check-in'}
-                                </button>
-                            )}
-                        </div>
+                        {checkinError && (
+                            <div className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3">
+                                {checkinError}
+                            </div>
+                        )}
                     </div>
-                )}
+                </div>
 
                 {/* Units */}
                 <div className="bg-white rounded-xl shadow-sm p-6">
@@ -416,5 +465,3 @@ export function ReservationDetailsPage() {
         </AdminLayout>
     );
 }
-
-
