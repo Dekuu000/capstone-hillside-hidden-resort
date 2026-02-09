@@ -356,7 +356,7 @@ export function MyBookingsPage() {
                                                                     [reservation.reservation_id]: '',
                                                                 }));
                                                                 try {
-                                                                    await updatePaymentIntentAmount(reservation.reservation_id, value);
+                                                                    await updatePaymentIntentAmount({ reservationId: reservation.reservation_id, amount: value });
                                                                 } catch (err) {
                                                                     setPaymentErrors(prev => ({
                                                                         ...prev,
@@ -418,7 +418,7 @@ export function MyBookingsPage() {
                                                                     }));
                                                                 }
                                                                 try {
-                                                                    await updatePaymentIntentAmount(reservation.reservation_id, next);
+                                                                    await updatePaymentIntentAmount({ reservationId: reservation.reservation_id, amount: next });
                                                                 } catch (err) {
                                                                     setPaymentErrors(prev => ({
                                                                         ...prev,
@@ -521,7 +521,7 @@ export function MyBookingsPage() {
                                                 }
                                                 try {
                                                     if (canEditAmount && (!pendingPayment || pendingPayment.amount !== effectivePayNow)) {
-                                                        await updatePaymentIntentAmount(reservation.reservation_id, effectivePayNow);
+                                                        await updatePaymentIntentAmount({ reservationId: reservation.reservation_id, amount: effectivePayNow });
                                                     }
                                                     setUploading(prev => ({ ...prev, [reservation.reservation_id]: true }));
                                                     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');

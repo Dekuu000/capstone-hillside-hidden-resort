@@ -8,6 +8,21 @@ import { createPaymentProofSignedUrl } from '../services/storageService';
 import type { CheckinLog } from '../types/database';
 import { formatDateLocal, formatDateTimeLocal, formatDateWithWeekday, formatPeso } from '../lib/formatting';
 
+function getLatestCheckinLog(logs?: CheckinLog[] | null) {
+    if (!logs || logs.length === 0) return null;
+    return logs.reduce<CheckinLog | null>((latest, log) => {
+        if (!latest) return log;
+        const latestTime = latest.checkin_time ? new Date(latest.checkin_time).getTime() : 0;
+        const currentTime = log.checkin_time ? new Date(log.checkin_time).getTime() : 0;
+        return currentTime > latestTime ? log : latest;
+    }, null);
+}
+
+function getOverrideReasonNote(log?: CheckinLog | null) {
+    if (!log?.remarks?.startsWith('Override check-in:')) return null;
+    return log.remarks.replace('Override check-in:', '').trim();
+}
+
 export function ReservationDetailsPage() {
     const { reservationId } = useParams();
     const { data: reservation, isLoading, error } = useReservation(reservationId);
@@ -74,15 +89,8 @@ export function ReservationDetailsPage() {
 
     const balanceDue = Math.max(0, (reservation.total_amount || 0) - (reservation.amount_paid_verified || 0));
     const checkinValidation = validateQr.data;
-    const latestCheckinLog = (reservation.checkin_logs || []).reduce<CheckinLog | null>((latest, log) => {
-        if (!latest) return log;
-        const latestTime = latest.checkin_time ? new Date(latest.checkin_time).getTime() : 0;
-        const currentTime = log.checkin_time ? new Date(log.checkin_time).getTime() : 0;
-        return currentTime > latestTime ? log : latest;
-    }, null);
-    const overrideReasonNote = latestCheckinLog?.remarks?.startsWith('Override check-in:')
-        ? latestCheckinLog.remarks.replace('Override check-in:', '').trim()
-        : null;
+    const latestCheckinLog = getLatestCheckinLog(reservation.checkin_logs);
+    const overrideReasonNote = getOverrideReasonNote(latestCheckinLog);
 
     return (
         <AdminLayout>
