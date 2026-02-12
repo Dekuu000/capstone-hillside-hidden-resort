@@ -20,7 +20,7 @@ Use this after each refactor slice to validate core flows.
   - Reserve booking works
 - QR visibility (guest):
   - QR appears only when status=confirmed OR balance_due=0
-  - Otherwise shows “QR available after payment is verified.”
+  - Otherwise shows "QR available after payment is verified."
 
 ## Admin Flows
 - Admin verify payment:
@@ -43,6 +43,14 @@ Use this after each refactor slice to validate core flows.
 - Audit Logs:
   - /admin/audit loads
   - Filters (action/entity/date) update list
+- Anchoring (Phase 7):
+  - /admin/audit shows latest anchor card
+  - Anchor now returns "No new audit logs to anchor" when empty
+  - Anchor now submits tx and displays tx_hash
+  - Confirm status updates to confirmed (if mined)
+  - Verify (DB) shows Match for latest anchor
+  - Unanchored rows are expected for non-critical actions
+  - Demo mode: Verify JWT may be disabled for anchor-audit
 - Reports:
   - /admin/reports loads
   - Export Summary CSV works

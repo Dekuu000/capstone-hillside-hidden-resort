@@ -20,16 +20,19 @@ export type ServiceBookingStatus =
     | 'checked_in'
     | 'cancelled'
     | 'no_show';
-export type AuditEntityType = 'reservation' | 'payment' | 'checkin' | 'unit';
+export type AuditEntityType = 'reservation' | 'payment' | 'checkin' | 'unit' | 'user';
 export type AuditAction =
     | 'create'
     | 'update'
+    | 'delete'
     | 'verify'
     | 'cancel'
     | 'checkin'
     | 'checkout'
+    | 'approve'
     | 'reject'
     | 'refund'
+    | 'override_checkin'
     | 'record_on_site'
     | 'change_unit'
     | 'update_dates'
@@ -147,7 +150,25 @@ export interface AuditLog {
     data_hash: string;
     metadata?: any;
     blockchain_tx_hash?: string;
+    anchor_id?: string | null;
     timestamp: string;
+}
+
+export interface AuditAnchor {
+    anchor_id: string;
+    anchor_type: string;
+    scope: string;
+    range_start: string;
+    range_end: string;
+    log_count: number;
+    root_hash: string;
+    tx_hash?: string | null;
+    chain_id: string;
+    status: 'pending' | 'submitted' | 'confirmed' | 'failed';
+    error_message?: string | null;
+    created_at: string;
+    submitted_at?: string | null;
+    confirmed_at?: string | null;
 }
 
 // Database helper types
@@ -198,6 +219,11 @@ export type Database = {
                 Row: AuditLog;
                 Insert: Omit<AuditLog, 'audit_id' | 'timestamp'>;
                 Update: Partial<Omit<AuditLog, 'audit_id'>>;
+            };
+            audit_anchors: {
+                Row: AuditAnchor;
+                Insert: Omit<AuditAnchor, 'anchor_id' | 'created_at'>;
+                Update: Partial<Omit<AuditAnchor, 'anchor_id'>>;
             };
         };
     };
