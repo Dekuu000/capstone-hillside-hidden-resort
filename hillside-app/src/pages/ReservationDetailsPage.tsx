@@ -7,6 +7,7 @@ import { usePaymentsByReservation, useRecordOnSitePayment, useVerifyPayment } fr
 import { createPaymentProofSignedUrl } from '../services/storageService';
 import type { CheckinLog } from '../types/database';
 import { formatDateLocal, formatDateTimeLocal, formatDateWithWeekday, formatPeso } from '../lib/formatting';
+import { fetchAuditLogs } from '../services/auditService';
 
 function getLatestCheckinLog(logs?: CheckinLog[] | null) {
     if (!logs || logs.length === 0) return null;
@@ -41,12 +42,33 @@ export function ReservationDetailsPage() {
     const [overrideReason, setOverrideReason] = useState('');
     const [proofLinks, setProofLinks] = useState<Record<string, string>>({});
     const [loadingProof, setLoadingProof] = useState<Record<string, boolean>>({});
+    const [auditLogs, setAuditLogs] = useState<any[]>([]);
+    const [auditLoading, setAuditLoading] = useState(false);
 
     useEffect(() => {
         if (reservation?.reservation_code) {
             validateQr.mutate(reservation.reservation_code);
         }
     }, [reservation?.reservation_code]);
+
+    useEffect(() => {
+        if (!reservation?.reservation_id) return;
+        let isMounted = true;
+        setAuditLoading(true);
+        fetchAuditLogs({ entityType: 'reservation' })
+            .then((logs) => {
+                if (!isMounted) return;
+                const filtered = logs.filter((log) => log.entity_id === reservation.reservation_id);
+                setAuditLogs(filtered.slice(0, 5));
+            })
+            .finally(() => {
+                if (!isMounted) return;
+                setAuditLoading(false);
+            });
+        return () => {
+            isMounted = false;
+        };
+    }, [reservation?.reservation_id]);
 
     async function openProof(paymentId: string, proofPath?: string | null) {
         if (!proofPath) return;
@@ -295,6 +317,35 @@ export function ReservationDetailsPage() {
                         </div>
                     </div>
                 )}
+
+                {/* Audit Trail (latest) */}
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                    <div className="flex items-center justify-between mb-3">
+                        <h2 className="text-lg font-semibold text-gray-900">Audit Trail</h2>
+                        <Link to="/admin/audit" className="text-sm text-primary hover:underline">
+                            View all
+                        </Link>
+                    </div>
+                    {auditLoading ? (
+                        <p className="text-sm text-gray-500">Loading audit entries...</p>
+                    ) : auditLogs.length === 0 ? (
+                        <p className="text-sm text-gray-500">No audit entries yet.</p>
+                    ) : (
+                        <div className="space-y-2">
+                            {auditLogs.map((log) => (
+                                <div key={log.audit_id} className="p-3 rounded-lg bg-gray-50 text-sm">
+                                    <div className="flex items-center justify-between">
+                                        <span className="font-medium text-gray-900">{log.action}</span>
+                                        <span className="text-xs text-gray-500">{formatDateTimeLocal(log.timestamp)}</span>
+                                    </div>
+                                    <div className="text-xs text-gray-600 mt-1">
+                                        {log.metadata?.reservation_code || log.entity_id}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
 
                 {/* Record On-site Payment */}
                 <div className="bg-white rounded-xl shadow-sm p-6">

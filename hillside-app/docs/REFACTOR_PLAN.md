@@ -54,3 +54,6 @@ Tests:
 
 ## Stop Condition
 After each slice, stop for review before continuing.
+
+## Notes
+No DB schema or business rule changes permitted without explicit approval.
