@@ -29,6 +29,8 @@ const ReservationDetailsPage = lazy(() => import('./pages/ReservationDetailsPage
 const NewReservationPage = lazy(() => import('./pages/NewReservationPage').then((m) => ({ default: m.NewReservationPage })));
 const AdminTourBookingPage = lazy(() => import('./pages/AdminTourBookingPage').then((m) => ({ default: m.AdminTourBookingPage })));
 const AdminScanPage = lazy(() => import('./pages/AdminScanPage').then((m) => ({ default: m.AdminScanPage })));
+const AdminAuditPage = lazy(() => import('./pages/AdminAuditPage').then((m) => ({ default: m.AdminAuditPage })));
+const AdminReportsPage = lazy(() => import('./pages/AdminReportsPage').then((m) => ({ default: m.AdminReportsPage })));
 const GuestBookingPage = lazy(() => import('./pages/GuestBookingPage').then((m) => ({ default: m.GuestBookingPage })));
 const GuestTourBookingPage = lazy(() => import('./pages/GuestTourBookingPage').then((m) => ({ default: m.GuestTourBookingPage })));
 const MyBookingsPage = lazy(() => import('./pages/MyBookingsPage').then((m) => ({ default: m.MyBookingsPage })));
@@ -115,6 +117,22 @@ function App() {
               element={
                 <ProtectedRoute requireAdmin>
                   <PaymentsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/audit"
+              element={
+                <ProtectedRoute requireAdmin>
+                  <AdminAuditPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/reports"
+              element={
+                <ProtectedRoute requireAdmin>
+                  <AdminReportsPage />
                 </ProtectedRoute>
               }
             />

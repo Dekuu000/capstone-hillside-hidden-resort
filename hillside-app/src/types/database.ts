@@ -145,6 +145,7 @@ export interface AuditLog {
     entity_id: string;
     action: AuditAction;
     data_hash: string;
+    metadata?: any;
     blockchain_tx_hash?: string;
     timestamp: string;
 }

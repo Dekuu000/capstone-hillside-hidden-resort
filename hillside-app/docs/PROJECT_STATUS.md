@@ -1,9 +1,9 @@
 # Project Status - Hillside Hidden Resort
 
-Last updated: 2026-02-08
+Last updated: 2026-02-12
 
 ## Where We Are Now
-Phase 4 (Payments + Tours) is complete. Phase 5 (QR check-in/out) is in progress. Step 1–6 (DB/RPCs, admin scan flow, guest QR gating, check-in/out testing checklist, offline scan queue plan + MVP build) are implemented. Next: finalize offline queue UX and prepare deployment.
+Phase 5 (QR check-in/out) is complete and stable. Phase 6 (Audit + Reports + Insights) is in progress. Steps 1-5 (audit rules, audit page, audit snippet, reports + CSV, insights) are implemented. Next: final regression and docs updates.
 
 ## Completed Work (Summary)
 - Phase 3 reservations: atomic availability checks, overlap prevention, reservation_units tracking
@@ -70,35 +70,28 @@ Storage:
 - Helper text: clear deposit rules and balance on-site messaging
 - QR visibility: shown only when confirmed or balance_due == 0; otherwise locked
 
-## Next Steps (Phase 5+)
-1. QR check-in/out (admin scan)
-2. Offline-first scan queue + sync reconciliation
-3. Reports + CSV export
-4. Blockchain audit hashing (no PII)
-5. AI insights (duplicate detection, peak forecasting)
+## Next Steps (Phase 6)
+1. Final regression testing (audit, reports, CSV exports)
+2. Documentation updates (TEST_CHECKLIST, SYSTEM_OVERVIEW if needed)
+3. Prepare Phase 6 PR/merge
+4. Blockchain anchoring (Phase 7)
 
-## Sprint Backlog (Suggested)
-Sprint 1: QR Check-in MVP
-- Implement admin QR scan page workflow (scan -> validate -> check-in/out)
-- Add reservation validation RPC for scan (status + date window + payment state)
-- Write check-in logs (units + tours via reservation)
-- Admin UI: success/failure states + retry
+## Sprint Backlog (Phase 6)
+Sprint 1: Audit Trail
+- Confirm audit event coverage (reservation, payment, check-in/out, override)
+- Document hash payload rules
+- Add audit snippet in Reservation Details
+- Build /admin/audit page
 
-Sprint 2: Offline-First Scan Queue
-- Local queue for scans when offline
-- Sync worker to push queued scans when online
-- Conflict handling (already checked-in/out)
-- Admin UI: queued count + sync status
+Sprint 2: Reporting + CSV
+- Reports UI with date range filters
+- Summary cards (revenue, bookings, cancellations)
+- Export Summary CSV
+- Optional Transactions CSV (no PII)
 
-Sprint 3: Reporting
-- Report filters (date range, unit/tour)
-- CSV export
-- Summary cards (revenue, occupancy, guests)
-
-Sprint 4: Blockchain Audit
-- Hash critical actions only (no PII)
-- Store tx hash references in audit_logs metadata
-- Admin UI: audit log viewer
+Sprint 3: Rule-Based Insights
+- Add deterministic insights (peaks, anomalies)
+- Empty-state handling
 
 ## Decision Log (Key Product/Engineering)
 - 2026-02-07: Tours are ticketed services (services/service_bookings), not units.

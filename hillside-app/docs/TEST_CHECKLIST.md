@@ -40,10 +40,18 @@ Use this after each refactor slice to validate core flows.
   - Adding 101+ items removes oldest with warning
   - Expired item (older than 48h) shows expired and is not synced
   - Manual Sync now (online) shows summary toast
+- Audit Logs:
+  - /admin/audit loads
+  - Filters (action/entity/date) update list
+- Reports:
+  - /admin/reports loads
+  - Export Summary CSV works
+  - Export Transactions CSV works (no guest PII)
+  - Insights section renders
 
 ## Smoke
 - Login/logout works for admin and guest
-- No broken routes: /book, /tours, /my-bookings, /admin/payments
+- No broken routes: /book, /tours, /my-bookings, /admin/payments, /admin/audit, /admin/reports
 
 ## Final Regression (Before Demo)
 - npm run build (no errors)
