@@ -118,7 +118,10 @@ Example insights (deterministic):
 - Step 2 complete: /admin/reports UI wired (cards, charts, filters)
 - Step 3 complete: Summary + Transactions CSV export
 - Step 4 complete: rule-based insights
-- Step 5 in progress: regression + edge cases validation
+- Step 5 complete: regression + edge cases validation
+- Step 6 complete: docs updated and handoff ready
+
+Status: Phase 8 complete.
 
 ## Acceptance Criteria
 - Admin can view analytics and export CSVs.

@@ -13,7 +13,7 @@ A blockchain-enabled PWA for guest check-in and reservation management with QR-b
   - Guest QR locked until confirmed/paid
 - Reports + CSV export (Phase 6 complete)
 - Audit trail + anchoring (Phase 7 complete, demo mode)
-- Analytics dashboard + rule-based insights (Phase 8 in progress)
+- Analytics dashboard + rule-based insights (Phase 8 complete)
 
 ## Tech Stack
 - Frontend: React + TypeScript + Vite
@@ -124,7 +124,7 @@ Notes:
 - [x] Phase 5: QR check-in/checkout
 - [x] Phase 6: Reports + CSV export + AI summaries (rule-based)
 - [x] Phase 7: Blockchain audit anchoring (Sepolia, demo mode)
-- [ ] Phase 8: Analytics + AI insights (in progress)
+- [x] Phase 8: Analytics + AI insights
 - [ ] Phase 9: Production hardening + deployment
 
 ## Database Schema (ERD)
@@ -155,4 +155,4 @@ Academic/Educational Project - Hillside Hidden Resort
 
 ---
 
-Status: Phase 7 Complete (Demo Mode) | Phase 8 In Progress (Analytics + AI)
+Status: Phase 7 Complete (Demo Mode) | Phase 8 Complete (Analytics + AI)
