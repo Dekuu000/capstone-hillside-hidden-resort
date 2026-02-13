@@ -1,9 +1,9 @@
 # Project Status - Hillside Hidden Resort
 
-Last updated: 2026-02-12
+Last updated: 2026-02-13
 
 ## Where We Are Now
-Phase 5 (QR check-in/out) is complete and stable. Phase 6 (Audit + Reports + Insights) is in progress. Steps 1-5 (audit rules, audit page, audit snippet, reports + CSV, insights) are implemented. Next: final regression and docs updates.
+Phase 5 (QR check-in/out) is complete and stable. Phase 6 (Audit + Reports + Insights) is complete and merged. Phase 7 (Blockchain Anchoring) is implemented and working with manual anchoring. JWT verification is temporarily disabled for demo stability (Option A). Phase 8 (Analytics + AI) is in progress with reporting RPCs and reports UI wired; validation and polish are underway.
 
 ## Completed Work (Summary)
 - Phase 3 reservations: atomic availability checks, overlap prevention, reservation_units tracking
@@ -15,6 +15,8 @@ Phase 5 (QR check-in/out) is complete and stable. Phase 6 (Audit + Reports + Ins
 - Guest self-service: My Bookings view, cancel eligible reservations, submit proof
 - Admin UX: payment proof viewing, pending/verified clarity, remaining balance shown
 - UI consistency: shared formatting for currency and dates
+- Phase 7 anchoring: audit_anchors table + anchor_id links, anchor-audit edge function (Sepolia), /admin/audit anchor controls (Anchor now / Confirm status / Verify DB)
+- Phase 8 analytics: daily/monthly/summary report RPCs + reports UI (summary cards, charts, CSV exports, rule-based insights)
 
 ## Core Business Rules
 Reservations:
@@ -48,6 +50,7 @@ Tables:
 - services, service_bookings (ticketed tours)
 - payments (deposit/full/on_site/refund)
 - reservations.expected_pay_now (guest-selected amount)
+- audit_anchors (Phase 7 root hash batches)
 
 Storage:
 - Supabase Storage bucket: payment-proofs (private)
@@ -70,11 +73,14 @@ Storage:
 - Helper text: clear deposit rules and balance on-site messaging
 - QR visibility: shown only when confirmed or balance_due == 0; otherwise locked
 
-## Next Steps (Phase 6)
-1. Final regression testing (audit, reports, CSV exports)
-2. Documentation updates (TEST_CHECKLIST, SYSTEM_OVERVIEW if needed)
-3. Prepare Phase 6 PR/merge
-4. Blockchain anchoring (Phase 7)
+## Next Steps (Phase 8)
+1. Validate report RPCs (SQL Editor admin-claims test) and /admin/reports UI
+2. Verify CSV exports (Summary + Transactions)
+3. Final Phase 8 regression + docs update
+4. Optional: re-enable Verify JWT for anchor-audit once auth is stable
+
+## Phase 8 Planning
+- See `docs/PHASE8_ANALYTICS_PLAN.md` for the detailed Analytics + AI plan.
 
 ## Sprint Backlog (Phase 6)
 Sprint 1: Audit Trail

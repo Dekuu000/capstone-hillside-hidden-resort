@@ -2,9 +2,14 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { AlertCircle, Loader2, FileDown } from 'lucide-react';
 import { AdminLayout } from '../components/layout/AdminLayout';
-import { fetchPaymentTransactionsInRange, fetchReservationsInRange, fetchVerifiedPaymentsInRange } from '../services/reportsService';
+import {
+    fetchPaymentTransactionsInRange,
+    fetchReportDaily,
+    fetchReportMonthly,
+    fetchReportSummary,
+} from '../services/reportsService';
 import { formatPeso } from '../lib/formatting';
-import { buildReportInsights } from '../lib/insights';
+import { buildAnalyticsInsights } from '../lib/insights';
 
 function toStartOfDayIso(date: string) {
     const d = new Date(date);
@@ -49,6 +54,10 @@ function downloadCsv(filename: string, content: string) {
     URL.revokeObjectURL(url);
 }
 
+function formatPercent(value: number) {
+    return `${(value * 100).toFixed(0)}%`;
+}
+
 export function AdminReportsPage() {
     const [fromDate, setFromDate] = useState(daysAgoIsoDate(7));
     const [toDate, setToDate] = useState(todayIsoDate());
@@ -61,51 +70,48 @@ export function AdminReportsPage() {
     const { data, isLoading, error } = useQuery({
         queryKey: ['reports', range.fromIso, range.toIso],
         queryFn: async () => {
-            const [reservations, payments] = await Promise.all([
-                fetchReservationsInRange(range.fromIso, range.toIso),
-                fetchVerifiedPaymentsInRange(range.fromIso, range.toIso),
+            const [summary, daily, monthly] = await Promise.all([
+                fetchReportSummary(fromDate, toDate),
+                fetchReportDaily(fromDate, toDate),
+                fetchReportMonthly(fromDate, toDate),
             ]);
-            return { reservations, payments };
+            return { summary, daily, monthly };
         },
     });
 
-    const summary = useMemo(() => {
-        const reservations = data?.reservations ?? [];
-        const payments = data?.payments ?? [];
+    const summary = data?.summary ?? {
+        bookings: 0,
+        cancellations: 0,
+        cash_collected: 0,
+        occupancy_rate: 0,
+        unit_booked_value: 0,
+        tour_booked_value: 0,
+    };
 
-        const totalBookings = reservations.length;
-        const confirmedBookings = reservations.filter((r) =>
-            ['confirmed', 'checked_in', 'checked_out'].includes(r.status)
-        ).length;
-        const cancelledBookings = reservations.filter((r) =>
-            ['cancelled', 'no_show'].includes(r.status)
-        ).length;
-        const pendingBookings = reservations.filter((r) =>
-            ['pending_payment', 'for_verification'].includes(r.status)
-        ).length;
-        const verifiedRevenue = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
-
-        return {
-            totalBookings,
-            confirmedBookings,
-            cancelledBookings,
-            pendingBookings,
-            verifiedRevenue,
-        };
-    }, [data]);
+    const daily = data?.daily ?? [];
+    const monthly = data?.monthly ?? [];
+    const maxDailyCash = Math.max(1, ...daily.map((row) => row.cash_collected || 0));
 
     async function handleExportSummary() {
-        const rows = [[
-            fromDate,
-            toDate,
-            summary.totalBookings,
-            summary.confirmedBookings,
-            summary.cancelledBookings,
-            summary.pendingBookings,
-            summary.verifiedRevenue,
-        ]];
+        const rows = (daily.length > 0 ? daily : [{
+            report_date: fromDate,
+            bookings: summary.bookings,
+            cancellations: summary.cancellations,
+            cash_collected: summary.cash_collected,
+            occupancy_rate: summary.occupancy_rate,
+            unit_booked_value: summary.unit_booked_value,
+            tour_booked_value: summary.tour_booked_value,
+        }]).map((row) => ([
+            row.report_date,
+            row.bookings,
+            row.cancellations,
+            row.cash_collected,
+            row.occupancy_rate,
+            row.unit_booked_value,
+            row.tour_booked_value,
+        ]));
         const csv = buildCsv(
-            ['from_date', 'to_date', 'total_bookings', 'confirmed_bookings', 'cancelled_bookings', 'pending_bookings', 'verified_revenue'],
+            ['report_date', 'bookings', 'cancellations', 'cash_collected', 'occupancy_rate', 'unit_booked_value', 'tour_booked_value'],
             rows
         );
         downloadCsv(`hillside-summary-${fromDate}-to-${toDate}.csv`, csv);
@@ -187,29 +193,89 @@ export function AdminReportsPage() {
                         <Loader2 className="w-8 h-8 text-primary animate-spin" />
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         <div className="bg-white rounded-xl shadow-sm p-4">
                             <p className="text-xs text-gray-500">Total Bookings</p>
-                            <p className="text-2xl font-bold text-gray-900">{summary.totalBookings}</p>
+                            <p className="text-2xl font-bold text-gray-900">{summary.bookings}</p>
                         </div>
                         <div className="bg-white rounded-xl shadow-sm p-4">
-                            <p className="text-xs text-gray-500">Confirmed Bookings</p>
-                            <p className="text-2xl font-bold text-gray-900">{summary.confirmedBookings}</p>
+                            <p className="text-xs text-gray-500">Cancellations</p>
+                            <p className="text-2xl font-bold text-gray-900">{summary.cancellations}</p>
                         </div>
                         <div className="bg-white rounded-xl shadow-sm p-4">
-                            <p className="text-xs text-gray-500">Cancelled / No-show</p>
-                            <p className="text-2xl font-bold text-gray-900">{summary.cancelledBookings}</p>
-                        </div>
-                        <div className="bg-white rounded-xl shadow-sm p-4">
-                            <p className="text-xs text-gray-500">Verified Revenue</p>
-                            <p className="text-2xl font-bold text-gray-900">{formatPeso(summary.verifiedRevenue)}</p>
+                            <p className="text-xs text-gray-500">Cash Collected</p>
+                            <p className="text-2xl font-bold text-gray-900">{formatPeso(summary.cash_collected)}</p>
                         </div>
                     </div>
                 )}
 
-                {!isLoading && summary.pendingBookings > 0 && (
-                    <div className="bg-white rounded-xl shadow-sm p-4 text-sm text-gray-600">
-                        Pending bookings in range: <span className="font-semibold text-gray-900">{summary.pendingBookings}</span>
+                {!isLoading && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="bg-white rounded-xl shadow-sm p-4">
+                            <p className="text-xs text-gray-500">Occupancy Rate</p>
+                            <p className="text-2xl font-bold text-gray-900">{formatPercent(summary.occupancy_rate)}</p>
+                            <p className="text-xs text-gray-500 mt-1">Units booked / active units per day</p>
+                        </div>
+                        <div className="bg-white rounded-xl shadow-sm p-4">
+                            <p className="text-xs text-gray-500">Unit Booked Value</p>
+                            <p className="text-2xl font-bold text-gray-900">{formatPeso(summary.unit_booked_value)}</p>
+                        </div>
+                        <div className="bg-white rounded-xl shadow-sm p-4">
+                            <p className="text-xs text-gray-500">Tour Booked Value</p>
+                            <p className="text-2xl font-bold text-gray-900">{formatPeso(summary.tour_booked_value)}</p>
+                        </div>
+                    </div>
+                )}
+
+                {!isLoading && daily.length > 0 && (
+                    <div className="bg-white rounded-xl shadow-sm p-6">
+                        <h2 className="text-lg font-semibold text-gray-900 mb-4">Daily Revenue</h2>
+                        <div className="space-y-3">
+                            {daily.map((row) => (
+                                <div key={row.report_date} className="flex items-center gap-3">
+                                    <div className="w-24 text-xs text-gray-500">{row.report_date}</div>
+                                    <div className="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
+                                        <div
+                                            className="h-2 rounded-full bg-primary"
+                                            style={{ width: `${(row.cash_collected / maxDailyCash) * 100}%` }}
+                                        />
+                                    </div>
+                                    <div className="w-24 text-right text-xs font-medium text-gray-700">
+                                        {formatPeso(row.cash_collected)}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {!isLoading && monthly.length > 0 && (
+                    <div className="bg-white rounded-xl shadow-sm p-6">
+                        <h2 className="text-lg font-semibold text-gray-900 mb-4">Monthly Summary</h2>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead className="text-xs text-gray-500 uppercase border-b">
+                                    <tr>
+                                        <th className="text-left py-2 pr-4">Month</th>
+                                        <th className="text-left py-2 pr-4">Bookings</th>
+                                        <th className="text-left py-2 pr-4">Cancellations</th>
+                                        <th className="text-left py-2 pr-4">Cash Collected</th>
+                                        <th className="text-left py-2 pr-4">Occupancy</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {monthly.map((row) => (
+                                        <tr key={row.report_month} className="border-b last:border-b-0">
+                                            <td className="py-2 pr-4">{row.report_month}</td>
+                                            <td className="py-2 pr-4">{row.bookings}</td>
+                                            <td className="py-2 pr-4">{row.cancellations}</td>
+                                            <td className="py-2 pr-4">{formatPeso(row.cash_collected)}</td>
+                                            <td className="py-2 pr-4">{formatPercent(row.occupancy_rate)}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 )}
 
@@ -217,7 +283,14 @@ export function AdminReportsPage() {
                     <div className="bg-white rounded-xl shadow-sm p-6">
                         <h2 className="text-lg font-semibold text-gray-900 mb-3">Insights</h2>
                         <div className="space-y-3">
-                            {buildReportInsights(summary).map((insight, idx) => (
+                            {buildAnalyticsInsights({
+                                bookings: summary.bookings,
+                                cancellations: summary.cancellations,
+                                cashCollected: summary.cash_collected,
+                                occupancyRate: summary.occupancy_rate,
+                                unitBookedValue: summary.unit_booked_value,
+                                tourBookedValue: summary.tour_booked_value,
+                            }).map((insight, idx) => (
                                 <div
                                     key={`${insight.title}-${idx}`}
                                     className={`rounded-lg border p-3 text-sm ${

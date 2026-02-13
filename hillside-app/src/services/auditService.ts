@@ -4,6 +4,7 @@ import type { AuditLog } from '../types/database';
 export interface AuditLogFilters {
     action?: AuditLog['action'];
     entityType?: AuditLog['entity_type'];
+    anchored?: 'anchored' | 'unanchored';
     fromDate?: string;
     toDate?: string;
 }
@@ -27,6 +28,12 @@ export async function fetchAuditLogs(filters: AuditLogFilters = {}) {
     }
     if (filters.entityType) {
         query = query.eq('entity_type', filters.entityType);
+    }
+    if (filters.anchored === 'anchored') {
+        query = query.not('anchor_id', 'is', null);
+    }
+    if (filters.anchored === 'unanchored') {
+        query = query.is('anchor_id', null);
     }
     if (filters.fromDate) {
         query = query.gte('timestamp', filters.fromDate);

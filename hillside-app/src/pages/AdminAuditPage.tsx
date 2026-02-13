@@ -1,9 +1,18 @@
 import { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { AlertCircle, FileText, Loader2 } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { AlertCircle, CheckCircle, FileText, Loader2, XCircle } from 'lucide-react';
 import { AdminLayout } from '../components/layout/AdminLayout';
 import { fetchAuditLogs, type AuditLogFilters } from '../services/auditService';
 import { formatDateTimeLocal } from '../lib/formatting';
+import {
+    anchorAuditNow,
+    anchorExisting,
+    confirmAnchorStatus,
+    fetchAuditHashesForAnchor,
+    fetchLatestAnchor,
+    fetchLatestConfirmedAnchor,
+} from '../services/anchorService';
+import { sha256Hex } from '../lib/hash';
 
 const ACTION_OPTIONS = [
     'create',
@@ -13,6 +22,7 @@ const ACTION_OPTIONS = [
     'checkin',
     'checkout',
     'override_checkin',
+    'approve',
     'update',
 ];
 
@@ -47,22 +57,127 @@ function formatMetadata(log: { metadata?: any }) {
     return parts.length > 0 ? parts.join(' • ') : '—';
 }
 
+
+function shortenHash(value?: string | null, left = 8, right = 6) {
+    if (!value) return '—';
+    if (value.length <= left + right) return value;
+    return `${value.slice(0, left)}…${value.slice(-right)}`;
+}
+
+function buildAnchorPayload(hashes: string[]) {
+    return hashes.join('\n');
+}
+
+const ANCHOR_STATUS_BADGES: Record<string, { label: string; className: string }> = {
+    pending: { label: 'Queued', className: 'bg-yellow-50 text-yellow-700' },
+    submitted: { label: 'Submitted', className: 'bg-blue-50 text-blue-700' },
+    confirmed: { label: 'Confirmed', className: 'bg-green-50 text-green-700' },
+    failed: { label: 'Failed', className: 'bg-red-50 text-red-700' },
+};
+
 export function AdminAuditPage() {
+    const queryClient = useQueryClient();
     const [action, setAction] = useState('');
     const [entityType, setEntityType] = useState('');
+    const [anchored, setAnchored] = useState<'' | 'anchored' | 'unanchored'>('');
     const [fromDate, setFromDate] = useState('');
     const [toDate, setToDate] = useState('');
+    const [anchorNotice, setAnchorNotice] = useState<string | null>(null);
+    const [anchorError, setAnchorError] = useState<string | null>(null);
+    const [verifyResult, setVerifyResult] = useState<string | null>(null);
 
     const filters = useMemo<AuditLogFilters>(() => ({
         action: action ? action as AuditLogFilters['action'] : undefined,
         entityType: entityType ? entityType as AuditLogFilters['entityType'] : undefined,
+        anchored: anchored ? anchored as AuditLogFilters['anchored'] : undefined,
         fromDate: fromDate ? startOfDayIso(fromDate) : undefined,
         toDate: toDate ? endOfDayIso(toDate) : undefined,
-    }), [action, entityType, fromDate, toDate]);
+    }), [action, entityType, anchored, fromDate, toDate]);
 
     const { data, isLoading, error } = useQuery({
         queryKey: ['audit-logs', filters],
         queryFn: async () => fetchAuditLogs(filters),
+    });
+
+    const { data: latestAnchor, isLoading: anchorLoading, refetch: refetchAnchor } = useQuery({
+        queryKey: ['audit-anchor-latest'],
+        queryFn: fetchLatestAnchor,
+    });
+
+    const { data: latestConfirmedAnchor, isLoading: confirmedLoading } = useQuery({
+        queryKey: ['audit-anchor-confirmed'],
+        queryFn: fetchLatestConfirmedAnchor,
+    });
+
+    const statusBadge = latestAnchor ? ANCHOR_STATUS_BADGES[latestAnchor.status] : null;
+
+    const anchorNow = useMutation({
+        mutationFn: anchorAuditNow,
+        onSuccess: (response) => {
+            setAnchorError(null);
+            setVerifyResult(null);
+            if (response?.message) {
+                setAnchorNotice(response.message);
+            } else {
+                const summary = response?.log_count
+                    ? `Anchored ${response.log_count} logs. Tx: ${shortenHash(response.tx_hash)}`
+                    : 'Anchor submitted.';
+                setAnchorNotice(summary);
+            }
+            refetchAnchor();
+            queryClient.invalidateQueries({ queryKey: ['audit-logs'] });
+        },
+        onError: (err) => {
+            setAnchorNotice(null);
+            setAnchorError(err instanceof Error ? err.message : 'Failed to anchor audit logs.');
+        },
+    });
+
+    const confirmAnchor = useMutation({
+        mutationFn: async (anchorId: string) => confirmAnchorStatus(anchorId),
+        onSuccess: (response) => {
+            setAnchorError(null);
+            setAnchorNotice(`Anchor status: ${response.status}`);
+            refetchAnchor();
+        },
+        onError: (err) => {
+            setAnchorNotice(null);
+            setAnchorError(err instanceof Error ? err.message : 'Failed to confirm status.');
+        },
+    });
+
+    const retryAnchor = useMutation({
+        mutationFn: async (anchorId: string) => anchorExisting(anchorId),
+        onSuccess: (response) => {
+            setAnchorError(null);
+            setAnchorNotice(`Retry submitted. Tx: ${shortenHash(response.tx_hash)}`);
+            refetchAnchor();
+        },
+        onError: (err) => {
+            setAnchorNotice(null);
+            setAnchorError(err instanceof Error ? err.message : 'Failed to retry anchor.');
+        },
+    });
+
+    const verifyAnchor = useMutation({
+        mutationFn: async (anchorId: string) => {
+            const logs = await fetchAuditHashesForAnchor(anchorId);
+            const hashes = logs.map((log) => log.data_hash.toLowerCase());
+            const payload = buildAnchorPayload(hashes);
+            const recomputed = await sha256Hex(payload);
+            return recomputed;
+        },
+        onSuccess: (recomputed) => {
+            if (!latestAnchor?.root_hash) {
+                setVerifyResult('No root hash found for this anchor.');
+                return;
+            }
+            const match = recomputed === latestAnchor.root_hash.toLowerCase();
+            setVerifyResult(match ? 'Match: DB root hash verified.' : 'Mismatch: root hash does not match.');
+        },
+        onError: (err) => {
+            setVerifyResult(err instanceof Error ? err.message : 'Failed to verify anchor.');
+        },
     });
 
     if (error) {
@@ -85,8 +200,120 @@ export function AdminAuditPage() {
                     <p className="text-gray-600">Review system actions and compliance events</p>
                 </div>
 
+                <div className="bg-white rounded-xl shadow-sm p-5 space-y-3">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                        <div>
+                            <p className="text-sm font-semibold text-gray-900">Blockchain Anchoring (Sepolia)</p>
+                            <p className="text-xs text-gray-500">
+                                Anchors critical audit logs on-chain using a batch root hash. No PII stored on-chain.
+                            </p>
+                        </div>
+                        <button
+                            className="btn-primary w-full md:w-auto"
+                            disabled={anchorNow.isPending}
+                            onClick={() => {
+                                setAnchorNotice(null);
+                                setAnchorError(null);
+                                anchorNow.mutate();
+                            }}
+                        >
+                            {anchorNow.isPending ? 'Anchoring...' : 'Anchor now'}
+                        </button>
+                    </div>
+
+                    {(anchorNotice || anchorError) && (
+                        <div className={`text-sm rounded-lg px-3 py-2 ${anchorError ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}>
+                            {anchorError || anchorNotice}
+                        </div>
+                    )}
+
+                    <div className="border-t border-gray-200 pt-3">
+                        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                            <div className="space-y-3">
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <p className="text-xs text-gray-500">Latest anchor</p>
+                                        {statusBadge && (
+                                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${statusBadge.className}`}>
+                                                {statusBadge.label}
+                                            </span>
+                                        )}
+                                    </div>
+                                    {anchorLoading ? (
+                                        <p className="text-sm text-gray-600">Loading...</p>
+                                    ) : latestAnchor ? (
+                                        <div className="space-y-1 text-sm text-gray-700">
+                                            <p>Logs: {latestAnchor.log_count}</p>
+                                            <p>Root: <span className="font-mono">{shortenHash(latestAnchor.root_hash)}</span></p>
+                                            <p>Tx: <span className="font-mono">{shortenHash(latestAnchor.tx_hash)}</span></p>
+                                        </div>
+                                    ) : (
+                                        <p className="text-sm text-gray-500">No anchors yet.</p>
+                                    )}
+                                </div>
+
+                                <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                                    <p className="text-xs text-gray-500">Last confirmed anchor</p>
+                                    {confirmedLoading ? (
+                                        <p className="text-sm text-gray-600">Loading...</p>
+                                    ) : latestConfirmedAnchor ? (
+                                        <div className="space-y-1 text-sm text-gray-700">
+                                            <p>
+                                                Confirmed:{' '}
+                                                <span className="font-semibold">
+                                                    {formatDateTimeLocal(latestConfirmedAnchor.confirmed_at || latestConfirmedAnchor.created_at)}
+                                                </span>
+                                            </p>
+                                            <p>Logs: {latestConfirmedAnchor.log_count}</p>
+                                            <p>Root: <span className="font-mono">{shortenHash(latestConfirmedAnchor.root_hash)}</span></p>
+                                            <p>Tx: <span className="font-mono">{shortenHash(latestConfirmedAnchor.tx_hash)}</span></p>
+                                        </div>
+                                    ) : (
+                                        <p className="text-sm text-gray-500">No confirmed anchors yet.</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            {latestAnchor && (
+                                <div className="flex flex-col sm:flex-row gap-2">
+                                    {latestAnchor.status === 'submitted' && (
+                                        <button
+                                            className="btn-secondary"
+                                            onClick={() => confirmAnchor.mutate(latestAnchor.anchor_id)}
+                                            disabled={confirmAnchor.isPending}
+                                        >
+                                            {confirmAnchor.isPending ? 'Confirming...' : 'Confirm status'}
+                                        </button>
+                                    )}
+                                    {latestAnchor.status === 'failed' && (
+                                        <button
+                                            className="btn-secondary"
+                                            onClick={() => retryAnchor.mutate(latestAnchor.anchor_id)}
+                                            disabled={retryAnchor.isPending}
+                                        >
+                                            {retryAnchor.isPending ? 'Retrying...' : 'Retry'}
+                                        </button>
+                                    )}
+                                    <button
+                                        className="btn-secondary"
+                                        onClick={() => verifyAnchor.mutate(latestAnchor.anchor_id)}
+                                        disabled={verifyAnchor.isPending}
+                                    >
+                                        {verifyAnchor.isPending ? 'Verifying...' : 'Verify (DB)'}
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                        {verifyResult && (
+                            <div className="mt-3 text-sm text-gray-700">
+                                {verifyResult}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
                 <div className="bg-white rounded-xl shadow-sm p-4">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
                         <div>
                             <label className="block text-xs font-medium text-gray-600 mb-1">Action</label>
                             <select
@@ -111,6 +338,18 @@ export function AdminAuditPage() {
                                 {ENTITY_OPTIONS.map((value) => (
                                     <option key={value} value={value}>{value}</option>
                                 ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Anchored</label>
+                            <select
+                                className="input w-full"
+                                value={anchored}
+                                onChange={(e) => setAnchored(e.target.value as typeof anchored)}
+                            >
+                                <option value="">All</option>
+                                <option value="anchored">Anchored</option>
+                                <option value="unanchored">Unanchored</option>
                             </select>
                         </div>
                         <div>
@@ -150,6 +389,7 @@ export function AdminAuditPage() {
                                         <th className="text-left px-6 py-4 text-sm font-semibold text-gray-900">Reference</th>
                                         <th className="text-left px-6 py-4 text-sm font-semibold text-gray-900">Performed By</th>
                                         <th className="text-left px-6 py-4 text-sm font-semibold text-gray-900">Details</th>
+                                        <th className="text-left px-6 py-4 text-sm font-semibold text-gray-900">Anchored</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
@@ -168,6 +408,19 @@ export function AdminAuditPage() {
                                             </td>
                                             <td className="px-6 py-4 text-sm text-gray-500">
                                                 {formatMetadata(log)}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-gray-700">
+                                                {log.anchor_id ? (
+                                                    <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700">
+                                                        <CheckCircle className="w-3 h-3" />
+                                                        Anchored
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center gap-1 rounded-full bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-700">
+                                                        <XCircle className="w-3 h-3" />
+                                                        Unanchored
+                                                    </span>
+                                                )}
                                             </td>
                                         </tr>
                                     ))}
