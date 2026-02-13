@@ -90,9 +90,12 @@ export function AdminReportsPage() {
 
     const daily = data?.daily ?? [];
     const monthly = data?.monthly ?? [];
-    const maxDailyCash = Math.max(1, ...daily.map((row) => row.cash_collected || 0));
+    const maxDailyCash = Math.max(1, ...daily.map((row) => row.cash_collected ?? 0));
+    const rangeError = new Date(fromDate) > new Date(toDate);
+    const hasReportData = daily.length > 0 || monthly.length > 0;
 
     async function handleExportSummary() {
+        if (rangeError) return;
         const rows = (daily.length > 0 ? daily : [{
             report_date: fromDate,
             bookings: summary.bookings,
@@ -118,6 +121,7 @@ export function AdminReportsPage() {
     }
 
     async function handleExportTransactions() {
+        if (rangeError) return;
         const transactions = await fetchPaymentTransactionsInRange(range.fromIso, range.toIso);
         const rows = transactions.map((t) => ([
             t.reservation?.reservation_code || '',
@@ -176,21 +180,40 @@ export function AdminReportsPage() {
                             />
                         </div>
                         <div className="flex flex-col sm:flex-row gap-2">
-                            <button type="button" className="btn-secondary w-full" onClick={handleExportSummary}>
+                            <button
+                                type="button"
+                                className="btn-secondary w-full"
+                                onClick={handleExportSummary}
+                                disabled={isLoading || rangeError}
+                            >
                                 <FileDown className="w-4 h-4 mr-2" />
                                 Export Summary CSV
                             </button>
-                            <button type="button" className="btn-secondary w-full" onClick={handleExportTransactions}>
+                            <button
+                                type="button"
+                                className="btn-secondary w-full"
+                                onClick={handleExportTransactions}
+                                disabled={isLoading || rangeError}
+                            >
                                 <FileDown className="w-4 h-4 mr-2" />
                                 Export Transactions CSV
                             </button>
                         </div>
                     </div>
+                    {rangeError && (
+                        <p className="text-xs text-orange-600 mt-2">
+                            Please choose a valid date range (From should not be after To).
+                        </p>
+                    )}
                 </div>
 
                 {isLoading ? (
                     <div className="flex items-center justify-center py-12">
                         <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                    </div>
+                ) : !hasReportData ? (
+                    <div className="bg-white rounded-xl shadow-sm p-6 text-center text-sm text-gray-500">
+                        No report data available for the selected range.
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -231,20 +254,24 @@ export function AdminReportsPage() {
                     <div className="bg-white rounded-xl shadow-sm p-6">
                         <h2 className="text-lg font-semibold text-gray-900 mb-4">Daily Revenue</h2>
                         <div className="space-y-3">
-                            {daily.map((row) => (
-                                <div key={row.report_date} className="flex items-center gap-3">
+                            {daily.map((row) => {
+                                const cashValue = row.cash_collected ?? 0;
+                                const percent = maxDailyCash > 0 ? (cashValue / maxDailyCash) * 100 : 0;
+                                return (
+                                    <div key={row.report_date} className="flex items-center gap-3">
                                     <div className="w-24 text-xs text-gray-500">{row.report_date}</div>
                                     <div className="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
                                         <div
                                             className="h-2 rounded-full bg-primary"
-                                            style={{ width: `${(row.cash_collected / maxDailyCash) * 100}%` }}
+                                            style={{ width: `${percent}%` }}
                                         />
                                     </div>
                                     <div className="w-24 text-right text-xs font-medium text-gray-700">
-                                        {formatPeso(row.cash_collected)}
+                                        {formatPeso(cashValue)}
                                     </div>
                                 </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
                 )}

@@ -3,7 +3,7 @@
 Last updated: 2026-02-13
 
 ## Where We Are Now
-Phase 5 (QR check-in/out) is complete and stable. Phase 6 (Audit + Reports + Insights) is complete and merged. Phase 7 (Blockchain Anchoring) is implemented and working with manual anchoring. JWT verification is temporarily disabled for demo stability (Option A). Phase 8 (Analytics + AI) is in progress with reporting RPCs and reports UI wired; validation and polish are underway.
+Phase 5 (QR check-in/out) is complete and stable. Phase 6 (Audit + Reports + Insights) is complete and merged. Phase 7 (Blockchain Anchoring) is implemented and working with manual anchoring. JWT verification is temporarily disabled for demo stability (Option A). Phase 8 (Analytics + AI) reporting and insights are implemented and validated; polish is complete and final regression is next.
 
 ## Completed Work (Summary)
 - Phase 3 reservations: atomic availability checks, overlap prevention, reservation_units tracking
@@ -74,10 +74,8 @@ Storage:
 - QR visibility: shown only when confirmed or balance_due == 0; otherwise locked
 
 ## Next Steps (Phase 8)
-1. Validate report RPCs (SQL Editor admin-claims test) and /admin/reports UI
-2. Verify CSV exports (Summary + Transactions)
-3. Final Phase 8 regression + docs update
-4. Optional: re-enable Verify JWT for anchor-audit once auth is stable
+1. Final Phase 8 regression + sign-off
+2. Optional: re-enable Verify JWT for anchor-audit once auth is stable
 
 ## Phase 8 Planning
 - See `docs/PHASE8_ANALYTICS_PLAN.md` for the detailed Analytics + AI plan.

@@ -1,3 +1,5 @@
+import { formatPeso } from './paymentUtils';
+
 export interface ReportInsightsInput {
     totalBookings: number;
     confirmedBookings: number;
@@ -31,7 +33,7 @@ export function buildReportInsights(input: ReportInsightsInput): ReportInsight[]
     if (input.verifiedRevenue > 0) {
         insights.push({
             title: 'Revenue recorded',
-            detail: `Verified revenue reached ₱${Math.round(input.verifiedRevenue).toLocaleString()}.`,
+            detail: `Verified revenue reached ${formatPeso(input.verifiedRevenue)}.`,
             tone: 'positive',
         });
     }
@@ -89,7 +91,7 @@ export function buildAnalyticsInsights(input: AnalyticsInsightsInput): ReportIns
     if (input.cashCollected > 0) {
         insights.push({
             title: 'Cash collected',
-            detail: `Cash collected reached ₱${Math.round(input.cashCollected).toLocaleString()}.`,
+            detail: `Cash collected reached ${formatPeso(input.cashCollected)}.`,
             tone: 'positive',
         });
     }
@@ -122,13 +124,13 @@ export function buildAnalyticsInsights(input: AnalyticsInsightsInput): ReportIns
         });
     }
 
-    if (input.tourBookedValue > input.unitBookedValue) {
+    if (input.tourBookedValue > input.unitBookedValue && input.tourBookedValue > 0) {
         insights.push({
             title: 'Tours outperform units',
             detail: 'Tour bookings generated more value than unit bookings in this range.',
             tone: 'positive',
         });
-    } else if (input.unitBookedValue > 0) {
+    } else if (input.unitBookedValue > 0 && input.unitBookedValue >= input.tourBookedValue) {
         insights.push({
             title: 'Units lead revenue',
             detail: 'Unit bookings generated more value than tour bookings in this range.',

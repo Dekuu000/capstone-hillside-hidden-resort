@@ -113,6 +113,13 @@ Example insights (deterministic):
 
 ---
 
+## Progress (as of 2026-02-13)
+- Step 1 complete: report RPCs (daily/monthly/summary) implemented
+- Step 2 complete: /admin/reports UI wired (cards, charts, filters)
+- Step 3 complete: Summary + Transactions CSV export
+- Step 4 complete: rule-based insights
+- Step 5 in progress: regression + edge cases validation
+
 ## Acceptance Criteria
 - Admin can view analytics and export CSVs.
 - No guest PII appears in analytics or CSVs.
