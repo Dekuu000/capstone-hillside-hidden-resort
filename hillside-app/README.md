@@ -8,16 +8,20 @@ A blockchain-enabled PWA for guest check-in and reservation management with QR-b
 - Payment Workflows: Flexible deposit/full payments, proof upload, admin verification, on-site payments
 - Guest Self-Service: View bookings, submit proof, cancel eligible reservations
 - PWA: Installable progressive web app
-- QR check-in/out (Phase 5 in progress)
+- QR check-in/out (Phase 5 complete)
   - Admin scan + validation + override check-in
   - Guest QR locked until confirmed/paid
-- Planned: reports + CSV export, blockchain audit trail, AI insights
+- Reports + CSV export (Phase 6 complete)
+- Audit trail + anchoring (Phase 7 complete, demo mode)
+- Next: Analytics + AI insights (Phase 8 planning)
 
 ## Tech Stack
 - Frontend: React + TypeScript + Vite
 - Styling: Tailwind CSS (design system: navy #1E3A8A + orange #F97316)
-- Backend: Supabase (PostgreSQL + Auth + RLS + Storage)
-- Blockchain: Hardhat + Solidity + ethers.js (Sepolia testnet)
+- Backend: Supabase (PostgreSQL + Auth + RLS + Storage + Edge Functions)
+- Blockchain (Phase 7): Ethereum Sepolia anchoring via Supabase Edge Function (Deno) + ethers.js
+  - RPC provider: Alchemy/Infura
+  - Wallet: server-held key (can be generated from a MetaMask account)
 - PWA: vite-plugin-pwa + Workbox
 - State Management: TanStack React Query
 - Forms: React Hook Form + Zod validation
@@ -69,7 +73,8 @@ See `../.agent/design-system/hillside-hidden-resort/MASTER.md` for complete guid
 ### Prerequisites
 - Node.js 18+ and npm
 - Supabase account
-- Infura/Alchemy account (for testnet RPC)
+- Alchemy or Infura account (Sepolia RPC)
+- Sepolia wallet private key (server-held for anchoring)
 
 ### Installation
 1. Clone and install dependencies:
@@ -96,16 +101,30 @@ See `../.agent/design-system/hillside-hidden-resort/MASTER.md` for complete guid
 
    Navigate to: `http://localhost:5173`
 
+## Blockchain Anchoring Setup (Phase 7)
+Edge Function: `anchor-audit`
+
+Set these **Edge Function secrets** in Supabase (do not store in `.env`):
+- `SEPOLIA_RPC_URL`
+- `ANCHOR_PRIVATE_KEY`
+- `CHAIN_ID` (11155111)
+- `ANCHOR_SUPABASE_URL`
+- `ANCHOR_SERVICE_ROLE_KEY`
+
+Notes:
+- These values are used only by the Edge Function.
+- Do not paste private keys in repo files.
+
 ## Development Phases
 - [x] Phase 0: Project setup, design system, Tailwind config
 - [x] Phase 1: Auth + roles + RLS + layouts
 - [x] Phase 2: Units management (admin CRUD)
 - [x] Phase 3: Reservations + availability engine
 - [x] Phase 4: Payments + tours + proof upload + verification
-- [~] Phase 5: QR check-in/checkout (in progress)
-- [ ] Phase 6: Reports + CSV export + AI summaries
-- [ ] Phase 7: Blockchain audit trail
-- [ ] Phase 8: AI risk scoring + analytics
+- [x] Phase 5: QR check-in/checkout
+- [x] Phase 6: Reports + CSV export + AI summaries (rule-based)
+- [x] Phase 7: Blockchain audit anchoring (Sepolia, demo mode)
+- [ ] Phase 8: Analytics + AI insights
 - [ ] Phase 9: Production hardening + deployment
 
 ## Database Schema (ERD)
@@ -119,6 +138,9 @@ See `../../.gemini/antigravity/brain/0e76eebf-8ce6-46af-8bfd-959317307016/implem
 - `../.agent/design-system/hillside-hidden-resort/MASTER.md` - UI/UX guidelines
 - `docs/PROJECT_STATUS.md` - Current phase, decisions, and next steps
 - `docs/ADMIN_PAYMENT_VERIFICATION.md` - Admin payment verification steps
+- `docs/ANCHORING_EXPLAINER.md` - Plain-language anchoring explanation
+- `docs/ANCHORING_SPEC.md` - Technical anchoring rules
+- `docs/PHASE8_ANALYTICS_PLAN.md` - Phase 8 analytics + AI plan
 - `docs/TEST_CHECKLIST.md` - Quick validation checklist after changes
 
 ## Contributing
@@ -133,4 +155,4 @@ Academic/Educational Project - Hillside Hidden Resort
 
 ---
 
-Status: Phase 4 Complete | Phase 5 in progress (QR Check-in/Out)
+Status: Phase 7 Complete (Demo Mode) | Phase 8 Planning (Analytics + AI)

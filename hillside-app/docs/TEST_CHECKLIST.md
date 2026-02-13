@@ -53,9 +53,12 @@ Use this after each refactor slice to validate core flows.
   - Demo mode: Verify JWT may be disabled for anchor-audit
 - Reports:
   - /admin/reports loads
+  - SQL Editor admin-claims test: get_report_summary/daily/monthly return rows
   - Export Summary CSV works
   - Export Transactions CSV works (no guest PII)
   - Insights section renders
+  - Analytics charts render with date range filters
+  - Summary cards match CSV totals
 
 ## Smoke
 - Login/logout works for admin and guest
