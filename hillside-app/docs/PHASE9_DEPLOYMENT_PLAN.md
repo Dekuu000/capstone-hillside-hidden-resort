@@ -37,6 +37,7 @@ Supabase:
   - `CHAIN_ID`
   - `ANCHOR_SUPABASE_URL`
   - `ANCHOR_SERVICE_ROLE_KEY`
+  - `ANCHOR_ALLOWED_ORIGINS` (optional allowlist for CORS)
 
 Client env:
 - `.env` includes only `VITE_*` keys
@@ -108,4 +109,3 @@ System:
 - Secrets managed securely
 - Rollback plan documented and tested
 - Final regression passed
-

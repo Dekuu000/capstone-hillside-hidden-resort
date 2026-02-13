@@ -3,7 +3,7 @@
 Last updated: 2026-02-13
 
 ## Where We Are Now
-Phase 5 (QR check-in/out) is complete and stable. Phase 6 (Audit + Reports + Insights) is complete and merged. Phase 7 (Blockchain Anchoring) is implemented and working with manual anchoring. JWT verification is temporarily disabled for demo stability (Option A). Phase 8 (Analytics + AI) is complete and signed off.
+Phase 5 (QR check-in/out) is complete and stable. Phase 6 (Audit + Reports + Insights) is complete and merged. Phase 7 (Blockchain Anchoring) is implemented and working with manual anchoring. JWT verification is temporarily disabled for demo stability (Option A). Phase 8 (Analytics + AI) is complete and signed off. Phase 9 (Production hardening + deployment) is now in progress.
 
 ## Completed Work (Summary)
 - Phase 3 reservations: atomic availability checks, overlap prevention, reservation_units tracking

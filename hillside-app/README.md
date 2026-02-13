@@ -110,6 +110,7 @@ Set these **Edge Function secrets** in Supabase (do not store in `.env`):
 - `CHAIN_ID` (11155111)
 - `ANCHOR_SUPABASE_URL`
 - `ANCHOR_SERVICE_ROLE_KEY`
+- `ANCHOR_ALLOWED_ORIGINS` (optional, comma-separated allowlist for CORS)
 
 Notes:
 - These values are used only by the Edge Function.

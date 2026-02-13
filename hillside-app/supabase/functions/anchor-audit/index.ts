@@ -2,10 +2,24 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { ethers } from 'https://esm.sh/ethers@6';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+const ALLOWED_ORIGINS = (Deno.env.get('ANCHOR_ALLOWED_ORIGINS') ?? '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+function getCorsHeaders(req: Request) {
+  const requestOrigin = req.headers.get('origin') ?? '';
+  const allowOrigin = ALLOWED_ORIGINS.length === 0
+    ? '*'
+    : (ALLOWED_ORIGINS.includes(requestOrigin) ? requestOrigin : ALLOWED_ORIGINS[0]);
+
+  return {
+    'Access-Control-Allow-Origin': allowOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Vary': 'Origin',
+  };
+}
 
 const SUPABASE_URL = Deno.env.get('ANCHOR_SUPABASE_URL') ?? '';
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('ANCHOR_SERVICE_ROLE_KEY') ?? '';
@@ -24,10 +38,10 @@ const CRITICAL_ACTIONS = new Set([
   'cancel',
 ]);
 
-function jsonResponse(body: Record<string, unknown>, status = 200) {
+function jsonResponse(req: Request, body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { 'Content-Type': 'application/json', ...corsHeaders },
+    headers: { 'Content-Type': 'application/json', ...getCorsHeaders(req) },
   });
 }
 
@@ -239,29 +253,29 @@ async function confirmStatus(anchorId: string) {
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: getCorsHeaders(req) });
   }
 
   try {
     const authCheck = await requireAdmin(req);
     if ('error' in authCheck) {
-      return jsonResponse({ ok: false, error: authCheck.error, stage: authCheck.stage }, authCheck.status);
+      return jsonResponse(req, { ok: false, error: authCheck.error, stage: authCheck.stage }, authCheck.status);
     }
 
     const body = await req.json().catch(() => ({}));
     const mode = body?.mode ?? 'build_and_anchor';
 
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !SEPOLIA_RPC_URL || !ANCHOR_PRIVATE_KEY) {
-      return jsonResponse({ ok: false, error: 'Missing server configuration' }, 500);
+      return jsonResponse(req, { ok: false, error: 'Missing server configuration' }, 500);
     }
 
     if (mode === 'build_and_anchor') {
       const batch = await buildAnchorBatch();
-      if ('message' in batch) return jsonResponse({ ok: true, message: batch.message });
-      if ('existing' in batch) return jsonResponse({ ok: true, ...batch.existing });
+      if ('message' in batch) return jsonResponse(req, { ok: true, message: batch.message });
+      if ('existing' in batch) return jsonResponse(req, { ok: true, ...batch.existing });
 
       const anchored = await anchorExisting(batch.anchor_id);
-      return jsonResponse({
+      return jsonResponse(req, {
         ok: true,
         anchor_id: batch.anchor_id,
         status: anchored.status,
@@ -273,9 +287,9 @@ serve(async (req) => {
     }
 
     if (mode === 'anchor_existing') {
-      if (!body.anchor_id) return jsonResponse({ ok: false, error: 'anchor_id is required' }, 400);
+      if (!body.anchor_id) return jsonResponse(req, { ok: false, error: 'anchor_id is required' }, 400);
       const anchored = await anchorExisting(body.anchor_id);
-      return jsonResponse({
+      return jsonResponse(req, {
         ok: true,
         anchor_id: anchored.anchor_id,
         status: anchored.status,
@@ -287,9 +301,9 @@ serve(async (req) => {
     }
 
     if (mode === 'confirm_status') {
-      if (!body.anchor_id) return jsonResponse({ ok: false, error: 'anchor_id is required' }, 400);
+      if (!body.anchor_id) return jsonResponse(req, { ok: false, error: 'anchor_id is required' }, 400);
       const anchored = await confirmStatus(body.anchor_id);
-      return jsonResponse({
+      return jsonResponse(req, {
         ok: true,
         anchor_id: anchored.anchor_id,
         status: anchored.status,
@@ -300,9 +314,9 @@ serve(async (req) => {
       });
     }
 
-    return jsonResponse({ ok: false, error: 'Invalid mode' }, 400);
+    return jsonResponse(req, { ok: false, error: 'Invalid mode' }, 400);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    return jsonResponse({ ok: false, error: message }, 500);
+    return jsonResponse(req, { ok: false, error: message }, 500);
   }
 });
