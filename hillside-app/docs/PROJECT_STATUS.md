@@ -77,6 +77,9 @@ Storage:
 1. Phase 9 planning: production hardening + deployment
 2. Optional: re-enable Verify JWT for anchor-audit once auth is stable
 
+## Phase 9 Planning
+- See `docs/PHASE9_DEPLOYMENT_PLAN.md` for the detailed production hardening and deployment plan.
+
 ## Phase 8 Summary
 - See `docs/PHASE8_ANALYTICS_PLAN.md` for the detailed Analytics + AI plan and completion notes.
 
