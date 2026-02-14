@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Calendar,
@@ -17,6 +17,8 @@ import type { Unit } from '../types/database';
 import { formatPeso } from '../lib/formatting';
 import { computeBalance, computePayNow, computeUnitDeposit } from '../lib/paymentUtils';
 import { calculateNights } from '../lib/validation';
+import { AvailabilityRangePicker } from '../components/date/AvailabilityRangePicker';
+import { addDays, format, isValid, parseISO } from 'date-fns';
 
 interface SelectedUnit {
     unit: Unit;
@@ -29,10 +31,10 @@ export function GuestBookingPage() {
     const createReservation = useCreateReservation();
 
     const [checkInDate, setCheckInDate] = useState(
-        new Date(Date.now() + 86400000).toISOString().split('T')[0] // Tomorrow
+        format(addDays(new Date(), 1), 'yyyy-MM-dd')
     );
     const [checkOutDate, setCheckOutDate] = useState(
-        new Date(Date.now() + 86400000 * 3).toISOString().split('T')[0] // +3 days
+        format(addDays(new Date(), 3), 'yyyy-MM-dd')
     );
     const [selectedUnits, setSelectedUnits] = useState<SelectedUnit[]>([]);
     const [notes, setNotes] = useState('');
@@ -128,6 +130,19 @@ export function GuestBookingPage() {
         }
     }
 
+    const rangeValue = useMemo(() => {
+        const from = parseISO(checkInDate);
+        const to = parseISO(checkOutDate);
+        return {
+            from: isValid(from) ? from : undefined,
+            to: isValid(to) ? to : undefined,
+        };
+    }, [checkInDate, checkOutDate]);
+
+    function toIsoDate(date: Date) {
+        return format(date, 'yyyy-MM-dd');
+    }
+
     return (
         <GuestLayout>
             <div className="max-w-5xl mx-auto">
@@ -165,34 +180,21 @@ export function GuestBookingPage() {
                                 <Calendar className="w-5 h-5 text-primary" />
                                 Select Dates
                             </h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Check-in Date
-                                    </label>
-                                    <input
-                                        type="date"
-                                        value={checkInDate}
-                                        onChange={(e) => setCheckInDate(e.target.value)}
-                                        min={new Date().toISOString().split('T')[0]}
-                                        className="input w-full"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Check-out Date
-                                    </label>
-                                    <input
-                                        type="date"
-                                        value={checkOutDate}
-                                        onChange={(e) => setCheckOutDate(e.target.value)}
-                                        min={checkInDate}
-                                        className="input w-full"
-                                        required
-                                    />
-                                </div>
-                            </div>
+                            <AvailabilityRangePicker
+                                value={rangeValue}
+                                onChange={(nextRange) => {
+                                    if (!nextRange?.from) return;
+                                    const from = nextRange.from;
+                                    const to = nextRange.to ?? addDays(from, 1);
+                                    setCheckInDate(toIsoDate(from));
+                                    setCheckOutDate(toIsoDate(to));
+                                }}
+                                booked={[]}
+                                maintenance={[]}
+                                unavailable={[]}
+                                minNights={1}
+                                disabledBefore={new Date()}
+                            />
                             <div className="mt-4 p-3 bg-blue-50 rounded-lg">
                                 <p className="text-sm text-blue-800">
                                     <strong>{nights}</strong> night{nights !== 1 ? 's' : ''} stay

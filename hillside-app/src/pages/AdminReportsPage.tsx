@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { AlertCircle, Loader2, FileDown } from 'lucide-react';
+import { format, isValid, parseISO } from 'date-fns';
 import { AdminLayout } from '../components/layout/AdminLayout';
+import { AvailabilityDatePicker } from '../components/date/AvailabilityRangePicker';
 import {
     fetchPaymentTransactionsInRange,
     fetchReportDaily,
@@ -163,20 +165,22 @@ export function AdminReportsPage() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
                         <div>
                             <label className="block text-xs font-medium text-gray-600 mb-1">From</label>
-                            <input
-                                type="date"
-                                className="input w-full"
-                                value={fromDate}
-                                onChange={(e) => setFromDate(e.target.value)}
+                            <AvailabilityDatePicker
+                                value={isValid(parseISO(fromDate)) ? parseISO(fromDate) : undefined}
+                                onChange={(date) => {
+                                    if (!date) return;
+                                    setFromDate(format(date, 'yyyy-MM-dd'));
+                                }}
                             />
                         </div>
                         <div>
                             <label className="block text-xs font-medium text-gray-600 mb-1">To</label>
-                            <input
-                                type="date"
-                                className="input w-full"
-                                value={toDate}
-                                onChange={(e) => setToDate(e.target.value)}
+                            <AvailabilityDatePicker
+                                value={isValid(parseISO(toDate)) ? parseISO(toDate) : undefined}
+                                onChange={(date) => {
+                                    if (!date) return;
+                                    setToDate(format(date, 'yyyy-MM-dd'));
+                                }}
                             />
                         </div>
                         <div className="flex flex-col sm:flex-row gap-2">

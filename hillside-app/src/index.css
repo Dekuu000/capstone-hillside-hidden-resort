@@ -87,3 +87,76 @@
     display: none;
   }
 }
+
+/* Availability Calendar polish */
+.availability-picker {
+  --rdp-accent-color: #2563eb;
+  --rdp-accent-background-color: #dbeafe;
+  --rdp-day-width: 42px;
+  --rdp-day-height: 42px;
+  --rdp-day_button-width: 38px;
+  --rdp-day_button-height: 38px;
+  --rdp-day_button-border-radius: 0.75rem;
+  --rdp-selected-border: 0 solid transparent;
+  --rdp-range_middle-background-color: #dbeafe;
+  --rdp-range_start-background: linear-gradient(90deg, transparent 50%, #dbeafe 50%);
+  --rdp-range_end-background: linear-gradient(90deg, #dbeafe 50%, transparent 50%);
+}
+
+.availability-picker .calendar-day-button {
+  border: 0;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.02);
+}
+
+.availability-picker .is-today .calendar-day-button {
+  box-shadow: inset 0 0 0 1px rgba(20, 184, 166, 0.45);
+}
+
+.availability-picker .is-disabled .calendar-day-button {
+  background: #e5e7eb;
+  color: #9ca3af;
+}
+
+.availability-picker .is-outside .calendar-day-button {
+  background: transparent;
+  color: #cbd5e1;
+  box-shadow: none;
+}
+
+.availability-picker .is-booked .calendar-day-button {
+  background: #ef4444;
+  color: #fff;
+  box-shadow: none;
+}
+
+.availability-picker .is-maintenance .calendar-day-button {
+  background: #facc15;
+  color: #713f12;
+  box-shadow: none;
+}
+
+.availability-picker .is-unavailable .calendar-day-button {
+  background: #d1d5db;
+  color: #4b5563;
+  box-shadow: none;
+}
+
+.availability-picker .is-range-middle {
+  background: #dbeafe;
+  border-radius: 0.5rem;
+}
+
+.availability-picker .is-range-middle .calendar-day-button {
+  background: transparent;
+  color: #1d4ed8;
+  border-radius: 0.5rem;
+  box-shadow: none;
+}
+
+.availability-picker .is-range-start .calendar-day-button,
+.availability-picker .is-range-end .calendar-day-button,
+.availability-picker .is-selected .calendar-day-button {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.28);
+}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle, AlertCircle, Loader2, Ticket } from 'lucide-react';
+import { format, isValid, parseISO } from 'date-fns';
 import { GuestLayout } from '../components/layout/GuestLayout';
 import { useAuth } from '../hooks/useAuth';
 import { useServices, useCreateTourReservation } from '../features/services/useServices';
@@ -9,6 +10,7 @@ import { formatPeso } from '../lib/formatting';
 import { computeBalance, computePayNow } from '../lib/paymentUtils';
 import { PaymentSummaryBreakdown } from '../components/payments/PaymentSummaryBreakdown';
 import { PayNowSelector } from '../components/payments/PayNowSelector';
+import { AvailabilityDatePicker } from '../components/date/AvailabilityRangePicker';
 
 export function GuestTourBookingPage() {
     const navigate = useNavigate();
@@ -17,14 +19,11 @@ export function GuestTourBookingPage() {
     const createTour = useCreateTourReservation();
 
     const [serviceId, setServiceId] = useState('');
-    const [visitDate, setVisitDate] = useState(new Date(Date.now() + 86400000).toISOString().split('T')[0]);
+    const [visitDate, setVisitDate] = useState(format(new Date(Date.now() + 86400000), 'yyyy-MM-dd'));
     const [adultQty, setAdultQty] = useState(1);
     const [kidQty, setKidQty] = useState(0);
     const [qtyError, setQtyError] = useState<string | null>(null);
     const [notes, setNotes] = useState('');
-    const [isMobile, setIsMobile] = useState(false);
-    const [showDatePicker, setShowDatePicker] = useState(false);
-    const [tempDate, setTempDate] = useState(visitDate);
     const [payNow, setPayNow] = useState(0);
     const [payNowError, setPayNowError] = useState<string | null>(null);
     const [showCustomPayNow, setShowCustomPayNow] = useState(false);
@@ -61,14 +60,6 @@ export function GuestTourBookingPage() {
     const balanceOnSite = computeBalance(pricing.totalAmount, payNow);
     const isFullPayment = pricing.totalAmount > 0 && payNow === pricing.totalAmount;
     const canChoosePayNow = pricing.totalAmount > minimumDeposit;
-
-    useEffect(() => {
-        const mq = window.matchMedia('(max-width: 640px)');
-        const handleChange = (event: MediaQueryListEvent) => setIsMobile(event.matches);
-        setIsMobile(mq.matches);
-        mq.addEventListener('change', handleChange);
-        return () => mq.removeEventListener('change', handleChange);
-    }, []);
 
     useEffect(() => {
         if (!selectedService) {
@@ -146,44 +137,6 @@ export function GuestTourBookingPage() {
                     </div>
                 )}
 
-                {showDatePicker && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-                        <div className="w-full max-w-sm bg-white rounded-xl shadow-lg p-5 space-y-4">
-                            <div>
-                                <h3 className="text-sm font-semibold text-gray-900">Select visit date</h3>
-                                <p className="text-xs text-gray-500 mt-1">Choose a date for your tour.</p>
-                            </div>
-                            <input
-                                type="date"
-                                className="input w-full"
-                                value={tempDate}
-                                min={new Date().toISOString().split('T')[0]}
-                                onChange={(e) => setTempDate(e.target.value)}
-                                required
-                            />
-                            <div className="flex items-center justify-end gap-2 pt-2">
-                                <button
-                                    type="button"
-                                    className="px-3 py-2 text-sm font-semibold text-gray-600 hover:text-gray-900"
-                                    onClick={() => setShowDatePicker(false)}
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="button"
-                                    className="btn-primary"
-                                    onClick={() => {
-                                        setVisitDate(tempDate);
-                                        setShowDatePicker(false);
-                                    }}
-                                >
-                                    Set Date
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
                 <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm p-6 space-y-6">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Select Tour</label>
@@ -217,21 +170,13 @@ export function GuestTourBookingPage() {
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Visit Date</label>
-                        <input
-                            type="date"
-                            className="input w-full"
-                            value={visitDate}
-                            min={new Date().toISOString().split('T')[0]}
-                            readOnly={isMobile}
-                            onClick={(e) => {
-                                if (isMobile) {
-                                    e.preventDefault();
-                                    setTempDate(visitDate);
-                                    setShowDatePicker(true);
-                                }
+                        <AvailabilityDatePicker
+                            value={isValid(parseISO(visitDate)) ? parseISO(visitDate) : undefined}
+                            onChange={(date) => {
+                                if (!date) return;
+                                setVisitDate(format(date, 'yyyy-MM-dd'));
                             }}
-                            onChange={(e) => setVisitDate(e.target.value)}
-                            required
+                            disabledBefore={new Date()}
                         />
                     </div>
 

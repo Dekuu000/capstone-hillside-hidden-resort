@@ -18,6 +18,11 @@ Use this after each refactor slice to validate core flows.
 - Unit reservation:
   - Select units and dates, payment summary updates
   - Reserve booking works
+- Calendar UI (guest):
+  - Availability calendar opens in modal and fits mobile width
+  - Booked/maintenance/unavailable dates are not selectable
+  - Selected range shows blue highlight
+  - Legend colors match statuses
 - QR visibility (guest):
   - QR appears only when status=confirmed OR balance_due=0
   - Otherwise shows "QR available after payment is verified."
@@ -59,6 +64,10 @@ Use this after each refactor slice to validate core flows.
   - Insights section renders
   - Analytics charts render with date range filters
   - Summary cards match CSV totals
+- Calendar UI (admin):
+  - Audit Logs date filters open availability calendar modal
+  - Reports date filters open availability calendar modal
+  - Walk-in tour date uses same calendar UI
 
 ## Smoke
 - Login/logout works for admin and guest

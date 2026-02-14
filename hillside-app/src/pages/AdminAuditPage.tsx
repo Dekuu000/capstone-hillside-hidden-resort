@@ -1,9 +1,12 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertCircle, CheckCircle, FileText, Loader2, XCircle } from 'lucide-react';
+import { format, isValid, parseISO } from 'date-fns';
 import { AdminLayout } from '../components/layout/AdminLayout';
 import { fetchAuditLogs, type AuditLogFilters } from '../services/auditService';
 import { formatDateTimeLocal } from '../lib/formatting';
+import { useAuth } from '../hooks/useAuth';
+import { AvailabilityDatePicker } from '../components/date/AvailabilityRangePicker';
 import {
     anchorAuditNow,
     anchorExisting,
@@ -77,6 +80,7 @@ const ANCHOR_STATUS_BADGES: Record<string, { label: string; className: string }>
 
 export function AdminAuditPage() {
     const queryClient = useQueryClient();
+    const { user, isAdmin, loading: authLoading } = useAuth();
     const [action, setAction] = useState('');
     const [entityType, setEntityType] = useState('');
     const [anchored, setAnchored] = useState<'' | 'anchored' | 'unanchored'>('');
@@ -85,6 +89,7 @@ export function AdminAuditPage() {
     const [anchorNotice, setAnchorNotice] = useState<string | null>(null);
     const [anchorError, setAnchorError] = useState<string | null>(null);
     const [verifyResult, setVerifyResult] = useState<string | null>(null);
+    const canAnchor = !!user && isAdmin;
 
     const filters = useMemo<AuditLogFilters>(() => ({
         action: action ? action as AuditLogFilters['action'] : undefined,
@@ -210,7 +215,7 @@ export function AdminAuditPage() {
                         </div>
                         <button
                             className="btn-primary w-full md:w-auto"
-                            disabled={anchorNow.isPending}
+                            disabled={anchorNow.isPending || authLoading || !canAnchor}
                             onClick={() => {
                                 setAnchorNotice(null);
                                 setAnchorError(null);
@@ -220,6 +225,9 @@ export function AdminAuditPage() {
                             {anchorNow.isPending ? 'Anchoring...' : 'Anchor now'}
                         </button>
                     </div>
+                    {!authLoading && !canAnchor && (
+                        <p className="text-xs text-orange-600">Please sign in as admin.</p>
+                    )}
 
                     {(anchorNotice || anchorError) && (
                         <div className={`text-sm rounded-lg px-3 py-2 ${anchorError ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}>
@@ -354,20 +362,22 @@ export function AdminAuditPage() {
                         </div>
                         <div>
                             <label className="block text-xs font-medium text-gray-600 mb-1">From</label>
-                            <input
-                                className="input w-full"
-                                type="date"
-                                value={fromDate}
-                                onChange={(e) => setFromDate(e.target.value)}
+                            <AvailabilityDatePicker
+                                value={fromDate && isValid(parseISO(fromDate)) ? parseISO(fromDate) : undefined}
+                                onChange={(date) => {
+                                    setFromDate(date ? format(date, 'yyyy-MM-dd') : '');
+                                }}
+                                placeholder="Select date"
                             />
                         </div>
                         <div>
                             <label className="block text-xs font-medium text-gray-600 mb-1">To</label>
-                            <input
-                                className="input w-full"
-                                type="date"
-                                value={toDate}
-                                onChange={(e) => setToDate(e.target.value)}
+                            <AvailabilityDatePicker
+                                value={toDate && isValid(parseISO(toDate)) ? parseISO(toDate) : undefined}
+                                onChange={(date) => {
+                                    setToDate(date ? format(date, 'yyyy-MM-dd') : '');
+                                }}
+                                placeholder="Select date"
                             />
                         </div>
                     </div>

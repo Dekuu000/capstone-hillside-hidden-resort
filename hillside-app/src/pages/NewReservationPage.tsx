@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -23,6 +23,8 @@ import type { Unit } from '../types/database';
 import { formatPeso } from '../lib/formatting';
 import { computeBalance, computePayNow, computeUnitDeposit } from '../lib/paymentUtils';
 import { calculateNights } from '../lib/validation';
+import { AvailabilityRangePicker } from '../components/date/AvailabilityRangePicker';
+import { addDays, format, isValid, parseISO } from 'date-fns';
 
 // Form schema
 const reservationSchema = z.object({
@@ -53,6 +55,7 @@ export function NewReservationPage() {
     const {
         register,
         handleSubmit,
+        setValue,
         watch,
         formState: { errors, isSubmitting },
     } = useForm<ReservationFormData>({
@@ -61,14 +64,26 @@ export function NewReservationPage() {
             guestName: '',
             guestEmail: '',
             guestPhone: '',
-            checkInDate: new Date().toISOString().split('T')[0],
-            checkOutDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+            checkInDate: format(new Date(), 'yyyy-MM-dd'),
+            checkOutDate: format(addDays(new Date(), 1), 'yyyy-MM-dd'),
             notes: '',
         },
     });
 
     const checkInDate = watch('checkInDate');
     const checkOutDate = watch('checkOutDate');
+    const rangeValue = useMemo(() => {
+        const from = parseISO(checkInDate);
+        const to = parseISO(checkOutDate);
+        return {
+            from: isValid(from) ? from : undefined,
+            to: isValid(to) ? to : undefined,
+        };
+    }, [checkInDate, checkOutDate]);
+
+    function toIsoDate(date: Date) {
+        return format(date, 'yyyy-MM-dd');
+    }
 
     // Get available units for selected dates
     const { data: availableUnits, isLoading: loadingUnits } = useAvailableUnits(
@@ -251,34 +266,28 @@ export function NewReservationPage() {
                                 <Calendar className="w-5 h-5 text-primary" />
                                 Stay Dates
                             </h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Check-in Date <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        {...register('checkInDate')}
-                                        type="date"
-                                        className={`input w-full ${errors.checkInDate ? 'input-error' : ''}`}
-                                    />
-                                    {errors.checkInDate && (
-                                        <p className="mt-1 text-sm text-red-600">{errors.checkInDate.message}</p>
-                                    )}
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Check-out Date <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        {...register('checkOutDate')}
-                                        type="date"
-                                        className={`input w-full ${errors.checkOutDate ? 'input-error' : ''}`}
-                                    />
-                                    {errors.checkOutDate && (
-                                        <p className="mt-1 text-sm text-red-600">{errors.checkOutDate.message}</p>
-                                    )}
-                                </div>
-                            </div>
+                            <AvailabilityRangePicker
+                                value={rangeValue}
+                                onChange={(nextRange) => {
+                                    if (!nextRange?.from) return;
+                                    const from = nextRange.from;
+                                    const to = nextRange.to ?? addDays(from, 1);
+                                    setValue('checkInDate', toIsoDate(from), { shouldValidate: true });
+                                    setValue('checkOutDate', toIsoDate(to), { shouldValidate: true });
+                                }}
+                                booked={[]}
+                                maintenance={[]}
+                                unavailable={[]}
+                                minNights={1}
+                                disabledBefore={new Date()}
+                            />
+                            <input type="hidden" {...register('checkInDate')} />
+                            <input type="hidden" {...register('checkOutDate')} />
+                            {(errors.checkInDate || errors.checkOutDate) && (
+                                <p className="mt-2 text-sm text-red-600">
+                                    {errors.checkInDate?.message || errors.checkOutDate?.message}
+                                </p>
+                            )}
                             <div className="mt-4 p-3 bg-blue-50 rounded-lg">
                                 <p className="text-sm text-blue-800">
                                     <strong>{nights}</strong> night{nights !== 1 ? 's' : ''} stay

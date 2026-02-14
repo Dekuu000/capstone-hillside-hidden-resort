@@ -7,6 +7,17 @@
 
 import { z } from 'zod';
 
+function parseLocalDateString(dateString: string): Date {
+    const simpleDate = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateString);
+    if (simpleDate) {
+        const year = Number(simpleDate[1]);
+        const month = Number(simpleDate[2]) - 1;
+        const day = Number(simpleDate[3]);
+        return new Date(year, month, day);
+    }
+    return new Date(dateString);
+}
+
 // ====================
 // Date Validation Helpers
 // ====================
@@ -17,7 +28,7 @@ import { z } from 'zod';
 const futureDate = z.string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format (YYYY-MM-DD)')
     .refine((date) => {
-        const d = new Date(date);
+        const d = parseLocalDateString(date);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         return d >= today;
@@ -53,15 +64,15 @@ export const createReservationSchema = z.object({
         .optional()
         .transform(val => val?.trim()),
 }).refine((data) => {
-    const checkIn = new Date(data.checkInDate);
-    const checkOut = new Date(data.checkOutDate);
+    const checkIn = parseLocalDateString(data.checkInDate);
+    const checkOut = parseLocalDateString(data.checkOutDate);
     return checkOut > checkIn;
 }, {
     message: 'Check-out date must be after check-in date',
     path: ['checkOutDate']
 }).refine((data) => {
-    const checkIn = new Date(data.checkInDate);
-    const checkOut = new Date(data.checkOutDate);
+    const checkIn = parseLocalDateString(data.checkInDate);
+    const checkOut = parseLocalDateString(data.checkOutDate);
     const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
     return nights <= 30;
 }, {
@@ -79,8 +90,8 @@ export const availabilitySchema = z.object({
     checkOut: dateString,
     unitType: z.enum(['room', 'cottage', 'amenity']).optional(),
 }).refine((data) => {
-    const checkInDate = new Date(data.checkIn);
-    const checkOutDate = new Date(data.checkOut);
+    const checkInDate = parseLocalDateString(data.checkIn);
+    const checkOutDate = parseLocalDateString(data.checkOut);
     return checkOutDate > checkInDate;
 }, {
     message: 'Check-out must be after check-in',
@@ -161,8 +172,8 @@ export function validateNotes(notes: string | undefined): string | undefined {
  * @returns Number of nights
  */
 export function calculateNights(checkIn: string, checkOut: string): number {
-    const start = new Date(checkIn);
-    const end = new Date(checkOut);
+    const start = parseLocalDateString(checkIn);
+    const end = parseLocalDateString(checkOut);
     const diffTime = end.getTime() - start.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
@@ -175,7 +186,7 @@ export function calculateNights(checkIn: string, checkOut: string): number {
  * @returns Formatted date string (e.g., "Feb 7, 2026")
  */
 export function formatDate(dateString: string): string {
-    const date = new Date(dateString);
+    const date = parseLocalDateString(dateString);
     return date.toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
@@ -190,7 +201,7 @@ export function formatDate(dateString: string): string {
  * @returns Localized date string (e.g., "2/8/2026")
  */
 export function formatDateLocal(dateString: string): string {
-    const date = new Date(dateString);
+    const date = parseLocalDateString(dateString);
     return date.toLocaleDateString();
 }
 
@@ -201,7 +212,7 @@ export function formatDateLocal(dateString: string): string {
  * @returns Formatted date string with weekday (e.g., "Mon, Feb 8, 2026")
  */
 export function formatDateWithWeekday(dateString: string): string {
-    const date = new Date(dateString);
+    const date = parseLocalDateString(dateString);
     return date.toLocaleDateString('en-US', {
         weekday: 'short',
         month: 'short',

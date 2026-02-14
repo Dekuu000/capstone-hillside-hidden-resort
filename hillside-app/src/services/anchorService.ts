@@ -12,14 +12,21 @@ export interface AnchorResponse {
     chain_id?: string;
 }
 
-async function getAuthHeaders() {
-    const { data } = await supabase.auth.getSession();
-    const accessToken = data?.session?.access_token;
-    const apiKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
-    const headers: Record<string, string> = {};
-    if (apiKey) headers.apikey = apiKey;
-    if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
-    return headers;
+async function invokeAnchorFunction(body: Record<string, unknown>) {
+    const { data, error } = await supabase.functions.invoke('anchor-audit', { body });
+    if (error) {
+        console.error('anchor-audit invoke error', {
+            status: error.status,
+            message: error.message,
+            details: error.details,
+        });
+        throw new Error(`[${error.status ?? 'error'}] ${error.message}`);
+    }
+    if (data?.ok === false) {
+        console.error('anchor-audit non-ok response', data);
+        throw new Error(`[${data.status ?? 'error'}] ${data.error ?? 'Anchor failed'}`);
+    }
+    return data as AnchorResponse;
 }
 
 export async function fetchLatestAnchor() {
@@ -49,36 +56,15 @@ export async function fetchLatestConfirmedAnchor() {
 }
 
 export async function anchorAuditNow() {
-    const headers = await getAuthHeaders();
-    const { data, error } = await supabase.functions.invoke('anchor-audit', {
-        body: { mode: 'build_and_anchor' },
-        headers,
-    });
-    if (error) throw error;
-    if (data?.ok === false) throw new Error(data.error || 'Anchor failed');
-    return data as AnchorResponse;
+    return invokeAnchorFunction({ mode: 'build_and_anchor' });
 }
 
 export async function anchorExisting(anchorId: string) {
-    const headers = await getAuthHeaders();
-    const { data, error } = await supabase.functions.invoke('anchor-audit', {
-        body: { mode: 'anchor_existing', anchor_id: anchorId },
-        headers,
-    });
-    if (error) throw error;
-    if (data?.ok === false) throw new Error(data.error || 'Anchor failed');
-    return data as AnchorResponse;
+    return invokeAnchorFunction({ mode: 'anchor_existing', anchor_id: anchorId });
 }
 
 export async function confirmAnchorStatus(anchorId: string) {
-    const headers = await getAuthHeaders();
-    const { data, error } = await supabase.functions.invoke('anchor-audit', {
-        body: { mode: 'confirm_status', anchor_id: anchorId },
-        headers,
-    });
-    if (error) throw error;
-    if (data?.ok === false) throw new Error(data.error || 'Confirm failed');
-    return data as AnchorResponse;
+    return invokeAnchorFunction({ mode: 'confirm_status', anchor_id: anchorId });
 }
 
 export async function fetchAuditHashesForAnchor(anchorId: string) {

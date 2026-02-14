@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, CheckCircle, AlertCircle, Loader2, Ticket } from 'lucide-react';
+import { format, isValid, parseISO } from 'date-fns';
 import { AdminLayout } from '../components/layout/AdminLayout';
 import { useAuth } from '../hooks/useAuth';
 import { useServices, useCreateTourReservation } from '../features/services/useServices';
 import { computeTourPricing } from '../lib/tourPricing';
 import { formatPeso } from '../lib/formatting';
+import { AvailabilityDatePicker } from '../components/date/AvailabilityRangePicker';
 
 export function AdminTourBookingPage() {
     const navigate = useNavigate();
@@ -14,7 +16,7 @@ export function AdminTourBookingPage() {
     const createTour = useCreateTourReservation();
 
     const [serviceId, setServiceId] = useState('');
-    const [visitDate, setVisitDate] = useState(new Date().toISOString().split('T')[0]);
+    const [visitDate, setVisitDate] = useState(format(new Date(), 'yyyy-MM-dd'));
     const [adultQty, setAdultQty] = useState(1);
     const [kidQty, setKidQty] = useState(0);
     const [guestName, setGuestName] = useState('');
@@ -128,12 +130,13 @@ export function AdminTourBookingPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Visit Date</label>
-                            <input
-                                type="date"
-                                className="input w-full"
-                                value={visitDate}
-                                onChange={(e) => setVisitDate(e.target.value)}
-                                required
+                            <AvailabilityDatePicker
+                                value={isValid(parseISO(visitDate)) ? parseISO(visitDate) : undefined}
+                                onChange={(date) => {
+                                    if (!date) return;
+                                    setVisitDate(format(date, 'yyyy-MM-dd'));
+                                }}
+                                disabledBefore={new Date()}
                             />
                         </div>
                         <div className="flex items-center gap-2 text-sm text-gray-600 mt-6">
