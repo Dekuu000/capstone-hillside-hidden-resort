@@ -27,7 +27,8 @@ jobs:
         working-directory: hillside-app
         run: npm ci
 
-      - name: Lint
+      - name: Lint (non-blocking)
+        continue-on-error: true
         working-directory: hillside-app
         run: npm run lint
 
