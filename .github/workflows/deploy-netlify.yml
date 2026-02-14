@@ -43,6 +43,25 @@ jobs:
       - name: Install Netlify CLI
         run: npm install -g netlify-cli
 
+      - name: Validate Netlify secrets and site access
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        run: |
+          if [ -z "$NETLIFY_AUTH_TOKEN" ]; then
+            echo "NETLIFY_AUTH_TOKEN is missing."
+            exit 1
+          fi
+          if [ -z "$NETLIFY_SITE_ID" ]; then
+            echo "NETLIFY_SITE_ID is missing."
+            exit 1
+          fi
+          curl -fsS \
+            -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" \
+            "https://api.netlify.com/api/v1/sites/$NETLIFY_SITE_ID" > /tmp/netlify-site.json
+          echo "Netlify site access confirmed:"
+          cat /tmp/netlify-site.json | python -c "import sys, json; d=json.load(sys.stdin); print(f\"name={d.get('name')} id={d.get('id')}\")"
+
       - name: Deploy Preview
         if: ${{ github.event.inputs.deploy_target == 'preview' }}
         working-directory: hillside-app
