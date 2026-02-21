@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "html5-qrcode": "^2.3.8",
     "@supabase/supabase-js": "^2.94.1",
     "next": "^15.1.0",
     "qrcode.react": "^4.2.0",

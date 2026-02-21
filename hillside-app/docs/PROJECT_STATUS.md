@@ -181,6 +181,12 @@ Completed in this iteration:
 67. Fixed My Bookings tab switching stale-data issue by limiting SSR upcoming-data skip to initial hydration only.
 68. Added scannable QR rendering in guest `Show check-in QR` modal while keeping JSON payload copy fallback.
 69. Aligned guest tour payment-proof validation copy/guards with API contract (`proof_url` required for online guest submission).
+70. Fixed Next.js camera permission header for admin QR scan (`Permissions-Policy: camera=(self)`) so browser camera APIs are allowed on app pages.
+71. Improved admin QR scan UX for mobile in `hillside-next`:
+    - rear-camera preference when available
+    - larger framed scan viewport with live status indicator
+    - scan timestamp + vibration feedback on successful decode
+    - fast fallback action to token-paste mode
 
 ## Wave 0 Deployment Evidence (Sepolia Active)
 
