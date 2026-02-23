@@ -5,6 +5,7 @@ import type { Html5Qrcode } from "html5-qrcode";
 import type { CheckOperationResponse, QrToken, QrVerifyResponse } from "../../../packages/shared/src/types";
 import { checkOperationResponseSchema, qrTokenSchema, qrVerifyResponseSchema } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
+import { clearEncryptedQueue, loadEncryptedQueue, saveEncryptedQueue } from "../../lib/secureOfflineQueue";
 
 type AdminCheckinClientProps = {
   initialToken?: string | null;
@@ -17,7 +18,6 @@ type PendingQrVerification = {
   qrToken: QrToken;
 };
 
-const OFFLINE_QR_QUEUE_KEY = "hillside.admin.checkin.qrQueue.v1";
 const CAMERA_READER_ID = "admin-checkin-qr-camera";
 
 function pickPreferredCameraId(cameras: Array<{ id: string; label?: string }>): string {
@@ -25,35 +25,20 @@ function pickPreferredCameraId(cameras: Array<{ id: string; label?: string }>): 
   return (preferred || cameras[0]).id;
 }
 
-function loadOfflineQueue(): PendingQrVerification[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(OFFLINE_QR_QUEUE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-
-    return parsed
-      .map((entry) => {
-        if (!entry || typeof entry !== "object") return null;
-        const qrToken = qrTokenSchema.safeParse((entry as { qrToken?: unknown }).qrToken);
-        if (!qrToken.success) return null;
-        return {
-          id: String((entry as { id?: unknown }).id || crypto.randomUUID()),
-          queuedAt: String((entry as { queuedAt?: unknown }).queuedAt || new Date().toISOString()),
-          scannerId: String((entry as { scannerId?: unknown }).scannerId || "admin-v2-scanner"),
-          qrToken: qrToken.data,
-        } satisfies PendingQrVerification;
-      })
-      .filter((entry): entry is PendingQrVerification => Boolean(entry));
-  } catch {
-    return [];
-  }
-}
-
-function persistOfflineQueue(items: PendingQrVerification[]) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(OFFLINE_QR_QUEUE_KEY, JSON.stringify(items));
+function normalizeOfflineQueue(items: unknown[]): PendingQrVerification[] {
+  return items
+    .map((entry) => {
+      if (!entry || typeof entry !== "object") return null;
+      const qrToken = qrTokenSchema.safeParse((entry as { qrToken?: unknown }).qrToken);
+      if (!qrToken.success) return null;
+      return {
+        id: String((entry as { id?: unknown }).id || crypto.randomUUID()),
+        queuedAt: String((entry as { queuedAt?: unknown }).queuedAt || new Date().toISOString()),
+        scannerId: String((entry as { scannerId?: unknown }).scannerId || "admin-v2-scanner"),
+        qrToken: qrToken.data,
+      } satisfies PendingQrVerification;
+    })
+    .filter((entry): entry is PendingQrVerification => Boolean(entry));
 }
 
 function isLikelyNetworkError(error: unknown): boolean {
@@ -85,8 +70,28 @@ export function AdminCheckinClient({ initialToken = null }: AdminCheckinClientPr
   const [offlineQueue, setOfflineQueue] = useState<PendingQrVerification[]>([]);
 
   useEffect(() => {
-    setOfflineQueue(loadOfflineQueue());
-  }, []);
+    if (!token) {
+      setOfflineQueue([]);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const loaded = await loadEncryptedQueue(token);
+      if (cancelled) return;
+      setOfflineQueue(normalizeOfflineQueue(loaded));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
+  const persistOfflineQueue = useCallback(
+    async (items: PendingQrVerification[]) => {
+      if (!token) return;
+      await saveEncryptedQueue(items, token);
+    },
+    [token],
+  );
 
   const enqueueOfflineQrToken = useCallback((qrToken: QrToken) => {
     setOfflineQueue((current) => {
@@ -100,14 +105,14 @@ export function AdminCheckinClient({ initialToken = null }: AdminCheckinClientPr
           qrToken,
         },
       ];
-      persistOfflineQueue(next);
+      void persistOfflineQueue(next);
       return next;
     });
-  }, [scannerId]);
+  }, [persistOfflineQueue, scannerId]);
 
   const clearOfflineQueue = useCallback(() => {
     setOfflineQueue([]);
-    persistOfflineQueue([]);
+    void clearEncryptedQueue();
   }, []);
 
   const validateByReservationCode = useCallback(
@@ -407,13 +412,13 @@ export function AdminCheckinClient({ initialToken = null }: AdminCheckinClientPr
     }
 
     setOfflineQueue(pending);
-    persistOfflineQueue(pending);
+    void persistOfflineQueue(pending);
     setLoading(false);
 
     if (!hasTerminalError) {
       setNotice(`Sync complete: ${synced} synced, ${dropped} dropped, ${pending.length} remaining.`);
     }
-  }, [offlineQueue, token]);
+  }, [offlineQueue, persistOfflineQueue, token]);
 
   const performCheckin = useCallback(async () => {
     if (!token || !result) return;

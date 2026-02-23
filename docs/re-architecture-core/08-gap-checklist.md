@@ -33,7 +33,7 @@ Status key:
 
 | Feature | Current State | Status |
 |---|---|---|
-| Offline check-in validation | Offline queue exists, but plain localStorage (not encrypted IndexedDB) | Partial |
+| Offline check-in validation | Offline queue stored as AES-256 encrypted payload in IndexedDB | Implemented |
 | Dynamic QR rotation | Signed rotating tokens + anti-replay + offline sync | Implemented |
 | Resort navigation maps | No interactive map module in current Next.js app | Missing |
 
@@ -78,7 +78,7 @@ Status key:
 |---|---|---|
 | ZKP hashes | Not implemented (deferred) | Missing |
 | Wallet integration (MetaMask/custodial) | Custodial server-side signer exists; MetaMask path not implemented | Partial |
-| Offline AES-256 IndexedDB | Not implemented yet (plain localStorage queue) | Missing |
+| Offline AES-256 IndexedDB | Implemented for admin QR offline queue storage | Implemented |
 | Keep PII off-chain | Enforced design principle in current architecture/docs | Implemented |
 
 ## Mandatory Closures for Current Phase
