@@ -102,6 +102,7 @@ def get_chain_configuration(
             "explorer_base_url": active_chain.explorer_base_url,
             "rpc_configured": bool(active_chain.rpc_url),
             "contract_configured": bool(active_chain.escrow_contract_address),
+            "guest_pass_contract_configured": bool(active_chain.guest_pass_contract_address),
         },
         "chains": {
             key: {
@@ -110,6 +111,7 @@ def get_chain_configuration(
                 "explorer_base_url": chain.explorer_base_url,
                 "rpc_configured": bool(chain.rpc_url),
                 "contract_configured": bool(chain.escrow_contract_address),
+                "guest_pass_contract_configured": bool(chain.guest_pass_contract_address),
             }
             for key, chain in registry.items()
         },
