@@ -107,14 +107,14 @@ Completed in this iteration:
 33. Added API-side guardrail for payment submissions: `proof_url` is now required and rejected early with `400`.
 34. Added reconciliation summary counters (`match`, `mismatch`, `missing_onchain`, `skipped`, `alert`) for threshold monitoring.
 35. Added Next.js admin Escrow page (`/admin/escrow`) and navigation entry for reconciliation visibility.
-36. Added escrow settlement integration on checkout and cancel flows:
-    - Checkout now attempts on-chain `release` and persists `escrow_state='released'` metadata.
+36. Added escrow settlement integration on check-in and cancel flows:
+    - Check-in now attempts on-chain `release` and persists `escrow_state='released'` metadata.
     - Cancel now attempts on-chain `refund` and persists `escrow_state='refunded'` metadata.
 37. Added contract tests for settlement paths and reran V2 API suite subset (`26 passed`).
 38. Fixed Next.js admin check-in route mismatch (`/v2/operations/*` -> `/v2/checkins|/v2/checkouts`) to remove UI `404` on override/check-out actions.
 39. Added admin-only stale shadow cleanup endpoint (`POST /v2/escrow/cleanup-shadow`) with dry-run and guarded execute mode.
 40. Added automated API tests for:
-    - Check-in override -> check-out -> escrow release shadow write.
+    - Check-in override -> on-chain escrow release shadow write.
     - Escrow cleanup endpoint auth + dry-run + execute behavior.
 41. Added escrow reconciliation scheduler + monitor endpoints:
     - Feature flag: `FEATURE_ESCROW_RECONCILIATION_SCHEDULER`
@@ -297,7 +297,7 @@ Validation checks completed:
    - units detail/edit/activate/deactivate
    - reservations status patch
    - payments verify/reject/on-site record
-   - check-in override and check-out release path
+   - check-in override and check-in release path
    - reports/audit reads
 3. Escrow diagnostics clean after burn-in activity:
    - reconciliation summary shows `mismatch = 0`, `missing_onchain = 0`, `alert = false`

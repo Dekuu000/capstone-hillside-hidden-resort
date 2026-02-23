@@ -69,7 +69,7 @@ Status key:
 | Dynamic QR issuance | Implemented | Implemented |
 | Arrival offline QR availability | Implemented (queue path) | Partial |
 | Validation with signature | Implemented | Implemented |
-| Check-in releases room status + settlement flow | Reservation status flow implemented; escrow release timing currently checkout-based in runtime | Partial |
+| Check-in releases room status + settlement flow | Reservation status flow implemented; escrow release now triggered at check-in in runtime | Implemented |
 | Checkout settlement | Implemented in current escrow flow | Implemented |
 
 ## 5) Security & Data Privacy
@@ -83,9 +83,8 @@ Status key:
 
 ## Mandatory Closures for Current Phase
 
-1. Align docs/runtime around Sepolia dev + Polygon target wording.
+1. Maintain docs/runtime alignment for Sepolia dev + Polygon target wording.
 2. Replace localStorage queue with AES-256 encrypted IndexedDB queue.
 3. Add minimal ERC721 guest pass mint + verification API.
 4. Add scikit/Prophet-ready AI forecasting endpoint and persist forecast results.
 5. Keep ZKP explicitly documented as future work, not in scope for this phase.
-
