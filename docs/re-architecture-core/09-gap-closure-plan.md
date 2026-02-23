@@ -3,6 +3,14 @@
 Last updated: 2026-02-23
 Inputs: `08-gap-checklist.md`, instructor PDF guide, current Wave 5 baseline.
 
+## Execution Status (as of 2026-02-23)
+
+- `A` Documentation/runtime alignment: completed.
+- `B` AES-256 + IndexedDB offline queue: completed.
+- `C` NFT guest pass ERC721 + mint/verify API: completed.
+- `D` AI forecasting with scikit + Supabase persistence: completed.
+- Remaining deferred scope: ZKP, MetaMask direct wallet UX, concierge/maps/heatmap.
+
 ## Delivery Strategy
 
 - Keep existing Supabase auth/data model intact.
@@ -91,4 +99,3 @@ These stay documented as post-defense roadmap items.
 1. Run smoke after each commit (API health, QR flow, reservation flow).
 2. Keep feature flags default-safe for new chain/AI/NFT paths.
 3. If failure occurs, rollback to latest Wave 5 tag and re-run baseline smoke.
-

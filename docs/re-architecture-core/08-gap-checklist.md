@@ -16,7 +16,7 @@ Status key:
 | Frontend: Next.js 15 (PWA) | Next.js 15 guest/admin app is active migration target | Implemented | `hillside-next/package.json`, `hillside-next/app/*` |
 | Backend: FastAPI | V2 domain API implemented | Implemented | `hillside-api/pyproject.toml`, `hillside-api/app/api/v2/*` |
 | Cloud Storage: Supabase (Postgres) | Supabase auth/data/storage integrated | Implemented | `hillside-api/app/integrations/supabase_client.py`, `supabase/migrations/*` |
-| AI Engine: Prophet / Scikit-learn | Live AI service exists, but model is heuristic (no Prophet/scikit runtime use) | Partial | `hillside-ai/app/main.py` |
+| AI Engine: Prophet / Scikit-learn | Live AI service now includes scikit-learn occupancy forecasting; Prophet is optional backlog | Implemented | `hillside-ai/app/main.py`, `hillside-ai/pyproject.toml` |
 | Web3 Bridge: Ethers.js | Ethers used in contracts workspace and anchor function; app-side wallet bridge not present | Partial | `hillside-contracts/package.json`, `supabase/functions/anchor-audit/index.ts` |
 
 ## 2) Core Functional Modules
@@ -26,7 +26,7 @@ Status key:
 | Feature | Current State | Status |
 |---|---|---|
 | Smart Contract Escrow lock/release | Lock/release/refund flows implemented | Implemented |
-| NFT Guest Pass | No ERC721 guest pass contract or mint flow | Missing |
+| NFT Guest Pass | Minimal ERC721 guest pass contract + API mint/verify flow + reservation metadata persistence | Implemented |
 | Immutable audit trail on-chain | DB audit logs + anchor flow exist, not full booking-lifecycle on-chain immutability | Partial |
 
 ### Module B: QR-based PWA Check-In
@@ -43,7 +43,7 @@ Status key:
 |---|---|---|
 | Dynamic pricing | Endpoint implemented with non-blocking fallback | Implemented |
 | Personalized concierge | No concierge recommendation module | Missing |
-| Occupancy forecasting | No explicit forecasting endpoint persisted to DB | Missing |
+| Occupancy forecasting | Admin forecast endpoint implemented and persisted in `public.ai_forecasts` | Implemented |
 
 ### Module D: Resort Management Dashboard
 
@@ -83,8 +83,8 @@ Status key:
 
 ## Mandatory Closures for Current Phase
 
-1. Maintain docs/runtime alignment for Sepolia dev + Polygon target wording.
-2. Replace localStorage queue with AES-256 encrypted IndexedDB queue.
-3. Add minimal ERC721 guest pass mint + verification API.
-4. Add scikit/Prophet-ready AI forecasting endpoint and persist forecast results.
-5. Keep ZKP explicitly documented as future work, not in scope for this phase.
+1. Maintain docs/runtime alignment for Sepolia dev + Polygon target wording. (`Completed`)
+2. Replace localStorage queue with AES-256 encrypted IndexedDB queue. (`Completed`)
+3. Add minimal ERC721 guest pass mint + verification API. (`Completed`)
+4. Add scikit/Prophet-ready AI forecasting endpoint and persist forecast results. (`Completed`)
+5. Keep ZKP explicitly documented as future work, not in scope for this phase. (`Open / deferred`)
