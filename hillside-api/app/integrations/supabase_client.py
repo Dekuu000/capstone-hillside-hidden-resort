@@ -1,4 +1,4 @@
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from functools import lru_cache
 from typing import Any
 from time import perf_counter
@@ -1324,6 +1324,83 @@ def get_active_service_by_id(service_id: str) -> dict[str, Any] | None:
             .select("*")
             .eq("service_id", service_id)
             .eq("status", "active")
+            .limit(1)
+            .execute()
+        )
+        rows = response.data or []
+        return rows[0] if rows else None
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def get_daily_occupancy_history(*, days: int = 30) -> list[dict[str, Any]]:
+    try:
+        horizon = max(7, min(days, 180))
+        since = (date.today() - timedelta(days=horizon)).isoformat()
+
+        client = get_supabase_client()
+        response = (
+            client.table("reservations")
+            .select("check_in_date,status")
+            .gte("check_in_date", since)
+            .order("check_in_date", desc=False)
+            .execute()
+        )
+        rows = response.data or []
+
+        counts_by_day: dict[str, int] = {}
+        for row in rows:
+            status_text = canonical_booking_status(row.get("status"))
+            if status_text in {"cancelled", "no_show"}:
+                continue
+            check_in_date = str(row.get("check_in_date") or "").strip()
+            if not check_in_date:
+                continue
+            counts_by_day[check_in_date] = counts_by_day.get(check_in_date, 0) + 1
+
+        items: list[dict[str, Any]] = []
+        start_day = date.today() - timedelta(days=horizon - 1)
+        for index in range(horizon):
+            day = start_day + timedelta(days=index)
+            day_iso = day.isoformat()
+            items.append(
+                {
+                    "date": day_iso,
+                    "occupancy": float(counts_by_day.get(day_iso, 0)),
+                }
+            )
+        return items
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def insert_ai_occupancy_forecast(
+    *,
+    created_by_user_id: str,
+    start_date: str,
+    horizon_days: int,
+    model_version: str,
+    source: str,
+    inputs: dict[str, Any],
+    items: list[dict[str, Any]],
+) -> dict[str, Any] | None:
+    try:
+        client = get_supabase_client()
+        response = (
+            client.table("ai_forecasts")
+            .insert(
+                {
+                    "forecast_type": "occupancy",
+                    "start_date": start_date,
+                    "horizon_days": horizon_days,
+                    "model_version": model_version,
+                    "source": source,
+                    "inputs": inputs,
+                    "series": items,
+                    "created_by_user_id": created_by_user_id,
+                }
+            )
+            .select("*")
             .limit(1)
             .execute()
         )
