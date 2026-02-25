@@ -1386,26 +1386,37 @@ def insert_ai_occupancy_forecast(
 ) -> dict[str, Any] | None:
     try:
         client = get_supabase_client()
-        response = (
+        payload = {
+            "forecast_type": "occupancy",
+            "start_date": start_date,
+            "horizon_days": horizon_days,
+            "model_version": model_version,
+            "source": source,
+            "inputs": inputs,
+            "series": items,
+            "created_by_user_id": created_by_user_id,
+        }
+        response = client.table("ai_forecasts").insert(payload).execute()
+        rows = response.data or []
+        if rows and isinstance(rows[0], dict):
+            return rows[0]
+
+        # Some supabase client/runtime combinations don't return inserted rows by default.
+        verify = (
             client.table("ai_forecasts")
-            .insert(
-                {
-                    "forecast_type": "occupancy",
-                    "start_date": start_date,
-                    "horizon_days": horizon_days,
-                    "model_version": model_version,
-                    "source": source,
-                    "inputs": inputs,
-                    "series": items,
-                    "created_by_user_id": created_by_user_id,
-                }
-            )
             .select("*")
+            .eq("forecast_type", "occupancy")
+            .eq("start_date", start_date)
+            .eq("horizon_days", horizon_days)
+            .eq("model_version", model_version)
+            .eq("source", source)
+            .eq("created_by_user_id", created_by_user_id)
+            .order("created_at", desc=True)
             .limit(1)
             .execute()
         )
-        rows = response.data or []
-        return rows[0] if rows else None
+        verify_rows = verify.data or []
+        return verify_rows[0] if verify_rows else None
     except Exception as exc:  # noqa: BLE001
         raise _runtime_error_from_exception(exc) from exc
 
