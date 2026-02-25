@@ -101,6 +101,51 @@ $report.runs | Where-Object { $_.error -or -not $_.create_ok -or -not $_.guest_p
 2. Cursor pagination returns stable, non-duplicated rows.
 3. Frontend route transitions keep perceived loading feedback.
 
+## Release Operations
+
+1. Baseline tag exists and points to the green release gate run (`v0.9.0-rc1`).
+2. Branch protection on `master` must require these checks:
+   - `web-validate`
+   - `api-validate (3.11)`
+   - `api-validate (3.12)`
+   - `release-gate-core`
+   - `release-gate-sepolia-smoke`
+3. Feature freeze rule: merge only release blockers while validating a release candidate.
+4. Secrets hygiene before each release candidate:
+   - rotate signing keys/private keys if they were exposed in logs or screenshots
+   - re-save GitHub Actions secrets without trailing whitespace/newlines
+   - verify `ESCROW_RECONCILIATION_CHAIN_KEY=sepolia` for testnet release gates
+5. Manual demo pass must complete end-to-end:
+   - booking creation
+   - payment submission and verification
+   - NFT guest pass verification
+   - QR check-in
+   - reconciliation monitor run with no alert
+
+## Rollback Playbook
+
+1. Identify last known-good release tag:
+```powershell
+git tag --sort=-creatordate | Select-Object -First 5
+```
+2. Roll back deployment target to previous good tag (example):
+```powershell
+git checkout v0.9.0-rc1
+```
+3. Re-run release validation for the rollback candidate:
+   - `release-gate-core`
+   - `release-gate-sepolia-smoke`
+4. Confirm health and critical paths after rollback:
+```powershell
+Invoke-RestMethod -Method GET -Uri "http://127.0.0.1:8000/health"
+Invoke-RestMethod -Method GET -Uri "http://127.0.0.1:8100/health"
+```
+5. Record rollback event in project docs:
+   - failure trigger
+   - restored tag/commit
+   - time to recovery
+   - follow-up corrective action
+
 ## Defense Checklist
 
 1. Chain strategy is explicit: Sepolia for development, Polygon Amoy as target/cutover.
