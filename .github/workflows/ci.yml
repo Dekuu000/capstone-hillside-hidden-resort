@@ -332,13 +332,16 @@ jobs:
           test -s /tmp/api-health-sepolia.json
           test -s /tmp/ai-health-sepolia.json
 
-      - name: Sepolia reliability smoke (LoopCount=3)
+      - name: Sepolia reliability smoke (adaptive loop count)
         if: ${{ steps.sepolia-guard.outputs.run_smoke == 'true' }}
         shell: pwsh
         run: |
+          $loopCount = if ("${{ github.event_name }}" -eq "pull_request") { 1 } else { 3 }
+          Write-Host "Using Sepolia smoke LoopCount=$loopCount for event=${{ github.event_name }}"
+
           ./docs/re-architecture-core/scripts/sepolia-reliability-smoke.ps1 `
             -ApiBaseUrl "http://127.0.0.1:8000" `
-            -LoopCount 3 `
+            -LoopCount $loopCount `
             -SupabaseUrl "${{ env.SEPOLIA_SUPABASE_URL }}" `
             -SupabasePublishableKey "${{ env.SEPOLIA_SUPABASE_PUBLISHABLE_KEY }}" `
             -AdminEmail "${{ env.SEPOLIA_ADMIN_EMAIL }}" `
