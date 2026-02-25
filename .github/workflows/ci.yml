@@ -84,6 +84,8 @@ jobs:
     timeout-minutes: 30
     needs:
       - api-validate
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
 
     steps:
       - name: Checkout
@@ -122,9 +124,7 @@ jobs:
         run: python supabase/scripts/migration_sanity_check.py
 
       - name: Optional migration sanity query (live Supabase DB)
-        if: ${{ secrets.SUPABASE_DB_URL != '' }}
-        env:
-          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        if: ${{ env.SUPABASE_DB_URL != '' }}
         run: |
           sudo apt-get update
           sudo apt-get install -y postgresql-client
@@ -179,50 +179,96 @@ jobs:
     timeout-minutes: 40
     needs:
       - release-gate-core
-    if: ${{ secrets.SEPOLIA_SUPABASE_URL != '' && secrets.SEPOLIA_SUPABASE_SERVICE_ROLE_KEY != '' && secrets.SEPOLIA_SUPABASE_PUBLISHABLE_KEY != '' && secrets.SEPOLIA_ADMIN_EMAIL != '' && secrets.SEPOLIA_ADMIN_PASSWORD != '' && secrets.SEPOLIA_API_JWT_ISSUER != '' && secrets.SEPOLIA_QR_SIGNING_SECRET != '' && secrets.SEPOLIA_EVM_RPC_URL != '' && secrets.SEPOLIA_ESCROW_CONTRACT_ADDRESS != '' && secrets.SEPOLIA_GUEST_PASS_CONTRACT_ADDRESS != '' && secrets.SEPOLIA_ESCROW_SIGNER_PRIVATE_KEY != '' }}
+    env:
+      SEPOLIA_SUPABASE_URL: ${{ secrets.SEPOLIA_SUPABASE_URL }}
+      SEPOLIA_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SEPOLIA_SUPABASE_SERVICE_ROLE_KEY }}
+      SEPOLIA_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SEPOLIA_SUPABASE_PUBLISHABLE_KEY }}
+      SEPOLIA_ADMIN_EMAIL: ${{ secrets.SEPOLIA_ADMIN_EMAIL }}
+      SEPOLIA_ADMIN_PASSWORD: ${{ secrets.SEPOLIA_ADMIN_PASSWORD }}
+      SEPOLIA_API_JWT_ISSUER: ${{ secrets.SEPOLIA_API_JWT_ISSUER }}
+      SEPOLIA_QR_SIGNING_SECRET: ${{ secrets.SEPOLIA_QR_SIGNING_SECRET }}
+      SEPOLIA_EVM_RPC_URL: ${{ secrets.SEPOLIA_EVM_RPC_URL }}
+      SEPOLIA_ESCROW_CONTRACT_ADDRESS: ${{ secrets.SEPOLIA_ESCROW_CONTRACT_ADDRESS }}
+      SEPOLIA_GUEST_PASS_CONTRACT_ADDRESS: ${{ secrets.SEPOLIA_GUEST_PASS_CONTRACT_ADDRESS }}
+      SEPOLIA_ESCROW_SIGNER_PRIVATE_KEY: ${{ secrets.SEPOLIA_ESCROW_SIGNER_PRIVATE_KEY }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Check required Sepolia secrets
+        id: sepolia-guard
+        shell: bash
+        run: |
+          missing=()
+          required=(
+            SEPOLIA_SUPABASE_URL
+            SEPOLIA_SUPABASE_SERVICE_ROLE_KEY
+            SEPOLIA_SUPABASE_PUBLISHABLE_KEY
+            SEPOLIA_ADMIN_EMAIL
+            SEPOLIA_ADMIN_PASSWORD
+            SEPOLIA_API_JWT_ISSUER
+            SEPOLIA_QR_SIGNING_SECRET
+            SEPOLIA_EVM_RPC_URL
+            SEPOLIA_ESCROW_CONTRACT_ADDRESS
+            SEPOLIA_GUEST_PASS_CONTRACT_ADDRESS
+            SEPOLIA_ESCROW_SIGNER_PRIVATE_KEY
+          )
+          for var in "${required[@]}"; do
+            if [ -z "${!var}" ]; then
+              missing+=("$var")
+            fi
+          done
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "run_smoke=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping Sepolia smoke; missing secrets: ${missing[*]}"
+          else
+            echo "run_smoke=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Setup Python
+        if: ${{ steps.sepolia-guard.outputs.run_smoke == 'true' }}
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
       - name: Install Python dependencies (API + AI)
+        if: ${{ steps.sepolia-guard.outputs.run_smoke == 'true' }}
         run: |
           python -m pip install --upgrade pip
           pip install -e ./hillside-api
           pip install -e ./hillside-ai
 
       - name: Start AI service
+        if: ${{ steps.sepolia-guard.outputs.run_smoke == 'true' }}
         run: python -m uvicorn app.main:app --host 127.0.0.1 --port 8100 --app-dir hillside-ai >/tmp/hillside-ai-sepolia.log 2>&1 &
 
       - name: Start API service (Sepolia env)
+        if: ${{ steps.sepolia-guard.outputs.run_smoke == 'true' }}
         env:
           APP_ENV: ci
-          SUPABASE_URL: ${{ secrets.SEPOLIA_SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SEPOLIA_SUPABASE_SERVICE_ROLE_KEY }}
-          API_JWT_ISSUER: ${{ secrets.SEPOLIA_API_JWT_ISSUER }}
+          SUPABASE_URL: ${{ env.SEPOLIA_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ env.SEPOLIA_SUPABASE_SERVICE_ROLE_KEY }}
+          API_JWT_ISSUER: ${{ env.SEPOLIA_API_JWT_ISSUER }}
           API_JWT_AUDIENCE: authenticated
           FEATURE_ESCROW_SHADOW_WRITE: "true"
           FEATURE_ESCROW_ONCHAIN_LOCK: "true"
           FEATURE_NFT_GUEST_PASS: "true"
           FEATURE_DYNAMIC_QR: "true"
           FEATURE_ESCROW_RECONCILIATION_SCHEDULER: "true"
-          QR_SIGNING_SECRET: ${{ secrets.SEPOLIA_QR_SIGNING_SECRET }}
+          QR_SIGNING_SECRET: ${{ env.SEPOLIA_QR_SIGNING_SECRET }}
           CHAIN_ACTIVE_KEY: sepolia
           CHAIN_ALLOWED_KEYS: sepolia,amoy
-          EVM_RPC_URL_SEPOLIA: ${{ secrets.SEPOLIA_EVM_RPC_URL }}
-          ESCROW_CONTRACT_ADDRESS_SEPOLIA: ${{ secrets.SEPOLIA_ESCROW_CONTRACT_ADDRESS }}
-          GUEST_PASS_CONTRACT_ADDRESS_SEPOLIA: ${{ secrets.SEPOLIA_GUEST_PASS_CONTRACT_ADDRESS }}
-          ESCROW_SIGNER_PRIVATE_KEY_SEPOLIA: ${{ secrets.SEPOLIA_ESCROW_SIGNER_PRIVATE_KEY }}
+          EVM_RPC_URL_SEPOLIA: ${{ env.SEPOLIA_EVM_RPC_URL }}
+          ESCROW_CONTRACT_ADDRESS_SEPOLIA: ${{ env.SEPOLIA_ESCROW_CONTRACT_ADDRESS }}
+          GUEST_PASS_CONTRACT_ADDRESS_SEPOLIA: ${{ env.SEPOLIA_GUEST_PASS_CONTRACT_ADDRESS }}
+          ESCROW_SIGNER_PRIVATE_KEY_SEPOLIA: ${{ env.SEPOLIA_ESCROW_SIGNER_PRIVATE_KEY }}
           ESCROW_RECONCILIATION_CHAIN_KEY: sepolia
           AI_SERVICE_BASE_URL: http://127.0.0.1:8100
         run: python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --app-dir hillside-api >/tmp/hillside-api-sepolia.log 2>&1 &
 
       - name: Wait for health endpoints
+        if: ${{ steps.sepolia-guard.outputs.run_smoke == 'true' }}
         run: |
           for i in {1..30}; do
             if curl -fsS http://127.0.0.1:8000/health >/tmp/api-health-sepolia.json; then
@@ -240,15 +286,16 @@ jobs:
           test -s /tmp/ai-health-sepolia.json
 
       - name: Sepolia reliability smoke (LoopCount=3)
+        if: ${{ steps.sepolia-guard.outputs.run_smoke == 'true' }}
         shell: pwsh
         run: |
           ./docs/re-architecture-core/scripts/sepolia-reliability-smoke.ps1 `
             -ApiBaseUrl "http://127.0.0.1:8000" `
             -LoopCount 3 `
-            -SupabaseUrl "${{ secrets.SEPOLIA_SUPABASE_URL }}" `
-            -SupabasePublishableKey "${{ secrets.SEPOLIA_SUPABASE_PUBLISHABLE_KEY }}" `
-            -AdminEmail "${{ secrets.SEPOLIA_ADMIN_EMAIL }}" `
-            -AdminPassword "${{ secrets.SEPOLIA_ADMIN_PASSWORD }}"
+            -SupabaseUrl "${{ env.SEPOLIA_SUPABASE_URL }}" `
+            -SupabasePublishableKey "${{ env.SEPOLIA_SUPABASE_PUBLISHABLE_KEY }}" `
+            -AdminEmail "${{ env.SEPOLIA_ADMIN_EMAIL }}" `
+            -AdminPassword "${{ env.SEPOLIA_ADMIN_PASSWORD }}"
 
           $report = Get-Content ./docs/re-architecture-core/sepolia-reliability-report.json -Raw | ConvertFrom-Json
           if ($report.success_count -ne $report.loop_count) {
@@ -256,7 +303,7 @@ jobs:
           }
 
       - name: Upload Sepolia smoke artifacts
-        if: always()
+        if: ${{ always() && steps.sepolia-guard.outputs.run_smoke == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: release-gate-sepolia-artifacts
