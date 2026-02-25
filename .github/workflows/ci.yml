@@ -68,7 +68,11 @@ jobs:
         working-directory: hillside-api
         run: |
           python -m pip install --upgrade pip
-          pip install -e .
+          if [ -f pyproject.toml ] || [ -f setup.py ]; then
+            pip install -e .
+          else
+            pip install fastapi "uvicorn[standard]" pydantic pydantic-settings supabase web3
+          fi
           pip install pytest httpx ruff
 
       - name: Lint API
@@ -106,12 +110,21 @@ jobs:
       - name: Install Python dependencies (API + AI)
         run: |
           python -m pip install --upgrade pip
-          pip install -e ./hillside-api
-          pip install -e ./hillside-ai
+          if [ -f ./hillside-api/pyproject.toml ] || [ -f ./hillside-api/setup.py ]; then
+            pip install -e ./hillside-api
+          else
+            pip install fastapi "uvicorn[standard]" pydantic pydantic-settings supabase web3
+          fi
+          if [ -f ./hillside-ai/pyproject.toml ] || [ -f ./hillside-ai/setup.py ]; then
+            pip install -e ./hillside-ai
+          else
+            pip install fastapi "uvicorn[standard]" pydantic pydantic-settings scikit-learn scipy
+          fi
           pip install pytest httpx
 
       - name: API tests (release gate)
-        run: pytest hillside-api/tests -q
+        working-directory: hillside-api
+        run: pytest -q
 
       - name: Install contract dependencies
         working-directory: hillside-contracts
@@ -236,8 +249,16 @@ jobs:
         if: ${{ steps.sepolia-guard.outputs.run_smoke == 'true' }}
         run: |
           python -m pip install --upgrade pip
-          pip install -e ./hillside-api
-          pip install -e ./hillside-ai
+          if [ -f ./hillside-api/pyproject.toml ] || [ -f ./hillside-api/setup.py ]; then
+            pip install -e ./hillside-api
+          else
+            pip install fastapi "uvicorn[standard]" pydantic pydantic-settings supabase web3
+          fi
+          if [ -f ./hillside-ai/pyproject.toml ] || [ -f ./hillside-ai/setup.py ]; then
+            pip install -e ./hillside-ai
+          else
+            pip install fastapi "uvicorn[standard]" pydantic pydantic-settings scikit-learn scipy
+          fi
 
       - name: Start AI service
         if: ${{ steps.sepolia-guard.outputs.run_smoke == 'true' }}
