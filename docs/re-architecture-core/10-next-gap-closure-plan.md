@@ -1,13 +1,13 @@
 # Next Gap Closure Plan (Post-Defense)
 
 Last updated: 2026-02-25
-Context: Core guide-compliance scope (A-D) is complete and verified. This plan closes remaining guide gaps and cutover readiness.
+Context: Core guide-compliance scope (A-D) is complete and verified. This plan closes remaining guide gaps while keeping Sepolia as the active testnet.
 
 ## Prioritized Workstream
 
 | Priority | Gap | Target Outcome | Effort | Exit Criteria |
 |---|---|---|---|---|
-| P0 | Polygon target cutover readiness (currently Sepolia dev-active) | Amoy-ready deployment and switch rehearsal | 1-2 days | Escrow + GuestPass contracts deployed on Amoy, API chain switch rehearsal passes |
+| P0 | Sepolia hardening (active testnet) | Stabilize release quality on Sepolia end-to-end | 1-2 days | Escrow + GuestPass flows pass consistently on Sepolia with reconciliation clean |
 | P0 | Production hardening + CI gate | Stable release quality gate | 1 day | CI runs API tests + contracts compile + migration checks + health smoke |
 | P1 | Internal blockchain explorer UX | Unified admin explorer for escrow + guest pass + audit anchors | 1-1.5 days | New admin page with filters, tx links, status rollups |
 | P1 | AI module completion (concierge) | Personalized recommendation endpoint + UI widget | 1.5-2 days | Guest/admin surfaces show deterministic recommendations with fallback |
@@ -17,13 +17,14 @@ Context: Core guide-compliance scope (A-D) is complete and verified. This plan c
 
 ## Execution Order
 
-## Phase 1 - Cutover & Reliability (P0)
+## Phase 1 - Sepolia Reliability (P0)
 
-1. Deploy `EscrowLedger` + `GuestPassNFT` to Polygon Amoy.
-2. Set Amoy envs:
-   - `CHAIN_ACTIVE_KEY=amoy` (in staging rehearsal only)
-   - `EVM_RPC_URL_AMOY`, `ESCROW_CONTRACT_ADDRESS_AMOY`, `GUEST_PASS_CONTRACT_ADDRESS_AMOY`
-   - `ESCROW_SIGNER_PRIVATE_KEY_AMOY`
+1. Keep `CHAIN_ACTIVE_KEY=sepolia` for all active testing.
+2. Validate Sepolia envs:
+   - `EVM_RPC_URL_SEPOLIA`
+   - `ESCROW_CONTRACT_ADDRESS_SEPOLIA`
+   - `GUEST_PASS_CONTRACT_ADDRESS_SEPOLIA`
+   - `ESCROW_SIGNER_PRIVATE_KEY_SEPOLIA`
 3. Run full smoke:
    - reservation create -> escrow lock
    - guest pass mint + verify
@@ -41,6 +42,7 @@ Context: Core guide-compliance scope (A-D) is complete and verified. This plan c
 2. Add AI concierge endpoint + response persistence.
 3. Implement offline map module for guest.
 4. Add admin resource heatmap panel.
+5. Keep Polygon Amoy cutover prep as optional backlog, not active phase work.
 
 ## Phase 3 - Security Roadmap (P2)
 
@@ -64,7 +66,7 @@ Context: Core guide-compliance scope (A-D) is complete and verified. This plan c
    - `docs/re-architecture-core/07-demo-testplan.md`
    - `hillside-app/docs/PROJECT_STATUS.md`
 2. Evidence artifacts:
-   - Amoy tx hashes (lock/release/mint)
+   - Sepolia tx hashes (lock/release/mint)
    - reconciliation summary
    - forecast + concierge sample outputs
    - UI screenshots (explorer/map/heatmap).
