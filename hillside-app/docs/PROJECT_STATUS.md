@@ -1,6 +1,6 @@
 # Project Status - Hillside Hidden Resort
 
-Last updated: 2026-02-21
+Last updated: 2026-02-25
 
 ## Re-Architecture Program Status
 
@@ -306,3 +306,30 @@ Validation checks completed:
 Wave 5 exit decision:
 
 1. `Complete` based on route/service parity and successful facade-on burn-in across guest/admin critical flows.
+
+## Guide Compliance Closure Evidence (2026-02-25)
+
+Final verification runs completed against local API/AI + live Sepolia path:
+
+1. API/AI health:
+   - `GET /health` (`localhost:8000`) -> `service=hillside-api`, `nft_guest_pass_enabled=true`, `active_chain.key=sepolia`, `guest_pass_contract_configured=true`.
+   - `GET /health` (`localhost:8100`) -> `service=hillside-ai`.
+2. AI forecasting persistence:
+   - `POST /v2/ai/occupancy/forecast` -> `forecast_id=2`, `model_version=sklearn-linear-regression-v1`, horizon `7` days.
+3. NFT guest pass mint on reservation create:
+   - Reservation created: `reservation_id=2a98ebf1-d2bd-4485-a595-a85cea2f9407`, `reservation_code=HR-20260225-681B`.
+   - Escrow lock tx: `0x93f17cb2bb561e75a8778c5d48e6f122c54f8e6d5120b1650c6b8c5731f3f8e1`.
+   - Guest pass mint tx: `0x9b865313cab7673b39369d1c7f305bca68f98a1b6a60b8d7b05d4144ad8d7e0e`.
+   - Guest pass token: `token_id=1`.
+4. NFT verification endpoint:
+   - `GET /v2/nft/guest-pass/2a98ebf1-d2bd-4485-a595-a85cea2f9407` ->
+     - `minted=true`
+     - `chain_key=sepolia`
+     - `token_id=1`
+     - `onchain_valid=true`
+5. Security hardening compatibility fix validated:
+   - `select encode(public.digest('test', 'sha256'), 'hex')` returned expected hash.
+6. Applied migrations for closure:
+   - `20260223_001_guest_pass_nft.sql`
+   - `20260223_002_ai_forecasts.sql`
+   - `20260225_003_pgcrypto_digest_compat.sql`
