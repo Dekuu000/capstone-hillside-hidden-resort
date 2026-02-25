@@ -143,7 +143,11 @@ for ($i = 1; $i -le $LoopCount; $i++) {
     $run.reconciliation_alert = [bool]$monitor.alert_active
   }
   catch {
-    $run.error = $_.Exception.Message
+    $errorMessage = $_.Exception.Message
+    if ($_.ErrorDetails -and -not [string]::IsNullOrWhiteSpace($_.ErrorDetails.Message)) {
+      $errorMessage = "{0} | response={1}" -f $errorMessage, $_.ErrorDetails.Message
+    }
+    $run.error = $errorMessage
   }
   finally {
     $run.ended_at = (Get-Date).ToString("o")
