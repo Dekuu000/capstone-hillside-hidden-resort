@@ -309,6 +309,7 @@ jobs:
           ESCROW_CONTRACT_ADDRESS_SEPOLIA: ${{ env.SEPOLIA_ESCROW_CONTRACT_ADDRESS }}
           GUEST_PASS_CONTRACT_ADDRESS_SEPOLIA: ${{ env.SEPOLIA_GUEST_PASS_CONTRACT_ADDRESS }}
           ESCROW_SIGNER_PRIVATE_KEY_SEPOLIA: ${{ env.SEPOLIA_ESCROW_SIGNER_PRIVATE_KEY }}
+          ESCROW_TX_RECEIPT_TIMEOUT_SEC: "240"
           ESCROW_RECONCILIATION_CHAIN_KEY: sepolia
           AI_SERVICE_BASE_URL: http://127.0.0.1:8100
         run: python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --app-dir hillside-api >/tmp/hillside-api-sepolia.log 2>&1 &
