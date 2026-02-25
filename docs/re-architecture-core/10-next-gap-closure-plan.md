@@ -36,6 +36,18 @@ Context: Core guide-compliance scope (A-D) is complete and verified. This plan c
    - migration sanity query
    - API/AI health checks.
 
+Runbook command:
+
+```powershell
+.\docs\re-architecture-core\scripts\sepolia-reliability-smoke.ps1 `
+  -ApiBaseUrl "http://localhost:8000" `
+  -LoopCount 10 `
+  -SupabaseUrl "https://<project-ref>.supabase.co" `
+  -SupabasePublishableKey "<publishable-key>" `
+  -AdminEmail "<admin-email>" `
+  -AdminPassword "<admin-password>"
+```
+
 ## Phase 2 - Remaining Guide Features (P1)
 
 1. Add internal Blockchain Explorer page in `hillside-next`.
