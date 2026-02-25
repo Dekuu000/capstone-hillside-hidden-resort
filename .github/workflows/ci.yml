@@ -353,6 +353,23 @@ jobs:
             throw "Sepolia reliability smoke failed: $($report.success_count)/$($report.loop_count)"
           }
 
+      - name: Dump API/AI logs on Sepolia smoke failure
+        if: ${{ failure() && steps.sepolia-guard.outputs.run_smoke == 'true' }}
+        shell: bash
+        run: |
+          echo "=== hillside-api (last 250 lines) ==="
+          if [ -f /tmp/hillside-api-sepolia.log ]; then
+            tail -n 250 /tmp/hillside-api-sepolia.log
+          else
+            echo "No /tmp/hillside-api-sepolia.log found"
+          fi
+          echo "=== hillside-ai (last 150 lines) ==="
+          if [ -f /tmp/hillside-ai-sepolia.log ]; then
+            tail -n 150 /tmp/hillside-ai-sepolia.log
+          else
+            echo "No /tmp/hillside-ai-sepolia.log found"
+          fi
+
       - name: Upload Sepolia smoke artifacts
         if: ${{ always() && steps.sepolia-guard.outputs.run_smoke == 'true' }}
         uses: actions/upload-artifact@v4
