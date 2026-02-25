@@ -189,4 +189,8 @@ $failedRuns = @($runs | Where-Object { $_.error -or -not $_.create_ok -or -not $
 if (@($failedRuns).Count -gt 0) {
   Write-Host "Failed run details:"
   @($failedRuns) | Select-Object run, reservation_id, create_ok, guest_pass_ok, checkin_ok, reconciliation_alert, error | Format-Table -AutoSize
+  Write-Host "Failed run errors (full):"
+  foreach ($failed in @($failedRuns)) {
+    Write-Host ("run={0} error={1}" -f $failed.run, $failed.error)
+  }
 }

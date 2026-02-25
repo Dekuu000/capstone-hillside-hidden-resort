@@ -345,6 +345,11 @@ jobs:
 
           $report = Get-Content ./docs/re-architecture-core/sepolia-reliability-report.json -Raw | ConvertFrom-Json
           if ($report.success_count -ne $report.loop_count) {
+            Write-Host "Sepolia smoke failed run errors:"
+            $report.runs `
+              | Where-Object { $_.error -or -not $_.create_ok -or -not $_.guest_pass_ok -or -not $_.checkin_ok -or $_.reconciliation_alert } `
+              | Select-Object run, error, create_ok, guest_pass_ok, checkin_ok, reconciliation_alert `
+              | Format-List
             throw "Sepolia reliability smoke failed: $($report.success_count)/$($report.loop_count)"
           }
 
