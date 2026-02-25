@@ -50,10 +50,10 @@ function Get-Percentile {
     [double]$Percent
   )
   if (-not $Values -or $Values.Count -eq 0) { return 0.0 }
-  $sorted = $Values | Sort-Object
-  $idx = [math]::Ceiling(($Percent / 100.0) * $sorted.Count) - 1
+  $sorted = @($Values | Sort-Object)
+  $idx = [math]::Ceiling(($Percent / 100.0) * @($sorted).Count) - 1
   if ($idx -lt 0) { $idx = 0 }
-  if ($idx -ge $sorted.Count) { $idx = $sorted.Count - 1 }
+  if ($idx -ge @($sorted).Count) { $idx = @($sorted).Count - 1 }
   return [math]::Round([double]$sorted[$idx], 2)
 }
 
@@ -72,7 +72,7 @@ if (-not $health.active_chain -or $health.active_chain.key -ne "sepolia") {
 }
 
 $services = Invoke-RestMethod -Method GET -Uri ("{0}/v2/catalog/services" -f $ApiBaseUrl.TrimEnd("/")) -Headers $headers
-if (-not $services.items -or $services.items.Count -eq 0) {
+if (-not $services.items -or @($services.items).Count -eq 0) {
   throw "No active services returned by /v2/catalog/services."
 }
 $serviceId = [string]$services.items[0].service_id
@@ -95,7 +95,7 @@ for ($i = 1; $i -le $LoopCount; $i++) {
   }
 
   try {
-    $visitDate = (Get-Date).AddDays(1).ToString("yyyy-MM-dd")
+    $visitDate = (Get-Date).ToString("yyyy-MM-dd")
     $createBody = @{
       service_id = $serviceId
       visit_date = $visitDate
@@ -149,20 +149,21 @@ for ($i = 1; $i -le $LoopCount; $i++) {
   }
 }
 
-$successRuns = $runs | Where-Object {
+$successRuns = @($runs | Where-Object {
   $_.create_ok -and $_.guest_pass_ok -and $_.checkin_ok -and $_.reconciliation_alert -eq $false
-}
+})
 $latencyValues = @()
-foreach ($item in $successRuns) {
+foreach ($item in @($successRuns)) {
   $latencyValues += ([double]$item.create_ms + [double]$item.verify_ms + [double]$item.checkin_ms)
 }
+$successCount = @($successRuns).Count
 
 $report = [ordered]@{
   generated_at = (Get-Date).ToString("o")
   api_base_url = $ApiBaseUrl
   loop_count = $LoopCount
-  success_count = $successRuns.Count
-  success_rate = if ($LoopCount -gt 0) { [math]::Round(($successRuns.Count / $LoopCount) * 100.0, 2) } else { 0.0 }
+  success_count = $successCount
+  success_rate = if ($LoopCount -gt 0) { [math]::Round(($successCount / $LoopCount) * 100.0, 2) } else { 0.0 }
   latency_ms = @{
     p50 = Get-Percentile -Values $latencyValues -Percent 50
     p95 = Get-Percentile -Values $latencyValues -Percent 95

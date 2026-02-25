@@ -309,6 +309,12 @@ Wave 5 exit decision:
 
 ## Guide Compliance Closure Evidence (2026-02-25)
 
+Sepolia reliability closure evidence:
+
+1. Reliability smoke script (`LoopCount=10`) completed with `success_count=10`, `success_rate=100`.
+2. Evidence artifact: `docs/re-architecture-core/sepolia-reliability-report.json`.
+3. Reconciliation monitor remained clean (`alert_active=false`) across successful runs.
+
 Final verification runs completed against local API/AI + live Sepolia path:
 
 1. API/AI health:

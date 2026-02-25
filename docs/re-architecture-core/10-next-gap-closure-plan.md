@@ -5,15 +5,15 @@ Context: Core guide-compliance scope (A-D) is complete and verified. This plan c
 
 ## Prioritized Workstream
 
-| Priority | Gap | Target Outcome | Effort | Exit Criteria |
-|---|---|---|---|---|
-| P0 | Sepolia hardening (active testnet) | Stabilize release quality on Sepolia end-to-end | 1-2 days | Escrow + GuestPass flows pass consistently on Sepolia with reconciliation clean |
-| P0 | Production hardening + CI gate | Stable release quality gate | 1 day | CI runs API tests + contracts compile + migration checks + health smoke |
-| P1 | Internal blockchain explorer UX | Unified admin explorer for escrow + guest pass + audit anchors | 1-1.5 days | New admin page with filters, tx links, status rollups |
-| P1 | AI module completion (concierge) | Personalized recommendation endpoint + UI widget | 1.5-2 days | Guest/admin surfaces show deterministic recommendations with fallback |
-| P1 | QR/PWA module completion (offline map) | Offline-capable resort map in guest app | 2-3 days | Map available offline with asset caching and location markers |
-| P1 | Dashboard module completion (resource heatmap) | Cleaning/staff heatmap panel in admin | 1.5-2 days | Heatmap rendered from reservation/check-in density data |
-| P2 | Security & privacy roadmap (ZKP) | Design RFC only (not implementation) | 0.5-1 day | Approved design note with constraints, threat model, phased rollout |
+| Priority | Gap | Target Outcome | Effort | Status | Exit Criteria |
+|---|---|---|---|---|---|
+| P0 | Sepolia hardening (active testnet) | Stabilize release quality on Sepolia end-to-end | 1-2 days | Completed (2026-02-25) | Escrow + GuestPass flows pass consistently on Sepolia with reconciliation clean |
+| P0 | Production hardening + CI gate | Stable release quality gate | 1 day | In progress | CI runs API tests + contracts compile + migration checks + health smoke |
+| P1 | Internal blockchain explorer UX | Unified admin explorer for escrow + guest pass + audit anchors | 1-1.5 days | Pending | New admin page with filters, tx links, status rollups |
+| P1 | AI module completion (concierge) | Personalized recommendation endpoint + UI widget | 1.5-2 days | Pending | Guest/admin surfaces show deterministic recommendations with fallback |
+| P1 | QR/PWA module completion (offline map) | Offline-capable resort map in guest app | 2-3 days | Pending | Map available offline with asset caching and location markers |
+| P1 | Dashboard module completion (resource heatmap) | Cleaning/staff heatmap panel in admin | 1.5-2 days | Pending | Heatmap rendered from reservation/check-in density data |
+| P2 | Security & privacy roadmap (ZKP) | Design RFC only (not implementation) | 0.5-1 day | Pending | Approved design note with constraints, threat model, phased rollout |
 
 ## Execution Order
 
@@ -36,11 +36,18 @@ Context: Core guide-compliance scope (A-D) is complete and verified. This plan c
    - migration sanity query
    - API/AI health checks.
 
+Execution evidence:
+
+1. `docs/re-architecture-core/sepolia-reliability-report.json`
+2. Generated `2026-02-25T23:29:17.9279047+08:00`
+3. `loop_count=10`, `success_count=10`, `success_rate=100`
+4. All runs passed with `reconciliation_alert=false`
+
 Runbook command:
 
 ```powershell
 .\docs\re-architecture-core\scripts\sepolia-reliability-smoke.ps1 `
-  -ApiBaseUrl "http://localhost:8000" `
+  -ApiBaseUrl "http://127.0.0.1:8000" `
   -LoopCount 10 `
   -SupabaseUrl "https://<project-ref>.supabase.co" `
   -SupabasePublishableKey "<publishable-key>" `
@@ -82,3 +89,8 @@ Runbook command:
    - reconciliation summary
    - forecast + concierge sample outputs
    - UI screenshots (explorer/map/heatmap).
+
+## Immediate Next Step
+
+1. Complete and enforce CI release gate in `.github/workflows/ci.yml`.
+2. Begin P1 explorer UX after CI gate is green.

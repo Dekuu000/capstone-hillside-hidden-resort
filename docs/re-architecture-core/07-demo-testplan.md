@@ -1,5 +1,7 @@
 # Demo & Test Plan
 
+Last updated: 2026-02-25
+
 ## Runnable demo path (PowerShell)
 
 1. Start FastAPI (`hillside-api`):
@@ -10,32 +12,63 @@ cd hillside-api
 2. Start AI service (`hillside-ai`):
 ```powershell
 cd hillside-ai
-.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8100 --env-file .env
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8100
 ```
 3. Start Next.js app (`hillside-next`):
 ```powershell
 cd hillside-next
 npm run dev
 ```
-4. Health check:
+4. Health checks:
 ```powershell
-Invoke-RestMethod -Method GET -Uri "http://localhost:8000/health"
+Invoke-RestMethod -Method GET -Uri "http://127.0.0.1:8000/health"
+Invoke-RestMethod -Method GET -Uri "http://127.0.0.1:8100/health"
 ```
 5. Auth + reservation smoke (guest token required):
 ```powershell
 $headers = @{ Authorization = "Bearer $guestToken" }
-Invoke-RestMethod -Method GET -Uri "http://localhost:8000/v2/me/bookings?tab=pending_payment" -Headers $headers
+Invoke-RestMethod -Method GET -Uri "http://127.0.0.1:8000/v2/me/bookings?tab=pending_payment" -Headers $headers
 ```
 6. NFT guest pass verify (guest or admin token):
 ```powershell
 $headers = @{ Authorization = "Bearer $token" }
-Invoke-RestMethod -Method GET -Uri "http://localhost:8000/v2/nft/guest-pass/<reservation_id>" -Headers $headers
+Invoke-RestMethod -Method GET -Uri "http://127.0.0.1:8000/v2/nft/guest-pass/<reservation_id>" -Headers $headers
 ```
 7. Occupancy forecast (admin token):
 ```powershell
 $headers = @{ Authorization = "Bearer $adminToken" }
 $body = @{ start_date = "2026-02-24"; horizon_days = 7; history_days = 30 } | ConvertTo-Json
-Invoke-RestMethod -Method POST -Uri "http://localhost:8000/v2/ai/occupancy/forecast" -Headers $headers -ContentType "application/json" -Body $body
+Invoke-RestMethod -Method POST -Uri "http://127.0.0.1:8000/v2/ai/occupancy/forecast" -Headers $headers -ContentType "application/json" -Body $body
+```
+8. Sepolia reliability smoke:
+```powershell
+.\docs\re-architecture-core\scripts\sepolia-reliability-smoke.ps1 `
+  -ApiBaseUrl "http://127.0.0.1:8000" `
+  -LoopCount 10 `
+  -SupabaseUrl "https://<project-ref>.supabase.co" `
+  -SupabasePublishableKey "<publishable-key>" `
+  -AdminEmail "<admin-email>" `
+  -AdminPassword "<admin-password>"
+```
+
+## Latest Sepolia Reliability Evidence
+
+Evidence file: `docs/re-architecture-core/sepolia-reliability-report.json`
+
+Latest run snapshot (generated `2026-02-25T23:29:17.9279047+08:00`):
+
+1. `loop_count = 10`
+2. `success_count = 10`
+3. `success_rate = 100`
+4. `active_chain.key = sepolia`
+5. `escrow_reconciliation_monitor.alert_active = false`
+
+Verification command:
+
+```powershell
+$report = Get-Content .\docs\re-architecture-core\sepolia-reliability-report.json -Raw | ConvertFrom-Json
+$report | Select-Object generated_at, loop_count, success_count, success_rate
+$report.runs | Where-Object { $_.error -or -not $_.create_ok -or -not $_.guest_pass_ok -or -not $_.checkin_ok -or $_.reconciliation_alert }
 ```
 
 ## Smoke checks

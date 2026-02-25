@@ -1,0 +1,203 @@
+﻿{
+    "generated_at":  "2026-02-25T23:29:17.9279047+08:00",
+    "api_base_url":  "http://127.0.0.1:8000",
+    "loop_count":  10,
+    "success_count":  10,
+    "success_rate":  100,
+    "latency_ms":  {
+                       "p50":  34105.83,
+                       "p95":  38123.74
+                   },
+    "health_snapshot":  {
+                            "ok":  true,
+                            "service":  "hillside-api",
+                            "env":  "local",
+                            "api_version":  "v2",
+                            "supabase_configured":  true,
+                            "escrow_shadow_write_enabled":  true,
+                            "escrow_onchain_lock_enabled":  true,
+                            "nft_guest_pass_enabled":  true,
+                            "dynamic_qr_enabled":  true,
+                            "escrow_reconciliation_scheduler_enabled":  true,
+                            "escrow_reconciliation_monitor":  {
+                                                                  "running":  true,
+                                                                  "last_success_at":  "2026-02-25T15:12:29.964527+00:00",
+                                                                  "alert_active":  false
+                                                              },
+                            "active_chain":  {
+                                                 "key":  "sepolia",
+                                                 "chain_id":  11155111,
+                                                 "rpc_configured":  true,
+                                                 "contract_configured":  true,
+                                                 "guest_pass_contract_configured":  true
+                                             },
+                            "chains":  {
+                                           "sepolia":  {
+                                                           "chain_id":  11155111,
+                                                           "enabled":  true,
+                                                           "rpc_configured":  true,
+                                                           "contract_configured":  true,
+                                                           "guest_pass_contract_configured":  true
+                                                       },
+                                           "amoy":  {
+                                                        "chain_id":  80002,
+                                                        "enabled":  true,
+                                                        "rpc_configured":  true,
+                                                        "contract_configured":  true,
+                                                        "guest_pass_contract_configured":  true
+                                                    }
+                                       }
+                        },
+    "runs":  [
+                 {
+                     "run":  1,
+                     "started_at":  "2026-02-25T23:14:51.6366248+08:00",
+                     "reservation_id":  "6d89d03a-4405-462d-b782-7e418bece8cc",
+                     "reservation_code":  "HR-20260225-D6FC",
+                     "create_ok":  true,
+                     "guest_pass_ok":  true,
+                     "checkin_ok":  true,
+                     "reconciliation_alert":  false,
+                     "create_ms":  21984.39,
+                     "verify_ms":  1723.55,
+                     "checkin_ms":  13892.86,
+                     "error":  null,
+                     "ended_at":  "2026-02-25T23:16:12.2750936+08:00"
+                 },
+                 {
+                     "run":  2,
+                     "started_at":  "2026-02-25T23:16:12.2750936+08:00",
+                     "reservation_id":  "b8a88d54-26e3-4f7f-9fdf-facf1608cadb",
+                     "reservation_code":  "HR-20260225-2D95",
+                     "create_ok":  true,
+                     "guest_pass_ok":  true,
+                     "checkin_ok":  true,
+                     "reconciliation_alert":  false,
+                     "create_ms":  24444.45,
+                     "verify_ms":  1347.39,
+                     "checkin_ms":  12331.9,
+                     "error":  null,
+                     "ended_at":  "2026-02-25T23:17:35.5669188+08:00"
+                 },
+                 {
+                     "run":  3,
+                     "started_at":  "2026-02-25T23:17:35.5669188+08:00",
+                     "reservation_id":  "783f936c-7ed7-412d-9227-b238cbca0ce1",
+                     "reservation_code":  "HR-20260225-1510",
+                     "create_ok":  true,
+                     "guest_pass_ok":  true,
+                     "checkin_ok":  true,
+                     "reconciliation_alert":  false,
+                     "create_ms":  25366.14,
+                     "verify_ms":  1143.91,
+                     "checkin_ms":  11203.61,
+                     "error":  null,
+                     "ended_at":  "2026-02-25T23:18:59.3341543+08:00"
+                 },
+                 {
+                     "run":  4,
+                     "started_at":  "2026-02-25T23:18:59.3341543+08:00",
+                     "reservation_id":  "52504de0-047b-4194-8063-0145edb8a437",
+                     "reservation_code":  "HR-20260225-C816",
+                     "create_ok":  true,
+                     "guest_pass_ok":  true,
+                     "checkin_ok":  true,
+                     "reconciliation_alert":  false,
+                     "create_ms":  25632.87,
+                     "verify_ms":  1170.07,
+                     "checkin_ms":  10672.66,
+                     "error":  null,
+                     "ended_at":  "2026-02-25T23:20:24.5890848+08:00"
+                 },
+                 {
+                     "run":  5,
+                     "started_at":  "2026-02-25T23:20:24.5900876+08:00",
+                     "reservation_id":  "07d95bbc-e5dc-4ca4-9e73-98e68f677f84",
+                     "reservation_code":  "HR-20260225-C999",
+                     "create_ok":  true,
+                     "guest_pass_ok":  true,
+                     "checkin_ok":  true,
+                     "reconciliation_alert":  false,
+                     "create_ms":  24104.99,
+                     "verify_ms":  1122.96,
+                     "checkin_ms":  11772.19,
+                     "error":  null,
+                     "ended_at":  "2026-02-25T23:21:54.8570771+08:00"
+                 },
+                 {
+                     "run":  6,
+                     "started_at":  "2026-02-25T23:21:54.8580781+08:00",
+                     "reservation_id":  "5a26b9a2-2550-41cc-83fa-98977c3e500e",
+                     "reservation_code":  "HR-20260225-7660",
+                     "create_ok":  true,
+                     "guest_pass_ok":  true,
+                     "checkin_ok":  true,
+                     "reconciliation_alert":  false,
+                     "create_ms":  18766.61,
+                     "verify_ms":  1074.51,
+                     "checkin_ms":  10030.74,
+                     "error":  null,
+                     "ended_at":  "2026-02-25T23:23:17.7668462+08:00"
+                 },
+                 {
+                     "run":  7,
+                     "started_at":  "2026-02-25T23:23:17.7678512+08:00",
+                     "reservation_id":  "7e86e112-2a8a-4b4b-927b-e13386fabb24",
+                     "reservation_code":  "HR-20260225-3D07",
+                     "create_ok":  true,
+                     "guest_pass_ok":  true,
+                     "checkin_ok":  true,
+                     "reconciliation_alert":  false,
+                     "create_ms":  20178.64,
+                     "verify_ms":  1159.14,
+                     "checkin_ms":  9608.03,
+                     "error":  null,
+                     "ended_at":  "2026-02-25T23:24:39.0279408+08:00"
+                 },
+                 {
+                     "run":  8,
+                     "started_at":  "2026-02-25T23:24:39.0279408+08:00",
+                     "reservation_id":  "d6e815ae-2ed7-4f1f-8d6d-dd40f208103c",
+                     "reservation_code":  "HR-20260225-0009",
+                     "create_ok":  true,
+                     "guest_pass_ok":  true,
+                     "checkin_ok":  true,
+                     "reconciliation_alert":  false,
+                     "create_ms":  22651.39,
+                     "verify_ms":  2198.45,
+                     "checkin_ms":  8992.34,
+                     "error":  null,
+                     "ended_at":  "2026-02-25T23:26:29.3999712+08:00"
+                 },
+                 {
+                     "run":  9,
+                     "started_at":  "2026-02-25T23:26:29.3999712+08:00",
+                     "reservation_id":  "785da3ff-4696-4793-9d4f-cce08413296d",
+                     "reservation_code":  "HR-20260225-6F9C",
+                     "create_ok":  true,
+                     "guest_pass_ok":  true,
+                     "checkin_ok":  true,
+                     "reconciliation_alert":  false,
+                     "create_ms":  19272.72,
+                     "verify_ms":  1191.42,
+                     "checkin_ms":  11026.44,
+                     "error":  null,
+                     "ended_at":  "2026-02-25T23:27:50.9678052+08:00"
+                 },
+                 {
+                     "run":  10,
+                     "started_at":  "2026-02-25T23:27:50.9688180+08:00",
+                     "reservation_id":  "3ab43b3e-1dd0-4472-baf5-eb1044f031d5",
+                     "reservation_code":  "HR-20260225-CEBC",
+                     "create_ok":  true,
+                     "guest_pass_ok":  true,
+                     "checkin_ok":  true,
+                     "reconciliation_alert":  false,
+                     "create_ms":  21774.43,
+                     "verify_ms":  1136.84,
+                     "checkin_ms":  11194.56,
+                     "error":  null,
+                     "ended_at":  "2026-02-25T23:29:17.9259084+08:00"
+                 }
+             ]
+}

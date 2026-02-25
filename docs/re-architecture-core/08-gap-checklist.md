@@ -1,12 +1,18 @@
 # Guide Compliance Gap Checklist
 
-Last updated: 2026-02-23
+Last updated: 2026-02-25
 Source of truth: instructor PDF guide + current repository state.
 
 Status key:
 - `Implemented`: in production path now
 - `Partial`: scaffolded or demo-level; not fully guide-compliant
 - `Missing`: not implemented yet
+
+## Sepolia Reliability Closure (P0)
+
+1. Reliability smoke (`LoopCount=10`) completed with `10/10` success and `100%` success rate.
+2. Evidence file: `docs/re-architecture-core/sepolia-reliability-report.json`.
+3. Chain health snapshot in evidence confirms `active_chain.key = sepolia` and reconciliation `alert_active = false`.
 
 ## 1) Technical Architecture & Stack
 
@@ -88,3 +94,4 @@ Status key:
 3. Add minimal ERC721 guest pass mint + verification API. (`Completed`)
 4. Add scikit/Prophet-ready AI forecasting endpoint and persist forecast results. (`Completed`)
 5. Keep ZKP explicitly documented as future work, not in scope for this phase. (`Open / deferred`)
+6. Sepolia reliability loop target (`10/10`) for escrow + guest pass + check-in + reconciliation. (`Completed`)

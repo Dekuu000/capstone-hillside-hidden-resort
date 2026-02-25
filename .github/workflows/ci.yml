@@ -6,9 +6,10 @@ on:
       - master
       - main
   pull_request:
+  workflow_dispatch:
 
 jobs:
-  validate:
+  web-validate:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -46,3 +47,223 @@ jobs:
           name: hillside-dist
           path: hillside-app/dist
           if-no-files-found: error
+
+  api-validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install API dependencies
+        working-directory: hillside-api
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install pytest httpx ruff
+
+      - name: Lint API
+        working-directory: hillside-api
+        run: ruff check app tests
+
+      - name: Test API
+        working-directory: hillside-api
+        run: pytest -q
+
+  release-gate-core:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs:
+      - api-validate
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: hillside-contracts/package-lock.json
+
+      - name: Install Python dependencies (API + AI)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ./hillside-api
+          pip install -e ./hillside-ai
+          pip install pytest httpx
+
+      - name: API tests (release gate)
+        run: pytest hillside-api/tests -q
+
+      - name: Install contract dependencies
+        working-directory: hillside-contracts
+        run: npm ci
+
+      - name: Contracts compile (release gate)
+        run: npm --prefix hillside-contracts run build
+
+      - name: Migration sanity check (repository)
+        run: python supabase/scripts/migration_sanity_check.py
+
+      - name: Optional migration sanity query (live Supabase DB)
+        if: ${{ secrets.SUPABASE_DB_URL != '' }}
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+          psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -c "select count(*) as migration_count from supabase_migrations.schema_migrations;"
+          psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -c "select proname from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('submit_payment_proof','perform_checkin','create_tour_reservation_atomic') order by proname;"
+
+      - name: Start API + AI services (health smoke)
+        env:
+          APP_ENV: ci
+          FEATURE_ESCROW_SHADOW_WRITE: "false"
+          FEATURE_ESCROW_ONCHAIN_LOCK: "false"
+          FEATURE_NFT_GUEST_PASS: "false"
+          FEATURE_DYNAMIC_QR: "false"
+          FEATURE_ESCROW_RECONCILIATION_SCHEDULER: "false"
+        run: |
+          python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --app-dir hillside-api >/tmp/hillside-api.log 2>&1 &
+          python -m uvicorn app.main:app --host 127.0.0.1 --port 8100 --app-dir hillside-ai >/tmp/hillside-ai.log 2>&1 &
+
+      - name: API/AI health smoke
+        run: |
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:8000/health >/tmp/api-health.json; then
+              break
+            fi
+            sleep 1
+          done
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:8100/health >/tmp/ai-health.json; then
+              break
+            fi
+            sleep 1
+          done
+          test -s /tmp/api-health.json
+          test -s /tmp/ai-health.json
+          cat /tmp/api-health.json
+          cat /tmp/ai-health.json
+
+      - name: Upload release-gate logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-gate-core-logs
+          path: |
+            /tmp/hillside-api.log
+            /tmp/hillside-ai.log
+            /tmp/api-health.json
+            /tmp/ai-health.json
+          if-no-files-found: ignore
+
+  release-gate-sepolia-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    needs:
+      - release-gate-core
+    if: ${{ secrets.SEPOLIA_SUPABASE_URL != '' && secrets.SEPOLIA_SUPABASE_SERVICE_ROLE_KEY != '' && secrets.SEPOLIA_SUPABASE_PUBLISHABLE_KEY != '' && secrets.SEPOLIA_ADMIN_EMAIL != '' && secrets.SEPOLIA_ADMIN_PASSWORD != '' && secrets.SEPOLIA_API_JWT_ISSUER != '' && secrets.SEPOLIA_QR_SIGNING_SECRET != '' && secrets.SEPOLIA_EVM_RPC_URL != '' && secrets.SEPOLIA_ESCROW_CONTRACT_ADDRESS != '' && secrets.SEPOLIA_GUEST_PASS_CONTRACT_ADDRESS != '' && secrets.SEPOLIA_ESCROW_SIGNER_PRIVATE_KEY != '' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies (API + AI)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ./hillside-api
+          pip install -e ./hillside-ai
+
+      - name: Start AI service
+        run: python -m uvicorn app.main:app --host 127.0.0.1 --port 8100 --app-dir hillside-ai >/tmp/hillside-ai-sepolia.log 2>&1 &
+
+      - name: Start API service (Sepolia env)
+        env:
+          APP_ENV: ci
+          SUPABASE_URL: ${{ secrets.SEPOLIA_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SEPOLIA_SUPABASE_SERVICE_ROLE_KEY }}
+          API_JWT_ISSUER: ${{ secrets.SEPOLIA_API_JWT_ISSUER }}
+          API_JWT_AUDIENCE: authenticated
+          FEATURE_ESCROW_SHADOW_WRITE: "true"
+          FEATURE_ESCROW_ONCHAIN_LOCK: "true"
+          FEATURE_NFT_GUEST_PASS: "true"
+          FEATURE_DYNAMIC_QR: "true"
+          FEATURE_ESCROW_RECONCILIATION_SCHEDULER: "true"
+          QR_SIGNING_SECRET: ${{ secrets.SEPOLIA_QR_SIGNING_SECRET }}
+          CHAIN_ACTIVE_KEY: sepolia
+          CHAIN_ALLOWED_KEYS: sepolia,amoy
+          EVM_RPC_URL_SEPOLIA: ${{ secrets.SEPOLIA_EVM_RPC_URL }}
+          ESCROW_CONTRACT_ADDRESS_SEPOLIA: ${{ secrets.SEPOLIA_ESCROW_CONTRACT_ADDRESS }}
+          GUEST_PASS_CONTRACT_ADDRESS_SEPOLIA: ${{ secrets.SEPOLIA_GUEST_PASS_CONTRACT_ADDRESS }}
+          ESCROW_SIGNER_PRIVATE_KEY_SEPOLIA: ${{ secrets.SEPOLIA_ESCROW_SIGNER_PRIVATE_KEY }}
+          ESCROW_RECONCILIATION_CHAIN_KEY: sepolia
+          AI_SERVICE_BASE_URL: http://127.0.0.1:8100
+        run: python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --app-dir hillside-api >/tmp/hillside-api-sepolia.log 2>&1 &
+
+      - name: Wait for health endpoints
+        run: |
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:8000/health >/tmp/api-health-sepolia.json; then
+              break
+            fi
+            sleep 1
+          done
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:8100/health >/tmp/ai-health-sepolia.json; then
+              break
+            fi
+            sleep 1
+          done
+          test -s /tmp/api-health-sepolia.json
+          test -s /tmp/ai-health-sepolia.json
+
+      - name: Sepolia reliability smoke (LoopCount=3)
+        shell: pwsh
+        run: |
+          ./docs/re-architecture-core/scripts/sepolia-reliability-smoke.ps1 `
+            -ApiBaseUrl "http://127.0.0.1:8000" `
+            -LoopCount 3 `
+            -SupabaseUrl "${{ secrets.SEPOLIA_SUPABASE_URL }}" `
+            -SupabasePublishableKey "${{ secrets.SEPOLIA_SUPABASE_PUBLISHABLE_KEY }}" `
+            -AdminEmail "${{ secrets.SEPOLIA_ADMIN_EMAIL }}" `
+            -AdminPassword "${{ secrets.SEPOLIA_ADMIN_PASSWORD }}"
+
+          $report = Get-Content ./docs/re-architecture-core/sepolia-reliability-report.json -Raw | ConvertFrom-Json
+          if ($report.success_count -ne $report.loop_count) {
+            throw "Sepolia reliability smoke failed: $($report.success_count)/$($report.loop_count)"
+          }
+
+      - name: Upload Sepolia smoke artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-gate-sepolia-artifacts
+          path: |
+            /tmp/hillside-api-sepolia.log
+            /tmp/hillside-ai-sepolia.log
+            /tmp/api-health-sepolia.json
+            /tmp/ai-health-sepolia.json
+            docs/re-architecture-core/sepolia-reliability-report.json
+          if-no-files-found: ignore
