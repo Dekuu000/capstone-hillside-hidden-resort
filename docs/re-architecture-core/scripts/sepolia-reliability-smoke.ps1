@@ -1,6 +1,7 @@
 param(
   [string]$ApiBaseUrl = "http://localhost:8000",
   [int]$LoopCount = 10,
+  [int]$VisitDateOffsetDays = 1,
   [string]$AdminToken = "",
   [string]$SupabaseUrl = "",
   [string]$SupabasePublishableKey = "",
@@ -95,7 +96,8 @@ for ($i = 1; $i -le $LoopCount; $i++) {
   }
 
   try {
-    $visitDate = (Get-Date).ToString("yyyy-MM-dd")
+    # Use tomorrow by default to avoid timezone/date-boundary failures in CI.
+    $visitDate = (Get-Date).AddDays($VisitDateOffsetDays).ToString("yyyy-MM-dd")
     $createBody = @{
       service_id = $serviceId
       visit_date = $visitDate
@@ -182,3 +184,9 @@ $report | ConvertTo-Json -Depth 8 | Set-Content -Path $OutputPath -Encoding UTF8
 Write-Host ("Sepolia reliability smoke complete: {0}/{1} successful ({2}%)." -f $report.success_count, $report.loop_count, $report.success_rate)
 Write-Host ("Latency p50={0} ms p95={1} ms" -f $report.latency_ms.p50, $report.latency_ms.p95)
 Write-Host ("Report written to {0}" -f $OutputPath)
+
+$failedRuns = @($runs | Where-Object { $_.error -or -not $_.create_ok -or -not $_.guest_pass_ok -or -not $_.checkin_ok -or $_.reconciliation_alert })
+if (@($failedRuns).Count -gt 0) {
+  Write-Host "Failed run details:"
+  @($failedRuns) | Select-Object run, reservation_id, create_ok, guest_pass_ok, checkin_ok, reconciliation_alert, error | Format-Table -AutoSize
+}
