@@ -1,0 +1,16 @@
+name: Release Validation
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  validate-tag:
+    name: Validate Tag via CI Gates
+    uses: ./.github/workflows/ci.yml
+    with:
+      # For tag releases, run Sepolia smoke for release-candidate tags (e.g. v0.9.0-rc1).
+      run_sepolia_smoke: ${{ contains(github.ref_name, '-rc') }}
+    secrets: inherit
