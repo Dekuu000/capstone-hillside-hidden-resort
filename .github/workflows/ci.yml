@@ -51,6 +51,8 @@ jobs:
   api-validate:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      PYTHONPATH: ${{ github.workspace }}/hillside-api
     strategy:
       matrix:
         python-version: ["3.11", "3.12"]
@@ -79,6 +81,10 @@ jobs:
         working-directory: hillside-api
         run: ruff check app tests
 
+      - name: Sanity import app package
+        working-directory: hillside-api
+        run: python -c "import app; print('app import ok')"
+
       - name: Test API
         working-directory: hillside-api
         run: pytest -q
@@ -90,6 +96,7 @@ jobs:
       - api-validate
     env:
       SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      PYTHONPATH: ${{ github.workspace }}/hillside-api
 
     steps:
       - name: Checkout
@@ -193,6 +200,7 @@ jobs:
     needs:
       - release-gate-core
     env:
+      PYTHONPATH: ${{ github.workspace }}/hillside-api
       SEPOLIA_SUPABASE_URL: ${{ secrets.SEPOLIA_SUPABASE_URL }}
       SEPOLIA_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SEPOLIA_SUPABASE_SERVICE_ROLE_KEY }}
       SEPOLIA_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SEPOLIA_SUPABASE_PUBLISHABLE_KEY }}
