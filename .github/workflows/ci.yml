@@ -133,7 +133,12 @@ jobs:
 
       - name: Install contract dependencies
         working-directory: hillside-contracts
-        run: npm ci
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install --no-audit --no-fund
+          fi
 
       - name: Contracts compile (release gate)
         run: npm --prefix hillside-contracts run build
