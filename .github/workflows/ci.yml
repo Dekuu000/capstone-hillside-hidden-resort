@@ -151,8 +151,13 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y postgresql-client
-          psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -c "select count(*) as migration_count from supabase_migrations.schema_migrations;"
-          psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -c "select proname from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('submit_payment_proof','perform_checkin','create_tour_reservation_atomic') order by proname;"
+          DB_URL="$(printf '%s' "$SUPABASE_DB_URL" | tr -d '\r\n')"
+          if [ -z "$DB_URL" ]; then
+            echo "SUPABASE_DB_URL is empty after trimming; skipping live DB sanity query."
+            exit 0
+          fi
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -c "select count(*) as migration_count from supabase_migrations.schema_migrations;"
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -c "select proname from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('submit_payment_proof','perform_checkin','create_tour_reservation_atomic') order by proname;"
 
       - name: Start API + AI services (health smoke)
         env:
