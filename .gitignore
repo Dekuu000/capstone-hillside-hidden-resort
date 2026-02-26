@@ -21,6 +21,7 @@ build/
 
 # Python artifacts
 *.pyc
+*.egg-info/
 
 # Contract artifacts
 hillside-contracts/artifacts/
