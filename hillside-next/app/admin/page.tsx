@@ -113,10 +113,15 @@ function StatCard({
   hint: string;
 }) {
   return (
-    <article className="rounded-xl border border-blue-100 bg-white p-5 shadow-sm">
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
-      <p className="mt-2 text-3xl font-bold text-slate-900">{value}</p>
-      <p className="mt-1 text-xs text-slate-500">{hint}</p>
+    <article className="group rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">{label}</p>
+          <p className="mt-2 text-3xl font-bold text-slate-900">{value}</p>
+        </div>
+        <span className="rounded-full bg-blue-50 px-2 py-1 text-[10px] font-semibold text-blue-900">Live</span>
+      </div>
+      <p className="mt-2 text-xs text-slate-500">{hint}</p>
     </article>
   );
 }
@@ -130,11 +135,20 @@ export default async function AdminShellPage() {
 
   return (
     <section className="mx-auto w-full max-w-6xl">
-      <header className="mb-6">
-        <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Admin widgets now read live values from the V2 API facade.
-        </p>
+      <header className="mb-8 rounded-3xl border border-slate-200/70 bg-gradient-to-br from-white via-slate-50 to-blue-50 p-6 shadow-sm">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Operations Console</p>
+            <h1 className="mt-2 text-3xl font-bold text-slate-900">Hillside Admin Overview</h1>
+            <p className="mt-2 text-sm text-slate-600">
+              Live signals for bookings, payments, and revenue. Use quick actions below to jump into ops.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-xs text-slate-600">
+            <p className="font-semibold text-slate-900">System status</p>
+            <p className="mt-1">API + AI services active</p>
+          </div>
+        </div>
       </header>
 
       {!metrics ? (
@@ -143,38 +157,59 @@ export default async function AdminShellPage() {
         </div>
       ) : (
         <>
-          <div className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard label="Active Units" value={String(metrics.activeUnits)} hint="Currently bookable inventory" />
             <StatCard label="For Verification" value={String(metrics.forVerification)} hint="Reservations awaiting payment review" />
             <StatCard label="Pending Payments" value={String(metrics.pendingPayments)} hint="Items in admin payment inbox" />
             <StatCard label="Confirmed" value={String(metrics.confirmed)} hint="Confirmed reservations in the system" />
           </div>
 
-          <div className="mb-6 rounded-xl border border-blue-100 bg-white p-5 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Revenue Snapshot</p>
-            <p className="mt-1 text-xs text-slate-500">{metrics.reportWindowLabel}</p>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs text-slate-500">Cash Collected</p>
-                <p className="mt-1 text-lg font-semibold text-slate-900">{formatPeso(metrics.cashCollected)}</p>
+          <div className="mb-6 grid gap-4 lg:grid-cols-[2fr_1fr]">
+            <div className="rounded-2xl border border-slate-200/70 bg-white p-5 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Revenue Snapshot</p>
+                  <p className="mt-1 text-xs text-slate-500">{metrics.reportWindowLabel}</p>
+                </div>
+                <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">PHP</span>
               </div>
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs text-slate-500">Bookings</p>
-                <p className="mt-1 text-lg font-semibold text-slate-900">{metrics.bookings}</p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <p className="text-xs text-slate-500">Cash Collected</p>
+                  <p className="mt-1 text-lg font-semibold text-slate-900">{formatPeso(metrics.cashCollected)}</p>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <p className="text-xs text-slate-500">Bookings</p>
+                  <p className="mt-1 text-lg font-semibold text-slate-900">{metrics.bookings}</p>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <p className="text-xs text-slate-500">Cancellations</p>
+                  <p className="mt-1 text-lg font-semibold text-slate-900">{metrics.cancellations}</p>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <p className="text-xs text-slate-500">Avg Occupancy</p>
+                  <p className="mt-1 text-lg font-semibold text-slate-900">{Math.round((metrics.occupancyRate || 0) * 100)}%</p>
+                </div>
               </div>
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs text-slate-500">Cancellations</p>
-                <p className="mt-1 text-lg font-semibold text-slate-900">{metrics.cancellations}</p>
-              </div>
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs text-slate-500">Avg Occupancy</p>
-                <p className="mt-1 text-lg font-semibold text-slate-900">{Math.round((metrics.occupancyRate || 0) * 100)}%</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200/70 bg-white p-5 shadow-sm">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Ops Focus</p>
+              <p className="mt-2 text-sm text-slate-600">
+                Prioritize payment verification and keep inventory healthy for weekend spikes.
+              </p>
+              <div className="mt-4 space-y-2 text-xs text-slate-600">
+                <p className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+                  Verification queue <span className="font-semibold text-slate-900">{metrics.forVerification}</span>
+                </p>
+                <p className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+                  Pending payments <span className="font-semibold text-slate-900">{metrics.pendingPayments}</span>
+                </p>
               </div>
             </div>
           </div>
 
-          <div className="mb-6 rounded-xl border border-blue-100 bg-white p-5 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">AI Pricing Monitor</p>
+          <div className="mb-6 rounded-2xl border border-slate-200/70 bg-white p-5 shadow-sm">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">AI Pricing Monitor</p>
             {!aiMetrics ? (
               <p className="mt-2 text-sm text-slate-600">
                 AI metrics unavailable. Verify API session and <code>/v2/ai/pricing/metrics</code>.
@@ -185,21 +220,21 @@ export default async function AdminShellPage() {
                   Updated {new Date(aiMetrics.generatedAt).toLocaleString()}
                 </p>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                     <p className="text-xs text-slate-500">Total Requests</p>
                     <p className="mt-1 text-lg font-semibold text-slate-900">{aiMetrics.totalRequests}</p>
                   </div>
-                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                     <p className="text-xs text-slate-500">Remote Success</p>
                     <p className="mt-1 text-lg font-semibold text-slate-900">{aiMetrics.remoteSuccess}</p>
                   </div>
-                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                     <p className="text-xs text-slate-500">Fallback Rate</p>
                     <p className="mt-1 text-lg font-semibold text-slate-900">
                       {Math.round((aiMetrics.fallbackRate || 0) * 100)}%
                     </p>
                   </div>
-                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                     <p className="text-xs text-slate-500">Latency p95</p>
                     <p className="mt-1 text-lg font-semibold text-slate-900">{Math.round(aiMetrics.p95LatencyMs)} ms</p>
                   </div>
@@ -216,35 +251,58 @@ export default async function AdminShellPage() {
         </>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Link href="/admin/units" className="rounded-xl border border-blue-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-          <p className="text-lg font-semibold text-slate-900">Units</p>
-          <p className="mt-1 text-sm text-slate-600">Manage unit availability and inventory status through <code>/v2/units</code>.</p>
-        </Link>
-        <Link href="/admin/reservations" className="rounded-xl border border-blue-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-          <p className="text-lg font-semibold text-slate-900">Reservations</p>
-          <p className="mt-1 text-sm text-slate-600">List, filter, paginate, and inspect reservation details via <code>/v2/reservations</code>.</p>
-        </Link>
-        <Link href="/admin/walk-in-tour" className="rounded-xl border border-blue-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-          <p className="text-lg font-semibold text-slate-900">Walk-in Tour</p>
-          <p className="mt-1 text-sm text-slate-600">Create on-site tour reservations through <code>POST /v2/reservations/tours</code>.</p>
-        </Link>
-        <Link href="/admin/payments" className="rounded-xl border border-blue-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-          <p className="text-lg font-semibold text-slate-900">Payments</p>
-          <p className="mt-1 text-sm text-slate-600">Review pending payment submissions and process verify/reject actions via <code>/v2/payments</code>.</p>
-        </Link>
-        <Link href="/admin/check-in" className="rounded-xl border border-blue-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-          <p className="text-lg font-semibold text-slate-900">Check-in</p>
-          <p className="mt-1 text-sm text-slate-600">Validate reservation codes and run check-in/check-out actions via <code>/v2/qr</code> and <code>/v2/operations</code>.</p>
-        </Link>
-        <Link href="/admin/reports" className="rounded-xl border border-blue-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-          <p className="text-lg font-semibold text-slate-900">Reports</p>
-          <p className="mt-1 text-sm text-slate-600">View daily/monthly summary metrics through <code>/v2/reports/overview</code>.</p>
-        </Link>
-        <Link href="/admin/audit" className="rounded-xl border border-blue-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-          <p className="text-lg font-semibold text-slate-900">Audit Logs</p>
-          <p className="mt-1 text-sm text-slate-600">Filter audit trails through <code>/v2/audit/logs</code> for compliance review.</p>
-        </Link>
+      <div className="grid gap-4 sm:grid-cols-2">
+        {[
+          {
+            href: "/admin/units",
+            title: "Units",
+            copy: "Manage unit availability and inventory status through /v2/units.",
+          },
+          {
+            href: "/admin/reservations",
+            title: "Reservations",
+            copy: "List, filter, paginate, and inspect reservation details via /v2/reservations.",
+          },
+          {
+            href: "/admin/walk-in-tour",
+            title: "Walk-in Tour",
+            copy: "Create on-site tour reservations through POST /v2/reservations/tours.",
+          },
+          {
+            href: "/admin/payments",
+            title: "Payments",
+            copy: "Review pending payment submissions and process verify/reject actions via /v2/payments.",
+          },
+          {
+            href: "/admin/check-in",
+            title: "Check-in",
+            copy: "Validate reservation codes and run check-in/check-out actions via /v2/qr and /v2/operations.",
+          },
+          {
+            href: "/admin/reports",
+            title: "Reports",
+            copy: "View daily/monthly summary metrics through /v2/reports/overview.",
+          },
+          {
+            href: "/admin/audit",
+            title: "Audit Logs",
+            copy: "Filter audit trails through /v2/audit/logs for compliance review.",
+          },
+        ].map((card) => (
+          <Link
+            key={card.href}
+            href={card.href}
+            className="group rounded-2xl border border-slate-200/70 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
+          >
+            <div className="flex items-center justify-between">
+              <p className="text-lg font-semibold text-slate-900">{card.title}</p>
+              <span className="text-xs font-semibold text-blue-700 opacity-0 transition group-hover:opacity-100">
+                Open
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-slate-600">{card.copy}</p>
+          </Link>
+        ))}
       </div>
     </section>
   );

@@ -215,7 +215,7 @@ export function BookNowClient({
 
   if (sessionLoading) {
     return (
-      <section className="mx-auto w-full max-w-5xl">
+      <section className="mx-auto w-full max-w-6xl">
         <h1 className="text-3xl font-bold text-slate-900">Book Your Stay</h1>
         <p className="mt-2 text-sm text-slate-600">Checking session...</p>
       </section>
@@ -224,7 +224,7 @@ export function BookNowClient({
 
   if (!token) {
     return (
-      <section className="mx-auto w-full max-w-5xl">
+      <section className="mx-auto w-full max-w-6xl">
         <h1 className="text-3xl font-bold text-slate-900">Book Your Stay</h1>
         <p className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
           Please sign in first to create a booking.
@@ -234,18 +234,27 @@ export function BookNowClient({
   }
 
   return (
-    <section className="mx-auto w-full max-w-5xl">
-      <header className="mb-6">
-        <h1 className="text-3xl font-bold text-slate-900">Book Your Stay</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Signed in as <strong>{sessionEmail ?? "guest"}</strong>
-        </p>
+    <section className="mx-auto w-full max-w-6xl">
+      <header className="mb-8 rounded-3xl border border-slate-200/70 bg-gradient-to-br from-white via-slate-50 to-blue-50 p-6 shadow-sm">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Guest Booking</p>
+            <h1 className="mt-2 text-3xl font-bold text-slate-900">Book Your Stay</h1>
+            <p className="mt-2 text-sm text-slate-600">
+              Signed in as <strong>{sessionEmail ?? "guest"}</strong>
+            </p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-xs text-slate-600">
+            <p className="font-semibold text-slate-900">3-step flow</p>
+            <p className="mt-1">Select dates â†’ pick units â†’ confirm booking</p>
+          </div>
+        </div>
       </header>
 
       {successMessage ? <p className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">{successMessage}</p> : null}
       {submitError ? <p className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{submitError}</p> : null}
       {latestAiRecommendation ? (
-        <div className="mb-4 rounded-lg border border-indigo-200 bg-indigo-50 p-3 text-sm text-indigo-900">
+        <div className="mb-5 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
           <p className="font-semibold">
             AI pricing signal: {toPeso(latestAiRecommendation.pricing_adjustment)} ({getAiSource(latestAiRecommendation)})
           </p>
@@ -260,10 +269,13 @@ export function BookNowClient({
         </div>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1fr]">
         <div className="space-y-6 lg:col-span-2">
-          <article className="rounded-xl bg-white p-6 shadow-sm">
-            <h2 className="mb-4 text-lg font-semibold text-slate-900">Select Dates</h2>
+          <article className="rounded-2xl border border-slate-200/70 bg-white p-6 shadow-sm">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-slate-900">Select Dates</h2>
+              <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">Step 1</span>
+            </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="grid gap-1 text-sm text-slate-700">
                 Check-in
@@ -299,8 +311,11 @@ export function BookNowClient({
             </p>
           </article>
 
-          <article className="rounded-xl bg-white p-6 shadow-sm">
-            <h2 className="mb-4 text-lg font-semibold text-slate-900">Available Units</h2>
+          <article className="rounded-2xl border border-slate-200/70 bg-white p-6 shadow-sm">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-slate-900">Available Units</h2>
+              <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">Step 2</span>
+            </div>
             {unitsError ? <p className="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{unitsError}</p> : null}
             {unitsLoading ? <p className="text-sm text-slate-600">Loading available units...</p> : null}
             {!unitsLoading && units.length === 0 ? <p className="text-sm text-slate-600">No units available for selected dates.</p> : null}
@@ -314,7 +329,7 @@ export function BookNowClient({
                     key={unit.unit_id}
                     type="button"
                     onClick={() => toggleUnit(unit.unit_id)}
-                    className={`w-full overflow-hidden rounded-lg border-2 text-left transition ${
+                    className={`w-full overflow-hidden rounded-2xl border-2 text-left transition ${
                       selected ? "border-[#1e3a8a] bg-blue-50" : "border-slate-200 bg-white hover:border-slate-300"
                     }`}
                   >
@@ -360,8 +375,11 @@ export function BookNowClient({
         </div>
 
         <aside className="lg:col-span-1">
-          <div className="sticky top-24 rounded-xl bg-white p-6 shadow-sm">
-            <h2 className="mb-4 text-lg font-semibold text-slate-900">Booking Summary</h2>
+          <div className="sticky top-24 rounded-2xl border border-slate-200/70 bg-white p-6 shadow-sm">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-slate-900">Booking Summary</h2>
+              <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">Step 3</span>
+            </div>
             {selectedUnits.length === 0 ? (
               <p className="text-sm text-slate-600">Select units to see summary.</p>
             ) : (
@@ -391,12 +409,12 @@ export function BookNowClient({
               type="button"
               onClick={() => void createReservation()}
               disabled={submitBusy || selectedUnitIds.length === 0}
-              className="mt-4 w-full rounded-lg bg-[#f97316] px-4 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-4 w-full rounded-xl bg-[#ca8a04] px-4 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitBusy ? "Creating..." : "Confirm Booking"}
             </button>
 
-            <p className="mt-3 text-center text-xs text-slate-500">This flow is V2 API only.</p>
+            <p className="mt-3 text-center text-xs text-slate-500">Secure checkout is verified after payment submission.</p>
           </div>
         </aside>
       </div>
