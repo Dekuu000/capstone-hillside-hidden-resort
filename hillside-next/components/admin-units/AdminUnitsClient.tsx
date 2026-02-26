@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { UnitItem, UnitListResponse } from "../../../packages/shared/src/types";
 import {
@@ -308,7 +309,18 @@ export function AdminUnitsClient({
             const cover = (unit.image_urls && unit.image_urls.length ? unit.image_urls[0] : unit.image_url) || "";
             return (
               <article key={unit.unit_id} className={`overflow-hidden rounded-xl border bg-white shadow-sm ${unit.is_active ? "border-blue-100" : "border-slate-200 opacity-70"}`}>
-                {cover ? <img src={cover} alt={unit.name} className="h-40 w-full object-cover" loading="lazy" /> : <div className="h-40 bg-slate-100" />}
+                {cover ? (
+                  <Image
+                    src={cover}
+                    alt={unit.name}
+                    width={640}
+                    height={256}
+                    sizes="(min-width: 1280px) 33vw, (min-width: 640px) 50vw, 100vw"
+                    className="h-40 w-full object-cover"
+                  />
+                ) : (
+                  <div className="h-40 bg-slate-100" />
+                )}
                 <div className="p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
