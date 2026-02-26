@@ -177,6 +177,31 @@ class OnchainEscrowRecord:
     amount_wei: int
 
 
+def _build_eip1559_fee_params(w3) -> dict[str, int]:
+    """
+    Use a conservative fee bump so Sepolia transactions are less likely to stall in mempool.
+    """
+    try:
+        base_fee = int(w3.eth.gas_price)
+    except Exception:  # noqa: BLE001
+        base_fee = int(w3.to_wei(2, "gwei"))
+
+    try:
+        priority_fee = int(w3.eth.max_priority_fee)
+    except Exception:  # noqa: BLE001
+        priority_fee = int(w3.to_wei(2, "gwei"))
+
+    min_priority_fee = int(w3.to_wei(2, "gwei"))
+    priority_fee = max(priority_fee, min_priority_fee)
+
+    # 3x headroom is intentional for testnet CI stability.
+    max_fee_per_gas = max(base_fee * 3, base_fee + (priority_fee * 2))
+    return {
+        "maxFeePerGas": int(max_fee_per_gas),
+        "maxPriorityFeePerGas": int(priority_fee),
+    }
+
+
 def lock_reservation_escrow_onchain(
     *,
     chain: ChainConfig,
@@ -208,8 +233,7 @@ def lock_reservation_escrow_onchain(
 
     booking_id = Web3.keccak(text=reservation_id)
     nonce = w3.eth.get_transaction_count(account.address, "pending")
-    max_priority_fee = w3.eth.max_priority_fee
-    base_fee = w3.eth.gas_price
+    fee_params = _build_eip1559_fee_params(w3)
 
     tx = contract.functions.lock(booking_id, recipient).build_transaction(
         {
@@ -218,8 +242,8 @@ def lock_reservation_escrow_onchain(
             "from": account.address,
             "value": settings.escrow_lock_amount_wei,
             "gas": 280000,
-            "maxFeePerGas": base_fee + max_priority_fee,
-            "maxPriorityFeePerGas": max_priority_fee,
+            "maxFeePerGas": fee_params["maxFeePerGas"],
+            "maxPriorityFeePerGas": fee_params["maxPriorityFeePerGas"],
         }
     )
     signed = account.sign_transaction(tx)
@@ -291,8 +315,7 @@ def release_reservation_escrow_onchain(
     )
 
     nonce = w3.eth.get_transaction_count(account.address, "pending")
-    max_priority_fee = w3.eth.max_priority_fee
-    base_fee = w3.eth.gas_price
+    fee_params = _build_eip1559_fee_params(w3)
 
     tx = contract.functions.release(booking_id_bytes32).build_transaction(
         {
@@ -300,8 +323,8 @@ def release_reservation_escrow_onchain(
             "nonce": nonce,
             "from": account.address,
             "gas": 220000,
-            "maxFeePerGas": base_fee + max_priority_fee,
-            "maxPriorityFeePerGas": max_priority_fee,
+            "maxFeePerGas": fee_params["maxFeePerGas"],
+            "maxPriorityFeePerGas": fee_params["maxPriorityFeePerGas"],
         }
     )
     signed = account.sign_transaction(tx)
@@ -362,8 +385,7 @@ def refund_reservation_escrow_onchain(
     )
 
     nonce = w3.eth.get_transaction_count(account.address, "pending")
-    max_priority_fee = w3.eth.max_priority_fee
-    base_fee = w3.eth.gas_price
+    fee_params = _build_eip1559_fee_params(w3)
 
     tx = contract.functions.refund(booking_id_bytes32).build_transaction(
         {
@@ -371,8 +393,8 @@ def refund_reservation_escrow_onchain(
             "nonce": nonce,
             "from": account.address,
             "gas": 220000,
-            "maxFeePerGas": base_fee + max_priority_fee,
-            "maxPriorityFeePerGas": max_priority_fee,
+            "maxFeePerGas": fee_params["maxFeePerGas"],
+            "maxPriorityFeePerGas": fee_params["maxPriorityFeePerGas"],
         }
     )
     signed = account.sign_transaction(tx)

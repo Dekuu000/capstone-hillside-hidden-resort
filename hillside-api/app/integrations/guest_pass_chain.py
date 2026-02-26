@@ -71,6 +71,29 @@ class GuestPassVerificationResult:
     valid: bool
 
 
+def _build_eip1559_fee_params(w3) -> dict[str, int]:
+    """
+    Use a conservative fee bump so Sepolia NFT mints are less likely to stall in mempool.
+    """
+    try:
+        base_fee = int(w3.eth.gas_price)
+    except Exception:  # noqa: BLE001
+        base_fee = int(w3.to_wei(2, "gwei"))
+
+    try:
+        priority_fee = int(w3.eth.max_priority_fee)
+    except Exception:  # noqa: BLE001
+        priority_fee = int(w3.to_wei(2, "gwei"))
+
+    min_priority_fee = int(w3.to_wei(2, "gwei"))
+    priority_fee = max(priority_fee, min_priority_fee)
+    max_fee_per_gas = max(base_fee * 3, base_fee + (priority_fee * 2))
+    return {
+        "maxFeePerGas": int(max_fee_per_gas),
+        "maxPriorityFeePerGas": int(priority_fee),
+    }
+
+
 def _reservation_hash_hex(web3_module, reservation_id: str) -> tuple[bytes, str]:
     reservation_hash = web3_module.keccak(text=reservation_id)
     return reservation_hash, web3_module.to_hex(reservation_hash)
@@ -107,8 +130,7 @@ def mint_guest_pass_onchain(
     reservation_hash_bytes, reservation_hash_hex = _reservation_hash_hex(Web3, reservation_id)
 
     nonce = w3.eth.get_transaction_count(account.address, "pending")
-    max_priority_fee = w3.eth.max_priority_fee
-    base_fee = w3.eth.gas_price
+    fee_params = _build_eip1559_fee_params(w3)
 
     tx = contract.functions.mintGuestPass(recipient, reservation_hash_bytes).build_transaction(
         {
@@ -116,8 +138,8 @@ def mint_guest_pass_onchain(
             "nonce": nonce,
             "from": account.address,
             "gas": 320000,
-            "maxFeePerGas": base_fee + max_priority_fee,
-            "maxPriorityFeePerGas": max_priority_fee,
+            "maxFeePerGas": fee_params["maxFeePerGas"],
+            "maxPriorityFeePerGas": fee_params["maxPriorityFeePerGas"],
         }
     )
     signed = account.sign_transaction(tx)

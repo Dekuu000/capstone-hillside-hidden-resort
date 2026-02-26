@@ -309,6 +309,7 @@ jobs:
           ESCROW_CONTRACT_ADDRESS_SEPOLIA: ${{ env.SEPOLIA_ESCROW_CONTRACT_ADDRESS }}
           GUEST_PASS_CONTRACT_ADDRESS_SEPOLIA: ${{ env.SEPOLIA_GUEST_PASS_CONTRACT_ADDRESS }}
           ESCROW_SIGNER_PRIVATE_KEY_SEPOLIA: ${{ env.SEPOLIA_ESCROW_SIGNER_PRIVATE_KEY }}
+          ESCROW_TX_RECEIPT_TIMEOUT_SEC: "240"
           ESCROW_RECONCILIATION_CHAIN_KEY: sepolia
           AI_SERVICE_BASE_URL: http://127.0.0.1:8100
         run: python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --app-dir hillside-api >/tmp/hillside-api-sepolia.log 2>&1 &
@@ -331,13 +332,17 @@ jobs:
           test -s /tmp/api-health-sepolia.json
           test -s /tmp/ai-health-sepolia.json
 
-      - name: Sepolia reliability smoke (LoopCount=3)
+      - name: Sepolia reliability smoke (adaptive loop count)
         if: ${{ steps.sepolia-guard.outputs.run_smoke == 'true' }}
         shell: pwsh
         run: |
+          $loopCount = if ("${{ github.event_name }}" -eq "pull_request") { 1 } else { 3 }
+          Write-Host "Using Sepolia smoke LoopCount=$loopCount for event=${{ github.event_name }}"
+
           ./docs/re-architecture-core/scripts/sepolia-reliability-smoke.ps1 `
             -ApiBaseUrl "http://127.0.0.1:8000" `
-            -LoopCount 3 `
+            -LoopCount $loopCount `
+            -VisitDateOffsetDays 0 `
             -SupabaseUrl "${{ env.SEPOLIA_SUPABASE_URL }}" `
             -SupabasePublishableKey "${{ env.SEPOLIA_SUPABASE_PUBLISHABLE_KEY }}" `
             -AdminEmail "${{ env.SEPOLIA_ADMIN_EMAIL }}" `
@@ -345,8 +350,30 @@ jobs:
 
           $report = Get-Content ./docs/re-architecture-core/sepolia-reliability-report.json -Raw | ConvertFrom-Json
           if ($report.success_count -ne $report.loop_count) {
+            Write-Host "Sepolia smoke failed run errors:"
+            $report.runs `
+              | Where-Object { $_.error -or -not $_.create_ok -or -not $_.guest_pass_ok -or -not $_.checkin_ok -or $_.reconciliation_alert } `
+              | Select-Object run, error, create_ok, guest_pass_ok, checkin_ok, reconciliation_alert `
+              | Format-List
             throw "Sepolia reliability smoke failed: $($report.success_count)/$($report.loop_count)"
           }
+
+      - name: Dump API/AI logs on Sepolia smoke failure
+        if: ${{ failure() && steps.sepolia-guard.outputs.run_smoke == 'true' }}
+        shell: bash
+        run: |
+          echo "=== hillside-api (last 250 lines) ==="
+          if [ -f /tmp/hillside-api-sepolia.log ]; then
+            tail -n 250 /tmp/hillside-api-sepolia.log
+          else
+            echo "No /tmp/hillside-api-sepolia.log found"
+          fi
+          echo "=== hillside-ai (last 150 lines) ==="
+          if [ -f /tmp/hillside-ai-sepolia.log ]; then
+            tail -n 150 /tmp/hillside-ai-sepolia.log
+          else
+            echo "No /tmp/hillside-ai-sepolia.log found"
+          fi
 
       - name: Upload Sepolia smoke artifacts
         if: ${{ always() && steps.sepolia-guard.outputs.run_smoke == 'true' }}

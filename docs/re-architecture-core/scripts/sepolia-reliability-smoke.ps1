@@ -1,7 +1,7 @@
 param(
   [string]$ApiBaseUrl = "http://localhost:8000",
   [int]$LoopCount = 10,
-  [int]$VisitDateOffsetDays = 1,
+  [int]$VisitDateOffsetDays = 0,
   [string]$AdminToken = "",
   [string]$SupabaseUrl = "",
   [string]$SupabasePublishableKey = "",
@@ -96,8 +96,9 @@ for ($i = 1; $i -le $LoopCount; $i++) {
   }
 
   try {
-    # Use tomorrow by default to avoid timezone/date-boundary failures in CI.
-    $visitDate = (Get-Date).AddDays($VisitDateOffsetDays).ToString("yyyy-MM-dd")
+    # Align visit_date with Asia/Manila check-in rules in the DB.
+    $manilaNow = [TimeZoneInfo]::ConvertTimeBySystemTimeZoneId((Get-Date), "Asia/Manila")
+    $visitDate = $manilaNow.Date.AddDays($VisitDateOffsetDays).ToString("yyyy-MM-dd")
     $createBody = @{
       service_id = $serviceId
       visit_date = $visitDate
@@ -143,7 +144,11 @@ for ($i = 1; $i -le $LoopCount; $i++) {
     $run.reconciliation_alert = [bool]$monitor.alert_active
   }
   catch {
-    $run.error = $_.Exception.Message
+    $errorMessage = $_.Exception.Message
+    if ($_.ErrorDetails -and -not [string]::IsNullOrWhiteSpace($_.ErrorDetails.Message)) {
+      $errorMessage = "{0} | response={1}" -f $errorMessage, $_.ErrorDetails.Message
+    }
+    $run.error = $errorMessage
   }
   finally {
     $run.ended_at = (Get-Date).ToString("o")
@@ -189,4 +194,8 @@ $failedRuns = @($runs | Where-Object { $_.error -or -not $_.create_ok -or -not $
 if (@($failedRuns).Count -gt 0) {
   Write-Host "Failed run details:"
   @($failedRuns) | Select-Object run, reservation_id, create_ok, guest_pass_ok, checkin_ok, reconciliation_alert, error | Format-Table -AutoSize
+  Write-Host "Failed run errors (full):"
+  foreach ($failed in @($failedRuns)) {
+    Write-Host ("run={0} error={1}" -f $failed.run, $failed.error)
+  }
 }
