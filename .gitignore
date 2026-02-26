@@ -1,0 +1,29 @@
+# Root-level ignores for V2 runtimes
+node_modules/
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+dist/
+build/
+.DS_Store
+.next/
+
+# Local tooling
+.codex/
+-Uri
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Python artifacts
+*.pyc
+
+# Contract artifacts
+hillside-contracts/artifacts/
+hillside-contracts/cache/
+hillside-contracts/typechain-types/
+hillside-next/.next/
