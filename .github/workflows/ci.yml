@@ -342,6 +342,7 @@ jobs:
           ./docs/re-architecture-core/scripts/sepolia-reliability-smoke.ps1 `
             -ApiBaseUrl "http://127.0.0.1:8000" `
             -LoopCount $loopCount `
+            -VisitDateOffsetDays 0 `
             -SupabaseUrl "${{ env.SEPOLIA_SUPABASE_URL }}" `
             -SupabasePublishableKey "${{ env.SEPOLIA_SUPABASE_PUBLISHABLE_KEY }}" `
             -AdminEmail "${{ env.SEPOLIA_ADMIN_EMAIL }}" `

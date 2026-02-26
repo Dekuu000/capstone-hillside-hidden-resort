@@ -1,7 +1,7 @@
 param(
   [string]$ApiBaseUrl = "http://localhost:8000",
   [int]$LoopCount = 10,
-  [int]$VisitDateOffsetDays = 1,
+  [int]$VisitDateOffsetDays = 0,
   [string]$AdminToken = "",
   [string]$SupabaseUrl = "",
   [string]$SupabasePublishableKey = "",
@@ -96,8 +96,9 @@ for ($i = 1; $i -le $LoopCount; $i++) {
   }
 
   try {
-    # Use tomorrow by default to avoid timezone/date-boundary failures in CI.
-    $visitDate = (Get-Date).AddDays($VisitDateOffsetDays).ToString("yyyy-MM-dd")
+    # Align visit_date with Asia/Manila check-in rules in the DB.
+    $manilaNow = [TimeZoneInfo]::ConvertTimeBySystemTimeZoneId((Get-Date), "Asia/Manila")
+    $visitDate = $manilaNow.Date.AddDays($VisitDateOffsetDays).ToString("yyyy-MM-dd")
     $createBody = @{
       service_id = $serviceId
       visit_date = $visitDate
