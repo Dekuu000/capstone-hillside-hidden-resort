@@ -23,3 +23,9 @@
 
 - Keep private keys server-side only (`.env`, deployment secret manager).
 - Never expose service-role or chain signer secrets to browser code.
+
+## Performance instrumentation
+
+- API emits `x-api-latency-ms` and p95 sample headers for `/v2/*` routes.
+- `/v2/dashboard/perf` exposes rolling API + DB timing snapshots for ops review.
+- FastAPI uses short-lived in-memory TTL cache for read-heavy endpoints (rooms, dashboard, services).

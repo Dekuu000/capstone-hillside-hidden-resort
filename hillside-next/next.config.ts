@@ -39,6 +39,18 @@ const scriptSrc = ["'self'", "'unsafe-inline'", isDev ? "'unsafe-eval'" : ""]
   .filter(Boolean)
   .join(" ");
 
+const imageRemotePatterns = [
+  ...(supabaseOrigin
+    ? [
+        {
+          protocol: "https",
+          hostname: new URL(supabaseOrigin).hostname,
+          pathname: "/**",
+        },
+      ]
+    : []),
+];
+
 const securityHeaders = [
   { key: "X-Frame-Options", value: "DENY" },
   { key: "X-Content-Type-Options", value: "nosniff" },
@@ -67,6 +79,9 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   outputFileTracingRoot: path.join(process.cwd(), ".."),
+  images: {
+    remotePatterns: imageRemotePatterns,
+  },
   async headers() {
     return [
       {

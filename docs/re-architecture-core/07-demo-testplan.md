@@ -73,7 +73,7 @@ $report.runs | Where-Object { $_.error -or -not $_.create_ok -or -not $_.guest_p
 
 ## Smoke checks
 
-1. Legacy app still starts (`hillside-app`).
+1. Legacy app remains in repo but is excluded from CI builds.
 2. Next.js shell starts (`hillside-next`).
 3. FastAPI health endpoint responds (`/health`).
 4. Contracts workspace compiles.
@@ -97,15 +97,21 @@ $report.runs | Where-Object { $_.error -or -not $_.create_ok -or -not $_.guest_p
 
 ## Performance checks
 
-1. Initial list endpoint P95 latency under target.
-2. Cursor pagination returns stable, non-duplicated rows.
-3. Frontend route transitions keep perceived loading feedback.
+1. Capture API perf snapshot:
+```powershell
+$headers = @{ Authorization = "Bearer $adminToken" }
+Invoke-RestMethod -Method GET -Uri "http://127.0.0.1:8000/v2/dashboard/perf" -Headers $headers
+```
+2. Initial list endpoint P95 latency under target.
+3. Cursor pagination returns stable, non-duplicated rows.
+4. Frontend route transitions keep perceived loading feedback.
+5. Frontend console logs show request counts + timing per page.
+6. Update `docs/re-architecture-core/perf-report.md` with measured top-10 results.
 
 ## Release Operations
 
 1. Baseline tag exists and points to the green release gate run (`v0.9.0-rc1`).
 2. Branch protection on `master` must require these checks:
-   - `web-validate`
    - `api-validate (3.11)`
    - `api-validate (3.12)`
    - `release-gate-core`

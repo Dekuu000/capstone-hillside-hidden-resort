@@ -3,7 +3,6 @@
   "private": true,
   "version": "0.1.0",
   "workspaces": [
-    "hillside-app",
     "hillside-next",
     "hillside-contracts",
     "packages/shared"
@@ -14,8 +13,8 @@
     "dev:api": "python -m uvicorn app.main:app --reload --port 8000 --app-dir hillside-api",
     "dev:ai": "hillside-ai\\.venv\\Scripts\\python.exe -m uvicorn app.main:app --reload --port 8100 --app-dir hillside-ai",
     "dev:contracts": "npx --prefix hillside-contracts hardhat node",
-    "lint": "npm --prefix hillside-app run lint && npm --prefix hillside-next run lint && cd hillside-api && ruff check app tests",
-    "typecheck": "npm --workspace hillside-app exec tsc -b --pretty false && npm --workspace hillside-next run typecheck && npm --workspace @hillside/shared run typecheck",
-    "test": "npm --prefix hillside-app run test -- --run --passWithNoTests && python -m pytest hillside-api/tests -q && npm --prefix hillside-contracts run test"
+    "lint": "npm --prefix hillside-next run lint && cd hillside-api && ruff check app tests",
+    "typecheck": "npm --workspace hillside-next run typecheck && npm --workspace @hillside/shared run typecheck",
+    "test": "python -m pytest hillside-api/tests -q && npm --prefix hillside-contracts run test"
   }
 }

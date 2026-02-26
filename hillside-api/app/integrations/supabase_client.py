@@ -79,6 +79,34 @@ RESERVATION_DETAIL_SELECT = """
     )
 """
 
+SERVICE_SELECT = """
+    service_id,
+    service_name,
+    service_type,
+    start_time,
+    end_time,
+    adult_rate,
+    kid_rate,
+    kid_age_rule,
+    status,
+    capacity_limit,
+    description
+"""
+
+AI_FORECAST_SELECT = """
+    forecast_id,
+    forecast_type,
+    start_date,
+    horizon_days,
+    model_version,
+    source,
+    inputs,
+    series,
+    created_by_user_id,
+    created_at,
+    notes
+"""
+
 PAYMENT_SELECT = """
     *,
     reservation:reservations!inner(
@@ -776,8 +804,20 @@ def list_admin_payments(
         query = query.eq("status", "rejected")
 
     search_term = (search or "").strip().lower()
-    response = query.range(0, 999).execute()
-    rows = response.data or []
+    scan_required = bool(search_term) or tab == "to_review"
+    if scan_required:
+        scan_limit = min(1000, max(limit + offset, 200))
+        response = _timed_execute(
+            "db.payments.list_admin.scan",
+            lambda: query.range(0, scan_limit - 1).execute(),
+        )
+        rows = response.data or []
+    else:
+        response = _timed_execute(
+            "db.payments.list_admin.page",
+            lambda: query.range(offset, offset + limit - 1).execute(),
+        )
+        rows = response.data or []
 
     if tab == "to_review":
         rows = [
@@ -797,7 +837,7 @@ def list_admin_payments(
             reservation["status"] = canonical_booking_status(reservation.get("status"))
 
     paginated = rows[offset : offset + limit]
-    if not search_term and tab != "to_review":
+    if not scan_required and tab != "to_review":
         total = int(response.count or len(rows))
     else:
         total = len(rows)
@@ -838,7 +878,7 @@ def list_audit_logs(
         query = query.ilike("entity_id", f"%{search.strip()}%")
 
     response = _timed_execute(
-        "db.units.list_admin.page",
+        "db.audit.list.page",
         lambda: query.range(offset, offset + limit - 1).execute(),
     )
     return response.data or [], int(response.count or 0)
@@ -868,7 +908,10 @@ def list_units_admin(
         if term:
             query = query.or_(f"name.ilike.%{term}%,description.ilike.%{term}%")
 
-    response = query.range(offset, offset + limit - 1).execute()
+    response = _timed_execute(
+        "db.units.list_admin.page",
+        lambda: query.range(offset, offset + limit - 1).execute(),
+    )
     return response.data or [], int(response.count or 0)
 
 
@@ -1234,12 +1277,13 @@ def get_available_units(
 def list_active_services() -> list[dict[str, Any]]:
     try:
         client = get_supabase_client()
-        response = (
-            client.table("services")
-            .select("*")
+        response = _timed_execute(
+            "db.services.list_active",
+            lambda: client.table("services")
+            .select(SERVICE_SELECT)
             .eq("status", "active")
             .order("service_type", desc=False)
-            .execute()
+            .execute(),
         )
         return response.data or []
     except Exception as exc:  # noqa: BLE001
@@ -1319,13 +1363,14 @@ def get_report_monthly(
 def get_active_service_by_id(service_id: str) -> dict[str, Any] | None:
     try:
         client = get_supabase_client()
-        response = (
-            client.table("services")
-            .select("*")
+        response = _timed_execute(
+            "db.services.get_active",
+            lambda: client.table("services")
+            .select(SERVICE_SELECT)
             .eq("service_id", service_id)
             .eq("status", "active")
             .limit(1)
-            .execute()
+            .execute(),
         )
         rows = response.data or []
         return rows[0] if rows else None
@@ -1404,7 +1449,7 @@ def insert_ai_occupancy_forecast(
         # Some supabase client/runtime combinations don't return inserted rows by default.
         verify = (
             client.table("ai_forecasts")
-            .select("*")
+            .select(AI_FORECAST_SELECT)
             .eq("forecast_type", "occupancy")
             .eq("start_date", start_date)
             .eq("horizon_days", horizon_days)

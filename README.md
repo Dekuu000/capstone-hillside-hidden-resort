@@ -4,7 +4,7 @@ Web3-hybrid capstone workspace with legacy runtime + V2 migration runtimes runni
 
 ## Runtimes
 
-- `hillside-app/` - legacy production app (`React + Vite + Supabase`), kept operational.
+- `hillside-app/` - legacy production app (`React + Vite + Supabase`), archived and not built in CI.
 - `hillside-next/` - Next.js 15 migration app (Tailwind, SSR shell).
 - `hillside-api/` - FastAPI V2 domain API.
 - `hillside-contracts/` - Solidity/Hardhat workspace (Polygon Amoy target).
@@ -15,7 +15,7 @@ Web3-hybrid capstone workspace with legacy runtime + V2 migration runtimes runni
 
 ```bash
 npm install
-npm run dev:react
+npm run dev:react   # optional legacy dev
 npm run dev:next
 npm run dev:api
 npm run dev:contracts

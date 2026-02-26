@@ -1,7 +1,8 @@
 [build]
-  base = "hillside-app"
+  # Legacy React app is archived; Netlify config now targets hillside-next.
+  base = "hillside-next"
   command = "npm run build"
-  publish = "dist"
+  publish = ".next"
 
 [[redirects]]
   from = "/*"

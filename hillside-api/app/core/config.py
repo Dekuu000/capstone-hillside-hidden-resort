@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     supabase_service_role_key: str = ""
     api_jwt_issuer: str = ""
     api_jwt_audience: str = "authenticated"
+    cache_ttl_seconds: int = 60
 
     feature_escrow_shadow_write: bool = False
     feature_escrow_onchain_lock: bool = False

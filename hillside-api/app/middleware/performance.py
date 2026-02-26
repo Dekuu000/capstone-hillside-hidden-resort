@@ -6,8 +6,8 @@ from starlette.responses import Response
 
 from app.observability.perf_metrics import perf_metrics
 
-MONITORED_PATH_PREFIXES = ("/v2/reservations", "/v2/units")
-MONITORED_PATH_EXACT = {"/v2/dashboard/summary"}
+MONITORED_PATH_PREFIXES = ("/v2/",)
+MONITORED_PATH_EXACT: set[str] = set()
 
 
 def _is_monitored_path(path: str) -> bool:

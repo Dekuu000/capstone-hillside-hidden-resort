@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { PricingRecommendation, ReservationCreateResponse } from "../../../packages/shared/src/types";
@@ -318,11 +319,12 @@ export function BookNowClient({
                     }`}
                   >
                     {previewImage ? (
-                      <img
+                      <Image
                         src={previewImage}
                         alt={unit.name}
-                        loading="lazy"
-                        decoding="async"
+                        width={640}
+                        height={256}
+                        sizes="(min-width: 1024px) 50vw, 100vw"
                         className="h-40 w-full object-cover"
                       />
                     ) : null}

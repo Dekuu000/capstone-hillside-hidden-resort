@@ -3,6 +3,8 @@ from datetime import date, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.core.auth import AuthContext, require_admin
+from app.core.cache import TTLCache
+from app.core.config import settings
 from app.integrations.supabase_client import (
     get_report_summary as get_report_summary_rpc,
     list_admin_payments,
@@ -13,6 +15,7 @@ from app.observability.perf_metrics import perf_metrics
 from app.schemas.common import DashboardSummaryResponse
 
 router = APIRouter()
+_CACHE = TTLCache(settings.cache_ttl_seconds)
 
 
 def _to_float(value: object) -> float:
@@ -51,6 +54,11 @@ def get_dashboard_summary(
             detail="Date range cannot exceed 366 days.",
         )
 
+    cache_key = f"dashboard:summary:{auth.user_id}:{from_value.isoformat()}:{to_value.isoformat()}"
+    cached = _CACHE.get(cache_key)
+    if cached:
+        return cached
+
     try:
         _, active_units_count = list_units_admin(limit=1, offset=0, is_active=True)
         _, for_verification_count = list_recent_reservations(limit=1, offset=0, status_filter="for_verification")
@@ -64,7 +72,7 @@ def get_dashboard_summary(
     except RuntimeError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
 
-    return {
+    payload = {
         "from_date": from_value.isoformat(),
         "to_date": to_value.isoformat(),
         "metrics": {
@@ -82,6 +90,8 @@ def get_dashboard_summary(
             "tour_booked_value": _to_float(summary_row.get("tour_booked_value")),
         },
     }
+    _CACHE.set(cache_key, payload)
+    return payload
 
 
 @router.get("/perf")
