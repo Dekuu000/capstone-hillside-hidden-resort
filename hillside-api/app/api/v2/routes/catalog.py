@@ -3,6 +3,8 @@ from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.core.auth import AuthContext, require_authenticated
+from app.core.cache import TTLCache
+from app.core.config import settings
 from app.integrations.supabase_client import (
     get_available_units as get_available_units_rpc,
     list_active_services as list_active_services_rpc,
@@ -10,6 +12,7 @@ from app.integrations.supabase_client import (
 from app.schemas.common import ServiceListResponse
 
 router = APIRouter()
+_CACHE = TTLCache(settings.cache_ttl_seconds)
 
 
 @router.get("/units/available")
@@ -44,12 +47,19 @@ def get_available_units(
 
 @router.get("/services", response_model=ServiceListResponse)
 def get_active_services(_auth: AuthContext = Depends(require_authenticated)):
+    cache_key = "catalog:services:active"
+    cached = _CACHE.get(cache_key)
+    if cached:
+        return cached
+
     try:
         rows = list_active_services_rpc()
     except RuntimeError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
 
-    return {
+    payload = {
         "items": rows,
         "count": len(rows),
     }
+    _CACHE.set(cache_key, payload)
+    return payload

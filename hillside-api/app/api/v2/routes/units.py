@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.core.auth import AuthContext, require_admin
+from app.core.cache import TTLCache
+from app.core.config import settings
 from app.integrations.supabase_client import (
     create_unit,
     get_unit_by_id,
@@ -21,6 +23,7 @@ from app.schemas.common import (
 )
 
 router = APIRouter()
+_CACHE = TTLCache(settings.cache_ttl_seconds)
 
 
 @router.get("", response_model=UnitListResponse)
@@ -32,6 +35,11 @@ def get_units(
     search: str | None = Query(default=None, max_length=120),
     _auth: AuthContext = Depends(require_admin),
 ):
+    cache_key = f"units:list:{limit}:{offset}:{unit_type}:{is_active}:{search}"
+    cached = _CACHE.get(cache_key)
+    if cached:
+        return cached
+
     try:
         rows, total = list_units_admin(
             limit=limit,
@@ -43,13 +51,15 @@ def get_units(
     except RuntimeError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
 
-    return {
+    payload = {
         "items": rows,
         "count": total,
         "limit": limit,
         "offset": offset,
         "has_more": offset + len(rows) < total,
     }
+    _CACHE.set(cache_key, payload)
+    return payload
 
 
 @router.get("/{unit_id}", response_model=UnitItem)
@@ -77,6 +87,7 @@ def post_unit(
     except RuntimeError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
 
+    _CACHE.clear()
     return {"ok": True, "unit": unit}
 
 
@@ -101,6 +112,7 @@ def patch_unit(
     if not unit:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unit not found")
 
+    _CACHE.clear()
     return {"ok": True, "unit": unit}
 
 
@@ -117,6 +129,7 @@ def delete_unit(
     if not row:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unit not found")
 
+    _CACHE.clear()
     return {
         "ok": True,
         "unit_id": unit_id,
@@ -138,6 +151,7 @@ def patch_unit_status(
     if not unit:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unit not found")
 
+    _CACHE.clear()
     return {
         "ok": True,
         "unit": unit,
