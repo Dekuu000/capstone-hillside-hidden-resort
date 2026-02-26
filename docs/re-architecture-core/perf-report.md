@@ -1,32 +1,40 @@
-# Performance Report (Initial Baseline)
+# Performance Report (Measured Snapshot)
 
 Last updated: 2026-02-26
 
-## Top 10 slow endpoints (baseline hypotheses)
+Snapshot source: `/v2/dashboard/perf`
 
-1. `GET /v2/reservations` — wide joins + optional search scan.
-2. `GET /v2/payments` — admin filters + reservation joins.
-3. `GET /v2/audit/logs` — large log table, timestamp sort.
-4. `GET /v2/reports/transactions` — date range filters + joins.
-5. `GET /v2/me/bookings` — cursor + client-side filtering.
-6. `GET /v2/units` — admin list + search.
-7. `GET /v2/dashboard/summary` — multiple list queries + report RPC.
-8. `GET /v2/catalog/services` — read-heavy lookup.
-9. `GET /v2/catalog/units/available` — RPC + availability checks.
-10. `GET /v2/reservations/{id}` — detail fetch with nested relations.
+## Top 10 slow endpoints (p95, ms)
 
-## Top 10 slow pages (baseline hypotheses)
+1. `GET /v2/escrow/reconciliation` — p95 19848.28 ms (on-chain reconciliation).
+2. `GET /v2/reports/overview` — p95 4949.52 ms (report aggregation).
+3. `GET /v2/payments` — p95 1093.31 ms (admin list + filters).
+4. `GET /v2/reservations` — p95 1449.22 ms (admin list + joins).
+5. `GET /v2/catalog/services` — p95 863.87 ms (services list).
+6. `GET /v2/dashboard/perf` — p95 605.42 ms (metrics snapshot).
+7. `GET /v2/audit/logs` — p95 424.43 ms (audit table).
+8. `GET /v2/me/bookings` — p95 319.48 ms (guest bookings list).
+9. `GET /v2/units` — p95 332.68 ms (units list).
+10. `GET /v2/catalog/units/available` — p95 283.19 ms (availability RPC).
 
-1. `/admin/reservations` — table + search + pagination.
-2. `/admin/payments` — payment review list.
-3. `/admin/audit` — log table.
-4. `/admin/reports` — charts + reporting range.
-5. `/admin/units` — media-heavy card grid.
-6. `/my-bookings` — cursor paging.
-7. `/guest` — summary + quick actions.
-8. `/book` — availability RPC + unit cards.
-9. `/tours` — services + availability.
-10. `/admin/scan` — QR preview + token verification.
+## DB timing highlights (p95, ms)
+
+1. `db.escrow.reconciliation.page` — p95 1362.45 ms
+2. `db.payments.list_admin.scan` — p95 1083.93 ms
+3. `db.reservations.list_recent.page` — p95 416.39 ms
+4. `db.services.list_active` — p95 465.71 ms
+5. `db.audit.list.page` — p95 297.20 ms
+6. `db.units.list_admin.page` — p95 325.13 ms
+
+## Top pages (observed)
+
+1. `/admin/reservations`
+2. `/admin/payments`
+3. `/admin/audit`
+4. `/admin/reports`
+5. `/admin/units`
+6. `/my-bookings`
+7. `/book`
 
 ## Changes applied in this pass
 
@@ -41,7 +49,6 @@ Last updated: 2026-02-26
 
 ## Next measurement steps
 
-1. Hit `/v2/dashboard/perf` after representative page navigation.
-2. Capture the slowest API entries + p95 values.
-3. Replace hypotheses above with measured top-10 list.
-
+1. Re-run `/v2/dashboard/perf` after a full admin + guest navigation pass.
+2. Compare p95 deltas against this baseline.
+3. Add pagination/search index work if `db.payments.list_admin.scan` remains high.
