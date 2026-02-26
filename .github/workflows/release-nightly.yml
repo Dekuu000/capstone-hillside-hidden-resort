@@ -1,0 +1,14 @@
+name: Release Nightly (Sepolia)
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+jobs:
+  nightly-sepolia:
+    name: Nightly Sepolia Reliability
+    uses: ./.github/workflows/ci.yml
+    with:
+      run_sepolia_smoke: true
+    secrets: inherit
