@@ -3,6 +3,14 @@ name: Deploy Netlify (Manual)
 on:
   workflow_dispatch:
     inputs:
+      deploy_legacy_react:
+        description: "Deploy legacy React (hillside-app). Leave false to keep archived."
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
       deploy_target:
         description: "Choose deployment target"
         required: true
@@ -14,6 +22,7 @@ on:
 
 jobs:
   deploy:
+    if: ${{ github.event.inputs.deploy_legacy_react == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: ${{ github.event.inputs.deploy_target == 'production' && 'production' || 'preview' }}
