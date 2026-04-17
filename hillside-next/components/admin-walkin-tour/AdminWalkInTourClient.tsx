@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { AlertCircle, Loader2, Phone, Ticket, User } from "lucide-react";
 import type {
   PricingRecommendation,
   ReservationCreateResponse,
@@ -13,10 +15,14 @@ import {
   serviceListResponseSchema,
 } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
+import { syncAwareMutation } from "../../lib/offlineSync/mutation";
+import { FancyDatePicker } from "../shared/FancyDatePicker";
+import { useToast } from "../shared/ToastProvider";
 
 type AdminWalkInTourClientProps = {
   initialToken?: string | null;
   initialServicesData?: ServiceListResponse | null;
+  embedded?: boolean;
 };
 
 function toPeso(value: number) {
@@ -44,7 +50,9 @@ function getAiSource(recommendation: PricingRecommendation | null) {
 export function AdminWalkInTourClient({
   initialToken = null,
   initialServicesData = null,
+  embedded = false,
 }: AdminWalkInTourClientProps) {
+  const { showToast } = useToast();
   const router = useRouter();
   const token = initialToken;
 
@@ -62,7 +70,7 @@ export function AdminWalkInTourClient({
 
   const [submitBusy, setSubmitBusy] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [queuedOperationId, setQueuedOperationId] = useState<string | null>(null);
   const [latestAiRecommendation, setLatestAiRecommendation] = useState<PricingRecommendation | null>(null);
 
   useEffect(() => {
@@ -134,30 +142,51 @@ export function AdminWalkInTourClient({
 
     setSubmitBusy(true);
     setSubmitError(null);
-    setSuccessMessage(null);
+    setQueuedOperationId(null);
     setLatestAiRecommendation(null);
 
     try {
-      const created = await apiFetch<ReservationCreateResponse>(
-        "/v2/reservations/tours",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            service_id: serviceId,
-            visit_date: visitDate,
-            adult_qty: adultQty,
-            kid_qty: kidQty,
-            is_advance: false,
-            notes: combinedNotes || null,
-          }),
-        },
-        token,
-        reservationCreateResponseSchema,
+      const payload = {
+        service_id: serviceId,
+        visit_date: visitDate,
+        adult_qty: adultQty,
+        kid_qty: kidQty,
+        is_advance: false,
+        notes: combinedNotes || null,
+      };
+      const created = await syncAwareMutation<typeof payload, ReservationCreateResponse>({
+        path: "/v2/reservations/tours",
+        method: "POST",
+        payload,
+        parser: reservationCreateResponseSchema,
+        accessToken: token,
+        entityType: "tour_reservation",
+        action: "reservations.tours.create",
+      });
+      if (created.mode === "queued") {
+        setQueuedOperationId(created.operationId);
+        setGuestName("");
+        setGuestPhone("");
+        setNotes("");
+        showToast({
+          type: "info",
+          title: "Walk-in tour saved offline",
+          message: "Queued in Sync Center and will redirect to Payments after sync.",
+        });
+        return;
+      }
+      const createdData = created.data;
+      setLatestAiRecommendation(createdData.ai_recommendation ?? null);
+      showToast({
+        type: "success",
+        title: `Walk-in tour ${createdData.reservation_code} created`,
+        message: "Redirecting to Payments for settlement.",
+      });
+      router.push(
+        `/admin/payments?source=walkin&walkin_type=tour&reservation_id=${encodeURIComponent(createdData.reservation_id)}&amount=${encodeURIComponent(
+          String(Math.max(1, Math.round(totalAmount))),
+        )}&method=cash`,
       );
-      setLatestAiRecommendation(created.ai_recommendation ?? null);
-
-      setSuccessMessage(`Walk-in tour ${created.reservation_code} created successfully.`);
-      window.setTimeout(() => router.push("/admin/reservations"), 800);
     } catch (unknownError) {
       setSubmitError(unknownError instanceof Error ? unknownError.message : "Failed to create walk-in tour.");
     } finally {
@@ -177,17 +206,29 @@ export function AdminWalkInTourClient({
   }
 
   return (
-    <section className="mx-auto w-full max-w-3xl">
-      <header className="mb-6">
-        <h1 className="text-3xl font-bold text-slate-900">Walk-in Tour</h1>
-        <p className="mt-1 text-sm text-slate-600">Create on-site tour reservations through the V2 API.</p>
-      </header>
-
-      {successMessage ? (
-        <p className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">{successMessage}</p>
+    <section className={`mx-auto w-full ${embedded ? "max-w-none" : "max-w-6xl"}`}>
+      {!embedded ? (
+        <header className="mb-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-sm)]">
+          <h1 className="text-3xl font-bold text-[var(--color-text)]">Walk-in Tour</h1>
+          <p className="mt-1 text-sm text-[var(--color-muted)]">
+            Create on-site tour reservations, then continue to Payments to record settlement.
+          </p>
+        </header>
       ) : null}
+
       {submitError ? (
-        <p className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{submitError}</p>
+        <div className="mb-4 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{submitError}</span>
+        </div>
+      ) : null}
+      {queuedOperationId ? (
+        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          <p className="font-semibold">Walk-in tour saved offline</p>
+          <p className="mt-1 text-xs text-amber-800">
+            Operation {queuedOperationId.slice(0, 8)} is queued. Reconnect and run Sync to create this tour, then continue payment.
+          </p>
+        </div>
       ) : null}
       {latestAiRecommendation ? (
         <div className="mb-4 rounded-lg border border-indigo-200 bg-indigo-50 p-3 text-sm text-indigo-900">
@@ -205,7 +246,12 @@ export function AdminWalkInTourClient({
         </div>
       ) : null}
 
-      <div className="rounded-xl border border-blue-100 bg-white p-6 shadow-sm">
+      <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-sm)]">
+        <div className="mb-4 flex items-center gap-2">
+          <Ticket className="h-4 w-4 text-[var(--color-secondary)]" />
+          <h2 className="text-lg font-semibold text-[var(--color-text)]">Tour Reservation</h2>
+        </div>
+
         <div className="grid gap-4 md:grid-cols-2">
           <label className="grid gap-1 text-sm text-slate-700">
             Select Tour
@@ -213,7 +259,7 @@ export function AdminWalkInTourClient({
               value={serviceId}
               onChange={(event) => setServiceId(event.target.value)}
               disabled={servicesLoading}
-              className="rounded-lg border border-slate-300 px-3 py-2 outline-none ring-blue-200 transition focus:ring-2"
+              className="rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 outline-none ring-[var(--color-secondary)]/20 transition focus:ring-2"
             >
               <option value="">Select a service</option>
               {services.map((service) => (
@@ -222,20 +268,11 @@ export function AdminWalkInTourClient({
                 </option>
               ))}
             </select>
-            {servicesLoading ? <span className="text-xs text-slate-500">Loading active tours...</span> : null}
+            {servicesLoading ? <span className="inline-flex items-center gap-1 text-xs text-[var(--color-muted)]"><Loader2 className="h-3 w-3 animate-spin" /> Loading active tours...</span> : null}
             {servicesError ? <span className="text-xs text-red-600">{servicesError}</span> : null}
           </label>
 
-          <label className="grid gap-1 text-sm text-slate-700">
-            Visit Date
-            <input
-              type="date"
-              min={todayIso()}
-              value={visitDate}
-              onChange={(event) => setVisitDate(event.target.value)}
-              className="rounded-lg border border-slate-300 px-3 py-2 outline-none ring-blue-200 transition focus:ring-2"
-            />
-          </label>
+          <FancyDatePicker label="Visit Date" value={visitDate} onChange={setVisitDate} min={todayIso()} />
 
           <label className="grid gap-1 text-sm text-slate-700">
             Adults
@@ -244,7 +281,7 @@ export function AdminWalkInTourClient({
               min={0}
               value={adultQty}
               onChange={(event) => setAdultQty(Math.max(0, Number(event.target.value || 0)))}
-              className="rounded-lg border border-slate-300 px-3 py-2 outline-none ring-blue-200 transition focus:ring-2"
+              className="rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 outline-none ring-[var(--color-secondary)]/20 transition focus:ring-2"
             />
           </label>
 
@@ -255,7 +292,7 @@ export function AdminWalkInTourClient({
               min={0}
               value={kidQty}
               onChange={(event) => setKidQty(Math.max(0, Number(event.target.value || 0)))}
-              className="rounded-lg border border-slate-300 px-3 py-2 outline-none ring-blue-200 transition focus:ring-2"
+              className="rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 outline-none ring-[var(--color-secondary)]/20 transition focus:ring-2"
             />
           </label>
         </div>
@@ -263,25 +300,40 @@ export function AdminWalkInTourClient({
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <label className="grid gap-1 text-sm text-slate-700">
             Guest Name (optional)
-            <input
-              type="text"
-              value={guestName}
-              onChange={(event) => setGuestName(event.target.value)}
-              placeholder="Walk-in guest"
-              className="rounded-lg border border-slate-300 px-3 py-2 outline-none ring-blue-200 transition focus:ring-2"
-            />
+            <div className="relative">
+              <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-muted)]" />
+              <input
+                type="text"
+                value={guestName}
+                onChange={(event) => setGuestName(event.target.value)}
+                placeholder="Walk-in guest"
+                className="w-full rounded-xl border border-[var(--color-border)] bg-white py-2 pl-9 pr-3 outline-none ring-[var(--color-secondary)]/20 transition focus:ring-2"
+              />
+            </div>
           </label>
 
           <label className="grid gap-1 text-sm text-slate-700">
             Guest Phone (optional)
-            <input
-              type="text"
-              value={guestPhone}
-              onChange={(event) => setGuestPhone(event.target.value)}
-              placeholder="09XX XXX XXXX"
-              className="rounded-lg border border-slate-300 px-3 py-2 outline-none ring-blue-200 transition focus:ring-2"
-            />
+            <div className="relative">
+              <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-muted)]" />
+              <input
+                type="text"
+                value={guestPhone}
+                onChange={(event) => setGuestPhone(event.target.value)}
+                placeholder="09XX XXX XXXX"
+                className="w-full rounded-xl border border-[var(--color-border)] bg-white py-2 pl-9 pr-3 outline-none ring-[var(--color-secondary)]/20 transition focus:ring-2"
+              />
+            </div>
           </label>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setVisitDate(todayIso())}
+            className="inline-flex h-8 items-center rounded-full border border-[var(--color-border)] bg-white px-3 text-xs font-semibold text-[var(--color-text)]"
+          >
+            Same-day tour
+          </button>
         </div>
 
         <label className="mt-4 grid gap-1 text-sm text-slate-700">
@@ -290,25 +342,29 @@ export function AdminWalkInTourClient({
             value={notes}
             onChange={(event) => setNotes(event.target.value)}
             rows={3}
-            className="rounded-lg border border-slate-300 px-3 py-2 outline-none ring-blue-200 transition focus:ring-2"
+            className="rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 outline-none ring-[var(--color-secondary)]/20 transition focus:ring-2"
           />
         </label>
 
-        <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+        <div className="mt-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-4">
           <p className="text-sm text-slate-600">
             Total: <strong className="text-slate-900">{toPeso(totalAmount)}</strong>
           </p>
-          <p className="mt-1 text-xs text-slate-500">Walk-in tours are created as on-site payment reservations.</p>
+          <p className="mt-1 text-xs text-slate-500">After create, you will be redirected to Payments for cashier recording.</p>
         </div>
 
         <button
           type="button"
           onClick={() => void submitWalkInTour()}
           disabled={submitBusy}
-          className="mt-6 w-full rounded-lg bg-[#f97316] px-4 py-3 text-sm font-semibold text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+          className="mt-6 w-full rounded-xl bg-[var(--color-cta)] px-4 py-3 text-sm font-semibold text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {submitBusy ? "Creating..." : "Create Walk-in Tour"}
         </button>
+
+        <p className="mt-2 text-xs text-[var(--color-muted)]">
+          You can also open <Link href="/admin/payments" className="font-semibold text-[var(--color-secondary)] underline">Payments</Link> directly.
+        </p>
       </div>
     </section>
   );

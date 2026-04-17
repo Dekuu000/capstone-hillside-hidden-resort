@@ -38,7 +38,7 @@ async function fetchInitialPayments(
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
-    cache: "no-store",
+    next: { revalidate: 8 },
   });
   if (!response.ok) return null;
   const json = await response.json();

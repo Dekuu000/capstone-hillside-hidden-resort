@@ -55,11 +55,29 @@ RESERVATION_LIST_SELECT = """
     reservation_id,
     reservation_code,
     status,
+    reservation_source,
     check_in_date,
     check_out_date,
     total_amount,
     amount_paid_verified,
     balance_due,
+    guest_count,
+    created_at,
+    notes,
+    guest_user_id,
+    guest:users!guest_user_id(name,email,phone)
+"""
+
+RESERVATION_LIST_SELECT_LEGACY = """
+    reservation_id,
+    reservation_code,
+    status,
+    check_in_date,
+    check_out_date,
+    total_amount,
+    amount_paid_verified,
+    balance_due,
+    guest_count,
     created_at,
     notes,
     guest_user_id,
@@ -93,6 +111,46 @@ SERVICE_SELECT = """
     description
 """
 
+RESORT_SERVICE_SELECT = """
+    service_item_id,
+    category,
+    service_name,
+    description,
+    price,
+    eta_minutes,
+    is_active,
+    created_at,
+    updated_at
+"""
+
+RESORT_SERVICE_REQUEST_SELECT = """
+    request_id,
+    guest_user_id,
+    reservation_id,
+    service_item_id,
+    quantity,
+    preferred_time,
+    notes,
+    status,
+    requested_at,
+    processed_at,
+    processed_by_user_id,
+    updated_at,
+    guest:users!guest_user_id(name,email,phone),
+    reservation:reservations(reservation_code,status,total_amount,deposit_required,guest:users!guest_user_id(name,email)),
+    service_item:resort_services(
+        service_item_id,
+        category,
+        service_name,
+        description,
+        price,
+        eta_minutes,
+        is_active,
+        created_at,
+        updated_at
+    )
+"""
+
 AI_FORECAST_SELECT = """
     forecast_id,
     forecast_type,
@@ -103,8 +161,60 @@ AI_FORECAST_SELECT = """
     inputs,
     series,
     created_by_user_id,
+    generated_at,
+    created_at
+"""
+
+AI_PRICING_SUGGESTION_SELECT = """
+    suggestion_id,
+    reservation_id,
+    segment_key,
+    check_in_date,
+    check_out_date,
+    visit_date,
+    suggested_multiplier,
+    demand_bucket,
+    pricing_adjustment,
+    confidence,
+    model_version,
+    source,
+    features,
+    explanations,
+    signal_breakdown,
+    confidence_breakdown,
+    created_by_user_id,
+    generated_at,
+    created_at
+"""
+
+AI_CONCIERGE_SUGGESTION_SELECT = """
+    suggestion_run_id,
+    segment_key,
+    stay_type,
+    model_version,
+    source,
+    behavior,
+    suggestions,
+    notes,
+    created_by_user_id,
+    generated_at,
+    created_at
+"""
+
+WELCOME_NOTIFICATION_SELECT = """
+    notification_id,
+    reservation_id,
+    guest_user_id,
+    event_type,
+    title,
+    message,
+    suggestions,
+    model_version,
+    source,
+    fallback_used,
+    metadata,
     created_at,
-    notes
+    read_at
 """
 
 PAYMENT_SELECT = """
@@ -112,6 +222,7 @@ PAYMENT_SELECT = """
     reservation:reservations!inner(
         reservation_code,
         status,
+        reservation_source,
         total_amount,
         deposit_required,
         guest:users!guest_user_id(name,email)
@@ -127,12 +238,14 @@ MY_BOOKING_LIST_SELECT = """
     check_out_date,
     total_amount,
     amount_paid_verified,
+    deposit_required,
     expected_pay_now,
+    guest_count,
     units:reservation_units(
         reservation_unit_id,
         quantity_or_nights,
         rate_snapshot,
-        unit:units(name)
+        unit:units(name,unit_code,room_number,type)
     ),
     service_bookings:service_bookings(
         service_booking_id,
@@ -141,6 +254,17 @@ MY_BOOKING_LIST_SELECT = """
         adult_qty,
         kid_qty,
         service:services(service_name)
+    )
+"""
+
+PAYMENT_SELECT_LEGACY = """
+    *,
+    reservation:reservations!inner(
+        reservation_code,
+        status,
+        total_amount,
+        deposit_required,
+        guest:users!guest_user_id(name,email)
     )
 """
 
@@ -165,6 +289,7 @@ ESCROW_RECONCILIATION_SELECT = """
     chain_id,
     chain_tx_hash,
     onchain_booking_id,
+    updated_at,
     created_at
 """
 
@@ -185,13 +310,17 @@ AUDIT_LOG_SELECT = """
 UNIT_LIST_SELECT = """
     unit_id,
     name,
+    unit_code,
+    room_number,
     type,
     description,
     base_price,
     capacity,
     is_active,
+    operational_status,
     image_url,
     image_urls,
+    image_thumb_urls,
     amenities,
     created_at,
     updated_at
@@ -206,6 +335,26 @@ PAYMENT_TRANSACTION_SELECT = """
     created_at,
     verified_at,
     reservation:reservations(reservation_code)
+"""
+
+SYNC_OPERATION_RECEIPT_SELECT = """
+    operation_id,
+    idempotency_key,
+    user_id,
+    entity_type,
+    entity_id,
+    action,
+    status,
+    http_status,
+    conflict,
+    server_version,
+    resolution_hint,
+    error_code,
+    error_message,
+    response_payload,
+    metadata,
+    created_at,
+    updated_at
 """
 
 
@@ -277,6 +426,31 @@ def update_reservation_status(
         raise _runtime_error_from_exception(exc) from exc
 
 
+def update_reservation_source(
+    *,
+    reservation_id: str,
+    reservation_source: str,
+) -> dict[str, Any] | None:
+    if reservation_source not in {"online", "walk_in"}:
+        raise RuntimeError("Invalid reservation source.")
+    try:
+        client = get_supabase_client()
+        client.table("reservations").update(
+            {"reservation_source": reservation_source}
+        ).eq("reservation_id", reservation_id).execute()
+        response = (
+            client.table("reservations")
+            .select(RESERVATION_DETAIL_SELECT)
+            .eq("reservation_id", reservation_id)
+            .limit(1)
+            .execute()
+        )
+        rows = response.data or []
+        return _normalize_reservation_row(rows[0]) if rows else None
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
 def _normalize_sort_column(sort_by: str | None) -> str:
     allowed = {"created_at", "check_in_date", "check_out_date", "reservation_code", "total_amount"}
     if sort_by in allowed:
@@ -284,10 +458,39 @@ def _normalize_sort_column(sort_by: str | None) -> str:
     return "created_at"
 
 
-def _apply_reservation_filters(query, status_filter: str | None):
+def _apply_reservation_filters(
+    query,
+    status_filter: str | None,
+    source_filter: str | None = None,
+):
     if status_filter:
         query = query.eq("status", status_filter)
+    if source_filter in {"online", "walk_in"}:
+        query = query.eq("reservation_source", source_filter)
     return query
+
+
+def _is_missing_column_error(exc: Exception, column_name: str) -> bool:
+    message = str(exc).lower()
+    return f"column" in message and column_name.lower() in message and "does not exist" in message
+
+
+def _infer_reservation_source(row: dict[str, Any]) -> str:
+    explicit = str(row.get("reservation_source") or "").lower()
+    if explicit in {"online", "walk_in"}:
+        return explicit
+    notes = str(row.get("notes") or "").lower()
+    if "walk-in" in notes or "walk in" in notes:
+        return "walk_in"
+    return "online"
+
+
+def _infer_payment_source(row: dict[str, Any]) -> str:
+    reservation = row.get("reservation") or {}
+    explicit = str((reservation.get("reservation_source") or "")).lower()
+    if explicit in {"online", "walk_in"}:
+        return explicit
+    return "walk_in" if str(row.get("payment_type") or "").lower() == "on_site" else "online"
 
 
 def _matches_search(row: dict[str, Any], search_term: str) -> bool:
@@ -296,6 +499,8 @@ def _matches_search(row: dict[str, Any], search_term: str) -> bool:
         str(row.get("reservation_code") or "").lower(),
         str(guest.get("name") or "").lower(),
         str(guest.get("email") or "").lower(),
+        str(guest.get("phone") or "").lower(),
+        str(row.get("notes") or "").lower(),
     ]
     return any(search_term in value for value in haystacks)
 
@@ -377,6 +582,7 @@ def list_recent_reservations(
     limit: int = 10,
     offset: int = 0,
     status_filter: str | None = None,
+    source_filter: str | None = None,
     search: str | None = None,
     sort_by: str | None = None,
     sort_dir: str = "desc",
@@ -384,33 +590,51 @@ def list_recent_reservations(
     client = get_supabase_client()
     sort_column = _normalize_sort_column(sort_by)
     descending = str(sort_dir).lower() != "asc"
-
-    base_query = (
-        client.table("reservations")
-        .select(RESERVATION_LIST_SELECT, count="exact")
-        .order(sort_column, desc=descending)
-        .order("reservation_id", desc=descending)
-    )
-    base_query = _apply_reservation_filters(base_query, status_filter)
-
     search_term = (search or "").strip().lower()
-    if not search_term:
-        response = _timed_execute(
-            "db.reservations.list_recent.page",
-            lambda: base_query.range(offset, offset + limit - 1).execute(),
-        )
-        rows = [_normalize_reservation_row(row) for row in (response.data or [])]
-        return rows, int(response.count or 0)
 
-    # Fallback search path for parity across reservation_code + guest fields.
-    # This keeps API behavior correct while we migrate to a dedicated indexed search path.
-    full_response = _timed_execute(
-        "db.reservations.list_recent.search_scan",
-        lambda: base_query.range(0, 999).execute(),
-    )
-    rows = full_response.data or []
-    filtered_rows = [_normalize_reservation_row(row) for row in rows if _matches_search(row, search_term)]
-    return filtered_rows[offset : offset + limit], len(filtered_rows)
+    def _run(select_clause: str, supports_source_filter: bool) -> tuple[list[dict[str, Any]], int]:
+        base_query = (
+            client.table("reservations")
+            .select(select_clause, count="exact")
+            .order(sort_column, desc=descending)
+            .order("reservation_id", desc=descending)
+        )
+        effective_source_filter = source_filter if supports_source_filter else None
+        base_query = _apply_reservation_filters(base_query, status_filter, effective_source_filter)
+
+        if not search_term:
+            if source_filter in {"online", "walk_in"} and not supports_source_filter:
+                full_response = _timed_execute(
+                    "db.reservations.list_recent.fallback_scan",
+                    lambda: base_query.range(0, 999).execute(),
+                )
+                all_rows = [_normalize_reservation_row(row) for row in (full_response.data or [])]
+                filtered_rows = [row for row in all_rows if _infer_reservation_source(row) == source_filter]
+                return filtered_rows[offset : offset + limit], len(filtered_rows)
+
+            response = _timed_execute(
+                "db.reservations.list_recent.page",
+                lambda: base_query.range(offset, offset + limit - 1).execute(),
+            )
+            rows = [_normalize_reservation_row(row) for row in (response.data or [])]
+            return rows, int(response.count or 0)
+
+        full_response = _timed_execute(
+            "db.reservations.list_recent.search_scan",
+            lambda: base_query.range(0, 999).execute(),
+        )
+        rows = full_response.data or []
+        filtered_rows = [_normalize_reservation_row(row) for row in rows if _matches_search(row, search_term)]
+        if source_filter in {"online", "walk_in"} and not supports_source_filter:
+            filtered_rows = [row for row in filtered_rows if _infer_reservation_source(row) == source_filter]
+        return filtered_rows[offset : offset + limit], len(filtered_rows)
+
+    try:
+        return _run(RESERVATION_LIST_SELECT, True)
+    except Exception as exc:  # noqa: BLE001
+        if _is_missing_column_error(exc, "reservation_source"):
+            return _run(RESERVATION_LIST_SELECT_LEGACY, False)
+        raise _runtime_error_from_exception(exc) from exc
 
 
 def list_reservations_for_escrow_reconciliation(
@@ -425,7 +649,7 @@ def list_reservations_for_escrow_reconciliation(
             client.table("reservations")
             .select(ESCROW_RECONCILIATION_SELECT, count="exact")
             .eq("chain_key", chain_key)
-            .in_("escrow_state", ["pending_lock", "locked", "released", "refunded", "failed"])
+            .in_("escrow_state", ["pending_lock", "locked", "pending_release", "released", "refunded", "failed"])
             .order("created_at", desc=True)
         )
         response = _timed_execute(
@@ -433,6 +657,55 @@ def list_reservations_for_escrow_reconciliation(
             lambda: query.range(offset, offset + limit - 1).execute(),
         )
         return response.data or [], int(response.count or 0)
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def list_escrow_contract_status_rows(
+    *,
+    chain_key: str,
+    from_ts: str,
+    limit: int = 20,
+    offset: int = 0,
+) -> tuple[list[dict[str, Any]], int, int]:
+    try:
+        client = get_supabase_client()
+
+        successful_states = ["locked", "released", "refunded"]
+        successful_query = (
+            client.table("reservations")
+            .select(
+                "reservation_id,reservation_code,escrow_state,chain_tx_hash,onchain_booking_id,updated_at,created_at",
+                count="exact",
+            )
+            .eq("chain_key", chain_key)
+            .in_("escrow_state", successful_states)
+            .not_.is_("chain_tx_hash", None)
+            .gte("updated_at", from_ts)
+            .order("updated_at", desc=True)
+        )
+
+        successful_response = _timed_execute(
+            "db.escrow.contract_status.successful",
+            lambda: successful_query.range(offset, offset + limit - 1).execute(),
+        )
+        successful_rows = successful_response.data or []
+        successful_total = int(successful_response.count or 0)
+
+        pending_query = (
+            client.table("reservations")
+            .select("reservation_id", count="exact")
+            .eq("chain_key", chain_key)
+            .in_("escrow_state", ["pending_lock", "pending_release"])
+            .limit(1)
+        )
+        pending_response = _timed_execute(
+            "db.escrow.contract_status.pending",
+            lambda: pending_query.execute(),
+        )
+        pending_count = int(pending_response.count or 0)
+
+        return successful_rows, successful_total, pending_count
     except Exception as exc:  # noqa: BLE001
         raise _runtime_error_from_exception(exc) from exc
 
@@ -515,6 +788,211 @@ def clear_reservation_shadow_escrow_metadata(
             and row.get("chain_tx_hash") is None
             and row.get("onchain_booking_id") is None
         )
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def list_guest_reservation_ids(*, user_id: str) -> set[str]:
+    try:
+        client = get_supabase_client()
+        response = (
+            client.table("reservations")
+            .select("reservation_id")
+            .eq("guest_user_id", user_id)
+            .limit(2000)
+            .execute()
+        )
+        rows = response.data or []
+        return {str(row.get("reservation_id")) for row in rows if row.get("reservation_id")}
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def list_sync_change_events(
+    *,
+    cursor: int = 0,
+    limit: int = 200,
+) -> list[dict[str, Any]]:
+    try:
+        client = get_supabase_client()
+        query = (
+            client.table("sync_change_events")
+            .select("event_id,entity_type,entity_id,action,version,changed_at,payload")
+            .gt("event_id", cursor)
+            .order("event_id", desc=False)
+            .limit(limit)
+        )
+        response = _timed_execute(
+            "db.sync.pull.events",
+            lambda: query.execute(),
+        )
+        rows = response.data or []
+        normalized: list[dict[str, Any]] = []
+        for row in rows:
+            normalized.append(
+                {
+                    "cursor": int(row.get("event_id") or 0),
+                    "entity_type": str(row.get("entity_type") or ""),
+                    "entity_id": str(row.get("entity_id") or ""),
+                    "action": str(row.get("action") or "update"),
+                    "version": int(row.get("version") or 0),
+                    "changed_at": row.get("changed_at"),
+                    "payload": row.get("payload") if isinstance(row.get("payload"), dict) else {},
+                }
+            )
+        return normalized
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def get_sync_operation_receipt(
+    *,
+    operation_id: str,
+    user_id: str,
+    idempotency_key: str | None = None,
+) -> dict[str, Any] | None:
+    try:
+        client = get_supabase_client()
+        query = (
+            client.table("sync_operation_receipts")
+            .select(SYNC_OPERATION_RECEIPT_SELECT)
+            .eq("user_id", user_id)
+            .eq("operation_id", operation_id)
+            .limit(1)
+        )
+        response = query.execute()
+        rows = response.data or []
+        if rows:
+            return rows[0]
+
+        if idempotency_key:
+            alt_response = (
+                client.table("sync_operation_receipts")
+                .select(SYNC_OPERATION_RECEIPT_SELECT)
+                .eq("user_id", user_id)
+                .eq("idempotency_key", idempotency_key)
+                .order("created_at", desc=True)
+                .limit(1)
+                .execute()
+            )
+            alt_rows = alt_response.data or []
+            return alt_rows[0] if alt_rows else None
+        return None
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def upsert_sync_operation_receipt(
+    *,
+    operation_id: str,
+    idempotency_key: str,
+    user_id: str,
+    entity_type: str,
+    entity_id: str | None,
+    action: str,
+    status: str,
+    http_status: int,
+    conflict: bool = False,
+    server_version: int | None = None,
+    resolution_hint: str | None = None,
+    error_code: str | None = None,
+    error_message: str | None = None,
+    response_payload: dict[str, Any] | None = None,
+    metadata: dict[str, Any] | None = None,
+) -> dict[str, Any] | None:
+    try:
+        client = get_supabase_client()
+        payload: dict[str, Any] = {
+            "operation_id": operation_id,
+            "idempotency_key": idempotency_key,
+            "user_id": user_id,
+            "entity_type": entity_type,
+            "entity_id": entity_id,
+            "action": action,
+            "status": status,
+            "http_status": http_status,
+            "conflict": conflict,
+            "server_version": server_version,
+            "resolution_hint": resolution_hint,
+            "error_code": error_code,
+            "error_message": error_message,
+            "response_payload": response_payload or {},
+            "metadata": metadata or {},
+        }
+        client.table("sync_operation_receipts").upsert(payload).execute()
+        verify = (
+            client.table("sync_operation_receipts")
+            .select(SYNC_OPERATION_RECEIPT_SELECT)
+            .eq("operation_id", operation_id)
+            .limit(1)
+            .execute()
+        )
+        rows = verify.data or []
+        return rows[0] if rows else None
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def cleanup_sync_operation_receipts(*, retention_hours: int) -> int:
+    try:
+        cutoff = datetime.now(timezone.utc) - timedelta(hours=max(1, retention_hours))
+        client = get_supabase_client()
+        response = (
+            client.table("sync_operation_receipts")
+            .delete(count="exact")
+            .lt("created_at", cutoff.isoformat())
+            .execute()
+        )
+        return int(response.count or 0)
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def upsert_sync_upload_item(
+    *,
+    upload_id: str,
+    operation_id: str,
+    user_id: str,
+    entity_type: str,
+    entity_id: str,
+    field_name: str,
+    storage_bucket: str,
+    storage_path: str,
+    mime_type: str | None = None,
+    size_bytes: int | None = None,
+    checksum_sha256: str | None = None,
+    status: str = "queued",
+    failure_reason: str | None = None,
+    metadata: dict[str, Any] | None = None,
+) -> dict[str, Any] | None:
+    try:
+        client = get_supabase_client()
+        payload = {
+            "upload_id": upload_id,
+            "operation_id": operation_id,
+            "user_id": user_id,
+            "entity_type": entity_type,
+            "entity_id": entity_id,
+            "field_name": field_name,
+            "storage_bucket": storage_bucket,
+            "storage_path": storage_path,
+            "mime_type": mime_type,
+            "size_bytes": size_bytes,
+            "checksum_sha256": checksum_sha256,
+            "status": status,
+            "failure_reason": failure_reason,
+            "metadata": metadata or {},
+        }
+        client.table("sync_upload_items").upsert(payload).execute()
+        verify = (
+            client.table("sync_upload_items")
+            .select("*")
+            .eq("upload_id", upload_id)
+            .limit(1)
+            .execute()
+        )
+        rows = verify.data or []
+        return rows[0] if rows else None
     except Exception as exc:  # noqa: BLE001
         raise _runtime_error_from_exception(exc) from exc
 
@@ -782,66 +1260,282 @@ def get_my_booking_details(*, user_id: str, reservation_id: str) -> dict[str, An
     return _normalize_reservation_row(rows[0]) if rows else None
 
 
+def get_my_active_or_upcoming_stay(*, user_id: str) -> dict[str, Any] | None:
+    client = get_supabase_client()
+    today_iso = date.today().isoformat()
+
+    checked_in_response = (
+        client.table("reservations")
+        .select(MY_BOOKING_LIST_SELECT)
+        .eq("guest_user_id", user_id)
+        .eq("status", "checked_in")
+        .order("check_in_date", desc=True)
+        .order("created_at", desc=True)
+        .limit(1)
+        .execute()
+    )
+    checked_in_rows = checked_in_response.data or []
+    if checked_in_rows:
+        return _normalize_reservation_row(checked_in_rows[0])
+
+    upcoming_response = (
+        client.table("reservations")
+        .select(MY_BOOKING_LIST_SELECT)
+        .eq("guest_user_id", user_id)
+        .in_("status", ["confirmed", "for_verification"])
+        .gte("check_out_date", today_iso)
+        .order("check_in_date", desc=False)
+        .order("created_at", desc=False)
+        .limit(1)
+        .execute()
+    )
+    upcoming_rows = upcoming_response.data or []
+    if upcoming_rows:
+        return _normalize_reservation_row(upcoming_rows[0])
+    return None
+
+
+def get_latest_guest_welcome_notification(
+    *,
+    guest_user_id: str,
+    reservation_id: str,
+) -> dict[str, Any] | None:
+    try:
+        client = get_supabase_client()
+        response = (
+            client.table("guest_welcome_notifications")
+            .select(WELCOME_NOTIFICATION_SELECT)
+            .eq("guest_user_id", guest_user_id)
+            .eq("reservation_id", reservation_id)
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        rows = response.data or []
+        return rows[0] if rows else None
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def mark_guest_welcome_notification_read(
+    *,
+    guest_user_id: str,
+    notification_id: str,
+) -> dict[str, Any] | None:
+    try:
+        client = get_supabase_client()
+        now_iso = datetime.now(timezone.utc).isoformat()
+        client.table("guest_welcome_notifications").update(
+            {"read_at": now_iso}
+        ).eq("notification_id", notification_id).eq("guest_user_id", guest_user_id).execute()
+        response = (
+            client.table("guest_welcome_notifications")
+            .select(WELCOME_NOTIFICATION_SELECT)
+            .eq("notification_id", notification_id)
+            .eq("guest_user_id", guest_user_id)
+            .limit(1)
+            .execute()
+        )
+        rows = response.data or []
+        return rows[0] if rows else None
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def create_or_get_guest_welcome_notification(
+    *,
+    reservation_id: str,
+    guest_user_id: str,
+    title: str,
+    message: str,
+    suggestions: list[dict[str, Any]],
+    model_version: str | None,
+    source: str,
+    fallback_used: bool,
+    metadata: dict[str, Any] | None = None,
+    event_type: str = "checkin_welcome",
+) -> tuple[dict[str, Any] | None, bool]:
+    try:
+        client = get_supabase_client()
+        existing = (
+            client.table("guest_welcome_notifications")
+            .select(WELCOME_NOTIFICATION_SELECT)
+            .eq("reservation_id", reservation_id)
+            .eq("event_type", event_type)
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        existing_rows = existing.data or []
+        if existing_rows:
+            return existing_rows[0], False
+
+        payload = {
+            "reservation_id": reservation_id,
+            "guest_user_id": guest_user_id,
+            "event_type": event_type,
+            "title": title,
+            "message": message,
+            "suggestions": suggestions,
+            "model_version": model_version,
+            "source": source,
+            "fallback_used": bool(fallback_used),
+            "metadata": metadata or {},
+        }
+        created = client.table("guest_welcome_notifications").insert(payload).execute()
+        rows = created.data or []
+        if rows:
+            return rows[0], True
+
+        verify = (
+            client.table("guest_welcome_notifications")
+            .select(WELCOME_NOTIFICATION_SELECT)
+            .eq("reservation_id", reservation_id)
+            .eq("event_type", event_type)
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        verify_rows = verify.data or []
+        return (verify_rows[0] if verify_rows else None), bool(verify_rows)
+    except Exception as exc:  # noqa: BLE001
+        message = str(getattr(exc, "message", "") or exc)
+        if "duplicate key" in message.lower() or "uq_guest_welcome_notifications_reservation_event" in message:
+            try:
+                client = get_supabase_client()
+                response = (
+                    client.table("guest_welcome_notifications")
+                    .select(WELCOME_NOTIFICATION_SELECT)
+                    .eq("reservation_id", reservation_id)
+                    .eq("event_type", event_type)
+                    .order("created_at", desc=True)
+                    .limit(1)
+                    .execute()
+                )
+                rows = response.data or []
+                return (rows[0] if rows else None), False
+            except Exception as nested_exc:  # noqa: BLE001
+                raise _runtime_error_from_exception(nested_exc) from nested_exc
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def list_pending_release_reservations(
+    *,
+    chain_key: str,
+    limit: int = 20,
+) -> list[dict[str, Any]]:
+    try:
+        client = get_supabase_client()
+        response = (
+            client.table("reservations")
+            .select(
+                "reservation_id,reservation_code,guest_user_id,status,escrow_state,"
+                "chain_key,chain_id,escrow_contract_address,chain_tx_hash,onchain_booking_id,"
+                "escrow_event_index,escrow_release_attempts,escrow_release_last_attempt_at,escrow_release_last_error"
+            )
+            .eq("chain_key", chain_key)
+            .eq("escrow_state", "pending_release")
+            .order("escrow_release_last_attempt_at", desc=False)
+            .order("updated_at", desc=False)
+            .limit(limit)
+            .execute()
+        )
+        return response.data or []
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
 def list_admin_payments(
     *,
     tab: str = "to_review",
     limit: int = 10,
     offset: int = 0,
     search: str | None = None,
+    method_filter: str | None = None,
+    from_ts: str | None = None,
+    to_ts: str | None = None,
+    source_filter: str | None = None,
+    settlement_filter: str | None = None,
 ) -> tuple[list[dict[str, Any]], int]:
     client = get_supabase_client()
-    query = (
-        client.table("payments")
-        .select(PAYMENT_SELECT, count="exact")
-        .order("created_at", desc=True)
-    )
-
-    if tab == "to_review":
-        query = query.eq("status", "pending")
-    elif tab == "verified":
-        query = query.eq("status", "verified")
-    elif tab == "rejected":
-        query = query.eq("status", "rejected")
-
+    normalized_source = source_filter if source_filter in {"online", "walk_in"} else None
+    normalized_settlement = settlement_filter if settlement_filter in {"paid", "partial"} else None
     search_term = (search or "").strip().lower()
-    scan_required = bool(search_term) or tab == "to_review"
-    if scan_required:
-        scan_limit = min(1000, max(limit + offset, 200))
-        response = _timed_execute(
-            "db.payments.list_admin.scan",
-            lambda: query.range(0, scan_limit - 1).execute(),
+
+    def _run(select_clause: str) -> tuple[list[dict[str, Any]], int]:
+        query = (
+            client.table("payments")
+            .select(select_clause, count="exact")
+            .order("created_at", desc=True)
         )
-        rows = response.data or []
-    else:
-        response = _timed_execute(
-            "db.payments.list_admin.page",
-            lambda: query.range(offset, offset + limit - 1).execute(),
-        )
-        rows = response.data or []
 
-    if tab == "to_review":
-        rows = [
-            row
-            for row in rows
-            if canonical_booking_status((row.get("reservation") or {}).get("status")) == "for_verification"
-            and canonical_booking_status((row.get("reservation") or {}).get("status")) not in {"cancelled", "no_show"}
-            and bool(row.get("proof_url") or row.get("reference_no"))
-        ]
+        if tab == "to_review":
+            query = query.eq("status", "pending")
+        elif tab == "verified":
+            query = query.eq("status", "verified")
+        elif tab == "rejected":
+            query = query.eq("status", "rejected")
 
-    if search_term:
-        rows = [row for row in rows if _matches_payment_search(row, search_term)]
+        if method_filter:
+            query = query.eq("method", method_filter)
+        if from_ts:
+            query = query.gte("created_at", from_ts)
+        if to_ts:
+            query = query.lte("created_at", to_ts)
 
-    for row in rows:
-        reservation = row.get("reservation")
-        if isinstance(reservation, dict):
-            reservation["status"] = canonical_booking_status(reservation.get("status"))
+        scan_required = bool(search_term) or tab == "to_review" or bool(normalized_source) or bool(normalized_settlement)
+        if scan_required:
+            scan_limit = min(5000, max(limit + offset, 500))
+            response = _timed_execute(
+                "db.payments.list_admin.scan",
+                lambda: query.range(0, scan_limit - 1).execute(),
+            )
+            rows = response.data or []
+        else:
+            response = _timed_execute(
+                "db.payments.list_admin.page",
+                lambda: query.range(offset, offset + limit - 1).execute(),
+            )
+            rows = response.data or []
 
-    paginated = rows[offset : offset + limit]
-    if not scan_required and tab != "to_review":
-        total = int(response.count or len(rows))
-    else:
-        total = len(rows)
-    return _attach_admin_users(paginated), total
+        if tab == "to_review":
+            rows = [
+                row
+                for row in rows
+                if canonical_booking_status((row.get("reservation") or {}).get("status"))
+                not in {"cancelled", "no_show", "checked_out"}
+                and bool(row.get("proof_url") or row.get("reference_no"))
+            ]
+
+        if search_term:
+            rows = [row for row in rows if _matches_payment_search(row, search_term)]
+
+        if normalized_source:
+            rows = [row for row in rows if _infer_payment_source(row) == normalized_source]
+
+        if normalized_settlement == "partial":
+            rows = [row for row in rows if str(row.get("payment_type") or "").lower() == "deposit"]
+        elif normalized_settlement == "paid":
+            rows = [row for row in rows if str(row.get("payment_type") or "").lower() != "deposit"]
+
+        for row in rows:
+            reservation = row.get("reservation")
+            if isinstance(reservation, dict):
+                reservation["status"] = canonical_booking_status(reservation.get("status"))
+
+        paginated = rows[offset : offset + limit]
+        if not scan_required and tab != "to_review":
+            total = int(response.count or len(rows))
+        else:
+            total = len(rows)
+        return _attach_admin_users(paginated), total
+
+    try:
+        return _run(PAYMENT_SELECT)
+    except Exception as exc:  # noqa: BLE001
+        if _is_missing_column_error(exc, "reservation_source"):
+            return _run(PAYMENT_SELECT_LEGACY)
+        raise _runtime_error_from_exception(exc) from exc
 
 
 def list_audit_logs(
@@ -890,6 +1584,7 @@ def list_units_admin(
     offset: int = 0,
     unit_type: str | None = None,
     is_active: bool | None = None,
+    operational_status: str | None = None,
     search: str | None = None,
 ) -> tuple[list[dict[str, Any]], int]:
     client = get_supabase_client()
@@ -903,6 +1598,8 @@ def list_units_admin(
         query = query.eq("type", unit_type)
     if is_active is not None:
         query = query.eq("is_active", is_active)
+    if operational_status:
+        query = query.eq("operational_status", operational_status)
     if search:
         term = search.strip()
         if term:
@@ -922,6 +1619,46 @@ def get_unit_by_id(*, unit_id: str) -> dict[str, Any] | None:
             client.table("units")
             .select(UNIT_LIST_SELECT)
             .eq("unit_id", unit_id)
+            .limit(1)
+            .execute()
+        )
+        rows = response.data or []
+        return rows[0] if rows else None
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def get_my_profile(*, user_id: str) -> dict[str, Any] | None:
+    try:
+        client = get_supabase_client()
+        response = (
+            client.table("users")
+            .select("user_id,email,name,phone,wallet_address,wallet_chain")
+            .eq("user_id", user_id)
+            .limit(1)
+            .execute()
+        )
+        rows = response.data or []
+        return rows[0] if rows else None
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def patch_my_profile(
+    *,
+    access_token: str,
+    user_id: str,
+    patch: dict[str, Any],
+) -> dict[str, Any] | None:
+    try:
+        if not patch:
+            return get_my_profile(user_id=user_id)
+        client = get_supabase_user_scoped_client(access_token)
+        client.table("users").update(patch).eq("user_id", user_id).execute()
+        response = (
+            client.table("users")
+            .select("user_id,email,name,phone,wallet_address,wallet_chain")
+            .eq("user_id", user_id)
             .limit(1)
             .execute()
         )
@@ -967,7 +1704,7 @@ def update_unit(*, unit_id: str, payload: dict[str, Any]) -> dict[str, Any] | No
 def soft_delete_unit(*, unit_id: str) -> dict[str, Any] | None:
     try:
         client = get_supabase_client()
-        client.table("units").update({"is_active": False}).eq("unit_id", unit_id).execute()
+        client.table("units").update({"is_active": False, "operational_status": "maintenance"}).eq("unit_id", unit_id).execute()
         response = client.table("units").select("unit_id,is_active").eq("unit_id", unit_id).limit(1).execute()
         rows = response.data or []
         return rows[0] if rows else None
@@ -978,10 +1715,43 @@ def soft_delete_unit(*, unit_id: str) -> dict[str, Any] | None:
 def update_unit_status(*, unit_id: str, is_active: bool) -> dict[str, Any] | None:
     try:
         client = get_supabase_client()
-        client.table("units").update({"is_active": is_active}).eq("unit_id", unit_id).execute()
+        payload = {
+            "is_active": is_active,
+            "operational_status": "cleaned" if is_active else "maintenance",
+        }
+        client.table("units").update(payload).eq("unit_id", unit_id).execute()
         response = client.table("units").select(UNIT_LIST_SELECT).eq("unit_id", unit_id).limit(1).execute()
         rows = response.data or []
         return rows[0] if rows else None
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def list_reservation_unit_ids(*, reservation_id: str) -> list[str]:
+    try:
+        client = get_supabase_client()
+        response = (
+            client.table("reservation_units")
+            .select("unit_id")
+            .eq("reservation_id", reservation_id)
+            .execute()
+        )
+        rows = response.data or []
+        return [str(row.get("unit_id")) for row in rows if row.get("unit_id")]
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def update_units_operational_status(*, unit_ids: list[str], operational_status: str) -> int:
+    if not unit_ids:
+        return 0
+    updated = 0
+    try:
+        client = get_supabase_client()
+        for unit_id in unit_ids:
+            client.table("units").update({"operational_status": operational_status}).eq("unit_id", unit_id).execute()
+            updated += 1
+        return updated
     except Exception as exc:  # noqa: BLE001
         raise _runtime_error_from_exception(exc) from exc
 
@@ -1290,6 +2060,151 @@ def list_active_services() -> list[dict[str, Any]]:
         raise _runtime_error_from_exception(exc) from exc
 
 
+def list_active_resort_services(*, category: str | None = None) -> list[dict[str, Any]]:
+    try:
+        client = get_supabase_client()
+        query = client.table("resort_services").select(RESORT_SERVICE_SELECT).eq("is_active", True)
+        if category:
+            query = query.eq("category", category)
+        response = _timed_execute(
+            "db.resort_services.list_active",
+            lambda: query.order("category", desc=False).order("service_name", desc=False).execute(),
+        )
+        return response.data or []
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def create_resort_service_request(
+    *,
+    access_token: str,
+    guest_user_id: str,
+    service_item_id: str,
+    reservation_id: str | None = None,
+    quantity: int = 1,
+    preferred_time: str | None = None,
+    notes: str | None = None,
+) -> dict[str, Any] | None:
+    try:
+        client = get_supabase_user_scoped_client(access_token)
+        insert_payload = {
+            "guest_user_id": guest_user_id,
+            "service_item_id": service_item_id,
+            "reservation_id": reservation_id,
+            "quantity": quantity,
+            "preferred_time": preferred_time,
+            "notes": notes,
+            "status": "new",
+        }
+        response = (
+            client.table("resort_service_requests")
+            .insert(insert_payload)
+            .execute()
+        )
+        rows = response.data or []
+        if not rows:
+            return None
+        request_id = str(rows[0].get("request_id") or "")
+        detail = (
+            client.table("resort_service_requests")
+            .select(RESORT_SERVICE_REQUEST_SELECT)
+            .eq("request_id", request_id)
+            .limit(1)
+            .execute()
+        )
+        detail_rows = detail.data or []
+        return detail_rows[0] if detail_rows else rows[0]
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def list_resort_service_requests(
+    *,
+    access_token: str,
+    role: str,
+    user_id: str,
+    status_filter: str | None = None,
+    category_filter: str | None = None,
+    search: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    limit: int = 20,
+    offset: int = 0,
+) -> tuple[list[dict[str, Any]], int]:
+    try:
+        client = get_supabase_user_scoped_client(access_token)
+        query = client.table("resort_service_requests").select(RESORT_SERVICE_REQUEST_SELECT, count="exact")
+        if role != "admin":
+            query = query.eq("guest_user_id", user_id)
+        if status_filter:
+            query = query.eq("status", status_filter)
+        if date_from:
+            query = query.gte("requested_at", f"{date_from}T00:00:00+08:00")
+        if date_to:
+            query = query.lte("requested_at", f"{date_to}T23:59:59+08:00")
+        query = query.order("requested_at", desc=True)
+        if category_filter or search:
+            response = query.range(0, 999).execute()
+        else:
+            response = query.range(offset, offset + limit - 1).execute()
+        rows = response.data or []
+        if category_filter:
+            rows = [row for row in rows if str((row.get("service_item") or {}).get("category") or "") == category_filter]
+        if search:
+            needle = search.lower()
+            rows = [
+                row
+                for row in rows
+                if (
+                    needle in str(row.get("request_id") or "").lower()
+                    or needle in str(((row.get("reservation") or {}).get("reservation_code") or "")).lower()
+                    or needle in str(((row.get("service_item") or {}).get("service_name") or "")).lower()
+                    or needle in str(((row.get("guest") or {}).get("name") or "")).lower()
+                    or needle in str(((row.get("guest") or {}).get("email") or "")).lower()
+                )
+            ]
+        total = len(rows) if (category_filter or search) else int(response.count or len(rows))
+        if category_filter or search:
+            rows = rows[offset: offset + limit]
+        return rows, total
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def update_resort_service_request_status(
+    *,
+    access_token: str,
+    request_id: str,
+    status: str,
+    processed_by_user_id: str,
+    notes: str | None = None,
+) -> dict[str, Any] | None:
+    try:
+        client = get_supabase_user_scoped_client(access_token)
+        payload: dict[str, Any] = {
+            "status": status,
+            "processed_by_user_id": processed_by_user_id,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
+        if status in {"done", "cancelled"}:
+            payload["processed_at"] = datetime.now(timezone.utc).isoformat()
+        if notes is not None:
+            payload["notes"] = notes
+
+        client.table("resort_service_requests").update(payload).eq("request_id", request_id).execute()
+        response = (
+            client.table("resort_service_requests")
+            .select(RESORT_SERVICE_REQUEST_SELECT)
+            .eq("request_id", request_id)
+            .limit(1)
+            .execute()
+        )
+        rows = response.data or []
+        return rows[0] if rows else None
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
 def get_report_summary(
     *,
     access_token: str,
@@ -1386,7 +2301,7 @@ def get_daily_occupancy_history(*, days: int = 30) -> list[dict[str, Any]]:
         client = get_supabase_client()
         response = (
             client.table("reservations")
-            .select("check_in_date,status")
+            .select("check_in_date,status,escrow_state")
             .gte("check_in_date", since)
             .order("check_in_date", desc=False)
             .execute()
@@ -1396,7 +2311,11 @@ def get_daily_occupancy_history(*, days: int = 30) -> list[dict[str, Any]]:
         counts_by_day: dict[str, int] = {}
         for row in rows:
             status_text = canonical_booking_status(row.get("status"))
+            escrow_state = str(row.get("escrow_state") or "").lower()
+            is_chain_confirmed = escrow_state in {"locked", "pending_release", "released", "refunded"}
             if status_text in {"cancelled", "no_show"}:
+                continue
+            if status_text not in {"confirmed", "checked_in", "checked_out"} and not is_chain_confirmed:
                 continue
             check_in_date = str(row.get("check_in_date") or "").strip()
             if not check_in_date:
@@ -1415,6 +2334,181 @@ def get_daily_occupancy_history(*, days: int = 30) -> list[dict[str, Any]]:
                 }
             )
         return items
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def get_dynamic_pricing_signals(*, target_date: str | None = None, days: int = 30) -> dict[str, Any]:
+    """
+    Return aggregate, anonymized signals for AI dynamic pricing:
+    - booking velocity
+    - blockchain-confirmed booking velocity
+    - chain confirm ratio
+    - seasonal demand proxy
+    """
+    try:
+        horizon = max(14, min(days, 180))
+        since_day = date.today() - timedelta(days=horizon)
+        since_iso = since_day.isoformat()
+
+        parsed_target = date.today()
+        if target_date:
+            try:
+                parsed_target = date.fromisoformat(target_date)
+            except ValueError:
+                parsed_target = date.today()
+
+        client = get_supabase_client()
+        response = (
+            client.table("reservations")
+            .select("created_at,check_in_date,status,escrow_state")
+            .gte("created_at", f"{since_iso}T00:00:00+00:00")
+            .order("created_at", desc=False)
+            .execute()
+        )
+        rows = response.data or []
+
+        now_utc = datetime.now(timezone.utc)
+        created_24h = 0
+        created_7d = 0
+        chain_created_24h = 0
+        chain_created_7d = 0
+        chain_rows = 0
+        chain_confirmed = 0
+        target_month_count = 0
+        monthly_counts: dict[int, int] = {month: 0 for month in range(1, 13)}
+
+        for row in rows:
+            created_raw = str(row.get("created_at") or "")
+            check_in_raw = str(row.get("check_in_date") or "")
+            status_text = canonical_booking_status(row.get("status"))
+            escrow_state = str(row.get("escrow_state") or "").lower()
+
+            created_dt: datetime | None = None
+            if created_raw:
+                try:
+                    created_dt = datetime.fromisoformat(created_raw.replace("Z", "+00:00"))
+                except ValueError:
+                    created_dt = None
+
+            if created_dt is not None:
+                delta_hours = (now_utc - created_dt).total_seconds() / 3600.0
+                delta_days = (now_utc - created_dt).total_seconds() / 86400.0
+                if delta_hours <= 24:
+                    created_24h += 1
+                    if escrow_state in {"locked", "pending_release", "released", "refunded"}:
+                        chain_created_24h += 1
+                if delta_days <= 7:
+                    created_7d += 1
+                    if escrow_state in {"locked", "pending_release", "released", "refunded"}:
+                        chain_created_7d += 1
+
+            if check_in_raw:
+                try:
+                    check_date = date.fromisoformat(check_in_raw)
+                    monthly_counts[check_date.month] = monthly_counts.get(check_date.month, 0) + 1
+                    if check_date.month == parsed_target.month:
+                        target_month_count += 1
+                except ValueError:
+                    pass
+
+            if status_text in {"cancelled", "no_show"}:
+                continue
+            if escrow_state in {"none", ""}:
+                continue
+            chain_rows += 1
+            if escrow_state in {"locked", "pending_release", "released", "refunded"}:
+                chain_confirmed += 1
+
+        avg_daily_7d = created_7d / 7.0 if created_7d > 0 else 1.0
+        booking_velocity = created_24h / avg_daily_7d if avg_daily_7d > 0 else 1.0
+
+        avg_chain_daily_7d = chain_created_7d / 7.0 if chain_created_7d > 0 else 1.0
+        blockchain_booking_velocity = chain_created_24h / avg_chain_daily_7d if avg_chain_daily_7d > 0 else booking_velocity
+
+        non_zero_months = [value for value in monthly_counts.values() if value > 0]
+        month_baseline = (sum(non_zero_months) / len(non_zero_months)) if non_zero_months else max(target_month_count, 1)
+        seasonal_demand_index = target_month_count / month_baseline if month_baseline > 0 else 1.0
+
+        chain_confirm_ratio = (chain_confirmed / chain_rows) if chain_rows > 0 else 0.7
+
+        return {
+            "booking_velocity": round(max(0.2, booking_velocity), 3),
+            "blockchain_booking_velocity": round(max(0.2, blockchain_booking_velocity), 3),
+            "chain_confirm_ratio": round(max(0.0, min(1.0, chain_confirm_ratio)), 3),
+            "seasonal_demand_index": round(max(0.5, min(1.6, seasonal_demand_index)), 3),
+            "window_days": horizon,
+        }
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def get_anonymized_concierge_behavior(*, days: int = 90) -> dict[str, Any]:
+    """
+    Return anonymized guest behavior aggregates (no PII, no user IDs).
+    Used by concierge recommendation endpoint.
+    """
+    try:
+        horizon = max(30, min(days, 365))
+        since_day = date.today() - timedelta(days=horizon)
+        since_iso = since_day.isoformat()
+
+        client = get_supabase_client()
+        response = (
+            client.table("service_bookings")
+            .select("adult_qty,kid_qty,total_amount,service:services(service_type)")
+            .gte("created_at", f"{since_iso}T00:00:00+00:00")
+            .execute()
+        )
+        rows = response.data or []
+        if not rows:
+            return {
+                "kid_ratio": 0.2,
+                "avg_party_size": 3.0,
+                "day_tour_ratio": 0.5,
+                "dining_ratio": 0.5,
+                "spend_index": 1.0,
+                "sample_size": 0,
+            }
+
+        total_kids = 0.0
+        total_pax = 0.0
+        day_tour_count = 0
+        dining_proxy_count = 0
+        spend_values: list[float] = []
+
+        for row in rows:
+            adults = float(row.get("adult_qty") or 0)
+            kids = float(row.get("kid_qty") or 0)
+            service = row.get("service") or {}
+            service_type = str(service.get("service_type") or "").lower()
+            amount = float(row.get("total_amount") or 0)
+
+            total_kids += kids
+            total_pax += max(0.0, adults + kids)
+            if "day" in service_type:
+                day_tour_count += 1
+            if "night" in service_type:
+                dining_proxy_count += 1
+            if amount > 0:
+                spend_values.append(amount)
+
+        sample_size = max(1, len(rows))
+        avg_party_size = total_pax / sample_size if total_pax > 0 else 3.0
+        kid_ratio = (total_kids / total_pax) if total_pax > 0 else 0.2
+        day_tour_ratio = day_tour_count / sample_size
+        dining_ratio = dining_proxy_count / sample_size
+        avg_spend = (sum(spend_values) / len(spend_values)) if spend_values else 0.0
+        spend_index = avg_spend / 1000.0 if avg_spend > 0 else 1.0
+
+        return {
+            "kid_ratio": round(max(0.0, min(1.0, kid_ratio)), 3),
+            "avg_party_size": round(max(1.0, min(8.0, avg_party_size)), 3),
+            "day_tour_ratio": round(max(0.0, min(1.0, day_tour_ratio)), 3),
+            "dining_ratio": round(max(0.0, min(1.0, dining_ratio)), 3),
+            "spend_index": round(max(0.5, min(2.0, spend_index)), 3),
+            "sample_size": int(sample_size),
+        }
     except Exception as exc:  # noqa: BLE001
         raise _runtime_error_from_exception(exc) from exc
 
@@ -1456,6 +2550,147 @@ def insert_ai_occupancy_forecast(
             .eq("model_version", model_version)
             .eq("source", source)
             .eq("created_by_user_id", created_by_user_id)
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        verify_rows = verify.data or []
+        return verify_rows[0] if verify_rows else None
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def get_latest_ai_occupancy_forecast(
+    *,
+    start_date: str,
+    horizon_days: int,
+    model_prefix: str | None = None,
+) -> dict[str, Any] | None:
+    try:
+        client = get_supabase_client()
+        query = (
+            client.table("ai_forecasts")
+            .select(AI_FORECAST_SELECT)
+            .eq("forecast_type", "occupancy")
+            .eq("start_date", start_date)
+            .eq("horizon_days", horizon_days)
+        )
+        if model_prefix:
+            query = query.like("model_version", f"{model_prefix}%")
+        response = query.order("created_at", desc=True).limit(1).execute()
+        rows = response.data or []
+        return rows[0] if rows else None
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def get_latest_ai_occupancy_forecast_any() -> dict[str, Any] | None:
+    try:
+        client = get_supabase_client()
+        response = (
+            client.table("ai_forecasts")
+            .select(AI_FORECAST_SELECT)
+            .eq("forecast_type", "occupancy")
+            .order("generated_at", desc=True)
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        rows = response.data or []
+        return rows[0] if rows else None
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def insert_ai_pricing_suggestion(
+    *,
+    created_by_user_id: str,
+    reservation_id: str | None,
+    segment_key: str | None,
+    check_in_date: str | None,
+    check_out_date: str | None,
+    visit_date: str | None,
+    suggested_multiplier: float | None,
+    demand_bucket: str | None,
+    pricing_adjustment: float,
+    confidence: float,
+    model_version: str,
+    source: str,
+    features: dict[str, Any],
+    explanations: list[str],
+    signal_breakdown: list[dict[str, Any]],
+    confidence_breakdown: dict[str, Any] | None,
+) -> dict[str, Any] | None:
+    try:
+        client = get_supabase_client()
+        payload = {
+            "reservation_id": reservation_id,
+            "segment_key": segment_key,
+            "check_in_date": check_in_date,
+            "check_out_date": check_out_date,
+            "visit_date": visit_date,
+            "suggested_multiplier": suggested_multiplier,
+            "demand_bucket": demand_bucket,
+            "pricing_adjustment": pricing_adjustment,
+            "confidence": confidence,
+            "model_version": model_version,
+            "source": source,
+            "features": features,
+            "explanations": explanations,
+            "signal_breakdown": signal_breakdown,
+            "confidence_breakdown": confidence_breakdown or {},
+            "created_by_user_id": created_by_user_id,
+        }
+        response = client.table("ai_pricing_suggestions").insert(payload).execute()
+        rows = response.data or []
+        if rows and isinstance(rows[0], dict):
+            return rows[0]
+        verify = (
+            client.table("ai_pricing_suggestions")
+            .select(AI_PRICING_SUGGESTION_SELECT)
+            .eq("created_by_user_id", created_by_user_id)
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        verify_rows = verify.data or []
+        return verify_rows[0] if verify_rows else None
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def insert_ai_concierge_suggestion(
+    *,
+    created_by_user_id: str,
+    segment_key: str,
+    stay_type: str | None,
+    model_version: str,
+    source: str,
+    behavior: dict[str, Any],
+    suggestions: list[dict[str, Any]],
+    notes: list[str],
+) -> dict[str, Any] | None:
+    try:
+        client = get_supabase_client()
+        payload = {
+            "segment_key": segment_key,
+            "stay_type": stay_type,
+            "model_version": model_version,
+            "source": source,
+            "behavior": behavior,
+            "suggestions": suggestions,
+            "notes": notes,
+            "created_by_user_id": created_by_user_id,
+        }
+        response = client.table("ai_concierge_suggestions").insert(payload).execute()
+        rows = response.data or []
+        if rows and isinstance(rows[0], dict):
+            return rows[0]
+        verify = (
+            client.table("ai_concierge_suggestions")
+            .select(AI_CONCIERGE_SUGGESTION_SELECT)
+            .eq("created_by_user_id", created_by_user_id)
+            .eq("segment_key", segment_key)
             .order("created_at", desc=True)
             .limit(1)
             .execute()
@@ -1513,6 +2748,7 @@ def create_reservation_atomic(
     unit_ids: list[str],
     rates: list[float],
     total_amount: float,
+    guest_count: int = 1,
     deposit_required: float | None = None,
     expected_pay_now: float | None = None,
     notes: str | None = None,
@@ -1528,6 +2764,7 @@ def create_reservation_atomic(
                 "p_unit_ids": unit_ids,
                 "p_rates": rates,
                 "p_total_amount": total_amount,
+                "p_guest_count": guest_count,
                 "p_deposit_required": deposit_required,
                 "p_expected_pay_now": expected_pay_now,
                 "p_notes": notes,
@@ -1589,29 +2826,40 @@ def write_reservation_escrow_shadow_metadata(
     onchain_booking_id: str,
     escrow_event_index: int = 0,
     escrow_state: str = "pending_lock",
+    escrow_release_attempts: int | None = None,
+    escrow_release_last_attempt_at: str | None = None,
+    escrow_release_last_error: str | None = None,
+    clear_escrow_release_last_error: bool = False,
 ) -> dict[str, Any] | None:
     try:
         client = get_supabase_client()
 
         # Update first (this client version does not support .select() after .update().eq()).
-        client.table("reservations").update(
-            {
-                "escrow_state": escrow_state,
-                "chain_key": chain_key,
-                "chain_id": chain_id,
-                "escrow_contract_address": contract_address,
-                "chain_tx_hash": tx_hash,
-                "onchain_booking_id": onchain_booking_id,
-                "escrow_event_index": escrow_event_index,
-            }
-        ).eq("reservation_id", reservation_id).execute()
+        payload: dict[str, Any] = {
+            "escrow_state": escrow_state,
+            "chain_key": chain_key,
+            "chain_id": chain_id,
+            "escrow_contract_address": contract_address,
+            "chain_tx_hash": tx_hash,
+            "onchain_booking_id": onchain_booking_id,
+            "escrow_event_index": escrow_event_index,
+        }
+        if escrow_release_attempts is not None:
+            payload["escrow_release_attempts"] = int(max(0, escrow_release_attempts))
+        if escrow_release_last_attempt_at is not None:
+            payload["escrow_release_last_attempt_at"] = escrow_release_last_attempt_at
+        if escrow_release_last_error is not None or clear_escrow_release_last_error:
+            payload["escrow_release_last_error"] = escrow_release_last_error
+
+        client.table("reservations").update(payload).eq("reservation_id", reservation_id).execute()
 
         # Read-back for response/debug.
         response = (
             client.table("reservations")
             .select(
                 "reservation_id,escrow_state,chain_key,chain_id,"
-                "escrow_contract_address,chain_tx_hash,onchain_booking_id,escrow_event_index"
+                "escrow_contract_address,chain_tx_hash,onchain_booking_id,escrow_event_index,"
+                "escrow_release_attempts,escrow_release_last_attempt_at,escrow_release_last_error"
             )
             .eq("reservation_id", reservation_id)
             .limit(1)

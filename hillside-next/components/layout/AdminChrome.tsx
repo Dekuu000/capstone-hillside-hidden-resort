@@ -15,13 +15,30 @@ const navigation = [
   { name: "Dashboard", href: "/admin" },
   { name: "Units", href: "/admin/units" },
   { name: "Reservations", href: "/admin/reservations" },
-  { name: "Walk-in Tour", href: "/admin/walk-in-tour" },
+  { name: "Walk-in", href: "/admin/walk-in" },
   { name: "Check-in", href: "/admin/check-in" },
   { name: "Payments", href: "/admin/payments" },
-  { name: "Escrow", href: "/admin/escrow" },
+  { name: "Services", href: "/admin/services" },
+  { name: "Blockchain", href: "/admin/blockchain" },
+  { name: "Sync Center", href: "/admin/sync" },
+  { name: "AI Center", href: "/admin/ai" },
   { name: "Reports", href: "/admin/reports" },
-  { name: "Audit Logs", href: "/admin/audit" },
 ];
+
+const noPrefetchRoutes = new Set([
+  "/admin/escrow",
+  "/admin/ai",
+  "/admin/reports",
+  "/admin/reservations",
+  "/admin/walk-in",
+  "/admin/payments",
+  "/admin/services",
+  "/admin/blockchain",
+  "/admin/sync",
+  "/admin/units",
+  "/admin/walk-in-tour",
+  "/admin/walk-in-stay",
+]);
 
 export function AdminChrome({ children, initialName = null, initialEmail = null }: AdminChromeProps) {
   const pathname = usePathname();
@@ -65,28 +82,29 @@ export function AdminChrome({ children, initialName = null, initialEmail = null 
   };
 
   return (
-    <div className="min-h-screen bg-[#eff6ff]">
+    <div className="min-h-screen bg-[var(--color-background)]">
       {sidebarOpen ? <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setSidebarOpen(false)} /> : null}
 
       <aside
-        className={`fixed left-0 top-0 z-50 h-full w-64 transform bg-[#1e3a8a] text-white transition-transform duration-300 ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-        }`}
+          className={`fixed left-0 top-0 z-50 h-full w-64 transform bg-[var(--color-primary)] text-white transition-transform duration-300 ${
+            sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+          }`}
       >
         <div className="flex h-full flex-col">
-          <div className="border-b border-white/10 px-6 py-7">
+          <div className="border-b border-white/15 px-6 py-7">
             <h1 className="text-2xl font-bold">Hillside Resort</h1>
-            <p className="mt-1 text-sm text-blue-200">Admin Panel</p>
+            <p className="mt-1 text-sm text-teal-100">Admin Panel</p>
           </div>
 
-          <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-6">
+          <nav className="no-scrollbar flex-1 space-y-1 overflow-y-auto px-3 py-6">
             {navigation.map((item) => {
               const active = pathname === item.href;
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`block rounded-lg px-3 py-3 text-sm font-medium transition ${
+                  prefetch={!noPrefetchRoutes.has(item.href)}
+                  className={`block rounded-xl px-3 py-3 text-sm font-medium transition ${
                     active ? "bg-white/15 text-white" : "text-white/80 hover:bg-white/10 hover:text-white"
                   }`}
                   onClick={() => setSidebarOpen(false)}
@@ -97,12 +115,12 @@ export function AdminChrome({ children, initialName = null, initialEmail = null 
             })}
           </nav>
 
-          <div className="border-t border-white/10 px-6 py-5">
+          <div className="border-t border-white/15 px-6 py-5">
             <div className="mb-4 flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f97316] text-sm font-bold text-white">{initial}</div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-cta)] text-sm font-bold text-white">{initial}</div>
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold">{name}</p>
-                <p className="truncate text-xs text-blue-200">{email || "admin"}</p>
+                <p className="truncate text-xs text-teal-100">{email || "admin"}</p>
               </div>
             </div>
             <button
@@ -117,23 +135,24 @@ export function AdminChrome({ children, initialName = null, initialEmail = null 
       </aside>
 
       <div className="lg:pl-64">
-        <header className="sticky top-0 z-30 border-b border-slate-200 bg-white shadow-sm lg:hidden">
+        <header className="sticky top-0 z-30 border-b border-[var(--color-border)] bg-white/90 shadow-sm backdrop-blur lg:hidden">
           <div className="flex items-center justify-between px-4 py-4">
             <button
               type="button"
               onClick={() => setSidebarOpen((prev) => !prev)}
-              className="rounded-lg p-2 text-slate-700 hover:bg-slate-100"
+              className="rounded-lg p-2 text-[var(--color-text)] hover:bg-slate-100"
               aria-label="Toggle menu"
             >
-              {sidebarOpen ? "✕" : "☰"}
+              {sidebarOpen ? "X" : "Menu"}
             </button>
-            <h2 className="text-base font-semibold text-slate-900">Hillside Resort</h2>
+            <h2 className="text-base font-semibold text-[var(--color-text)]">Hillside Resort</h2>
             <div className="w-9" />
           </div>
         </header>
 
-        <main className="p-6 lg:p-8">{children}</main>
+        <main className="p-4 sm:p-6 lg:p-8">{children}</main>
       </div>
     </div>
   );
 }
+

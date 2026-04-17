@@ -1,5 +1,7 @@
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Any
+from datetime import datetime, timezone
 
 from app.core.chains import ChainConfig
 from app.core.config import settings
@@ -156,6 +158,35 @@ ESCROW_LEDGER_ABI: list[dict[str, Any]] = [
 ]
 
 
+@lru_cache(maxsize=8)
+def _get_cached_web3(rpc_url: str):
+    try:
+        from web3 import Web3
+    except Exception as exc:  # noqa: BLE001
+        raise RuntimeError(
+            "Missing web3 dependencies. Install/refresh hillside-api dependencies to read on-chain escrow."
+        ) from exc
+
+    w3 = Web3(
+        Web3.HTTPProvider(
+            rpc_url,
+            request_kwargs={"timeout": settings.escrow_rpc_timeout_sec},
+        )
+    )
+    if not w3.is_connected():
+        raise RuntimeError("Unable to connect to chain RPC.")
+    return w3
+
+
+@lru_cache(maxsize=16)
+def _get_cached_escrow_contract(rpc_url: str, contract_address: str):
+    from web3 import Web3
+
+    w3 = _get_cached_web3(rpc_url)
+    checksum_address = Web3.to_checksum_address(contract_address)
+    return w3, w3.eth.contract(address=checksum_address, abi=ESCROW_LEDGER_ABI)
+
+
 @dataclass(frozen=True)
 class EscrowLockResult:
     tx_hash: str
@@ -222,7 +253,12 @@ def lock_reservation_escrow_onchain(
     if not chain.signer_private_key:
         raise RuntimeError("Active chain signer private key is not configured.")
 
-    w3 = Web3(Web3.HTTPProvider(chain.rpc_url))
+    w3 = Web3(
+        Web3.HTTPProvider(
+            chain.rpc_url,
+            request_kwargs={"timeout": settings.escrow_rpc_timeout_sec},
+        )
+    )
     if not w3.is_connected():
         raise RuntimeError(f"Unable to connect to {chain.key} RPC.")
 
@@ -428,24 +464,17 @@ def read_escrow_record_onchain(
     reservation_id: str,
     onchain_booking_id: str | None = None,
 ) -> OnchainEscrowRecord:
-    try:
-        from web3 import Web3
-    except Exception as exc:  # noqa: BLE001
-        raise RuntimeError(
-            "Missing web3 dependencies. Install/refresh hillside-api dependencies to read on-chain escrow."
-        ) from exc
+    from web3 import Web3
 
     if not chain.rpc_url:
         raise RuntimeError("Active chain RPC URL is not configured.")
     if not chain.escrow_contract_address:
         raise RuntimeError("Active chain contract address is not configured.")
 
-    w3 = Web3(Web3.HTTPProvider(chain.rpc_url))
-    if not w3.is_connected():
-        raise RuntimeError(f"Unable to connect to {chain.key} RPC.")
-
-    contract_address = Web3.to_checksum_address(chain.escrow_contract_address)
-    contract = w3.eth.contract(address=contract_address, abi=ESCROW_LEDGER_ABI)
+    try:
+        _, contract = _get_cached_escrow_contract(chain.rpc_url, chain.escrow_contract_address)
+    except RuntimeError as exc:
+        raise RuntimeError(f"Unable to connect to {chain.key} RPC.") from exc
 
     booking_id_bytes32, booking_id_hex = _resolve_booking_id_bytes(
         Web3, reservation_id, onchain_booking_id
@@ -464,3 +493,50 @@ def read_escrow_record_onchain(
         state=state_map.get(state_index, "none"),
         amount_wei=int(row[3] if len(row) > 3 else 0),
     )
+
+
+def read_chain_gas_snapshot(chain: ChainConfig) -> dict[str, Any]:
+    """
+    Read current base/priority gas fee from RPC.
+    This helper is non-throwing by design so status UIs can degrade gracefully.
+    """
+
+    if not chain.rpc_url:
+        return {
+            "base_fee_gwei": None,
+            "priority_fee_gwei": None,
+            "source": "unavailable",
+            "stale": False,
+            "last_updated_at": None,
+            "note": "RPC URL is not configured.",
+        }
+
+    try:
+        w3 = _get_cached_web3(chain.rpc_url)
+        latest_block = w3.eth.get_block("latest")
+        base_fee_wei = latest_block.get("baseFeePerGas")
+        base_fee_gwei = float(w3.from_wei(int(base_fee_wei), "gwei")) if base_fee_wei is not None else None
+
+        try:
+            priority_fee_wei = int(w3.eth.max_priority_fee)
+            priority_fee_gwei = float(w3.from_wei(priority_fee_wei, "gwei"))
+        except Exception:  # noqa: BLE001
+            priority_fee_gwei = None
+
+        return {
+            "base_fee_gwei": round(base_fee_gwei, 4) if base_fee_gwei is not None else None,
+            "priority_fee_gwei": round(priority_fee_gwei, 4) if priority_fee_gwei is not None else None,
+            "source": "live",
+            "stale": False,
+            "last_updated_at": datetime.now(timezone.utc).isoformat(),
+            "note": None,
+        }
+    except Exception as exc:  # noqa: BLE001
+        return {
+            "base_fee_gwei": None,
+            "priority_fee_gwei": None,
+            "source": "unavailable",
+            "stale": False,
+            "last_updated_at": None,
+            "note": str(exc) or "Unable to read live gas snapshot.",
+        }

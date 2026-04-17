@@ -72,14 +72,26 @@ export async function apiFetch<T>(
 
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   const start = performance.now();
-  const response = await fetch(`${normalizeBaseUrl()}${normalizedPath}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${accessToken}`,
-      ...(init.headers ?? {}),
-    },
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${normalizeBaseUrl()}${normalizedPath}`, {
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+        ...(init.headers ?? {}),
+      },
+    });
+  } catch (error) {
+    const durationMs = performance.now() - start;
+    recordTiming(normalizedPath, durationMs, 0);
+    const offline = typeof navigator !== "undefined" && !navigator.onLine;
+    if (offline) {
+      throw new Error("Offline: unable to reach server. Continue working and sync when internet is back.");
+    }
+    const message = error instanceof Error ? error.message : String(error ?? "Network request failed.");
+    throw new Error(`Network request failed: ${message}`);
+  }
   const durationMs = performance.now() - start;
   recordTiming(normalizedPath, durationMs, response.status);
 

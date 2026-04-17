@@ -1,6 +1,6 @@
 # Demo & Test Plan
 
-Last updated: 2026-02-25
+Last updated: 2026-03-06
 
 ## Runnable demo path (PowerShell)
 
@@ -24,76 +24,115 @@ npm run dev
 Invoke-RestMethod -Method GET -Uri "http://127.0.0.1:8000/health"
 Invoke-RestMethod -Method GET -Uri "http://127.0.0.1:8100/health"
 ```
-5. Auth + reservation smoke (guest token required):
-```powershell
-$headers = @{ Authorization = "Bearer $guestToken" }
-Invoke-RestMethod -Method GET -Uri "http://127.0.0.1:8000/v2/me/bookings?tab=pending_payment" -Headers $headers
-```
-6. NFT guest pass verify (guest or admin token):
-```powershell
-$headers = @{ Authorization = "Bearer $token" }
-Invoke-RestMethod -Method GET -Uri "http://127.0.0.1:8000/v2/nft/guest-pass/<reservation_id>" -Headers $headers
-```
-7. Occupancy forecast (admin token):
-```powershell
-$headers = @{ Authorization = "Bearer $adminToken" }
-$body = @{ start_date = "2026-02-24"; horizon_days = 7; history_days = 30 } | ConvertTo-Json
-Invoke-RestMethod -Method POST -Uri "http://127.0.0.1:8000/v2/ai/occupancy/forecast" -Headers $headers -ContentType "application/json" -Body $body
-```
-8. Sepolia reliability smoke:
-```powershell
-.\docs\re-architecture-core\scripts\sepolia-reliability-smoke.ps1 `
-  -ApiBaseUrl "http://127.0.0.1:8000" `
-  -LoopCount 10 `
-  -SupabaseUrl "https://<project-ref>.supabase.co" `
-  -SupabasePublishableKey "<publishable-key>" `
-  -AdminEmail "<admin-email>" `
-  -AdminPassword "<admin-password>"
-```
 
-## Latest Sepolia Reliability Evidence
+## Module C demo steps (AI Hospitality Intelligence)
 
-Evidence file: `docs/re-architecture-core/sepolia-reliability-report.json`
+1. Open `http://localhost:3000/admin/ai`.
+2. Pricing tab:
+- Click **Refresh metrics** (`GET /v2/ai/pricing/metrics`).
+- Click **Generate recommendation** (`POST /v2/ai/pricing/recommendation`).
+- Review reasons and confidence.
+- Click **Apply recommendation** (`POST /v2/ai/pricing/apply`).
+3. Forecast tab:
+- Click **Generate new forecast (14 days)** (`POST /v2/ai/occupancy/forecast`).
+- Verify model/source and trend output.
+4. Concierge tab:
+- Select `segment_key`.
+- Click **Generate concierge suggestions** (`POST /v2/ai/concierge/recommendation`).
+- Verify suggestions and "Why suggested" bullets.
 
-Latest run snapshot (generated `2026-02-25T23:29:17.9279047+08:00`):
+## Module D demo steps (Resort Management Dashboard)
 
-1. `loop_count = 10`
-2. `success_count = 10`
-3. `success_rate = 100`
-4. `active_chain.key = sepolia`
-5. `escrow_reconciliation_monitor.alert_active = false`
+1. Open `http://localhost:3000/admin`.
+2. Verify **Resort Snapshot** cards:
+- Occupancy now (`occupied/active` + occupancy %)
+- FIAT revenue (PHP, last 7 days)
+- Crypto revenue (ETH total + tx count)
+- AI demand next 7 days (trend + model/version)
+3. Validate degraded state behavior:
+- Stop AI service or clear forecasts and confirm demand status becomes `missing` without page crash.
+4. Room Management quick form:
+- Search/select a unit.
+- Update amenities, base rate, availability, and operational status.
+- Save and confirm toast + persisted update.
+5. Guest Verification launcher:
+- Open scanner: `/admin/check-in?mode=scan`
+- Open code fallback: `/admin/check-in?mode=code`
+- Open tablet layout: `/admin/check-in?view=tablet&mode=scan`
+- Confirm check-in flow remains functional.
 
-Verification command:
+## Blockchain Explorer demo steps (Internal)
 
-```powershell
-$report = Get-Content .\docs\re-architecture-core\sepolia-reliability-report.json -Raw | ConvertFrom-Json
-$report | Select-Object generated_at, loop_count, success_count, success_rate
-$report.runs | Where-Object { $_.error -or -not $_.create_ok -or -not $_.guest_pass_ok -or -not $_.checkin_ok -or $_.reconciliation_alert }
-```
+1. Open `http://localhost:3000/admin/blockchain`.
+2. `Contract Status` tab:
+- Change `chain` and `window` controls, verify refetch.
+- Confirm KPI cards:
+  - gas fees (`base / priority`)
+  - successful transactions (escrow-only)
+  - pending escrows (`pending_lock`)
+- Verify recent tx table links open explorer hash pages.
+3. Gas fallback behavior:
+- Temporarily break RPC or disable network.
+- Confirm gas state shows `cached` or `unavailable` without crashing page.
+- Confirm tx/pending metrics still render from database.
+4. `Audit Logs` tab:
+- Default view is reservation-focused logs.
+- Apply search/action/date filters and verify results update.
+- Open row details drawer and inspect metadata/hash values.
+5. Backward compatibility:
+- Open `/admin/escrow` and `/admin/audit-logs`; both remain functional.
 
-## Smoke checks
+## Interface Design Outline (Sitemap) demo steps (Guest Portal Upgrade)
 
-1. Legacy app remains in repo but is excluded from CI builds.
-2. Next.js shell starts (`hillside-next`).
-3. FastAPI health endpoint responds (`/health`).
-4. Contracts workspace compiles.
+1. Booking form (`/book`):
+- Select `Room Type`.
+- Set `Guest Count`.
+- Verify submit is blocked when selected capacity is below `guest_count`.
+- Optionally connect wallet, refresh page, and confirm profile persistence.
+- Confirm booking still works when wallet is not connected.
+- Submit reservation and confirm API payload stores `guest_count`.
+2. My Stay (`/guest/my-stay`):
+- Verify countdown card, room display fallback, and QR action button.
+- Open QR modal and validate online token refresh + offline cached token behavior.
+3. Explore (`/guest/map`):
+- Verify trail/facility filters, pin selection, and manual "You are here" routing.
+- Verify map still works offline from cached shell/data.
+4. Resort Services (`/guest/services`):
+- Submit request with reservation link.
+- Submit request without reservation link.
+- Verify timeline status rendering.
+5. Admin Services Queue (`/admin/services`):
+- Filter by status/category/search.
+- Open drawer and update status to `in_progress`, `done`, `cancelled`.
+- Confirm guest timeline reflects updates.
 
 ## Functional checkpoints
 
-1. Booking creation via V2 API works with authenticated user.
-2. My Bookings list loads from `/v2/me/bookings`.
-3. Admin Reservations list loads from `/v2/reservations`.
-4. Payment submission and review transitions are deterministic.
-5. NFT guest pass verify endpoint returns deterministic status.
-6. Occupancy forecast endpoint writes rows to `public.ai_forecasts`.
+1. Booking creation works with required `guest_count`.
+2. `/v2/me/profile` GET/PATCH works for wallet upsert/clear.
+3. My Stay shows room identifiers (`room_number`, `unit_code`) with fallback.
+4. Guest service requests are created and listed with correct ownership.
+5. Admin service queue updates status with deterministic transitions.
+6. Existing tours, payments, check-in, and AI center flows remain intact.
+7. `/v2/dashboard/resort-snapshot` returns stable payload with occupancy/revenue/ai_demand sections.
+8. Dashboard no longer embeds legacy Ledger Explorer and Resource Heatmap blocks.
+9. `/admin/blockchain` renders unified Contract Status + Audit Logs tabs without breaking existing pages.
 
 ## Security checks
 
-1. Unauthorized API call returns 401/403.
-2. Admin-only endpoint blocks guest roles.
-3. QR tamper/replay payload rejected.
-4. On-chain payload carries reservation hash/IDs only (no PII).
-5. Offline QR queue remains encrypted at rest (IndexedDB AES-256).
+1. Unauthorized API calls return 401/403.
+2. Admin-only endpoints block guest roles.
+3. QR tamper/replay is rejected.
+4. On-chain payloads contain no PII.
+5. Offline check-in queue remains encrypted in IndexedDB.
+6. Guest service requests obey RLS ownership/admin policies.
+
+## Offline checks
+
+1. Admin check-in preload pack caches `today + tomorrow` arrivals.
+2. Offline code validation works only with preload cache.
+3. Offline queue stores action items and syncs deterministically when online.
+4. `/guest/my-stay`, `/guest/map`, and `/guest/services` shell routes remain usable offline.
 
 ## Performance checks
 
@@ -102,63 +141,7 @@ $report.runs | Where-Object { $_.error -or -not $_.create_ok -or -not $_.guest_p
 $headers = @{ Authorization = "Bearer $adminToken" }
 Invoke-RestMethod -Method GET -Uri "http://127.0.0.1:8000/v2/dashboard/perf" -Headers $headers
 ```
-2. Initial list endpoint P95 latency under target.
-3. Cursor pagination returns stable, non-duplicated rows.
-4. Frontend route transitions keep perceived loading feedback.
-5. Frontend console logs show request counts + timing per page.
-6. Update `docs/re-architecture-core/perf-report.md` with measured top-10 results.
-
-## Release Operations
-
-1. Baseline tag exists and points to the green release gate run (`v0.9.0-rc1`).
-2. Branch protection on `master` must require these checks:
-   - `api-validate (3.11)`
-   - `api-validate (3.12)`
-   - `release-gate-core`
-   - `release-gate-sepolia-smoke`
-3. Feature freeze rule: merge only release blockers while validating a release candidate.
-4. Secrets hygiene before each release candidate:
-   - rotate signing keys/private keys if they were exposed in logs or screenshots
-   - re-save GitHub Actions secrets without trailing whitespace/newlines
-   - verify `ESCROW_RECONCILIATION_CHAIN_KEY=sepolia` for testnet release gates
-5. Manual demo pass must complete end-to-end:
-   - booking creation
-   - payment submission and verification
-   - NFT guest pass verification
-   - QR check-in
-   - reconciliation monitor run with no alert
-
-## Rollback Playbook
-
-1. Identify last known-good release tag:
-```powershell
-git tag --sort=-creatordate | Select-Object -First 5
-```
-2. Roll back deployment target to previous good tag (example):
-```powershell
-git checkout v0.9.0-rc1
-```
-3. Re-run release validation for the rollback candidate:
-   - `release-gate-core`
-   - `release-gate-sepolia-smoke`
-4. Confirm health and critical paths after rollback:
-```powershell
-Invoke-RestMethod -Method GET -Uri "http://127.0.0.1:8000/health"
-Invoke-RestMethod -Method GET -Uri "http://127.0.0.1:8100/health"
-```
-5. Record rollback event in project docs:
-   - failure trigger
-   - restored tag/commit
-   - time to recovery
-   - follow-up corrective action
-
-## Defense Checklist
-
-1. Chain strategy is explicit: Sepolia for development, Polygon Amoy as target/cutover.
-2. Escrow flow is consistent in docs and runtime (release at check-in).
-3. Offline queue uses AES-256 encrypted IndexedDB (not plaintext localStorage).
-4. NFT guest pass exists (ERC721), mint is feature-flagged and non-blocking.
-5. Guest pass verification endpoint is available for admin/guest owner checks.
-6. AI stack includes scikit-learn and provides persisted occupancy forecast output.
-7. PII remains off-chain; only reservation hash and token metadata are used.
-8. ZKP is explicitly deferred as future work (out of current scope).
+2. Confirm list endpoints remain responsive with pagination.
+3. Confirm no major UI blocking during booking, QR, and services flows.
+4. Dashboard snapshot load should remain under normal admin render budget with cache enabled.
+5. `/v2/escrow/contract-status` cache window (30s) should keep repeated refreshes responsive.

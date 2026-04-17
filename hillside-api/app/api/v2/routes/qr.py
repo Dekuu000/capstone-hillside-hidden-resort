@@ -6,7 +6,12 @@ from pydantic import BaseModel
 
 from app.core.auth import AuthContext, require_admin, require_authenticated
 from app.core.config import settings
-from app.core.qr_security import build_qr_signature, verify_qr_signature
+from app.core.qr_security import (
+    build_qr_signature,
+    get_qr_public_key_base64url,
+    get_qr_public_key_id,
+    verify_qr_signature,
+)
 from app.integrations.supabase_client import (
     consume_qr_token_record,
     create_qr_token_record,
@@ -31,6 +36,42 @@ class QrVerifyRequest(BaseModel):
     offline_mode: bool = False
 
 
+class QrPublicKeyResponse(BaseModel):
+    algorithm: str = "ed25519"
+    key_id: str
+    public_key: str
+
+
+def _effective_rotation_seconds() -> int:
+    configured = max(10, int(settings.qr_rotation_seconds))
+    env = str(settings.app_env or "").strip().lower()
+    if env in {"local", "dev", "development"}:
+        return max(120, configured)
+    return configured
+
+
+def _resolve_qr_public_key() -> str:
+    try:
+        return get_qr_public_key_base64url(
+            private_key_material=settings.qr_signing_private_key,
+            legacy_secret=settings.qr_signing_secret,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+
+
+@router.get("/public-key", response_model=QrPublicKeyResponse)
+def get_public_key(_: AuthContext = Depends(require_authenticated)):
+    public_key = _resolve_qr_public_key()
+    return QrPublicKeyResponse(
+        key_id=get_qr_public_key_id(public_key),
+        public_key=public_key,
+    )
+
+
 @router.post("/issue", response_model=QrToken)
 def issue_token(
     payload: QrIssueRequest,
@@ -41,11 +82,7 @@ def issue_token(
             status_code=status.HTTP_409_CONFLICT,
             detail="Dynamic QR is disabled.",
         )
-    if not settings.qr_signing_secret:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="QR signing secret is not configured.",
-        )
+    public_key = _resolve_qr_public_key()
 
     reservation_id = payload.reservation_id
     reservation_row = (
@@ -57,28 +94,35 @@ def issue_token(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation not found.")
 
     now = datetime.now(timezone.utc)
-    expires_at = now + timedelta(seconds=max(10, settings.qr_rotation_seconds))
+    rotation_seconds = _effective_rotation_seconds()
+    expires_at = now + timedelta(seconds=rotation_seconds)
     jti = str(uuid4())
-    rotation_version = max(1, int(now.timestamp()) // max(1, settings.qr_rotation_seconds))
+    rotation_version = max(1, int(now.timestamp()) // rotation_seconds)
+    reservation_code = str(reservation_row.get("reservation_code") or "")
     signature = build_qr_signature(
-        secret=settings.qr_signing_secret,
+        private_key_material=settings.qr_signing_private_key,
+        legacy_secret=settings.qr_signing_secret,
         jti=jti,
         reservation_id=reservation_id,
+        reservation_code=reservation_code,
         expires_at=expires_at,
         rotation_version=rotation_version,
     )
     token = QrToken(
         jti=jti,
         reservation_id=reservation_id,
+        reservation_code=reservation_code,
         expires_at=expires_at,
         signature=signature,
         rotation_version=rotation_version,
+        booking_hash=str(reservation_row.get("guest_pass_reservation_hash") or "") or None,
+        nft_token_id=reservation_row.get("guest_pass_token_id"),
     )
     try:
         create_qr_token_record(
             jti=token.jti,
             reservation_id=token.reservation_id,
-            reservation_code=str(reservation_row.get("reservation_code") or ""),
+            reservation_code=reservation_code,
             rotation_version=token.rotation_version,
             signature=token.signature,
             token_payload=token.model_dump_json(),
@@ -96,11 +140,7 @@ def _verify_dynamic_qr(payload: QrVerifyRequest, auth: AuthContext) -> dict:
             status_code=status.HTTP_409_CONFLICT,
             detail="Dynamic QR verification is disabled.",
         )
-    if not settings.qr_signing_secret:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="QR signing secret is not configured.",
-        )
+    public_key = _resolve_qr_public_key()
     if not payload.qr_token:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="qr_token is required.")
 
@@ -111,10 +151,12 @@ def _verify_dynamic_qr(payload: QrVerifyRequest, auth: AuthContext) -> dict:
         raise HTTPException(status_code=status.HTTP_410_GONE, detail="QR token expired.")
 
     signature_ok = verify_qr_signature(
-        secret=settings.qr_signing_secret,
+        public_key_material=public_key,
+        legacy_secret=settings.qr_signing_secret,
         provided_signature=token.signature,
         jti=token.jti,
         reservation_id=token.reservation_id,
+        reservation_code=token.reservation_code,
         expires_at=token.expires_at,
         rotation_version=token.rotation_version,
     )
@@ -161,6 +203,8 @@ def _verify_dynamic_qr(payload: QrVerifyRequest, auth: AuthContext) -> dict:
     reservation_code = str(reservation.get("reservation_code") or "")
     if not reservation_code:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Reservation code missing.")
+    if token.reservation_code and token.reservation_code != reservation_code:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="QR token reservation code mismatch.")
 
     try:
         validation = validate_qr_checkin(access_token=auth.access_token, reservation_code=reservation_code)

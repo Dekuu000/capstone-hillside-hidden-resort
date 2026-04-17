@@ -1,6 +1,6 @@
 # Guide Compliance Gap Checklist
 
-Last updated: 2026-02-25
+Last updated: 2026-03-06
 Source of truth: instructor PDF guide + current repository state.
 
 Status key:
@@ -56,7 +56,7 @@ Status key:
 | Feature | Current State | Status |
 |---|---|---|
 | Room inventory sync | Admin units + dashboard metrics implemented | Implemented |
-| Ledger explorer | Escrow + audit views exist; full explorer UX not complete | Partial |
+| Ledger explorer | Unified `/admin/blockchain` with Contract Status + Audit Logs tabs; legacy pages retained | Implemented |
 | Resource heatmap | Not implemented | Missing |
 
 ## 3) Interface Design Outline (Sitemap)
@@ -65,7 +65,7 @@ Status key:
 |---|---|---|
 | Guest Portal (dashboard, reservation management, QR) | Implemented for core reservation/payment/QR flows | Implemented |
 | Admin Dashboard (snapshot, room management, guest verification) | Implemented for core admin flows | Implemented |
-| Blockchain Explorer (internal) | Escrow monitor and audit pages exist; no unified explorer page yet | Partial |
+| Blockchain Explorer (internal) | Unified `/admin/blockchain` implemented with contract status + reservation-focused audit logs | Implemented |
 
 ## 4) System Flow Guide
 

@@ -1,26 +1,91 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, type ReactNode, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { getSupabaseBrowserClient } from "../../lib/supabase";
+import { Button } from "../../components/shared/Button";
+import { Toast } from "../../components/shared/Toast";
+import { AuthShell } from "../../components/layout/AuthShell";
+import { GoogleIcon } from "../../components/branding/GoogleIcon";
 
 async function syncServerSessionCookie(accessToken: string, emailValue?: string | null) {
-  await fetch("/api/auth/session", {
+  const response = await fetch("/api/auth/session", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "same-origin",
+    cache: "no-store",
     body: JSON.stringify({ accessToken, email: emailValue ?? null }),
   });
+  if (!response.ok) {
+    throw new Error("Unable to initialize server session cookie.");
+  }
+}
+
+function AuthInput({
+  label,
+  type,
+  value,
+  onChange,
+  placeholder,
+  icon,
+  autoComplete,
+  required,
+  rightSlot,
+}: {
+  label?: string;
+  type: string;
+  value: string;
+  onChange: (next: string) => void;
+  placeholder: string;
+  icon: ReactNode;
+  autoComplete?: string;
+  required?: boolean;
+  rightSlot?: ReactNode;
+}) {
+  return (
+    <label className="block">
+      {label ? <span className="mb-2 block text-sm font-semibold text-[var(--color-text)]">{label}</span> : null}
+      <span className="flex h-12 items-center gap-3 rounded-xl border border-[var(--color-border)] bg-white px-3 shadow-[var(--shadow-sm)] transition focus-within:border-[var(--color-secondary)] focus-within:ring-2 focus-within:ring-teal-100">
+        <span className="text-[var(--color-muted)]">{icon}</span>
+        <input
+          type={type}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          autoComplete={autoComplete}
+          required={required}
+          placeholder={placeholder}
+          className="h-full w-full border-0 bg-transparent text-sm text-[var(--color-text)] outline-none placeholder:text-[var(--color-muted)]"
+        />
+        {rightSlot}
+      </span>
+    </label>
+  );
 }
 
 export default function LoginPage() {
   const router = useRouter();
+  const hasSessionBootstrapRun = useRef(false);
+  const navigateAfterAuth = (target: string) => {
+    if (typeof window !== "undefined") {
+      window.location.assign(target);
+      return;
+    }
+    router.replace(target);
+  };
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [agree, setAgree] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [nextPath, setNextPath] = useState("");
+  const [nextPath] = useState(() => {
+    if (typeof window === "undefined") return "";
+    const requested = new URLSearchParams(window.location.search).get("next");
+    return requested && requested.startsWith("/") ? requested : "";
+  });
 
   const resolveNextPath = async (
     requestedPath: string,
@@ -58,13 +123,10 @@ export default function LoginPage() {
 
     const metadataRole = user.user_metadata?.role;
     const insertRole = typeof metadataRole === "string" && metadataRole.toLowerCase() === "admin" ? "admin" : "guest";
-    const nameValue =
-      (typeof user.user_metadata?.name === "string" && user.user_metadata.name.trim()) ||
-      user.email?.split("@")[0] ||
-      "Guest User";
+    const nameValue = (typeof user.user_metadata?.name === "string" && user.user_metadata.name.trim()) || user.email?.split("@")[0] || "Guest User";
     const phoneValue = typeof user.user_metadata?.phone === "string" ? user.user_metadata.phone : null;
 
-    const { error: insertError } = await (supabase as any).from("users").insert(
+    const { error: insertError } = await (supabase as any).from("users").upsert(
       {
         user_id: user.id,
         name: nameValue,
@@ -74,29 +136,21 @@ export default function LoginPage() {
       },
       {
         onConflict: "user_id",
-        ignoreDuplicates: true,
       },
     );
 
     if (!insertError) return;
     const errorCode = String((insertError as { code?: string } | null)?.code || "");
     const message = (insertError.message || "").toLowerCase();
-    const duplicate =
-      errorCode === "23505" ||
-      message.includes("duplicate") ||
-      message.includes("already exists") ||
-      message.includes("unique");
+    const duplicate = errorCode === "23505" || message.includes("duplicate") || message.includes("already exists") || message.includes("unique");
     if (duplicate) return;
     throw insertError;
   };
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const requested = params.get("next");
-    setNextPath(requested && requested.startsWith("/") ? requested : "");
-  }, []);
+    if (hasSessionBootstrapRun.current) return;
+    hasSessionBootstrapRun.current = true;
 
-  useEffect(() => {
     let mounted = true;
     try {
       const supabase = getSupabaseBrowserClient();
@@ -108,7 +162,8 @@ export default function LoginPage() {
             .then(() => resolveNextPath(nextPath))
             .then((target) => {
               if (!mounted) return;
-              router.replace(target);
+              if (target === window.location.pathname) return;
+              navigateAfterAuth(target);
             });
         }
       });
@@ -125,6 +180,11 @@ export default function LoginPage() {
     event.preventDefault();
     setBusy(true);
     setError(null);
+    if (!agree) {
+      setBusy(false);
+      setError("Please agree to the Terms and Privacy Policy before signing in.");
+      return;
+    }
     try {
       const supabase = getSupabaseBrowserClient();
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
@@ -140,10 +200,9 @@ export default function LoginPage() {
         await syncServerSessionCookie(data.session.access_token, data.user?.email ?? null);
       }
 
-      // Best-effort profile bootstrap should not block redirect.
       void ensureUserProfileRow().catch(() => null);
       const target = await resolveNextPath(nextPath, data.user);
-      router.replace(target);
+      navigateAfterAuth(target);
     } catch (unknownError) {
       setError(unknownError instanceof Error ? unknownError.message : "Login failed.");
     } finally {
@@ -151,69 +210,101 @@ export default function LoginPage() {
     }
   };
 
+  const onGoogleSignIn = () => {
+    setError("Google sign-in is not configured yet for this environment.");
+  };
+
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#eff6ff] px-4 py-8">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl">
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#1e3a8a]/10 text-2xl text-[#1e3a8a]">→</div>
-          <h1 className="text-3xl font-bold text-[#1e3a8a]">Welcome Back</h1>
-          <p className="mt-1 text-sm text-slate-600">Sign in to Hillside Hidden Resort</p>
+    <AuthShell
+      sideTitle="Welcome Back!"
+      sideSubtitle=""
+      sideDescription="Sign in to manage your bookings and enjoy your stay."
+      sideProof="Protected by industry-standard security and encrypted connections."
+      mobileBrandLine="Welcome back"
+      formIntro="Sign in"
+      formTitle="Sign In"
+      formSubtitle="Enter your credentials to continue"
+      sideQuote={undefined}
+    >
+      <form className="space-y-4" onSubmit={onSubmit}>
+        <AuthInput
+          type="email"
+          label="Email Address"
+          value={email}
+          onChange={setEmail}
+          autoComplete="email"
+          required
+          placeholder="Enter your email"
+          icon={<Mail className="h-4 w-4" />}
+        />
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold text-[var(--color-text)]">Password</span>
+            <Link href="/auth/forgot-password" className="text-sm font-semibold text-[var(--color-secondary)] hover:underline">
+              Forgot Password?
+            </Link>
+          </div>
+          <AuthInput
+            type={showPassword ? "text" : "password"}
+            label=""
+            value={password}
+            onChange={setPassword}
+            autoComplete="current-password"
+            required
+            placeholder="Enter your password"
+            icon={<Lock className="h-4 w-4" />}
+            rightSlot={
+              <button type="button" onClick={() => setShowPassword((value) => !value)} className="rounded-md p-1 text-[var(--color-muted)] hover:bg-slate-100">
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            }
+          />
         </div>
 
-        <form className="space-y-5" onSubmit={onSubmit}>
-          <label className="block text-sm font-medium text-slate-700">
-            Email Address
-            <input
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 outline-none transition focus:border-[#1e3a8a] focus:ring-4 focus:ring-[#1e3a8a]/20"
-              required
-              autoComplete="email"
-              placeholder="you@example.com"
-            />
-          </label>
+        <label className="flex items-center gap-2 text-sm text-[var(--color-text)]">
+          <input
+            type="checkbox"
+            checked={agree}
+            onChange={(event) => setAgree(event.target.checked)}
+            className="h-4 w-4 rounded border-[var(--color-border)] text-[var(--color-secondary)] focus-visible:ring-2 focus-visible:ring-teal-200"
+          />
+          Remember me
+        </label>
 
-          <label className="block text-sm font-medium text-slate-700">
-            Password
-            <input
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 outline-none transition focus:border-[#1e3a8a] focus:ring-4 focus:ring-[#1e3a8a]/20"
-              required
-              autoComplete="current-password"
-              placeholder="••••••••"
-            />
-          </label>
+        {error ? <Toast type="error" title="Sign in failed" message={error} /> : null}
 
-          {error ? <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
+        <Button
+          type="submit"
+          className="h-12 w-full rounded-xl border-0 bg-[var(--color-cta)] text-base font-semibold text-white hover:brightness-95"
+          loading={busy}
+          disabled={!agree || !email.trim() || !password}
+        >
+          {busy ? "Signing in..." : "Sign In"}
+        </Button>
+      </form>
 
-          <button
-            type="submit"
-            className="w-full rounded-lg bg-[#f97316] px-6 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:opacity-95 disabled:opacity-60"
-            disabled={busy}
-          >
-            {busy ? "Signing in..." : "Sign In"}
-          </button>
-        </form>
-
-        <div className="mt-6 text-center text-sm text-slate-600">
-          Don&apos;t have an account?{" "}
-          <Link href="/register" className="font-semibold text-[#1e3a8a] hover:underline">
-            Sign up
-          </Link>
-        </div>
-
-        <div className="mt-4 flex flex-wrap justify-center gap-3 text-xs text-slate-500">
-          <Link href="/my-bookings" className="hover:underline">
-            My Bookings
-          </Link>
-          <Link href="/admin/reservations" className="hover:underline">
-            Admin Reservations
-          </Link>
-        </div>
+      <div className="mt-5 flex items-center gap-3 text-sm text-[var(--color-muted)]">
+        <span className="h-px flex-1 bg-[var(--color-border)]" />
+        <span>or continue with</span>
+        <span className="h-px flex-1 bg-[var(--color-border)]" />
       </div>
-    </main>
+
+      <button
+        type="button"
+        onClick={onGoogleSignIn}
+        className="mt-5 inline-flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-[var(--color-border)] bg-white text-sm font-semibold text-[var(--color-text)] transition hover:bg-slate-50"
+      >
+        <GoogleIcon />
+        Continue with Google
+      </button>
+
+      <div className="mt-8 text-center text-sm text-[var(--color-muted)]">
+        Don&apos;t have an account?{" "}
+        <Link href="/auth/sign-up" className="font-semibold text-[var(--color-secondary)] hover:underline">
+          Sign Up
+        </Link>
+      </div>
+    </AuthShell>
   );
 }

@@ -1,5 +1,6 @@
 import type { ReportsOverviewResponse } from "../../../../packages/shared/src/types";
 import { reportsOverviewResponseSchema } from "../../../../packages/shared/src/schemas";
+import { ReportsDateRangeForm } from "../../../components/admin-reports/ReportsDateRangeForm";
 import { getServerAccessToken } from "../../../lib/serverAuth";
 
 function toLocalIsoDate(dayOffset: number) {
@@ -23,6 +24,18 @@ function formatPercent(value: number) {
   return `${Math.round((value || 0) * 100)}%`;
 }
 
+function formatDisplayDate(value: string) {
+  const parsed = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function formatDisplayMonth(value: string) {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+}
+
 async function fetchOverview(
   accessToken: string,
   fromDate: string,
@@ -40,7 +53,7 @@ async function fetchOverview(
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
-    cache: "no-store",
+    next: { revalidate: 20 },
   });
   if (!response.ok) return null;
 
@@ -59,8 +72,11 @@ export default async function AdminReportsPage({
   if (!accessToken) {
     return (
       <section className="mx-auto w-full max-w-6xl">
-        <h1 className="text-3xl font-bold text-slate-900">Reports</h1>
-        <p className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
+        <header className="mb-4 rounded-3xl border border-slate-200/70 bg-gradient-to-br from-white via-slate-50 to-blue-50 p-6 shadow-sm">
+          <h1 className="text-3xl font-bold text-slate-900">Reports</h1>
+          <p className="mt-2 text-sm text-slate-600">Daily, monthly, and summary analytics via V2 API.</p>
+        </header>
+        <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
           No active session found. Sign in as admin first.
         </p>
       </section>
@@ -74,39 +90,29 @@ export default async function AdminReportsPage({
 
   return (
     <section className="mx-auto w-full max-w-6xl">
-      <header className="mb-5">
-        <h1 className="text-3xl font-bold text-slate-900">Reports</h1>
-        <p className="mt-1 text-sm text-slate-600">Daily, monthly, and summary analytics via V2 API.</p>
+      <header className="mb-6 rounded-3xl border border-slate-200/70 bg-gradient-to-br from-white via-slate-50 to-blue-50 p-6 shadow-sm">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Analytics</p>
+            <h1 className="mt-2 text-3xl font-bold text-slate-900">Reports</h1>
+            <p className="mt-2 text-sm text-slate-600">Daily, monthly, and summary analytics via V2 API.</p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-xs text-slate-600">
+            <p className="font-semibold text-slate-900">Range</p>
+            <p className="mt-1">
+              {formatDisplayDate(fromDate)} to {formatDisplayDate(toDate)}
+            </p>
+            <p className="mt-1 text-[11px] text-slate-500">Last updated: {new Date().toLocaleTimeString()}</p>
+          </div>
+        </div>
       </header>
 
-      <form method="get" className="mb-5 grid gap-3 rounded-xl border border-blue-100 bg-white p-4 shadow-sm md:grid-cols-4">
-        <label className="grid gap-1 text-sm text-slate-700">
-          From
-          <input
-            type="date"
-            name="from"
-            defaultValue={fromDate}
-            className="rounded-lg border border-slate-300 px-3 py-2 outline-none ring-blue-200 transition focus:ring-2"
-          />
-        </label>
-        <label className="grid gap-1 text-sm text-slate-700">
-          To
-          <input
-            type="date"
-            name="to"
-            defaultValue={toDate}
-            className="rounded-lg border border-slate-300 px-3 py-2 outline-none ring-blue-200 transition focus:ring-2"
-          />
-        </label>
-        <div className="md:col-span-2 flex items-end">
-          <button
-            type="submit"
-            className="h-10 rounded-lg bg-blue-700 px-4 text-sm font-semibold text-white transition hover:bg-blue-800"
-          >
-            Apply range
-          </button>
-        </div>
-      </form>
+      <ReportsDateRangeForm
+        fromDate={fromDate}
+        toDate={toDate}
+        daily={overview?.daily ?? []}
+        monthly={overview?.monthly ?? []}
+      />
 
       {!overview ? (
         <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
@@ -114,53 +120,55 @@ export default async function AdminReportsPage({
         </p>
       ) : (
         <>
-          <div className="mb-5 grid gap-3 md:grid-cols-3">
-            <div className="rounded-xl border border-blue-100 bg-white p-4 shadow-sm">
+          <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm">
               <p className="text-xs text-slate-500">Bookings</p>
               <p className="mt-1 text-2xl font-bold text-slate-900">{overview.summary.bookings}</p>
             </div>
-            <div className="rounded-xl border border-blue-100 bg-white p-4 shadow-sm">
+            <div className="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm">
               <p className="text-xs text-slate-500">Cancellations</p>
               <p className="mt-1 text-2xl font-bold text-slate-900">{overview.summary.cancellations}</p>
             </div>
-            <div className="rounded-xl border border-blue-100 bg-white p-4 shadow-sm">
+            <div className="rounded-2xl border border-emerald-200/70 bg-emerald-50/40 p-4 shadow-sm">
               <p className="text-xs text-slate-500">Cash Collected</p>
-              <p className="mt-1 text-2xl font-bold text-blue-900">{formatPeso(overview.summary.cash_collected)}</p>
+              <p className="mt-1 text-2xl font-bold text-slate-900">{formatPeso(overview.summary.cash_collected)}</p>
+              <p className="mt-1 text-[11px] font-medium text-emerald-700">Primary KPI for the selected period</p>
             </div>
-            <div className="rounded-xl border border-blue-100 bg-white p-4 shadow-sm">
+            <div className="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm">
               <p className="text-xs text-slate-500">Occupancy Rate</p>
               <p className="mt-1 text-2xl font-bold text-slate-900">{formatPercent(overview.summary.occupancy_rate)}</p>
             </div>
-            <div className="rounded-xl border border-blue-100 bg-white p-4 shadow-sm">
+            <div className="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm">
               <p className="text-xs text-slate-500">Unit Booked Value</p>
               <p className="mt-1 text-2xl font-bold text-slate-900">{formatPeso(overview.summary.unit_booked_value)}</p>
             </div>
-            <div className="rounded-xl border border-blue-100 bg-white p-4 shadow-sm">
+            <div className="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm">
               <p className="text-xs text-slate-500">Tour Booked Value</p>
               <p className="mt-1 text-2xl font-bold text-slate-900">{formatPeso(overview.summary.tour_booked_value)}</p>
             </div>
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
-            <section className="overflow-hidden rounded-xl border border-blue-100 bg-white shadow-sm">
+            <section className="overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-sm">
               <header className="border-b border-slate-100 px-4 py-3">
                 <h2 className="text-sm font-semibold text-slate-900">Daily</h2>
+                <p className="mt-1 text-xs text-slate-500">Performance breakdown by day</p>
               </header>
               <div className="max-h-[420px] overflow-auto">
                 <table className="min-w-full text-sm">
                   <thead className="bg-slate-50 text-slate-600">
                     <tr>
                       <th className="px-4 py-2 text-left">Date</th>
-                      <th className="px-4 py-2 text-left">Bookings</th>
-                      <th className="px-4 py-2 text-left">Cash</th>
+                      <th className="px-4 py-2 text-center">Bookings</th>
+                      <th className="px-4 py-2 text-right">Cash</th>
                     </tr>
                   </thead>
                   <tbody>
                     {overview.daily.map((row) => (
-                      <tr key={row.report_date} className="border-t border-slate-100">
-                        <td className="px-4 py-2">{row.report_date}</td>
-                        <td className="px-4 py-2">{row.bookings}</td>
-                        <td className="px-4 py-2">{formatPeso(row.cash_collected)}</td>
+                      <tr key={row.report_date} className="border-t border-slate-100 hover:bg-slate-50/80">
+                        <td className="px-4 py-2">{formatDisplayDate(row.report_date)}</td>
+                        <td className="px-4 py-2 text-center">{row.bookings}</td>
+                        <td className="px-4 py-2 text-right font-semibold">{formatPeso(row.cash_collected)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -168,25 +176,26 @@ export default async function AdminReportsPage({
               </div>
             </section>
 
-            <section className="overflow-hidden rounded-xl border border-blue-100 bg-white shadow-sm">
+            <section className="overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-sm">
               <header className="border-b border-slate-100 px-4 py-3">
                 <h2 className="text-sm font-semibold text-slate-900">Monthly</h2>
+                <p className="mt-1 text-xs text-slate-500">Aggregated summary by month</p>
               </header>
               <div className="max-h-[420px] overflow-auto">
                 <table className="min-w-full text-sm">
                   <thead className="bg-slate-50 text-slate-600">
                     <tr>
                       <th className="px-4 py-2 text-left">Month</th>
-                      <th className="px-4 py-2 text-left">Bookings</th>
-                      <th className="px-4 py-2 text-left">Cash</th>
+                      <th className="px-4 py-2 text-center">Bookings</th>
+                      <th className="px-4 py-2 text-right">Cash</th>
                     </tr>
                   </thead>
                   <tbody>
                     {overview.monthly.map((row) => (
-                      <tr key={row.report_month} className="border-t border-slate-100">
-                        <td className="px-4 py-2">{row.report_month}</td>
-                        <td className="px-4 py-2">{row.bookings}</td>
-                        <td className="px-4 py-2">{formatPeso(row.cash_collected)}</td>
+                      <tr key={row.report_month} className="border-t border-slate-100 hover:bg-slate-50/80">
+                        <td className="px-4 py-2">{formatDisplayMonth(row.report_month)}</td>
+                        <td className="px-4 py-2 text-center">{row.bookings}</td>
+                        <td className="px-4 py-2 text-right font-semibold">{formatPeso(row.cash_collected)}</td>
                       </tr>
                     ))}
                   </tbody>

@@ -1,5 +1,5 @@
 import { BookNowClient } from "../../components/book/BookNowClient";
-import { GuestChrome } from "../../components/layout/GuestChrome";
+import { GuestShell } from "../../components/layout/GuestShell";
 import { getServerAccessToken, getServerAuthContext, getServerEmailHint } from "../../lib/serverAuth";
 
 function isoLocalDate(dayOffset: number) {
@@ -45,7 +45,7 @@ export default async function BookPage() {
     : null;
 
   return (
-    <GuestChrome initialEmail={emailHint}>
+    <GuestShell initialEmail={emailHint}>
       <BookNowClient
         initialToken={accessToken}
         initialSessionEmail={emailHint}
@@ -53,7 +53,7 @@ export default async function BookPage() {
         initialCheckOutDate={checkOutDate}
         initialUnitsData={initialUnitsData}
       />
-    </GuestChrome>
+    </GuestShell>
   );
 }
 

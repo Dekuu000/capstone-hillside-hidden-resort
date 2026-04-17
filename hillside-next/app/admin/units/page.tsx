@@ -17,6 +17,11 @@ function normalizeType(raw: string | undefined): string {
   return "";
 }
 
+function normalizeOperationalStatus(raw: string | undefined): "" | "cleaned" | "occupied" | "maintenance" | "dirty" {
+  if (raw === "cleaned" || raw === "occupied" || raw === "maintenance" || raw === "dirty") return raw;
+  return "";
+}
+
 function normalizeShowInactive(raw: string | undefined): boolean {
   return raw === "1" || raw === "true";
 }
@@ -25,6 +30,7 @@ async function fetchInitialUnits(
   accessToken: string,
   page: number,
   unitType: string,
+  operationalStatus: string,
   search: string,
   showInactive: boolean,
 ): Promise<UnitListResponse | null> {
@@ -36,22 +42,32 @@ async function fetchInitialUnits(
     offset: String(Math.max(0, (page - 1) * PAGE_SIZE)),
   });
   if (unitType) qs.set("unit_type", unitType);
+  if (operationalStatus) qs.set("operational_status", operationalStatus);
   if (!showInactive) qs.set("is_active", "true");
   if (search) qs.set("search", search);
 
-  const response = await fetch(`${base}/v2/units?${qs.toString()}`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-    cache: "no-store",
-  });
-  if (!response.ok) return null;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5000);
+  try {
+    const response = await fetch(`${base}/v2/units?${qs.toString()}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+      signal: controller.signal,
+      next: { revalidate: 10 },
+    });
+    if (!response.ok) return null;
 
-  const json = await response.json();
-  const parsed = unitListResponseSchema.safeParse(json);
-  if (!parsed.success) return null;
-  return parsed.data;
+    const json = await response.json();
+    const parsed = unitListResponseSchema.safeParse(json);
+    if (!parsed.success) return null;
+    return parsed.data;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export default async function AdminUnitsPage({
@@ -71,6 +87,11 @@ export default async function AdminUnitsPage({
   const unitType = normalizeType(
     Array.isArray(resolvedSearchParams.type) ? resolvedSearchParams.type[0] : resolvedSearchParams.type,
   );
+  const operationalStatus = normalizeOperationalStatus(
+    Array.isArray(resolvedSearchParams.operational_status)
+      ? resolvedSearchParams.operational_status[0]
+      : resolvedSearchParams.operational_status,
+  );
   const search = (
     Array.isArray(resolvedSearchParams.search) ? resolvedSearchParams.search[0] : resolvedSearchParams.search
   )?.trim() || "";
@@ -83,12 +104,13 @@ export default async function AdminUnitsPage({
     Array.isArray(resolvedSearchParams.unit_id) ? resolvedSearchParams.unit_id[0] : resolvedSearchParams.unit_id
   )?.trim() || null;
 
-  const initialData = await fetchInitialUnits(accessToken, page, unitType, search, showInactive);
+  const initialData = await fetchInitialUnits(accessToken, page, unitType, operationalStatus, search, showInactive);
   return (
     <AdminUnitsClient
       initialToken={accessToken}
       initialData={initialData}
       initialType={unitType}
+      initialOperationalStatus={operationalStatus}
       initialSearch={search}
       initialShowInactive={showInactive}
       initialPage={page}

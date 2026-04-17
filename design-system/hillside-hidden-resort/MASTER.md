@@ -6,9 +6,9 @@
 
 ---
 
-**Project:** Hillside Hidden Resort
-**Generated:** 2026-02-26 19:00:29
-**Category:** Analytics Dashboard
+**Project:** Hillside Hidden Resort  
+**Updated:** 2026-02-26  
+**Category:** Resort Operations + Guest PWA
 
 ---
 
@@ -18,46 +18,51 @@
 
 | Role | Hex | CSS Variable |
 |------|-----|--------------|
-| Primary | `#1E3A8A` | `--color-primary` |
-| Secondary | `#3B82F6` | `--color-secondary` |
-| CTA/Accent | `#CA8A04` | `--color-cta` |
-| Background | `#F8FAFC` | `--color-background` |
-| Text | `#1E40AF` | `--color-text` |
+| Primary (Navy) | `#0B1F3B` | `--color-primary` |
+| Secondary (Teal) | `#0EA5A4` | `--color-secondary` |
+| CTA/Accent (Coral) | `#F97316` | `--color-cta` |
+| Background | `#F7FAFC` | `--color-background` |
+| Surface/Card | `#FFFFFF` | `--color-surface` |
+| Text | `#0F172A` | `--color-text` |
+| Muted Text | `#64748B` | `--color-muted` |
+| Border | `#E2E8F0` | `--color-border` |
 
-**Color Notes:** Luxury navy + gold service
+**Color Notes:** Coastal navy + teal for trust and clarity, coral CTA for warm resort energy.
 
 ### Typography
 
-- **Heading Font:** Fira Code
-- **Body Font:** Fira Sans
-- **Mood:** dashboard, data, analytics, code, technical, precise
-- **Google Fonts:** [Fira Code + Fira Sans](https://fonts.google.com/share?selection.family=Fira+Code:wght@400;500;600;700|Fira+Sans:wght@300;400;500;600;700)
+- **Font family:** Poppins
+- **Heading scale:** H1/H2 = `700`, H3/H4 = `600`
+- **Body scale:** body text = `400/500`
+- **Small and muted text:** `400`
 
-**CSS Import:**
+**Google Fonts import:**
 ```css
-@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 ```
 
 ### Spacing Variables
 
 | Token | Value | Usage |
 |-------|-------|-------|
-| `--space-xs` | `4px` / `0.25rem` | Tight gaps |
-| `--space-sm` | `8px` / `0.5rem` | Icon gaps, inline spacing |
-| `--space-md` | `16px` / `1rem` | Standard padding |
-| `--space-lg` | `24px` / `1.5rem` | Section padding |
-| `--space-xl` | `32px` / `2rem` | Large gaps |
-| `--space-2xl` | `48px` / `3rem` | Section margins |
-| `--space-3xl` | `64px` / `4rem` | Hero padding |
+| `--space-xs` | `4px` | Tight gaps |
+| `--space-sm` | `8px` | Inline spacing |
+| `--space-md` | `16px` | Default spacing |
+| `--space-lg` | `24px` | Section padding |
+| `--space-xl` | `32px` | Section gaps |
+| `--space-2xl` | `48px` | Layout spacing |
+| `--space-3xl` | `64px` | Hero spacing |
 
-### Shadow Depths
+### Radius + Shadows
 
-| Level | Value | Usage |
-|-------|-------|-------|
-| `--shadow-sm` | `0 1px 2px rgba(0,0,0,0.05)` | Subtle lift |
-| `--shadow-md` | `0 4px 6px rgba(0,0,0,0.1)` | Cards, buttons |
-| `--shadow-lg` | `0 10px 15px rgba(0,0,0,0.1)` | Modals, dropdowns |
-| `--shadow-xl` | `0 20px 25px rgba(0,0,0,0.15)` | Hero images, featured cards |
+| Token | Value |
+|-------|-------|
+| `--radius-sm` | `8px` |
+| `--radius-md` | `12px` |
+| `--radius-lg` | `16px` |
+| `--shadow-sm` | `0 1px 2px rgba(2, 6, 23, 0.06)` |
+| `--shadow-md` | `0 8px 24px rgba(2, 6, 23, 0.08)` |
+| `--shadow-lg` | `0 20px 40px rgba(2, 6, 23, 0.14)` |
 
 ---
 
@@ -65,138 +70,126 @@
 
 ### Buttons
 
-```css
-/* Primary Button */
-.btn-primary {
-  background: #CA8A04;
-  color: white;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-weight: 600;
-  transition: all 200ms ease;
-  cursor: pointer;
-}
-
-.btn-primary:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
-}
-
-/* Secondary Button */
-.btn-secondary {
-  background: transparent;
-  color: #1E3A8A;
-  border: 2px solid #1E3A8A;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-weight: 600;
-  transition: all 200ms ease;
-  cursor: pointer;
-}
-```
-
-### Cards
+- Variants: `primary`, `secondary`, `ghost`, `destructive`
+- States: default, hover, active, disabled, loading
+- Focus ring required on keyboard focus
+- Loading state uses spinner icon + disabled pointer events
 
 ```css
-.card {
-  background: #F8FAFC;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: var(--shadow-md);
-  transition: all 200ms ease;
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 10px;
+  font-weight: 600;
+  transition: background-color 180ms ease, color 180ms ease, box-shadow 180ms ease;
   cursor: pointer;
 }
 
-.card:hover {
-  box-shadow: var(--shadow-lg);
-  transform: translateY(-2px);
+.btn:focus-visible {
+  outline: 2px solid transparent;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-secondary) 22%, white);
 }
 ```
 
 ### Inputs
 
-```css
-.input {
-  padding: 12px 16px;
-  border: 1px solid #E2E8F0;
-  border-radius: 8px;
-  font-size: 16px;
-  transition: border-color 200ms ease;
-}
+- Must include `label`
+- Optional `helper text`
+- Error state: border + helper text in red
+- Success state: border + helper text in green
+- Never rely on color only; include text feedback
 
-.input:focus {
-  border-color: #1E3A8A;
-  outline: none;
-  box-shadow: 0 0 0 3px #1E3A8A20;
-}
-```
+### Badges / Status Chips
 
-### Modals
+- Variants: `success`, `warn`, `error`, `info`, `neutral`
+- Reservation mapping:
+  - `confirmed`, `checked_in`, `verified` -> success
+  - `pending_payment`, `for_verification` -> warn
+  - `cancelled`, `rejected`, `no_show` -> error
+  - `draft`, `created` -> info
+  - fallback -> neutral
 
-```css
-.modal-overlay {
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-}
+### Tables
 
-.modal {
-  background: white;
-  border-radius: 16px;
-  padding: 32px;
-  box-shadow: var(--shadow-xl);
-  max-width: 500px;
-  width: 90%;
-}
-```
+- Header: sticky optional, uppercase metadata style
+- Row hover: only background/shadow changes, no transforms
+- Zebra striping optional on dense admin pages
+- Row focus-visible style required for keyboard
+
+### Drawers and Modals
+
+- Overlay: semi-opaque backdrop + optional blur
+- Sizes: `sm` 420px, `md` 560px, `lg` 720px
+- Close button top-right with visible focus ring
+- Must trap attention and support ESC close where possible
+
+### Tabs
+
+- Active indicator required (underline or pill)
+- Keyboard support: arrow keys should switch tabs in client components where feasible
+- Focus-visible state required
+
+### Toasts
+
+- Variants: `success`, `error`, `info`
+- Use concise title + one-line detail
+- Auto-dismiss okay for success/info, sticky for error
 
 ---
 
-## Style Guidelines
+## UX Rules
 
-**Style:** Data-Dense Dashboard
+### Guest Pages
 
-**Keywords:** Multiple charts/widgets, data tables, KPI cards, minimal padding, grid layout, space-efficient, maximum data visibility
+- More whitespace and calmer hierarchy
+- Friendly and plain-language copy
+- One primary CTA per viewport section
 
-**Best For:** Business intelligence dashboards, financial analytics, enterprise reporting, operational dashboards, data warehousing
+### Admin Pages
 
-**Key Effects:** Hover tooltips, chart zoom on click, row highlighting on hover, smooth filter animations, data loading spinners
+- Data-dense layout with strong scanning affordances
+- Filter bar + table + drill-down drawer pattern
+- Keep critical actions visible without scrolling
 
-### Page Pattern
+### Required Page States
 
-**Pattern Name:** Data-Dense + Drill-Down
+Every data page must include:
 
-- **CTA Placement:** Above fold
-- **Section Order:** Hero > Features > CTA
+- Skeleton loading
+- Empty state with next action
+- Error state with retry action
+- Offline indication when applicable
+
+### Accessibility + Motion
+
+- No emojis as icons
+- Use Lucide icon set for all UI icons
+- Respect `prefers-reduced-motion`
+- Transitions between `150ms` and `250ms`
+- Text contrast minimum `4.5:1`
+- Focus-visible styles required for interactive elements
 
 ---
 
 ## Anti-Patterns (Do NOT Use)
 
-- ❌ Ornate design
-- ❌ No filtering
-
-### Additional Forbidden Patterns
-
-- ❌ **Emojis as icons** — Use SVG icons (Heroicons, Lucide, Simple Icons)
-- ❌ **Missing cursor:pointer** — All clickable elements must have cursor:pointer
-- ❌ **Layout-shifting hovers** — Avoid scale transforms that shift layout
-- ❌ **Low contrast text** — Maintain 4.5:1 minimum contrast ratio
-- ❌ **Instant state changes** — Always use transitions (150-300ms)
-- ❌ **Invisible focus states** — Focus states must be visible for a11y
+- Ornate decoration that reduces readability
+- Layout-shifting hover transforms
+- Missing empty/error loading states
+- Invisible focus indicators
+- Unlabeled form fields
 
 ---
 
 ## Pre-Delivery Checklist
 
-Before delivering any UI code, verify:
-
-- [ ] No emojis used as icons (use SVG instead)
-- [ ] All icons from consistent icon set (Heroicons/Lucide)
-- [ ] `cursor-pointer` on all clickable elements
-- [ ] Hover states with smooth transitions (150-300ms)
-- [ ] Light mode: text contrast 4.5:1 minimum
-- [ ] Focus states visible for keyboard navigation
-- [ ] `prefers-reduced-motion` respected
-- [ ] Responsive: 375px, 768px, 1024px, 1440px
-- [ ] No content hidden behind fixed navbars
-- [ ] No horizontal scroll on mobile
+- [ ] Uses palette tokens (`--color-*`) instead of hardcoded colors
+- [ ] Poppins applied consistently
+- [ ] Guest and admin density rules applied correctly
+- [ ] Skeleton, empty, and error states present
+- [ ] Lucide-only icons (no emojis)
+- [ ] Keyboard focus visible on all controls
+- [ ] Responsive at 375 / 768 / 1024 / 1440
+- [ ] No horizontal overflow on mobile

@@ -83,13 +83,15 @@ async function encryptPayload(payload: string, secret: string): Promise<QueueRec
 
 async function decryptPayload(record: QueueRecord, secret: string): Promise<string> {
   const key = await deriveQueueKey(secret);
+  const iv = new Uint8Array(fromBase64(record.iv_b64));
+  const ciphertext = new Uint8Array(fromBase64(record.ciphertext_b64));
   const decrypted = await crypto.subtle.decrypt(
     {
       name: "AES-GCM",
-      iv: fromBase64(record.iv_b64),
+      iv,
     },
     key,
-    fromBase64(record.ciphertext_b64),
+    ciphertext,
   );
   return new TextDecoder().decode(decrypted);
 }

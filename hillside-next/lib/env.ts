@@ -5,6 +5,14 @@ type ClientEnv = {
   chainKey: string;
   chainId: string;
   supportedChainKeys: string[];
+  syncEnabled: boolean;
+  syncHarnessEnabled: boolean;
+  syncIntervalMs: number;
+  syncMaxRetries: number;
+  syncPushBatchSize: number;
+  syncPullLimit: number;
+  syncUploadMaxBytes: number;
+  syncUploadMaxCount: number;
 };
 
 function normalize(value: string | undefined) {
@@ -20,6 +28,12 @@ function isValidHttpUrl(value: string) {
   }
 }
 
+function normalizeNumber(value: string | undefined, fallback: number) {
+  const parsed = Number.parseInt((value || "").trim(), 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+  return parsed;
+}
+
 export const env: ClientEnv = {
   supabaseUrl: normalize(process.env.NEXT_PUBLIC_SUPABASE_URL),
   supabasePublishableKey: normalize(process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY),
@@ -32,6 +46,14 @@ export const env: ClientEnv = {
     .split(",")
     .map((value) => value.trim().toLowerCase())
     .filter(Boolean),
+  syncEnabled: normalize(process.env.NEXT_PUBLIC_SYNC_ENABLED || "true") !== "false",
+  syncHarnessEnabled: normalize(process.env.NEXT_PUBLIC_SYNC_HARNESS_ENABLED || "false") === "true",
+  syncIntervalMs: normalizeNumber(process.env.NEXT_PUBLIC_SYNC_INTERVAL_MS, 15000),
+  syncMaxRetries: normalizeNumber(process.env.NEXT_PUBLIC_SYNC_MAX_RETRIES, 8),
+  syncPushBatchSize: normalizeNumber(process.env.NEXT_PUBLIC_SYNC_PUSH_BATCH_SIZE, 50),
+  syncPullLimit: normalizeNumber(process.env.NEXT_PUBLIC_SYNC_PULL_LIMIT, 200),
+  syncUploadMaxBytes: normalizeNumber(process.env.NEXT_PUBLIC_SYNC_UPLOAD_MAX_BYTES, 5 * 1024 * 1024),
+  syncUploadMaxCount: normalizeNumber(process.env.NEXT_PUBLIC_SYNC_UPLOAD_MAX_COUNT, 20),
 };
 
 export function assertClientEnv() {
@@ -56,6 +78,9 @@ export function assertClientEnv() {
 
   if (env.chainId && !/^\d+$/.test(env.chainId)) {
     invalid.push("NEXT_PUBLIC_CHAIN_ID");
+  }
+  if (env.syncIntervalMs < 5000) {
+    invalid.push("NEXT_PUBLIC_SYNC_INTERVAL_MS");
   }
 
   if (missing.length || invalid.length) {

@@ -16,6 +16,8 @@ from app.schemas.common import (
     UnitDeleteResponse,
     UnitItem,
     UnitListResponse,
+    UnitOperationalStatus,
+    UnitOperationalStatusUpdateRequest,
     UnitStatusUpdateRequest,
     UnitStatusUpdateResponse,
     UnitUpdateRequest,
@@ -26,28 +28,37 @@ router = APIRouter()
 _CACHE = TTLCache(settings.cache_ttl_seconds)
 
 
+def _derive_unit_code(name: str) -> str:
+    normalized = "".join(ch for ch in name.upper() if ch.isalnum())
+    return (normalized[:12] or "UNIT")
+
+
 @router.get("", response_model=UnitListResponse)
 def get_units(
     limit: int = Query(default=20, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
     unit_type: str | None = Query(default=None),
     is_active: bool | None = Query(default=None),
+    operational_status: UnitOperationalStatus | None = Query(default=None),
     search: str | None = Query(default=None, max_length=120),
     _auth: AuthContext = Depends(require_admin),
 ):
-    cache_key = f"units:list:{limit}:{offset}:{unit_type}:{is_active}:{search}"
+    cache_key = f"units:list:{limit}:{offset}:{unit_type}:{is_active}:{operational_status}:{search}"
     cached = _CACHE.get(cache_key)
     if cached:
         return cached
 
     try:
-        rows, total = list_units_admin(
-            limit=limit,
-            offset=offset,
-            unit_type=unit_type,
-            is_active=is_active,
-            search=search,
-        )
+        query_args = {
+            "limit": limit,
+            "offset": offset,
+            "unit_type": unit_type,
+            "is_active": is_active,
+            "search": search,
+        }
+        if operational_status:
+            query_args["operational_status"] = operational_status.value
+        rows, total = list_units_admin(**query_args)
     except RuntimeError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
 
@@ -82,8 +93,13 @@ def post_unit(
     payload: UnitCreateRequest,
     _auth: AuthContext = Depends(require_admin),
 ):
+    create_payload = payload.model_dump()
+    create_payload["unit_code"] = (create_payload.get("unit_code") or "").strip() or _derive_unit_code(payload.name)
+    if create_payload.get("is_active") is False and "operational_status" not in create_payload:
+        create_payload["operational_status"] = "maintenance"
+
     try:
-        unit = create_unit(payload=payload.model_dump())
+        unit = create_unit(payload=create_payload)
     except RuntimeError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
 
@@ -103,6 +119,8 @@ def patch_unit(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="No unit fields provided for update.",
         )
+    if "is_active" in updates and "operational_status" not in updates:
+        updates["operational_status"] = "cleaned" if updates["is_active"] else "maintenance"
 
     try:
         unit = update_unit(unit_id=unit_id, payload=updates)
@@ -145,6 +163,30 @@ def patch_unit_status(
 ):
     try:
         unit = update_unit_status(unit_id=unit_id, is_active=payload.is_active)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+
+    if not unit:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unit not found")
+
+    _CACHE.clear()
+    return {
+        "ok": True,
+        "unit": unit,
+    }
+
+
+@router.patch("/{unit_id}/operational-status", response_model=UnitStatusUpdateResponse)
+def patch_unit_operational_status(
+    unit_id: str,
+    payload: UnitOperationalStatusUpdateRequest,
+    _auth: AuthContext = Depends(require_admin),
+):
+    try:
+        unit = update_unit(
+            unit_id=unit_id,
+            payload={"operational_status": payload.operational_status.value},
+        )
     except RuntimeError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
 

@@ -7,6 +7,7 @@ Local AI pricing inference service for Hillside V2.
 - `GET /health`
 - `POST /v1/pricing/recommendation`
 - `POST /v1/occupancy/forecast`
+- `POST /v1/concierge/recommendation`
 
 Request body:
 
@@ -32,12 +33,29 @@ Response body:
     "reservation_id": "optional-id",
     "pricing_adjustment": 20.0,
     "confidence": 0.78,
-    "explanations": ["Live model used (heuristic v1).", "Weekend uplift applied."]
+    "suggested_multiplier": 1.0167,
+    "demand_bucket": "normal",
+    "explanations": ["Live model used (sklearn-ridge-pricing-v1).", "Seasonal demand index affected recommendation."]
   },
-  "model_version": "heuristic-v1",
+  "model_version": "sklearn-ridge-pricing-v1",
   "source": "hillside-ai"
 }
 ```
+
+Pricing model signals include:
+- booking velocity
+- blockchain booking velocity
+- weather forecast score (seasonal prior)
+- seasonal demand index
+- chain confirm ratio
+
+Occupancy forecast:
+- Uses `Prophet` (`prophet-occupancy-v1`) when available.
+- Falls back to `scikit-learn` linear regression (`sklearn-linear-regression-v1`) if Prophet cannot run.
+- Falls back to `fallback-mean-weekend-v1` only when both Prophet and sklearn are unavailable.
+
+Concierge recommendation:
+- Uses anonymized segment behavior vectors and nearest-neighbor similarity (`sklearn-segment-similarity-v1`).
 
 ## Local run
 
