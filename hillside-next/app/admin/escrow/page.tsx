@@ -4,8 +4,9 @@ import {
 } from "../../../../packages/shared/src/schemas";
 import type { EscrowReconciliationResponse } from "../../../../packages/shared/src/types";
 import { getServerAccessToken } from "../../../lib/serverAuth";
+import { AdminEscrowTableClient } from "../../../components/admin-escrow/AdminEscrowTableClient";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 10;
 
 function parsePage(raw: string | undefined): number {
   const parsed = Number(raw || "1");
@@ -33,7 +34,7 @@ async function fetchEscrowReconciliation(
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
-      cache: "no-store",
+      next: { revalidate: 15 },
     },
   );
   if (!response.ok) return null;
@@ -81,6 +82,16 @@ export default async function AdminEscrowPage({
         </p>
       ) : (
         <>
+          {data.cached === false || data.in_progress ? (
+            <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              Reconciliation cache is warming up. Results may be partial while the background run is in progress.
+            </p>
+          ) : data.last_reconciled_at ? (
+            <p className="mb-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+              Last reconciled at: {new Date(data.last_reconciled_at).toLocaleString()}
+            </p>
+          ) : null}
+
           <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
             <MetricCard label="Total" value={String(data.summary.total)} tone="slate" />
             <MetricCard label="Match" value={String(data.summary.match)} tone="emerald" />
@@ -99,40 +110,8 @@ export default async function AdminEscrowPage({
               No reservations found for reconciliation.
             </div>
           ) : (
-            <div className="overflow-hidden rounded-xl border border-blue-100 bg-white shadow-sm">
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-left text-sm">
-                  <thead className="bg-slate-50 text-slate-600">
-                    <tr>
-                      <th className="px-4 py-3 font-semibold">Reservation</th>
-                      <th className="px-4 py-3 font-semibold">DB State</th>
-                      <th className="px-4 py-3 font-semibold">On-chain State</th>
-                      <th className="px-4 py-3 font-semibold">Result</th>
-                      <th className="px-4 py-3 font-semibold">Tx Hash</th>
-                      <th className="px-4 py-3 font-semibold">Reason</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.items.map((item) => (
-                      <tr key={item.reservation_id} className="border-t border-slate-100">
-                        <td className="px-4 py-3">
-                          <div className="font-semibold text-slate-900">{item.reservation_code}</div>
-                          <div className="text-xs text-slate-500 font-mono">{item.reservation_id}</div>
-                        </td>
-                        <td className="px-4 py-3">{item.db_escrow_state}</td>
-                        <td className="px-4 py-3">{item.onchain_state || "-"}</td>
-                        <td className="px-4 py-3">
-                          <ResultBadge value={item.result} />
-                        </td>
-                        <td className="px-4 py-3 font-mono text-xs text-blue-900 break-all">
-                          {item.chain_tx_hash || "-"}
-                        </td>
-                        <td className="px-4 py-3 text-xs text-slate-600">{item.reason || "-"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+            <div className="space-y-4">
+              <AdminEscrowTableClient items={data.items} lastReconciledAt={data.last_reconciled_at} />
               <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3">
                 <p className="text-xs text-slate-500">
                   Page {page} of {totalPages} | {totalCount} total
@@ -141,6 +120,7 @@ export default async function AdminEscrowPage({
                   {page > 1 ? (
                     <Link
                       href={buildPageQuery(page - 1)}
+                      prefetch={false}
                       className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700"
                     >
                       Previous
@@ -153,6 +133,7 @@ export default async function AdminEscrowPage({
                   {page < totalPages ? (
                     <Link
                       href={buildPageQuery(page + 1)}
+                      prefetch={false}
                       className="rounded-lg border border-blue-700 bg-blue-700 px-3 py-1.5 text-sm font-semibold text-white"
                     >
                       Next
@@ -195,14 +176,3 @@ function MetricCard({
   );
 }
 
-function ResultBadge({ value }: { value: "match" | "mismatch" | "missing_onchain" | "skipped" }) {
-  const classes =
-    value === "match"
-      ? "bg-emerald-100 text-emerald-700"
-      : value === "mismatch"
-        ? "bg-amber-100 text-amber-800"
-        : value === "missing_onchain"
-          ? "bg-rose-100 text-rose-700"
-          : "bg-slate-200 text-slate-700";
-  return <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${classes}`}>{value}</span>;
-}

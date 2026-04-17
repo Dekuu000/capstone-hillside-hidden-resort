@@ -1,4 +1,5 @@
 from datetime import date
+import hashlib
 import logging
 from uuid import uuid4
 
@@ -29,7 +30,11 @@ from app.integrations.supabase_client import (
     cancel_reservation as cancel_reservation_rpc,
     get_reservation_by_code,
     get_reservation_by_id,
+    get_dynamic_pricing_signals,
     list_recent_reservations,
+    get_sync_operation_receipt,
+    update_reservation_source as update_reservation_source_rpc,
+    upsert_sync_operation_receipt,
 )
 from app.schemas.common import (
     AiRecommendation,
@@ -39,6 +44,7 @@ from app.schemas.common import (
     ReservationCreateRequest,
     ReservationResponse,
     TourReservationCreateRequest,
+    WalkInStayCreateRequest,
 )
 from app.schemas.common import (
     CancelReservationResponse,
@@ -50,6 +56,82 @@ from app.schemas.common import (
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+
+def _build_idempotency_operation_id(*, route_key: str, user_id: str, idempotency_key: str) -> str:
+    digest = hashlib.sha256(f"{route_key}:{user_id}:{idempotency_key}".encode("utf-8")).hexdigest()
+    return f"{route_key}:{digest[:40]}"
+
+
+def _try_replay_reservation_response(
+    *,
+    route_key: str,
+    user_id: str,
+    idempotency_key: str | None,
+) -> ReservationResponse | None:
+    if not idempotency_key:
+        return None
+    operation_id = _build_idempotency_operation_id(
+        route_key=route_key,
+        user_id=user_id,
+        idempotency_key=idempotency_key,
+    )
+    try:
+        receipt = get_sync_operation_receipt(
+            operation_id=operation_id,
+            user_id=user_id,
+            idempotency_key=idempotency_key,
+        )
+    except RuntimeError:
+        logger.warning(
+            "Reservation idempotency replay lookup skipped (route=%s, user_id=%s)",
+            route_key,
+            user_id,
+        )
+        return None
+    if not receipt:
+        return None
+    payload = receipt.get("response_payload")
+    if not isinstance(payload, dict):
+        return None
+    try:
+        return ReservationResponse(**payload)
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _store_reservation_idempotency_receipt(
+    *,
+    route_key: str,
+    user_id: str,
+    idempotency_key: str | None,
+    reservation: ReservationResponse,
+) -> None:
+    if not idempotency_key:
+        return
+    operation_id = _build_idempotency_operation_id(
+        route_key=route_key,
+        user_id=user_id,
+        idempotency_key=idempotency_key,
+    )
+    try:
+        upsert_sync_operation_receipt(
+            operation_id=operation_id,
+            idempotency_key=idempotency_key,
+            user_id=user_id,
+            entity_type="reservation",
+            entity_id=reservation.reservation_id,
+            action=route_key,
+            status="applied",
+            http_status=200,
+            response_payload=reservation.model_dump(mode="json"),
+        )
+    except RuntimeError:
+        logger.warning(
+            "Reservation idempotency receipt store skipped (route=%s, user_id=%s)",
+            route_key,
+            user_id,
+        )
 
 
 def _maybe_get_ai_recommendation(
@@ -314,6 +396,14 @@ def create_reservation(
     payload: ReservationCreateRequest,
     auth: AuthContext = Depends(require_authenticated),
 ):
+    replayed = _try_replay_reservation_response(
+        route_key="reservations.create",
+        user_id=auth.user_id,
+        idempotency_key=payload.idempotency_key,
+    )
+    if replayed:
+        return replayed
+
     if payload.check_out_date <= payload.check_in_date:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -343,6 +433,15 @@ def create_reservation(
             detail="One or more selected units are no longer available.",
         )
 
+    # Some legacy/read-model projections don't always include capacity.
+    # Fall back to a safe minimum of 1 so contract paths remain backward compatible.
+    total_capacity = sum(max(1, int(unit_map[unit_id].get("capacity") or 1)) for unit_id in payload.unit_ids)
+    if payload.guest_count > total_capacity:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Selected units can host up to {total_capacity} guest(s).",
+        )
+
     nights = (payload.check_out_date - payload.check_in_date).days
     rates: list[float] = []
     total_amount = 0.0
@@ -360,6 +459,7 @@ def create_reservation(
             unit_ids=payload.unit_ids,
             rates=rates,
             total_amount=total_amount,
+            guest_count=payload.guest_count,
             notes=None,
         )
     except RuntimeError as exc:
@@ -373,6 +473,14 @@ def create_reservation(
         status_enum = BookingStatus.PENDING_PAYMENT
 
     reservation_id = str(created.get("reservation_id") or "")
+    try:
+        update_reservation_source_rpc(reservation_id=reservation_id, reservation_source="online")
+    except RuntimeError:
+        logger.exception("Failed to set reservation source=online (reservation_id=%s)", reservation_id)
+    try:
+        pricing_signals = get_dynamic_pricing_signals(target_date=payload.check_in_date.isoformat(), days=45)
+    except RuntimeError:
+        pricing_signals = {}
     ai_recommendation = _maybe_get_ai_recommendation(
         reservation_id=reservation_id,
         context={
@@ -381,12 +489,13 @@ def create_reservation(
             "total_amount": total_amount,
             "nights": nights,
             "unit_count": len(payload.unit_ids),
-            "party_size": sum(int(unit_map[unit_id].get("capacity") or 1) for unit_id in payload.unit_ids),
+            "party_size": payload.guest_count,
             "is_weekend": payload.check_in_date.weekday() >= 5,
             "is_tour": False,
+            "occupancy_context": pricing_signals,
         },
     )
-    return ReservationResponse(
+    response = ReservationResponse(
         reservation_id=reservation_id,
         reservation_code=str(created.get("reservation_code") or ""),
         status=status_enum,
@@ -394,6 +503,13 @@ def create_reservation(
         guest_pass_ref=_maybe_mint_guest_pass(reservation_id),
         ai_recommendation=ai_recommendation,
     )
+    _store_reservation_idempotency_receipt(
+        route_key="reservations.create",
+        user_id=auth.user_id,
+        idempotency_key=payload.idempotency_key,
+        reservation=response,
+    )
+    return response
 
 
 @router.post("/tours", response_model=ReservationResponse)
@@ -401,6 +517,14 @@ def create_tour_reservation(
     payload: TourReservationCreateRequest,
     auth: AuthContext = Depends(require_authenticated),
 ):
+    replayed = _try_replay_reservation_response(
+        route_key="reservations.tours.create",
+        user_id=auth.user_id,
+        idempotency_key=payload.idempotency_key,
+    )
+    if replayed:
+        return replayed
+
     if payload.adult_qty + payload.kid_qty <= 0:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -467,6 +591,15 @@ def create_tour_reservation(
         status_enum = BookingStatus.PENDING_PAYMENT
 
     reservation_id = str(created.get("reservation_id") or "")
+    source_value = "walk_in" if auth.role == "admin" and not payload.is_advance else "online"
+    try:
+        update_reservation_source_rpc(reservation_id=reservation_id, reservation_source=source_value)
+    except RuntimeError:
+        logger.exception("Failed to set reservation source=%s (reservation_id=%s)", source_value, reservation_id)
+    try:
+        pricing_signals = get_dynamic_pricing_signals(target_date=payload.visit_date.isoformat(), days=45)
+    except RuntimeError:
+        pricing_signals = {}
     ai_recommendation = _maybe_get_ai_recommendation(
         reservation_id=reservation_id,
         context={
@@ -477,9 +610,10 @@ def create_tour_reservation(
             "party_size": payload.adult_qty + payload.kid_qty,
             "is_weekend": payload.visit_date.weekday() >= 5,
             "is_tour": True,
+            "occupancy_context": pricing_signals,
         },
     )
-    return ReservationResponse(
+    response = ReservationResponse(
         reservation_id=reservation_id,
         reservation_code=str(created.get("reservation_code") or ""),
         status=status_enum,
@@ -487,6 +621,139 @@ def create_tour_reservation(
         guest_pass_ref=_maybe_mint_guest_pass(reservation_id),
         ai_recommendation=ai_recommendation,
     )
+    _store_reservation_idempotency_receipt(
+        route_key="reservations.tours.create",
+        user_id=auth.user_id,
+        idempotency_key=payload.idempotency_key,
+        reservation=response,
+    )
+    return response
+
+
+@router.post("/walk-in", response_model=ReservationResponse)
+def create_walk_in_stay_reservation(
+    payload: WalkInStayCreateRequest,
+    auth: AuthContext = Depends(require_admin),
+):
+    replayed = _try_replay_reservation_response(
+        route_key="reservations.walk_in.create",
+        user_id=auth.user_id,
+        idempotency_key=payload.idempotency_key,
+    )
+    if replayed:
+        return replayed
+
+    if payload.check_out_date <= payload.check_in_date:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="check_out_date must be after check_in_date.",
+        )
+    if payload.check_in_date < date.today():
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="check_in_date cannot be in the past.",
+        )
+    if not payload.unit_ids:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="At least one unit_id is required.",
+        )
+
+    try:
+        available_units = get_available_units_rpc(
+            check_in_date=payload.check_in_date.isoformat(),
+            check_out_date=payload.check_out_date.isoformat(),
+            unit_type=None,
+        )
+    except RuntimeError as exc:
+        code = status.HTTP_503_SERVICE_UNAVAILABLE if "not configured" in str(exc).lower() else status.HTTP_400_BAD_REQUEST
+        raise HTTPException(status_code=code, detail=str(exc)) from exc
+
+    unit_map = {str(unit.get("unit_id")): unit for unit in available_units}
+    missing = [unit_id for unit_id in payload.unit_ids if unit_id not in unit_map]
+    if missing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="One or more selected units are no longer available.",
+        )
+
+    nights = (payload.check_out_date - payload.check_in_date).days
+    rates: list[float] = []
+    total_amount = 0.0
+    for unit_id in payload.unit_ids:
+        base_price = float(unit_map[unit_id].get("base_price") or 0)
+        rates.append(base_price)
+        total_amount += base_price * nights
+
+    notes_parts = [
+        "Walk-in stay booking (admin).",
+        f"Guest: {payload.guest_name.strip()}" if payload.guest_name and payload.guest_name.strip() else None,
+        f"Phone: {payload.guest_phone.strip()}" if payload.guest_phone and payload.guest_phone.strip() else None,
+        payload.notes.strip() if payload.notes and payload.notes.strip() else None,
+    ]
+    notes = " | ".join(part for part in notes_parts if part)
+
+    try:
+        created = create_reservation_atomic_rpc(
+            access_token=auth.access_token,
+            guest_user_id=auth.user_id,
+            check_in_date=payload.check_in_date.isoformat(),
+            check_out_date=payload.check_out_date.isoformat(),
+            unit_ids=payload.unit_ids,
+            rates=rates,
+            total_amount=total_amount,
+            expected_pay_now=payload.expected_pay_now,
+            notes=notes or None,
+        )
+    except RuntimeError as exc:
+        code = status.HTTP_503_SERVICE_UNAVAILABLE if "not configured" in str(exc).lower() else status.HTTP_400_BAD_REQUEST
+        raise HTTPException(status_code=code, detail=str(exc)) from exc
+
+    status_text = str(created.get("status") or BookingStatus.PENDING_PAYMENT.value)
+    try:
+        status_enum = BookingStatus(status_text)
+    except ValueError:
+        status_enum = BookingStatus.PENDING_PAYMENT
+
+    reservation_id = str(created.get("reservation_id") or "")
+    try:
+        update_reservation_source_rpc(reservation_id=reservation_id, reservation_source="walk_in")
+    except RuntimeError:
+        logger.exception("Failed to set reservation source=walk_in (reservation_id=%s)", reservation_id)
+    try:
+        pricing_signals = get_dynamic_pricing_signals(target_date=payload.check_in_date.isoformat(), days=45)
+    except RuntimeError:
+        pricing_signals = {}
+    ai_recommendation = _maybe_get_ai_recommendation(
+        reservation_id=reservation_id,
+        context={
+            "check_in_date": payload.check_in_date.isoformat(),
+            "check_out_date": payload.check_out_date.isoformat(),
+            "total_amount": total_amount,
+            "nights": nights,
+            "unit_count": len(payload.unit_ids),
+            "party_size": sum(int(unit_map[unit_id].get("capacity") or 1) for unit_id in payload.unit_ids),
+            "is_weekend": payload.check_in_date.weekday() >= 5,
+            "is_tour": False,
+            "occupancy_context": pricing_signals,
+            "walk_in": True,
+        },
+    )
+    response = ReservationResponse(
+        reservation_id=reservation_id,
+        reservation_code=str(created.get("reservation_code") or ""),
+        status=status_enum,
+        escrow_ref=_maybe_apply_escrow_shadow_write(reservation_id),
+        guest_pass_ref=_maybe_mint_guest_pass(reservation_id),
+        ai_recommendation=ai_recommendation,
+    )
+    _store_reservation_idempotency_receipt(
+        route_key="reservations.walk_in.create",
+        user_id=auth.user_id,
+        idempotency_key=payload.idempotency_key,
+        reservation=response,
+    )
+    return response
 
 
 @router.get("", response_model=ReservationListResponse)
@@ -494,6 +761,7 @@ def get_reservations(
     limit: int = Query(default=10, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
     status_filter: str | None = Query(default=None, alias="status"),
+    source_filter: str | None = Query(default=None, alias="source", pattern="^(online|walk_in)$"),
     search: str | None = Query(default=None, max_length=120),
     sort_by: str | None = Query(default="created_at"),
     sort_dir: str = Query(default="desc", pattern="^(asc|desc)$"),
@@ -504,6 +772,7 @@ def get_reservations(
             limit=limit,
             offset=offset,
             status_filter=status_filter,
+            source_filter=source_filter,
             search=search,
             sort_by=sort_by,
             sort_dir=sort_dir,

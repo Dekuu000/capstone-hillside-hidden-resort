@@ -1,3 +1,6 @@
+import hashlib
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 
@@ -11,6 +14,8 @@ from app.integrations.supabase_client import (
     submit_payment_proof as submit_payment_proof_rpc,
     update_payment_intent_amount as update_payment_intent_amount_rpc,
     verify_payment as verify_payment_rpc,
+    get_sync_operation_receipt,
+    upsert_sync_operation_receipt,
 )
 from app.schemas.common import (
     AdminPaymentsResponse,
@@ -21,6 +26,12 @@ from app.schemas.common import (
 )
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
+
+
+def _build_idempotency_operation_id(*, route_key: str, user_id: str, idempotency_key: str) -> str:
+    digest = hashlib.sha256(f"{route_key}:{user_id}:{idempotency_key}".encode("utf-8")).hexdigest()
+    return f"{route_key}:{digest[:40]}"
 
 
 def _http_status_from_runtime_error(exc: RuntimeError) -> int:
@@ -92,6 +103,11 @@ def get_admin_payments(
     limit: int = Query(default=10, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
     search: str | None = Query(default=None, max_length=120),
+    method: str | None = Query(default=None, pattern="^(cash|gcash|bank|card)$"),
+    from_ts: str | None = Query(default=None, alias="from"),
+    to_ts: str | None = Query(default=None, alias="to"),
+    source: str | None = Query(default=None, pattern="^(online|walk_in)$"),
+    settlement: str | None = Query(default=None, pattern="^(paid|partial)$"),
     _auth: AuthContext = Depends(require_admin),
 ):
     try:
@@ -100,6 +116,11 @@ def get_admin_payments(
             limit=limit,
             offset=offset,
             search=search,
+            method_filter=method,
+            from_ts=from_ts,
+            to_ts=to_ts,
+            source_filter=source,
+            settlement_filter=settlement,
         )
     except RuntimeError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
@@ -118,6 +139,32 @@ def submit_payment(
     payload: PaymentSubmissionRequest,
     auth: AuthContext = Depends(require_authenticated),
 ):
+    operation_id = _build_idempotency_operation_id(
+        route_key="payments.submissions.create",
+        user_id=auth.user_id,
+        idempotency_key=payload.idempotency_key,
+    )
+    try:
+        existing_receipt = get_sync_operation_receipt(
+            operation_id=operation_id,
+            user_id=auth.user_id,
+            idempotency_key=payload.idempotency_key,
+        )
+    except RuntimeError:
+        logger.warning(
+            "Payment idempotency replay lookup skipped (user_id=%s, route=%s)",
+            auth.user_id,
+            "payments.submissions.create",
+        )
+        existing_receipt = None
+    if existing_receipt and isinstance(existing_receipt.get("response_payload"), dict):
+        cached_payload = existing_receipt["response_payload"]
+        return PaymentSubmissionResponse(
+            payment_id=str(cached_payload.get("payment_id") or "submitted"),
+            status=str(cached_payload.get("status") or "pending"),
+            reservation_status=str(cached_payload.get("reservation_status") or "for_verification"),
+        )
+
     proof_url = (payload.proof_url or "").strip()
     if not proof_url:
         raise HTTPException(
@@ -160,11 +207,30 @@ def submit_payment(
         payment_id = str(result[0])
     else:
         payment_id = "submitted"
-    return PaymentSubmissionResponse(
+    response = PaymentSubmissionResponse(
         payment_id=payment_id,
         status="pending",
         reservation_status="for_verification",
     )
+    try:
+        upsert_sync_operation_receipt(
+            operation_id=operation_id,
+            idempotency_key=payload.idempotency_key,
+            user_id=auth.user_id,
+            entity_type="payment_submission",
+            entity_id=payment_id,
+            action="payments.submissions.create",
+            status="applied",
+            http_status=200,
+            response_payload=response.model_dump(mode="json"),
+        )
+    except RuntimeError:
+        logger.warning(
+            "Payment idempotency receipt store skipped (user_id=%s, route=%s)",
+            auth.user_id,
+            "payments.submissions.create",
+        )
+    return response
 
 
 @router.post("/intent")
@@ -211,6 +277,34 @@ def record_on_site_payment(
     payload: OnSitePaymentRequest,
     auth: AuthContext = Depends(require_admin),
 ):
+    operation_id: str | None = None
+    if payload.idempotency_key:
+        operation_id = _build_idempotency_operation_id(
+            route_key="payments.on_site.create",
+            user_id=auth.user_id,
+            idempotency_key=payload.idempotency_key,
+        )
+        try:
+            existing_receipt = get_sync_operation_receipt(
+                operation_id=operation_id,
+                user_id=auth.user_id,
+                idempotency_key=payload.idempotency_key,
+            )
+        except RuntimeError:
+            logger.warning(
+                "On-site payment idempotency replay lookup skipped (user_id=%s)",
+                auth.user_id,
+            )
+            existing_receipt = None
+        if existing_receipt and isinstance(existing_receipt.get("response_payload"), dict):
+            cached_payload = existing_receipt["response_payload"]
+            return OnSitePaymentResponse(
+                ok=True,
+                payment_id=str(cached_payload.get("payment_id") or "recorded"),
+                status=str(cached_payload.get("status") or "verified"),
+                reservation_status=str(cached_payload.get("reservation_status") or "confirmed"),
+            )
+
     if payload.amount <= 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -264,12 +358,31 @@ def record_on_site_payment(
         refreshed = None
     next_status = str((refreshed or reservation).get("status") or reservation_status)
 
-    return {
+    response = {
         "ok": True,
         "payment_id": payment_id,
         "status": payment_status,
         "reservation_status": next_status,
     }
+    if payload.idempotency_key and operation_id:
+        try:
+            upsert_sync_operation_receipt(
+                operation_id=operation_id,
+                idempotency_key=payload.idempotency_key,
+                user_id=auth.user_id,
+                entity_type="payment_submission",
+                entity_id=payment_id,
+                action="payments.on_site.create",
+                status="applied",
+                http_status=200,
+                response_payload=response,
+            )
+        except RuntimeError:
+            logger.warning(
+                "On-site payment idempotency receipt store skipped (user_id=%s)",
+                auth.user_id,
+            )
+    return response
 
 
 @router.post("/{payment_id}/verify", response_model=VerifyPaymentResponse)

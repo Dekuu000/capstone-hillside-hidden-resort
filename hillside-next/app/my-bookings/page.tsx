@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { MyBookingsClient } from "../../components/my-bookings/MyBookingsClient";
-import { GuestChrome } from "../../components/layout/GuestChrome";
+import { GuestShell } from "../../components/layout/GuestShell";
 import { getServerAccessToken, getServerAuthContext, getServerEmailHint } from "../../lib/serverAuth";
 import { myBookingsResponseSchema } from "../../../packages/shared/src/schemas";
 import type { MyBookingsResponse } from "../../../packages/shared/src/types";
@@ -37,12 +37,12 @@ export default async function MyBookingsPage() {
   const emailHint = auth.email || (await getServerEmailHint());
 
   return (
-    <GuestChrome initialEmail={emailHint}>
+    <GuestShell initialEmail={emailHint}>
       <MyBookingsClient
         initialToken={accessToken}
         initialSessionEmail={emailHint}
         initialData={initialData}
       />
-    </GuestChrome>
+    </GuestShell>
   );
 }

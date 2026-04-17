@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
-import { AdminChrome } from "../../components/layout/AdminChrome";
+import { AppShell } from "../../components/layout/AppShell";
 import { getServerAccessToken, getServerAuthContext, getServerEmailHint } from "../../lib/serverAuth";
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
@@ -18,6 +18,6 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   }
 
   const emailHint = auth.email || (await getServerEmailHint());
-  return <AdminChrome initialEmail={emailHint}>{children}</AdminChrome>;
+  return <AppShell initialEmail={emailHint}>{children}</AppShell>;
 }
 

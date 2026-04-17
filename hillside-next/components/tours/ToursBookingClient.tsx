@@ -1,19 +1,26 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type {
+  PaymentSubmissionResponse,
   PricingRecommendation,
   ReservationCreateResponse,
   ServiceItem,
   ServiceListResponse,
 } from "../../../packages/shared/src/types";
 import {
+  paymentSubmissionResponseSchema,
   reservationCreateResponseSchema,
   serviceListResponseSchema,
 } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
+import { syncAwareMutation } from "../../lib/offlineSync/mutation";
+import { queuePaymentSubmissionWithFile } from "../../lib/offlineSync/paymentSubmission";
 import { getSupabaseBrowserClient } from "../../lib/supabase";
+import { FancyDatePicker } from "../shared/FancyDatePicker";
+import { GcashPaymentGuide } from "../shared/GcashPaymentGuide";
 
 type ToursBookingClientProps = {
   initialToken?: string | null;
@@ -85,7 +92,13 @@ export function ToursBookingClient({
   const [submitBusy, setSubmitBusy] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [successHasSyncCta, setSuccessHasSyncCta] = useState(false);
   const [latestAiRecommendation, setLatestAiRecommendation] = useState<PricingRecommendation | null>(null);
+
+  const setSuccessNotice = (message: string | null, withSyncCta = false) => {
+    setSuccessMessage(message);
+    setSuccessHasSyncCta(withSyncCta);
+  };
 
   useEffect(() => {
     if (!token) return;
@@ -186,49 +199,92 @@ export function ToursBookingClient({
 
     setSubmitBusy(true);
     setSubmitError(null);
-    setSuccessMessage(null);
+    setSuccessNotice(null);
     setLatestAiRecommendation(null);
     try {
-      const created = await apiFetch<ReservationCreateResponse>(
-        "/v2/reservations/tours",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            service_id: serviceId,
-            visit_date: visitDate,
-            adult_qty: adultQty,
-            kid_qty: kidQty,
-            is_advance: true,
-            expected_pay_now: payNow,
-            notes: null,
-          }),
-        },
-        token,
-        reservationCreateResponseSchema,
-      );
+      const createPayload = {
+        service_id: serviceId,
+        visit_date: visitDate,
+        adult_qty: adultQty,
+        kid_qty: kidQty,
+        is_advance: true,
+        expected_pay_now: payNow,
+        notes: null,
+        idempotency_key: crypto.randomUUID(),
+      };
+
+      const reservationOutcome = await syncAwareMutation<typeof createPayload, ReservationCreateResponse>({
+        path: "/v2/reservations/tours",
+        method: "POST",
+        payload: createPayload,
+        parser: reservationCreateResponseSchema,
+        accessToken: token,
+        entityType: "tour_reservation",
+        action: "reservations.tours.create",
+        buildOptimisticResponse: () => ({
+          reservation_id: `offline-${crypto.randomUUID()}`,
+          reservation_code: "OFFLINE-QUEUED",
+          status: "pending_payment",
+          escrow_ref: null,
+          ai_recommendation: null,
+        }),
+      });
+
+      const created = reservationOutcome.data;
+      if (!created) {
+        throw new Error("Reservation queued without local payload.");
+      }
       setLatestAiRecommendation(created.ai_recommendation ?? null);
+      const paymentPayload = {
+        reservation_id: created.reservation_id,
+        amount: payNow,
+        payment_type: payNow >= totalAmount ? "full" : "deposit",
+        method: "gcash",
+        reference_no: referenceNo.trim() || null,
+        proof_url: null as string | null,
+        idempotency_key: crypto.randomUUID(),
+      };
 
-      const proofPath = await uploadProofIfNeeded(created.reservation_id);
+      if (proofMode === "file" && proofFile && typeof navigator !== "undefined" && !navigator.onLine) {
+        if (reservationOutcome.mode === "queued") {
+          setSuccessNotice("Tour booking saved offline. Submit payment proof after sync completes.", true);
+          return;
+        }
+        const userId = parseJwtSub(token);
+        if (!userId) {
+          throw new Error("Unable to identify current user for offline proof queue.");
+        }
+        await queuePaymentSubmissionWithFile({
+          userId,
+          reservationId: created.reservation_id,
+          amount: payNow,
+          paymentType: paymentPayload.payment_type,
+          method: paymentPayload.method,
+          referenceNo: paymentPayload.reference_no,
+          file: proofFile,
+        });
+        setSuccessNotice("Tour booking saved offline with proof file. It will sync when internet is back.", true);
+        return;
+      }
 
-      await apiFetch(
-        "/v2/payments/submissions",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            reservation_id: created.reservation_id,
-            amount: payNow,
-            payment_type: payNow >= totalAmount ? "full" : "deposit",
-            method: "gcash",
-            reference_no: referenceNo.trim() || null,
-            proof_url: proofPath,
-            idempotency_key: crypto.randomUUID(),
-          }),
-        },
-        token,
-      );
+      paymentPayload.proof_url = await uploadProofIfNeeded(created.reservation_id);
 
-      setSuccessMessage(`Tour reservation ${created.reservation_code} created and payment submitted.`);
-      window.setTimeout(() => router.push("/my-bookings"), 900);
+      const paymentOutcome = await syncAwareMutation<typeof paymentPayload, PaymentSubmissionResponse>({
+        path: "/v2/payments/submissions",
+        method: "POST",
+        payload: paymentPayload,
+        parser: paymentSubmissionResponseSchema,
+        accessToken: token,
+        entityType: "payment_submission",
+        action: "payments.submissions.create",
+      });
+
+      if (reservationOutcome.mode === "queued" || paymentOutcome.mode === "queued") {
+        setSuccessNotice("Tour booking saved offline. Sync will finish automatically when internet is back.", true);
+      } else {
+        setSuccessNotice(`Tour reservation ${created.reservation_code} created and payment submitted.`);
+        window.setTimeout(() => router.push("/my-bookings"), 900);
+      }
     } catch (unknownError) {
       setSubmitError(unknownError instanceof Error ? unknownError.message : "Failed to create tour booking.");
     } finally {
@@ -238,9 +294,12 @@ export function ToursBookingClient({
 
   if (!token) {
     return (
-      <section className="mx-auto w-full max-w-3xl">
-        <h1 className="text-3xl font-bold text-slate-900">Book a Tour</h1>
-        <p className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
+      <section className="mx-auto w-full max-w-4xl">
+        <header className="mb-4 rounded-3xl border border-slate-200/70 bg-gradient-to-br from-white via-slate-50 to-blue-50 p-6 shadow-sm">
+          <h1 className="text-3xl font-bold text-slate-900">Book a Tour</h1>
+          <p className="mt-2 text-sm text-slate-600">Reserve a guided experience and secure your slot.</p>
+        </header>
+        <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
           Please sign in first to reserve a tour.
         </p>
       </section>
@@ -248,22 +307,41 @@ export function ToursBookingClient({
   }
 
   return (
-    <section className="mx-auto w-full max-w-3xl">
-      <header className="mb-6">
-        <h1 className="text-3xl font-bold text-slate-900">Book a Tour</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Signed in as <strong>{sessionEmail ?? "guest"}</strong>
-        </p>
+    <section className="mx-auto w-full max-w-4xl">
+      <header className="mb-6 rounded-3xl border border-slate-200/70 bg-gradient-to-br from-white via-slate-50 to-blue-50 p-6 shadow-sm">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Experiences</p>
+            <h1 className="mt-2 text-3xl font-bold text-slate-900">Book a Tour</h1>
+            <p className="mt-2 text-sm text-slate-600">
+              Signed in as <strong>{sessionEmail ?? "guest"}</strong>
+            </p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-xs text-slate-600">
+            <p className="font-semibold text-slate-900">Quick tip</p>
+            <p className="mt-1">Advance tours require payment proof.</p>
+          </div>
+        </div>
       </header>
 
       {successMessage ? (
-        <p className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">{successMessage}</p>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+          <p className="text-sm text-emerald-700">{successMessage}</p>
+          {successHasSyncCta ? (
+            <Link
+              href="/guest/sync"
+              className="inline-flex h-8 items-center rounded-full border border-emerald-300 bg-white px-3 text-xs font-semibold text-emerald-800"
+            >
+              Open Sync Center
+            </Link>
+          ) : null}
+        </div>
       ) : null}
       {submitError ? (
         <p className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{submitError}</p>
       ) : null}
       {latestAiRecommendation ? (
-        <div className="mb-4 rounded-lg border border-indigo-200 bg-indigo-50 p-3 text-sm text-indigo-900">
+        <div className="mb-4 rounded-2xl border border-indigo-200 bg-indigo-50 p-4 text-sm text-indigo-900 shadow-sm">
           <p className="font-semibold">
             AI pricing signal: {toPeso(latestAiRecommendation.pricing_adjustment)} ({getAiSource(latestAiRecommendation)})
           </p>
@@ -278,7 +356,7 @@ export function ToursBookingClient({
         </div>
       ) : null}
 
-      <div className="rounded-xl border border-blue-100 bg-white p-6 shadow-sm">
+      <div className="rounded-2xl border border-slate-200/70 bg-white p-6 shadow-sm">
         <div className="grid gap-4 md:grid-cols-2">
           <label className="grid gap-1 text-sm text-slate-700">
             Select Tour
@@ -289,7 +367,7 @@ export function ToursBookingClient({
                 setPayNow(0);
               }}
               disabled={servicesLoading}
-              className="rounded-lg border border-slate-300 px-3 py-2 outline-none ring-blue-200 transition focus:ring-2"
+              className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 outline-none ring-blue-200 transition focus:ring-2"
             >
               <option value="">Select a service</option>
               {services.map((service) => (
@@ -302,16 +380,12 @@ export function ToursBookingClient({
             {servicesError ? <span className="text-xs text-red-600">{servicesError}</span> : null}
           </label>
 
-          <label className="grid gap-1 text-sm text-slate-700">
-            Visit Date
-            <input
-              type="date"
-              min={todayPlus(1)}
-              value={visitDate}
-              onChange={(event) => setVisitDate(event.target.value)}
-              className="rounded-lg border border-slate-300 px-3 py-2 outline-none ring-blue-200 transition focus:ring-2"
-            />
-          </label>
+          <FancyDatePicker
+            label="Visit Date"
+            value={visitDate}
+            min={todayPlus(1)}
+            onChange={setVisitDate}
+          />
 
           <label className="grid gap-1 text-sm text-slate-700">
             Adults
@@ -320,7 +394,7 @@ export function ToursBookingClient({
               min={0}
               value={adultQty}
               onChange={(event) => setAdultQty(Math.max(0, Number(event.target.value || 0)))}
-              className="rounded-lg border border-slate-300 px-3 py-2 outline-none ring-blue-200 transition focus:ring-2"
+              className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 outline-none ring-blue-200 transition focus:ring-2"
             />
           </label>
 
@@ -331,12 +405,12 @@ export function ToursBookingClient({
               min={0}
               value={kidQty}
               onChange={(event) => setKidQty(Math.max(0, Number(event.target.value || 0)))}
-              className="rounded-lg border border-slate-300 px-3 py-2 outline-none ring-blue-200 transition focus:ring-2"
+              className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 outline-none ring-blue-200 transition focus:ring-2"
             />
           </label>
         </div>
 
-        <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+        <div className="mt-4 rounded-2xl border border-slate-200/70 bg-slate-50 p-4">
           <p className="text-sm text-slate-600">
             Total: <strong className="text-slate-900">{toPeso(totalAmount)}</strong>
           </p>
@@ -344,6 +418,8 @@ export function ToursBookingClient({
             Minimum online payment now: {toPeso(minRequired)} (full if total {"<="} PHP 500, else PHP 500 minimum).
           </p>
         </div>
+
+        <GcashPaymentGuide className="mt-4" />
 
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <label className="grid gap-1 text-sm text-slate-700">
@@ -354,7 +430,7 @@ export function ToursBookingClient({
               max={totalAmount || undefined}
               value={payNow}
               onChange={(event) => setPayNow(Math.max(0, Number(event.target.value || 0)))}
-              className="rounded-lg border border-slate-300 px-3 py-2 outline-none ring-blue-200 transition focus:ring-2"
+              className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 outline-none ring-blue-200 transition focus:ring-2"
             />
           </label>
 
@@ -364,7 +440,7 @@ export function ToursBookingClient({
               type="text"
               value={referenceNo}
               onChange={(event) => setReferenceNo(event.target.value)}
-              className="rounded-lg border border-slate-300 px-3 py-2 outline-none ring-blue-200 transition focus:ring-2"
+              className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 outline-none ring-blue-200 transition focus:ring-2"
             />
           </label>
         </div>
@@ -376,7 +452,7 @@ export function ToursBookingClient({
               type="button"
               onClick={() => setProofMode("file")}
               className={`rounded-lg border px-3 py-1.5 text-sm font-semibold ${
-                proofMode === "file" ? "border-blue-700 bg-blue-700 text-white" : "border-slate-300 bg-white text-slate-700"
+                proofMode === "file" ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 bg-white text-slate-700"
               }`}
             >
               Upload file
@@ -385,7 +461,7 @@ export function ToursBookingClient({
               type="button"
               onClick={() => setProofMode("url")}
               className={`rounded-lg border px-3 py-1.5 text-sm font-semibold ${
-                proofMode === "url" ? "border-blue-700 bg-blue-700 text-white" : "border-slate-300 bg-white text-slate-700"
+                proofMode === "url" ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 bg-white text-slate-700"
               }`}
             >
               Proof URL
@@ -396,7 +472,7 @@ export function ToursBookingClient({
               type="file"
               accept="image/*,.pdf"
               onChange={(event) => setProofFile(event.target.files?.[0] ?? null)}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm"
             />
           ) : (
             <input
@@ -404,7 +480,7 @@ export function ToursBookingClient({
               value={proofUrl}
               onChange={(event) => setProofUrl(event.target.value)}
               placeholder="https://..."
-              className="rounded-lg border border-slate-300 px-3 py-2 outline-none ring-blue-200 transition focus:ring-2"
+              className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 outline-none ring-blue-200 transition focus:ring-2"
             />
           )}
         </div>
@@ -413,7 +489,7 @@ export function ToursBookingClient({
           type="button"
           onClick={() => void submitTourBooking()}
           disabled={submitBusy}
-          className="mt-6 w-full rounded-lg bg-[#f97316] px-4 py-3 text-sm font-semibold text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+          className="mt-6 w-full rounded-lg bg-[var(--color-cta)] px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {submitBusy ? "Creating..." : "Reserve Tour"}
         </button>

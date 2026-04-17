@@ -1,4 +1,8 @@
 import logging
+import hashlib
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -10,27 +14,53 @@ from app.integrations.escrow_chain import release_reservation_escrow_onchain
 from app.integrations.supabase_client import (
     perform_checkin as perform_checkin_rpc,
     perform_checkout as perform_checkout_rpc,
+    get_sync_operation_receipt,
     get_reservation_by_id,
+    list_reservation_unit_ids,
+    update_units_operational_status,
+    upsert_sync_operation_receipt,
     write_reservation_escrow_shadow_metadata,
 )
+from app.schemas.common import CheckOperationResponse, CheckinWelcomeNotificationSummary
+from app.services.checkin_welcome import create_checkin_welcome_notification
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+
+def _build_idempotency_operation_id(*, route_key: str, user_id: str, idempotency_key: str) -> str:
+    digest = hashlib.sha256(f"{route_key}:{user_id}:{idempotency_key}".encode("utf-8")).hexdigest()
+    return f"{route_key}:{digest[:40]}"
 
 
 class CheckOperationRequest(BaseModel):
     reservation_id: str
     scanner_id: str | None = None
     override_reason: str | None = None
+    idempotency_key: str | None = None
 
 
-def _maybe_release_escrow_on_checkin(reservation_row: dict) -> None:
+@dataclass(frozen=True)
+class EscrowReleaseOutcome:
+    state: Literal["released", "pending_release", "skipped"]
+    tx_hash: str | None = None
+    message: str | None = None
+
+
+def _safe_int(raw: object, default: int = 0) -> int:
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return default
+
+
+def _maybe_release_escrow_on_checkin(reservation_row: dict) -> EscrowReleaseOutcome:
     if not settings.feature_escrow_onchain_lock:
-        return
+        return EscrowReleaseOutcome(state="skipped", message="Escrow lock feature disabled.")
 
     reservation_id = str(reservation_row.get("reservation_id") or "")
     if not reservation_id:
-        return
+        return EscrowReleaseOutcome(state="skipped", message="Reservation id missing.")
 
     escrow_state = str(reservation_row.get("escrow_state") or "none").lower()
     if escrow_state != "locked":
@@ -39,7 +69,7 @@ def _maybe_release_escrow_on_checkin(reservation_row: dict) -> None:
             reservation_id,
             escrow_state,
         )
-        return
+        return EscrowReleaseOutcome(state="skipped", message=f"Reservation escrow state is '{escrow_state}'.")
 
     registry = get_chain_registry()
     chain_key = str(reservation_row.get("chain_key") or get_active_chain().key).lower()
@@ -56,7 +86,10 @@ def _maybe_release_escrow_on_checkin(reservation_row: dict) -> None:
             reservation_id,
             chain.key,
         )
-        return
+        return EscrowReleaseOutcome(state="skipped", message=f"Chain '{chain.key}' is not fully configured.")
+
+    attempts = _safe_int(reservation_row.get("escrow_release_attempts"), default=0) + 1
+    attempt_at = datetime.now(timezone.utc).isoformat()
 
     try:
         settlement = release_reservation_escrow_onchain(
@@ -73,6 +106,9 @@ def _maybe_release_escrow_on_checkin(reservation_row: dict) -> None:
             onchain_booking_id=settlement.onchain_booking_id,
             escrow_event_index=settlement.event_index,
             escrow_state="released",
+            escrow_release_attempts=attempts,
+            escrow_release_last_attempt_at=attempt_at,
+            clear_escrow_release_last_error=True,
         )
         logger.info(
             "Escrow release applied (reservation_id=%s, chain=%s, tx_hash=%s)",
@@ -80,12 +116,46 @@ def _maybe_release_escrow_on_checkin(reservation_row: dict) -> None:
             chain.key,
             settlement.tx_hash,
         )
-    except RuntimeError:
+        return EscrowReleaseOutcome(
+            state="released",
+            tx_hash=settlement.tx_hash,
+            message="Escrow released on-chain.",
+        )
+    except Exception as exc:  # noqa: BLE001
         # Do not block check-in while chain settlement is under staged rollout.
+        error_text = str(exc).strip() or "Unknown release error."
+        chain_tx_hash = str(reservation_row.get("chain_tx_hash") or "").strip() or f"shadow-release-{reservation_id}"
+        onchain_booking_id = str(reservation_row.get("onchain_booking_id") or "").strip() or None
+        event_index = _safe_int(reservation_row.get("escrow_event_index"), default=0)
+        try:
+            write_reservation_escrow_shadow_metadata(
+                reservation_id=reservation_id,
+                chain_key=chain.key,
+                chain_id=chain.chain_id,
+                contract_address=chain.escrow_contract_address,
+                tx_hash=chain_tx_hash,
+                onchain_booking_id=onchain_booking_id,
+                escrow_event_index=event_index,
+                escrow_state="pending_release",
+                escrow_release_attempts=attempts,
+                escrow_release_last_attempt_at=attempt_at,
+                escrow_release_last_error=error_text[:500],
+            )
+        except Exception:  # noqa: BLE001
+            logger.exception(
+                "Failed to persist pending_release metadata (reservation_id=%s, chain=%s)",
+                reservation_id,
+                chain.key,
+            )
         logger.exception(
             "Escrow release failed (reservation_id=%s, chain=%s)",
             reservation_id,
             chain.key,
+        )
+        return EscrowReleaseOutcome(
+            state="pending_release",
+            tx_hash=str(reservation_row.get("chain_tx_hash") or "").strip() or None,
+            message="Escrow release pending retry.",
         )
 
 
@@ -118,11 +188,30 @@ def get_chain_configuration(
     }
 
 
-@router.post("/checkins")
+@router.post("/checkins", response_model=CheckOperationResponse)
 def perform_checkin(
     payload: CheckOperationRequest,
     auth: AuthContext = Depends(require_admin),
 ):
+    operation_id: str | None = None
+    if payload.idempotency_key:
+        operation_id = _build_idempotency_operation_id(
+            route_key="operations.checkins.create",
+            user_id=auth.user_id,
+            idempotency_key=payload.idempotency_key,
+        )
+        try:
+            existing_receipt = get_sync_operation_receipt(
+                operation_id=operation_id,
+                user_id=auth.user_id,
+                idempotency_key=payload.idempotency_key,
+            )
+        except RuntimeError:
+            logger.warning("Check-in idempotency replay lookup skipped (user_id=%s)", auth.user_id)
+            existing_receipt = None
+        if existing_receipt and isinstance(existing_receipt.get("response_payload"), dict):
+            return existing_receipt["response_payload"]
+
     try:
         row = get_reservation_by_id(payload.reservation_id)
     except RuntimeError as exc:
@@ -140,21 +229,83 @@ def perform_checkin(
     except RuntimeError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
 
-    _maybe_release_escrow_on_checkin(row)
+    try:
+        unit_ids = list_reservation_unit_ids(reservation_id=payload.reservation_id)
+        update_units_operational_status(unit_ids=unit_ids, operational_status="occupied")
+    except RuntimeError:
+        # Do not block check-in if unit status sync fails; keep operation successful.
+        logger.exception("Unit status sync failed on check-in (reservation_id=%s)", payload.reservation_id)
 
-    return {
+    release_outcome = _maybe_release_escrow_on_checkin(row)
+    welcome_summary = CheckinWelcomeNotificationSummary(created=False)
+    try:
+        summary = create_checkin_welcome_notification(
+            reservation_row=row,
+            created_by_user_id=auth.user_id,
+        )
+        if summary:
+            welcome_summary = CheckinWelcomeNotificationSummary(
+                created=summary.created,
+                notification_id=summary.notification_id,
+                fallback_used=summary.fallback_used,
+                model_version=summary.model_version,
+            )
+    except Exception:  # noqa: BLE001
+        logger.exception(
+            "Check-in welcome generation failed (reservation_id=%s)",
+            payload.reservation_id,
+        )
+
+    response = {
         "ok": True,
         "reservation_id": payload.reservation_id,
         "status": "checked_in",
         "scanner_id": payload.scanner_id,
+        "escrow_release_state": release_outcome.state,
+        "welcome_notification": welcome_summary.model_dump(),
     }
+    if payload.idempotency_key and operation_id:
+        try:
+            upsert_sync_operation_receipt(
+                operation_id=operation_id,
+                idempotency_key=payload.idempotency_key,
+                user_id=auth.user_id,
+                entity_type="checkin",
+                entity_id=payload.reservation_id,
+                action="operations.checkins.create",
+                status="applied",
+                http_status=200,
+                response_payload=response,
+            )
+        except RuntimeError:
+            logger.warning("Check-in idempotency receipt store skipped (user_id=%s)", auth.user_id)
+    return response
 
 
-@router.post("/checkouts")
+@router.post("/checkouts", response_model=CheckOperationResponse)
 def perform_checkout(
     payload: CheckOperationRequest,
     auth: AuthContext = Depends(require_admin),
 ):
+    operation_id: str | None = None
+    if payload.idempotency_key:
+        operation_id = _build_idempotency_operation_id(
+            route_key="operations.checkouts.create",
+            user_id=auth.user_id,
+            idempotency_key=payload.idempotency_key,
+        )
+        try:
+            existing_receipt = get_sync_operation_receipt(
+                operation_id=operation_id,
+                user_id=auth.user_id,
+                idempotency_key=payload.idempotency_key,
+            )
+        except RuntimeError:
+            logger.warning("Check-out idempotency replay lookup skipped (user_id=%s)", auth.user_id)
+            existing_receipt = None
+        if existing_receipt and isinstance(existing_receipt.get("response_payload"), dict):
+            return existing_receipt["response_payload"]
+
     try:
         row = get_reservation_by_id(payload.reservation_id)
     except RuntimeError as exc:
@@ -163,14 +314,44 @@ def perform_checkout(
     if not row:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation not found")
 
+    balance_due = float(row.get("balance_due") or 0)
+    if balance_due > 0:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Remaining balance must be settled before check-out. Outstanding: {balance_due:.2f}",
+        )
+
     try:
         perform_checkout_rpc(access_token=auth.access_token, reservation_id=payload.reservation_id)
     except RuntimeError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
 
-    return {
+    try:
+        unit_ids = list_reservation_unit_ids(reservation_id=payload.reservation_id)
+        update_units_operational_status(unit_ids=unit_ids, operational_status="dirty")
+    except RuntimeError:
+        # Do not block check-out if unit status sync fails; keep operation successful.
+        logger.exception("Unit status sync failed on check-out (reservation_id=%s)", payload.reservation_id)
+
+    response = {
         "ok": True,
         "reservation_id": payload.reservation_id,
         "status": "checked_out",
         "scanner_id": payload.scanner_id,
     }
+    if payload.idempotency_key and operation_id:
+        try:
+            upsert_sync_operation_receipt(
+                operation_id=operation_id,
+                idempotency_key=payload.idempotency_key,
+                user_id=auth.user_id,
+                entity_type="checkout",
+                entity_id=payload.reservation_id,
+                action="operations.checkouts.create",
+                status="applied",
+                http_status=200,
+                response_payload=response,
+            )
+        except RuntimeError:
+            logger.warning("Check-out idempotency receipt store skipped (user_id=%s)", auth.user_id)
+    return response

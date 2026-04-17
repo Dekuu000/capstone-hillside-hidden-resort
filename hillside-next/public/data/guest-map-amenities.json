@@ -1,0 +1,44 @@
+{
+  "amenities": [
+    {
+      "id": "lobby",
+      "name": "Lobby",
+      "description": "Front desk and guest assistance.",
+      "x": 18,
+      "y": 18,
+      "kind": "facility"
+    },
+    {
+      "id": "pool",
+      "name": "Main Pool",
+      "description": "Infinity pool and lounge area.",
+      "x": 58,
+      "y": 24,
+      "kind": "facility"
+    },
+    {
+      "id": "cottages",
+      "name": "Cottage Zone",
+      "description": "Family cottages and grilling area.",
+      "x": 38,
+      "y": 54,
+      "kind": "facility"
+    },
+    {
+      "id": "tour",
+      "name": "Tour Meet Point",
+      "description": "Day/night tour assembly point.",
+      "x": 70,
+      "y": 62,
+      "kind": "trail"
+    },
+    {
+      "id": "hall",
+      "name": "Function Hall",
+      "description": "Events and private bookings.",
+      "x": 22,
+      "y": 74,
+      "kind": "facility"
+    }
+  ]
+}

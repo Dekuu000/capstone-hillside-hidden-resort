@@ -36,8 +36,13 @@ Current v2 route groups:
   - `GET /v2/reservations`
   - `GET /v2/reservations/{reservation_id}`
   - `POST /v2/reservations`
+    - requires `guest_count` in request body
   - `POST /v2/reservations/tours`
   - `POST /v2/reservations/{reservation_id}/cancel`
+- Guest profile:
+  - `GET /v2/me/profile`
+  - `PATCH /v2/me/profile`
+  - Wallet fields are optional in current phase and are not required for booking.
 - Payments:
   - `GET /v2/payments`
   - `GET /v2/payments/reservations/{reservation_id}`
@@ -73,11 +78,17 @@ Current v2 route groups:
 - Catalog/guest:
   - `GET /v2/catalog/services`
   - `GET /v2/catalog/units/available`
+  - `GET /v2/guest/services`
+  - `POST /v2/guest/services/requests`
+  - `GET /v2/guest/services/requests`
+  - `GET /v2/admin/services/requests`
+  - `PATCH /v2/admin/services/requests/{request_id}`
 - AI placeholder:
   - `POST /v2/ai/pricing/recommendation`
   - `POST /v2/ai/pricing/predict`
   - `POST /v2/ai/occupancy/forecast` (admin; persists results)
   - `GET /v2/ai/pricing/metrics` (admin)
+  - `POST /v2/ai/concierge/recommendation`
 - NFT guest pass:
   - `GET /v2/nft/guest-pass/{reservation_id}`
 
@@ -124,10 +135,12 @@ Dynamic QR (Wave 3 kickoff):
 
 - Enable with `FEATURE_DYNAMIC_QR=true`.
 - Configure:
-  - `QR_SIGNING_SECRET`
-  - `QR_ROTATION_SECONDS` (default 30)
+  - `QR_SIGNING_PRIVATE_KEY` (preferred Ed25519 signing key, 32-byte base64url/hex)
+  - `QR_SIGNING_SECRET` (legacy fallback / deterministic dev seed)
+  - `QR_ROTATION_SECONDS` (default 30; local/dev enforces minimum 120)
   - `QR_VERIFY_LEEWAY_SECONDS` (default 5)
 - `POST /v2/qr/issue` generates signed rotating token payload.
+- `GET /v2/qr/public-key` returns safe verification key for offline client-side verification.
 - `POST /v2/qr/verify` accepts either:
   - legacy `reservation_code`, or
   - dynamic `qr_token` payload.
@@ -140,13 +153,22 @@ AI pricing integration (Wave 4 bootstrap):
 - `POST /v2/ai/pricing/recommendation` is the canonical route.
 - `POST /v2/ai/pricing/predict` is retained as compatibility alias.
 - Timeout budget is controlled by `AI_INFERENCE_TIMEOUT_MS` (up to 10s hard cap).
+- Recommended local/dev value: `AI_INFERENCE_TIMEOUT_MS=2200` (raise only if your machine is heavily loaded).
+- Demo guardrail: set `AI_REQUIRE_PROPHET_FORECAST=true` to require Prophet-backed occupancy forecasts (returns `503` if only fallback model path is available).
 - AI failures/timeouts do not block booking creation; fallback recommendation path is used.
 - AI runtime snapshot endpoint:
   - `GET /v2/ai/pricing/metrics`
   - Returns total requests, fallback rate, last fallback reason/time, and latency summary.
 - Occupancy forecasting endpoint:
   - `POST /v2/ai/occupancy/forecast`
-  - Pulls reservation history, calls AI service `/v1/occupancy/forecast`, persists rows in `public.ai_forecasts`.
+  - Pulls reservation history, calls AI service `/v1/occupancy/forecast` (Prophet primary), persists rows in `public.ai_forecasts`.
+  - Reuses latest saved forecast when within cache TTL to keep admin endpoint responsive.
+- Pricing recommendation persistence:
+  - `POST /v2/ai/pricing/recommendation`
+  - Persists model output into `public.ai_pricing_suggestions` (anonymized features payload).
+- Concierge recommendation persistence:
+  - `POST /v2/ai/concierge/recommendation`
+  - Persists output into `public.ai_concierge_suggestions` (segment-only, no PII).
 - To run a local live AI service:
   - `npm run dev:ai` (root) or `uvicorn app.main:app --reload --port 8100 --app-dir hillside-ai`
   - Keep `AI_SERVICE_BASE_URL=http://localhost:8100`

@@ -14,7 +14,7 @@ async function fetchInitialReservations(accessToken: string): Promise<Reservatio
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
-      cache: "no-store",
+      next: { revalidate: 8 },
     },
   );
   if (!response.ok) return null;

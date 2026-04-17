@@ -1,5 +1,5 @@
 import { ToursBookingClient } from "../../components/tours/ToursBookingClient";
-import { GuestChrome } from "../../components/layout/GuestChrome";
+import { GuestShell } from "../../components/layout/GuestShell";
 import { getServerAccessToken, getServerAuthContext, getServerEmailHint } from "../../lib/serverAuth";
 import { serviceListResponseSchema } from "../../../packages/shared/src/schemas";
 import type { ServiceListResponse } from "../../../packages/shared/src/types";
@@ -30,12 +30,12 @@ export default async function ToursPage() {
   const initialServicesData = accessToken ? await fetchInitialServices(accessToken) : null;
 
   return (
-    <GuestChrome initialEmail={emailHint}>
+    <GuestShell initialEmail={emailHint}>
       <ToursBookingClient
         initialToken={accessToken}
         initialSessionEmail={emailHint}
         initialServicesData={initialServicesData}
       />
-    </GuestChrome>
+    </GuestShell>
   );
 }

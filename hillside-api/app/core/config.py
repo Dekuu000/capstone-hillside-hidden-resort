@@ -15,13 +15,21 @@ class Settings(BaseSettings):
     api_jwt_issuer: str = ""
     api_jwt_audience: str = "authenticated"
     cache_ttl_seconds: int = 60
+    feature_offline_sync: bool = True
+    sync_pull_default_limit: int = 200
+    sync_pull_max_limit: int = 500
+    sync_push_max_batch_size: int = 50
+    sync_idempotency_retention_hours: int = 168
+    sync_cursor_ttl_hours: int = 72
 
     feature_escrow_shadow_write: bool = False
     feature_escrow_onchain_lock: bool = False
     feature_nft_guest_pass: bool = False
     feature_dynamic_qr: bool = False
     feature_escrow_reconciliation_scheduler: bool = False
+    feature_checkin_welcome_notification: bool = False
     qr_signing_secret: str = ""
+    qr_signing_private_key: str = ""
     qr_rotation_seconds: int = 30
     qr_verify_leeway_seconds: int = 5
 
@@ -41,9 +49,12 @@ class Settings(BaseSettings):
     escrow_signer_private_key_sepolia: str = ""
     escrow_signer_private_key_amoy: str = ""
     escrow_lock_amount_wei: int = 1
+    escrow_rpc_timeout_sec: int = 8
     escrow_tx_receipt_timeout_sec: int = 90
     escrow_reconciliation_interval_sec: int = 300
     escrow_reconciliation_limit: int = 200
+    escrow_release_retry_batch_size: int = 20
+    escrow_release_retry_interval_sec: int = 300
     escrow_reconciliation_chain_key: str = ""
     escrow_reconciliation_alert_mismatch_threshold: int = 1
     escrow_reconciliation_alert_missing_onchain_threshold: int = 1
@@ -60,6 +71,8 @@ class Settings(BaseSettings):
 
     ai_service_base_url: str = ""
     ai_inference_timeout_ms: int = 1500
+    ai_require_prophet_forecast: bool = False
+    checkin_welcome_suggestions_limit: int = 2
 
 
 settings = Settings()

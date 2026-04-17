@@ -33,7 +33,7 @@ export async function getServerAuthContext(accessToken: string): Promise<AuthCon
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
-      cache: "no-store",
+      next: { revalidate: 20 },
     });
     if (!response.ok) return null;
     return (await response.json()) as AuthContext;

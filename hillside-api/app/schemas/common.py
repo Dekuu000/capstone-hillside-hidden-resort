@@ -17,13 +17,20 @@ class BookingStatus(StrEnum):
     NO_SHOW = "no_show"
 
 
+class UnitOperationalStatus(StrEnum):
+    CLEANED = "cleaned"
+    OCCUPIED = "occupied"
+    MAINTENANCE = "maintenance"
+    DIRTY = "dirty"
+
+
 class EscrowRef(BaseModel):
     chain_key: Literal["sepolia", "amoy"] | None = None
     chain_id: int
     contract_address: str
     tx_hash: str
     event_index: int
-    state: Literal["pending", "locked", "released", "refunded", "failed"]
+    state: Literal["pending", "locked", "pending_release", "released", "refunded", "failed"]
 
 
 class GuestPassRef(BaseModel):
@@ -38,9 +45,12 @@ class GuestPassRef(BaseModel):
 class QrToken(BaseModel):
     jti: str
     reservation_id: str
+    reservation_code: str | None = None
     expires_at: datetime
     signature: str
     rotation_version: int
+    booking_hash: str | None = None
+    nft_token_id: int | None = None
 
 
 class AiRecommendation(BaseModel):
@@ -48,6 +58,10 @@ class AiRecommendation(BaseModel):
     pricing_adjustment: float
     confidence: float = Field(ge=0.0, le=1.0)
     explanations: list[str]
+    suggested_multiplier: float | None = None
+    demand_bucket: str | None = None
+    signal_breakdown: list[dict[str, float | str]] = Field(default_factory=list)
+    confidence_breakdown: dict[str, float] | None = None
 
 
 class AiLatencySummary(BaseModel):
@@ -73,7 +87,19 @@ class ReservationCreateRequest(BaseModel):
     check_in_date: date
     check_out_date: date
     unit_ids: list[str]
+    guest_count: int = Field(default=1, ge=1)
     idempotency_key: str
+
+
+class WalkInStayCreateRequest(BaseModel):
+    check_in_date: date
+    check_out_date: date
+    unit_ids: list[str]
+    guest_name: str | None = None
+    guest_phone: str | None = None
+    notes: str | None = None
+    expected_pay_now: float | None = Field(default=None, ge=0)
+    idempotency_key: str | None = None
 
 
 class ReservationResponse(BaseModel):
@@ -93,6 +119,7 @@ class TourReservationCreateRequest(BaseModel):
     is_advance: bool = True
     expected_pay_now: float | None = Field(default=None, ge=0)
     notes: str | None = None
+    idempotency_key: str | None = None
 
 
 class ServiceItem(BaseModel):
@@ -116,13 +143,17 @@ class ServiceListResponse(BaseModel):
 class UnitItem(BaseModel):
     unit_id: str
     name: str
+    unit_code: str | None = None
+    room_number: str | None = None
     type: str
     description: str | None = None
     base_price: float
     capacity: int
     is_active: bool
+    operational_status: UnitOperationalStatus = UnitOperationalStatus.CLEANED
     image_url: str | None = None
     image_urls: list[str] | None = None
+    image_thumb_urls: list[str] | None = None
     amenities: list[str] | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
@@ -145,27 +176,39 @@ class UnitStatusUpdateResponse(BaseModel):
     unit: UnitItem
 
 
+class UnitOperationalStatusUpdateRequest(BaseModel):
+    operational_status: UnitOperationalStatus
+
+
 class UnitCreateRequest(BaseModel):
     name: str
+    unit_code: str | None = None
+    room_number: str | None = None
     type: Literal["room", "cottage", "amenity"]
     description: str | None = None
     base_price: float = Field(ge=0)
     capacity: int = Field(ge=1)
     is_active: bool = True
+    operational_status: UnitOperationalStatus = UnitOperationalStatus.CLEANED
     image_url: str | None = None
     image_urls: list[str] | None = None
+    image_thumb_urls: list[str] | None = None
     amenities: list[str] | None = None
 
 
 class UnitUpdateRequest(BaseModel):
     name: str | None = None
+    unit_code: str | None = None
+    room_number: str | None = None
     type: Literal["room", "cottage", "amenity"] | None = None
     description: str | None = None
     base_price: float | None = Field(default=None, ge=0)
     capacity: int | None = Field(default=None, ge=1)
     is_active: bool | None = None
+    operational_status: UnitOperationalStatus | None = None
     image_url: str | None = None
     image_urls: list[str] | None = None
+    image_thumb_urls: list[str] | None = None
     amenities: list[str] | None = None
 
 
@@ -250,6 +293,41 @@ class DashboardSummaryResponse(BaseModel):
     summary: ReportSummary
 
 
+class ResortSnapshotOccupancy(BaseModel):
+    occupied_units: int = 0
+    active_units: int = 0
+    occupancy_rate: float = 0
+
+
+class ResortSnapshotRevenue(BaseModel):
+    fiat_php_7d: float = 0
+    crypto_native_total: float = 0
+    crypto_tx_count: int = 0
+    crypto_chain_key: str = "sepolia"
+    crypto_unit: str = "ETH"
+
+
+class ResortSnapshotAiDemandItem(BaseModel):
+    date: date
+    occupancy_pct: int = 0
+
+
+class ResortSnapshotAiDemand(BaseModel):
+    status: Literal["ready", "stale", "missing"] = "missing"
+    model_version: str | None = None
+    avg_occupancy_pct: int = 0
+    peak_occupancy_pct: int = 0
+    peak_date: date | None = None
+    items: list[ResortSnapshotAiDemandItem] = Field(default_factory=list)
+
+
+class ResortSnapshotResponse(BaseModel):
+    as_of: datetime
+    occupancy: ResortSnapshotOccupancy
+    revenue: ResortSnapshotRevenue
+    ai_demand_7d: ResortSnapshotAiDemand
+
+
 class ReservationGuestSummary(BaseModel):
     name: str | None = None
     email: str | None = None
@@ -258,9 +336,13 @@ class ReservationGuestSummary(BaseModel):
 
 class ReservationUnitInfo(BaseModel):
     name: str | None = None
+    unit_code: str | None = None
+    room_number: str | None = None
+    type: str | None = None
     amenities: list[str] | None = None
     image_url: str | None = None
     image_urls: list[str] | None = None
+    image_thumb_urls: list[str] | None = None
 
 
 class ReservationUnitSummary(BaseModel):
@@ -295,7 +377,9 @@ class ReservationListItem(BaseModel):
     balance_due: float | None = None
     deposit_required: float | None = None
     expected_pay_now: float | None = None
+    guest_count: int | None = None
     notes: str | None = None
+    reservation_source: Literal["online", "walk_in"] = "online"
     guest: ReservationGuestSummary | None = None
     units: list[ReservationUnitSummary] = Field(default_factory=list)
     service_bookings: list[ReservationServiceBookingSummary] = Field(default_factory=list)
@@ -351,6 +435,7 @@ class PaymentReservationGuestSummary(BaseModel):
 class PaymentReservationSummary(BaseModel):
     reservation_code: str
     status: BookingStatus | None = None
+    reservation_source: Literal["online", "walk_in"] = "online"
     total_amount: float | None = None
     deposit_required: float | None = None
     guest: PaymentReservationGuestSummary | None = None
@@ -389,6 +474,7 @@ class OnSitePaymentRequest(BaseModel):
     amount: float
     method: str
     reference_no: str | None = None
+    idempotency_key: str | None = None
 
 
 class OnSitePaymentResponse(BaseModel):
@@ -396,6 +482,135 @@ class OnSitePaymentResponse(BaseModel):
     payment_id: str
     status: str
     reservation_status: str
+
+
+class CheckinWelcomeSuggestion(BaseModel):
+    code: str
+    title: str
+    description: str | None = None
+    reasons: list[str] = Field(default_factory=list)
+
+
+class CheckinWelcomeNotificationSummary(BaseModel):
+    created: bool = False
+    notification_id: str | None = None
+    fallback_used: bool = False
+    model_version: str | None = None
+
+
+class CheckOperationResponse(BaseModel):
+    ok: bool = True
+    reservation_id: str
+    status: Literal["checked_in", "checked_out"]
+    scanner_id: str | None = None
+    escrow_release_state: Literal["released", "pending_release", "skipped"] | None = None
+    welcome_notification: CheckinWelcomeNotificationSummary | None = None
+
+
+class WelcomeNotification(BaseModel):
+    notification_id: str
+    reservation_id: str
+    guest_user_id: str
+    event_type: Literal["checkin_welcome"] = "checkin_welcome"
+    title: str
+    message: str
+    suggestions: list[CheckinWelcomeSuggestion] = Field(default_factory=list)
+    model_version: str | None = None
+    source: str = "hillside-ai"
+    fallback_used: bool = False
+    metadata: dict = Field(default_factory=dict)
+    created_at: datetime
+    read_at: datetime | None = None
+
+
+class StayDashboardResponse(BaseModel):
+    reservation: ReservationListItem | None = None
+    welcome_notification: WelcomeNotification | None = None
+
+
+class EscrowReleaseRetryRequest(BaseModel):
+    reservation_id: str
+
+
+class EscrowReleaseRetryResponse(BaseModel):
+    ok: bool = True
+    reservation_id: str
+    escrow_state: Literal["released", "pending_release", "locked", "skipped"]
+    tx_hash: str | None = None
+    message: str | None = None
+
+
+class MyProfileResponse(BaseModel):
+    user_id: str
+    email: str | None = None
+    name: str | None = None
+    phone: str | None = None
+    wallet_address: str | None = None
+    wallet_chain: str = "evm"
+
+
+class MyProfilePatchRequest(BaseModel):
+    name: str | None = None
+    phone: str | None = None
+    wallet_address: str | None = None
+    wallet_chain: str | None = None
+
+
+class ResortServiceItem(BaseModel):
+    service_item_id: str
+    category: Literal["room_service", "spa"]
+    service_name: str
+    description: str | None = None
+    price: float
+    eta_minutes: int | None = None
+    is_active: bool
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+class ResortServiceListResponse(BaseModel):
+    items: list[ResortServiceItem]
+    count: int
+
+
+class ResortServiceRequestCreateRequest(BaseModel):
+    service_item_id: str
+    reservation_id: str | None = None
+    quantity: int = Field(default=1, ge=1)
+    preferred_time: datetime | None = None
+    notes: str | None = None
+    idempotency_key: str | None = None
+
+
+class ResortServiceRequestStatusPatchRequest(BaseModel):
+    status: Literal["new", "in_progress", "done", "cancelled"]
+    notes: str | None = None
+
+
+class ResortServiceRequestItem(BaseModel):
+    request_id: str
+    guest_user_id: str
+    reservation_id: str | None = None
+    service_item_id: str
+    quantity: int
+    preferred_time: datetime | None = None
+    notes: str | None = None
+    status: Literal["new", "in_progress", "done", "cancelled"]
+    requested_at: datetime
+    processed_at: datetime | None = None
+    processed_by_user_id: str | None = None
+    updated_at: datetime | None = None
+    guest: ReservationGuestSummary | None = None
+    reservation: PaymentReservationSummary | None = None
+    service_item: ResortServiceItem | None = None
+
+
+class ResortServiceRequestListResponse(BaseModel):
+    items: list[ResortServiceRequestItem]
+    count: int
+    limit: int
+    offset: int
+    has_more: bool
 
 
 class VerifyPaymentResponse(BaseModel):
@@ -448,6 +663,7 @@ class EscrowReconciliationItem(BaseModel):
     onchain_booking_id: str | None = None
     onchain_state: Literal["none", "locked", "released", "refunded"] | None = None
     onchain_amount_wei: str | None = None
+    reservation_updated_at: datetime | None = None
     result: Literal["match", "mismatch", "missing_onchain", "skipped"]
     reason: str | None = None
 
@@ -468,6 +684,145 @@ class EscrowReconciliationResponse(BaseModel):
     offset: int
     has_more: bool
     summary: EscrowReconciliationSummary = Field(default_factory=EscrowReconciliationSummary)
+    cached: bool = True
+    in_progress: bool = False
+    last_reconciled_at: datetime | None = None
+
+
+class ContractStatusGasSnapshot(BaseModel):
+    base_fee_gwei: float | None = None
+    priority_fee_gwei: float | None = None
+    source: Literal["live", "cached", "unavailable"] = "unavailable"
+    stale: bool = False
+    last_updated_at: datetime | None = None
+    note: str | None = None
+
+
+class ContractStatusTxItem(BaseModel):
+    reservation_id: str
+    reservation_code: str
+    escrow_state: Literal["locked", "released", "refunded", "pending_lock", "pending_release", "failed"]
+    chain_tx_hash: str
+    onchain_booking_id: str | None = None
+    updated_at: datetime | None = None
+
+
+class ContractStatusResponse(BaseModel):
+    as_of: datetime
+    chain_key: Literal["sepolia", "amoy"]
+    enabled_chain_keys: list[Literal["sepolia", "amoy"]] = Field(default_factory=list)
+    chain_id: int
+    contract_address: str | None = None
+    explorer_base_url: str = ""
+    window_days: int = 7
+    gas: ContractStatusGasSnapshot
+    successful_tx_count: int = 0
+    pending_escrows_count: int = 0
+    count: int = 0
+    limit: int = 20
+    offset: int = 0
+    has_more: bool = False
+    recent_successful_txs: list[ContractStatusTxItem] = Field(default_factory=list)
+
+
+class OfflineOperation(BaseModel):
+    operation_id: str
+    idempotency_key: str
+    entity_type: Literal[
+        "reservation",
+        "tour_reservation",
+        "payment_submission",
+        "checkin",
+        "checkout",
+        "service_request",
+    ]
+    action: str
+    entity_id: str | None = None
+    payload: dict = Field(default_factory=dict)
+    created_at: datetime
+    retry_count: int = Field(default=0, ge=0)
+
+
+class SyncConflict(BaseModel):
+    conflict: bool = False
+    server_version: int | None = None
+    resolution_hint: str | None = None
+    detail: str | None = None
+
+
+class SyncPushRequest(BaseModel):
+    scope: Literal["me", "admin"] = "me"
+    operations: list[OfflineOperation] = Field(default_factory=list)
+
+
+class SyncPushItemResult(BaseModel):
+    operation_id: str
+    idempotency_key: str
+    entity_type: str
+    action: str
+    status: Literal["applied", "conflict", "failed", "noop"]
+    http_status: int = 200
+    entity_id: str | None = None
+    conflict: SyncConflict | None = None
+    response_payload: dict = Field(default_factory=dict)
+    error_code: str | None = None
+    error_message: str | None = None
+
+
+class SyncPushResult(BaseModel):
+    accepted: int = 0
+    applied: int = 0
+    failed: int = 0
+    conflict: int = 0
+    noop: int = 0
+    results: list[SyncPushItemResult] = Field(default_factory=list)
+    as_of: datetime
+
+
+class SyncPullEvent(BaseModel):
+    cursor: int
+    entity_type: str
+    entity_id: str
+    action: Literal["insert", "update", "delete"]
+    version: int
+    changed_at: datetime
+    payload: dict = Field(default_factory=dict)
+
+
+class SyncStateSnapshot(BaseModel):
+    scope: Literal["me", "admin"]
+    cursor: int
+    next_cursor: int
+    count: int
+    has_more: bool = False
+    items: list[SyncPullEvent] = Field(default_factory=list)
+    as_of: datetime
+
+
+class UploadQueueItem(BaseModel):
+    upload_id: str
+    operation_id: str
+    entity_type: str
+    entity_id: str
+    field_name: str
+    storage_bucket: str
+    storage_path: str
+    mime_type: str | None = None
+    size_bytes: int | None = None
+    checksum_sha256: str | None = None
+    status: Literal["queued", "uploaded", "committed", "failed"] = "queued"
+    failure_reason: str | None = None
+    metadata: dict = Field(default_factory=dict)
+
+
+class SyncUploadsCommitRequest(BaseModel):
+    items: list[UploadQueueItem] = Field(default_factory=list)
+
+
+class SyncUploadsCommitResponse(BaseModel):
+    committed: int = 0
+    failed: int = 0
+    items: list[UploadQueueItem] = Field(default_factory=list)
 
 
 class EscrowShadowCleanupRequest(BaseModel):

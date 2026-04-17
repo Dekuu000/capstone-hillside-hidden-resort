@@ -10,11 +10,20 @@
   "scripts": {
     "dev:react": "npm --prefix hillside-app run dev",
     "dev:next": "npm --prefix hillside-next run dev",
-    "dev:api": "python -m uvicorn app.main:app --reload --port 8000 --app-dir hillside-api",
+    "dev:api": "hillside-api\\.venv\\Scripts\\python.exe -m uvicorn app.main:app --reload --port 8000 --app-dir hillside-api --env-file hillside-api/.env",
     "dev:ai": "hillside-ai\\.venv\\Scripts\\python.exe -m uvicorn app.main:app --reload --port 8100 --app-dir hillside-ai",
+    "dev:stack": "powershell -ExecutionPolicy Bypass -File scripts/dev-local.ps1",
+    "dev:stack:ai": "powershell -ExecutionPolicy Bypass -File scripts/dev-local.ps1 -WithAi",
     "dev:contracts": "npx --prefix hillside-contracts hardhat node",
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:reset": "supabase db reset",
+    "db:sanity": "python supabase/scripts/migration_sanity_check.py",
     "lint": "npm --prefix hillside-next run lint && cd hillside-api && ruff check app tests",
     "typecheck": "npm --workspace hillside-next run typecheck && npm --workspace @hillside/shared run typecheck",
     "test": "python -m pytest hillside-api/tests -q && npm --prefix hillside-contracts run test"
+  },
+  "devDependencies": {
+    "supabase": "^2.78.1"
   }
 }
