@@ -1,0 +1,86 @@
+# Cleanup Baseline & Inventory Report
+
+Last updated: 2026-04-18  
+Phase: Post-phase cleanup/refactor (Checklist A)
+
+## Baseline Snapshot
+
+1. Branch: `recovery-2026-04-17`
+2. Baseline commit: `ef5441e`
+3. Working tree churn at snapshot:
+   - `total_changes=78`
+   - `modified=16`
+   - `deleted=44`
+   - `untracked=18`
+4. Migration-only churn:
+   - `migration_changes=53`
+   - `migration_deleted=44`
+   - `migration_untracked=9`
+
+## Baseline Quality Metrics
+
+| Check | Command | Result | Notes |
+|---|---|---|---|
+| Migration sanity | `python supabase/scripts/migration_sanity_check.py` | Pass | `ok: true`, `checked_files: 71` |
+| API tests | `hillside-api\.venv\Scripts\python.exe -m pytest hillside-api/tests -q` | Pass | `79 passed`, with warnings |
+| Next typecheck | `npm --prefix hillside-next run typecheck` | Pass | `tsc --noEmit` succeeded |
+| Shared typecheck | `npm --workspace @hillside/shared run typecheck` | Pass | succeeded |
+| Next lint | `npm --prefix hillside-next run lint` | Blocked | Interactive ESLint setup prompt; no non-interactive lint baseline yet |
+| Next production build | `npm --prefix hillside-next run build` | Fail | `spawn EPERM` on this environment |
+| Contracts compile | `npm --prefix hillside-contracts run build` | Fail | Hardhat `HH505` native `solc` execution failure |
+
+## Inventory Findings (Round 1)
+
+### 1) Temporary/Recovery Artifacts (cleanup candidates)
+
+1. `.git_acl_backup_sddl.txt`
+2. `hillside-api/.tmp-api-err.log`
+3. `hillside-api/.tmp-api-out.log`
+4. `hillside-api/.tmp-devapi-err.log`
+5. `hillside-api/.tmp-devapi-out.log`
+6. `recovery_backups/` (directory)
+
+### 2) Migration Hygiene Signals
+
+1. Naming consistency mostly follows `YYYYMMDDNNN_description.sql`.
+2. One outlier naming format exists: `supabase/migrations/20260218_002_payment_rejection_reason.sql`.
+3. Duplicate migration content confirmed between:
+   - `supabase/migrations/20260218006_payment_rejection_reason.sql`
+   - `supabase/migrations/20260218_002_payment_rejection_reason.sql`
+4. Active migration sequence has a large rename/split wave in progress (44 deleted + 9 new untracked files).
+
+### 3) Deprecated/Compatibility Route Surface (candidate prune list)
+
+Redirect-only legacy pages currently present in `hillside-next/app/admin`:
+
+1. `checkin/page.tsx` -> `/admin/check-in`
+2. `scan/page.tsx` -> `/admin/check-in`
+3. `tours/new/page.tsx` -> `/admin/walk-in-tour`
+4. `units/new/page.tsx` -> `/admin/units`
+5. `units/[unitId]/edit/page.tsx` -> `/admin/units?unit_id=...`
+6. `reservations/new/page.tsx` -> `/admin/reservations`
+7. `reservations/[reservationId]/page.tsx` -> `/admin/reservations?reservation_id=...`
+8. `walk-in-stay/page.tsx` -> `/admin/walk-in?tab=stay`
+9. `walk-in-tour/page.tsx` -> `/admin/walk-in?tab=tour`
+
+Note: these are valid compatibility bridges today, but should be reviewed for removal timing in cleanup batches.
+
+### 4) Warning Backlog (non-blocking but should be cleaned)
+
+1. FastAPI `@app.on_event` deprecation warnings in `hillside-api/app/main.py`.
+2. `HTTP_422_UNPROCESSABLE_ENTITY` deprecation warning in tests/runtime constants.
+3. `.pytest_cache` write permission warning on this Windows workspace.
+
+## Recommended First Cleanup Batches
+
+1. Batch A1: Non-runtime hygiene
+   - normalize lint runner to non-interactive ESLint CLI
+   - document/ignore temp artifacts
+2. Batch A2: Migration cleanup safety pass
+   - resolve duplicate migration file pair
+   - finalize naming consistency policy
+3. Batch A3: Compatibility path review
+   - confirm which admin redirect aliases can be retired
+4. Batch A4: Toolchain stability
+   - fix Hardhat `HH505` local compile reliability
+   - resolve Next `spawn EPERM` build blocker

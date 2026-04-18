@@ -1,6 +1,6 @@
 # Project Status - Hillside Hidden Resort
 
-Last updated: 2026-02-25
+Last updated: 2026-04-18
 
 ## Re-Architecture Program Status
 
@@ -14,7 +14,7 @@ Current production path remains stable on `React/Vite + Supabase` while V2 found
 |---|---|---|---|
 | Wave 0 - Foundation | Next.js shell, FastAPI bootstrap, multi-chain contract scaffolding (Sepolia/Amoy), shared status model | Complete | Skeleton services run in CI, docs/contracts are versioned, and Sepolia chain config is live |
 | Wave 1 - API Facade | FastAPI wrappers for reservations/payments/QR/reports/units over current Supabase data | Complete | Legacy UI read/write/report workflows run against V2 facade endpoints with fallback |
-| Wave 2 - Escrow Ledger | Polygon/Sepolia escrow shadow-write + reconciliation | In Progress | Escrow lock success and mismatch rate within threshold |
+| Wave 2 - Escrow Ledger | Polygon/Sepolia escrow shadow-write + reconciliation | Complete | Reconciliation monitor operational with clean baseline and release-gate checks |
 | Wave 3 - QR Hardening | Dynamic signed QR rotation + anti-replay + offline queue verification | Complete | Replay blocked and offline queue reconciles deterministically |
 | Wave 4 - AI Intelligence | Pricing and occupancy service integration (non-blocking) | Complete | Inference latency/fallback SLO met |
 | Wave 5 - Dashboard Convergence | Next.js admin/guest convergence + legacy deprecation | Complete | Feature parity complete and facade-on burn-in checklist passed (2026-02-21) |
@@ -57,14 +57,22 @@ Current production path remains stable on `React/Vite + Supabase` while V2 found
 3. Data/auth source-of-truth initially: Supabase.
 4. Chain target: multi-chain capable (`sepolia` active in dev, `amoy` retained for cutover).
 5. Wallet strategy: custodial default + optional non-custodial extension.
-6. ZKP requirement deferred to a future phase.
+6. ZKP implementation remains deferred; design roadmap RFC is completed in `docs/re-architecture-core/12-zkp-security-roadmap-rfc.md`.
+
+## Upgrade Plan Phase Snapshot (Decision-Locked)
+
+1. Phase 1 (P0): Completed.
+2. Phase 2 (P1): Completed.
+3. Phase 3 (P2): Completed as design-only security roadmap (no implementation).
+4. Phase 4 (Post-Phase): Code cleanup and refactor is locked as the next execution track.
 
 ## Immediate Next Actions
 
-1. Backfill Sepolia deployment proof fields (`deploy_tx_hash`, `deployed_at_utc`) from Etherscan for audit completeness.
-2. Define and lock Wave 2 SLOs (lock success %, reconciliation mismatch ceiling, settlement success latency) before status flip.
-3. Execute legacy deprecation timetable milestones in `hillside-app/docs/LEGACY_DEPRECATION_TIMETABLE.md`.
-4. Plan removal of non-essential facade-off fallbacks after deprecation gate closes.
+1. Execute `docs/re-architecture-core/13-cleanup-refactor-checklist.md` (decision-locked) with incremental commits.
+2. Track baseline/inventory evidence in `docs/re-architecture-core/14-cleanup-baseline-inventory.md`.
+3. Remove deprecated compatibility paths and stale temporary artifacts after validation.
+4. Consolidate duplicate schema/types and tighten lint/type/test gates.
+5. Refresh ops/docs evidence bundle after cleanup to keep architecture and runtime state aligned.
 
 ## Foundation Progress Notes
 

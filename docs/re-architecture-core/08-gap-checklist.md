@@ -1,6 +1,6 @@
 # Guide Compliance Gap Checklist
 
-Last updated: 2026-03-06
+Last updated: 2026-04-18
 Source of truth: instructor PDF guide + current repository state.
 
 Status key:
@@ -41,14 +41,14 @@ Status key:
 |---|---|---|
 | Offline check-in validation | Offline queue stored as AES-256 encrypted payload in IndexedDB | Implemented |
 | Dynamic QR rotation | Signed rotating tokens + anti-replay + offline sync | Implemented |
-| Resort navigation maps | No interactive map module in current Next.js app | Missing |
+| Resort navigation maps | Guest map module implemented in Next.js with offline shell support | Implemented |
 
 ### Module C: AI Hospitality Intelligence
 
 | Feature | Current State | Status |
 |---|---|---|
 | Dynamic pricing | Endpoint implemented with non-blocking fallback | Implemented |
-| Personalized concierge | No concierge recommendation module | Missing |
+| Personalized concierge | Concierge recommendation endpoint + admin UI/persistence implemented | Implemented |
 | Occupancy forecasting | Admin forecast endpoint implemented and persisted in `public.ai_forecasts` | Implemented |
 
 ### Module D: Resort Management Dashboard
@@ -57,7 +57,7 @@ Status key:
 |---|---|---|
 | Room inventory sync | Admin units + dashboard metrics implemented | Implemented |
 | Ledger explorer | Unified `/admin/blockchain` with Contract Status + Audit Logs tabs; legacy pages retained | Implemented |
-| Resource heatmap | Not implemented | Missing |
+| Resource heatmap | Admin dashboard heatmap panel implemented | Implemented |
 
 ## 3) Interface Design Outline (Sitemap)
 
@@ -82,7 +82,7 @@ Status key:
 
 | Guide Requirement | Current State | Status |
 |---|---|---|
-| ZKP hashes | Not implemented (deferred) | Missing |
+| ZKP hashes | Design-only roadmap RFC produced; implementation remains deferred | Partial |
 | Wallet integration (MetaMask/custodial) | Custodial server-side signer exists; MetaMask path not implemented | Partial |
 | Offline AES-256 IndexedDB | Implemented for admin QR offline queue storage | Implemented |
 | Keep PII off-chain | Enforced design principle in current architecture/docs | Implemented |
@@ -93,5 +93,6 @@ Status key:
 2. Replace localStorage queue with AES-256 encrypted IndexedDB queue. (`Completed`)
 3. Add minimal ERC721 guest pass mint + verification API. (`Completed`)
 4. Add scikit/Prophet-ready AI forecasting endpoint and persist forecast results. (`Completed`)
-5. Keep ZKP explicitly documented as future work, not in scope for this phase. (`Open / deferred`)
+5. Complete ZKP as design-only RFC (no implementation in this phase). (`Completed`)
 6. Sepolia reliability loop target (`10/10`) for escrow + guest pass + check-in + reconciliation. (`Completed`)
+7. Lock post-phase cleanup/refactor track and publish executable checklist in `docs/re-architecture-core/13-cleanup-refactor-checklist.md`. (`Completed; execution pending`)
