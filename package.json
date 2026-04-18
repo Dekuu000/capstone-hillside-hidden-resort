@@ -19,6 +19,7 @@
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",
     "db:sanity": "python supabase/scripts/migration_sanity_check.py",
+    "db:hygiene": "python supabase/scripts/migration_hygiene_check.py",
     "lint": "npm --prefix hillside-next run lint && cd hillside-api && ruff check app tests",
     "typecheck": "npm --workspace hillside-next run typecheck && npm --workspace @hillside/shared run typecheck",
     "test": "python -m pytest hillside-api/tests -q && npm --prefix hillside-contracts run test"
