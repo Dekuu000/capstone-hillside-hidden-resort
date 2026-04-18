@@ -90,6 +90,23 @@ function statusMeta(status?: ReservationStatus | null) {
   return RESERVATION_STATUS_META[status] ?? { label: status.replace("_", " "), className: "bg-slate-100 text-slate-700" };
 }
 
+function policyOutcomeMeta(outcome?: string | null) {
+  const value = String(outcome || "").toLowerCase();
+  if (value === "released") return { label: "Released", className: "bg-emerald-100 text-emerald-800" };
+  if (value === "refunded") return { label: "Refunded", className: "bg-sky-100 text-sky-800" };
+  if (value === "forfeited") return { label: "Forfeited", className: "bg-amber-100 text-amber-800" };
+  return null;
+}
+
+function policyRuleLabel(rule?: string | null) {
+  const value = String(rule || "").trim().toLowerCase();
+  if (!value) return null;
+  if (value === "room_cottage_20pct_clamp_500_1000") return "Room/Cottage: 20% (PHP 500–1000)";
+  if (value === "tour_fixed_500_or_full_if_below_500") return "Tour: PHP 500 (or full if below)";
+  if (value === "admin_override") return "Admin override";
+  return value.replaceAll("_", " ");
+}
+
 function normalizeProofPath(raw: string) {
   const trimmed = raw.trim();
   if (!trimmed) return "";
@@ -918,6 +935,19 @@ export function AdminPaymentsClient({
                     {formatPeso(reservationBalance)}
                   </span>
                 </div>
+                {reservationContext?.policy_outcome ? (
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-600">Policy outcome</span>
+                    <span className="font-semibold text-slate-900">
+                      {policyOutcomeMeta(reservationContext.policy_outcome)?.label ?? reservationContext.policy_outcome}
+                    </span>
+                  </div>
+                ) : null}
+                {reservationContext?.deposit_rule_applied ? (
+                  <p className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-600">
+                    Deposit rule: {policyRuleLabel(reservationContext.deposit_rule_applied) ?? reservationContext.deposit_rule_applied}
+                  </p>
+                ) : null}
                 <p className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-600">
                   Recording payment updates reservation balance immediately and moves eligible reservations toward check-in.
                 </p>
@@ -1127,12 +1157,12 @@ export function AdminPaymentsClient({
             {isToReview ? "Only pending submissions with proof/reference appear here." : "Try another tab or search."}
           </p>
           {isToReview ? (
-            <a
+            <Link
               href="/admin/reservations?status=pending_payment"
               className="mt-5 inline-flex rounded-lg border border-slate-900 bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
             >
               View Pending Payment Reservations
-            </a>
+            </Link>
           ) : null}
         </div>
       ) : null}
@@ -1162,6 +1192,7 @@ export function AdminPaymentsClient({
                   const isCancelledReservation = reservationStatus ? CANCELLED_STATUSES.has(reservationStatus) : false;
                   const hasEvidence = Boolean(payment.proof_url || payment.reference_no);
                   const resMeta = statusMeta(reservationStatus);
+                  const outcomeMeta = policyOutcomeMeta(payment.reservation?.policy_outcome);
                   return (
                     <tr key={payment.payment_id} className="border-t border-slate-100 hover:bg-slate-50/80">
                       <td className="px-4 py-3">
@@ -1183,7 +1214,19 @@ export function AdminPaymentsClient({
                         })()}
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${resMeta.className}`}>{resMeta.label}</span>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${resMeta.className}`}>{resMeta.label}</span>
+                          {outcomeMeta ? (
+                            <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${outcomeMeta.className}`}>
+                              {outcomeMeta.label}
+                            </span>
+                          ) : null}
+                        </div>
+                        {payment.reservation?.deposit_rule_applied ? (
+                          <p className="mt-1 text-[11px] text-slate-500">
+                            {policyRuleLabel(payment.reservation.deposit_rule_applied) ?? payment.reservation.deposit_rule_applied}
+                          </p>
+                        ) : null}
                       </td>
                       <td className="px-4 py-3">
                         <p className="font-medium text-slate-900">{payment.reservation?.guest?.name || payment.reservation?.guest?.email || "-"}</p>
