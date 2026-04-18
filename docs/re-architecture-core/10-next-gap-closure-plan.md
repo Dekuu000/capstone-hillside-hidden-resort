@@ -1,25 +1,26 @@
 # Next Gap Closure Plan (Post-Defense)
 
-Last updated: 2026-02-25
-Context: Core guide-compliance scope (A-D) is complete and verified. This plan closes remaining guide gaps while keeping Sepolia as the active testnet.
+Last updated: 2026-04-18
+Context: Core guide-compliance scope (A-D) remains complete. This plan now reflects actual implementation status, closes the P2 design requirement, and locks the post-phase cleanup track.
 
 ## Prioritized Workstream
 
 | Priority | Gap | Target Outcome | Effort | Status | Exit Criteria |
 |---|---|---|---|---|---|
 | P0 | Sepolia hardening (active testnet) | Stabilize release quality on Sepolia end-to-end | 1-2 days | Completed (2026-02-25) | Escrow + GuestPass flows pass consistently on Sepolia with reconciliation clean |
-| P0 | Production hardening + CI gate | Stable release quality gate | 1 day | In progress | CI runs API tests + contracts compile + migration checks + health smoke |
-| P1 | Internal blockchain explorer UX | Unified admin explorer for escrow + guest pass + audit anchors | 1-1.5 days | Pending | New admin page with filters, tx links, status rollups |
-| P1 | AI module completion (concierge) | Personalized recommendation endpoint + UI widget | 1.5-2 days | Pending | Guest/admin surfaces show deterministic recommendations with fallback |
-| P1 | QR/PWA module completion (offline map) | Offline-capable resort map in guest app | 2-3 days | Pending | Map available offline with asset caching and location markers |
-| P1 | Dashboard module completion (resource heatmap) | Cleaning/staff heatmap panel in admin | 1.5-2 days | Pending | Heatmap rendered from reservation/check-in density data |
-| P2 | Security & privacy roadmap (ZKP) | Design RFC only (not implementation) | 0.5-1 day | Pending | Approved design note with constraints, threat model, phased rollout |
+| P0 | Production hardening + CI gate | Stable release quality gate | 1 day | Completed (2026-04-18) | CI runs API tests + contracts compile + migration checks + health smoke |
+| P1 | Internal blockchain explorer UX | Unified admin explorer for escrow + guest pass + audit anchors | 1-1.5 days | Completed (2026-04-18) | Admin blockchain page supports status, reconciliation, audit links |
+| P1 | AI module completion (concierge) | Personalized recommendation endpoint + UI widget | 1.5-2 days | Completed (2026-04-18) | Guest/admin surfaces show deterministic recommendations with fallback |
+| P1 | QR/PWA module completion (offline map) | Offline-capable resort map in guest app | 2-3 days | Completed (2026-04-18) | Map route available offline with cached shell + location markers |
+| P1 | Dashboard module completion (resource heatmap) | Cleaning/staff heatmap panel in admin | 1.5-2 days | Completed (2026-04-18) | Heatmap panel rendered from reservation/check-in density context |
+| P2 | Security & privacy roadmap (ZKP) | Design RFC only (not implementation) | 0.5-1 day | Completed (2026-04-18) | Approved design note with constraints, threat model, phased rollout |
+| P3 | Post-phase code cleanup + refactor | Cleaner, easier-to-maintain and scalable codebase | 2-4 days | Planned (starts after P0-P2 closure) | Cleanup checklist executed with green lint/tests and documented removals |
 
 ## Execution Order
 
 ## Phase 1 - Sepolia Reliability (P0)
 
-1. Keep `CHAIN_ACTIVE_KEY=sepolia` for all active testing.
+1. Keep `CHAIN_ACTIVE_KEY=sepolia` for active testing and smoke verification.
 2. Validate Sepolia envs:
    - `EVM_RPC_URL_SEPOLIA`
    - `ESCROW_CONTRACT_ADDRESS_SEPOLIA`
@@ -29,12 +30,13 @@ Context: Core guide-compliance scope (A-D) is complete and verified. This plan c
    - reservation create -> escrow lock
    - guest pass mint + verify
    - check-in -> escrow release
-   - reconciliation monitor clean (`alert=false`).
-4. Add CI release gate:
-   - `pytest`
-   - contracts build
-   - migration sanity query
-   - API/AI health checks.
+   - reconciliation monitor clean (`alert=false`)
+4. Enforce CI release gate in `.github/workflows/ci.yml`:
+   - API tests
+   - contracts compile
+   - migration sanity checks
+   - API/AI health smoke
+   - optional Sepolia smoke when secrets exist
 
 Execution evidence:
 
@@ -43,40 +45,39 @@ Execution evidence:
 3. `loop_count=10`, `success_count=10`, `success_rate=100`
 4. All runs passed with `reconciliation_alert=false`
 
-Runbook command:
-
-```powershell
-.\docs\re-architecture-core\scripts\sepolia-reliability-smoke.ps1 `
-  -ApiBaseUrl "http://127.0.0.1:8000" `
-  -LoopCount 10 `
-  -SupabaseUrl "https://<project-ref>.supabase.co" `
-  -SupabasePublishableKey "<publishable-key>" `
-  -AdminEmail "<admin-email>" `
-  -AdminPassword "<admin-password>"
-```
-
 ## Phase 2 - Remaining Guide Features (P1)
 
-1. Add internal Blockchain Explorer page in `hillside-next`.
-2. Add AI concierge endpoint + response persistence.
-3. Implement offline map module for guest.
-4. Add admin resource heatmap panel.
-5. Keep Polygon Amoy cutover prep as optional backlog, not active phase work.
+Implementation evidence:
+
+1. Explorer UX: `hillside-next/app/admin/blockchain/page.tsx`
+2. Concierge endpoint + persistence: `hillside-api/app/api/v2/routes/ai.py` and `supabase/migrations/20260302002_ai_concierge_suggestions.sql`
+3. Offline map page: `hillside-next/app/guest/map/page.tsx`
+4. Resource heatmap panel: `hillside-next/components/admin-dashboard/ResourceHeatmapPanel.tsx`
 
 ## Phase 3 - Security Roadmap (P2)
 
-1. Produce ZKP architecture note (no implementation in this phase).
-2. Include:
-   - on-chain commitment model
-   - verifier placement
-   - performance/cost assumptions
-   - migration strategy from current reservation hash design.
+Design-RFC evidence:
+
+1. `docs/re-architecture-core/12-zkp-security-roadmap-rfc.md`
+2. Scope remains design-only; no ZKP implementation is introduced in this phase.
+
+## Phase 4 - Code Cleanup & Refactor (Post-Phase, Locked)
+
+This phase is intentionally scheduled after completion of P0-P2.
+
+1. Remove deprecated compatibility paths that are no longer needed.
+2. Normalize migration naming and remove temporary/recovery artifacts from tracked scope.
+3. Consolidate duplicate DTO/types and enforce shared schema source-of-truth.
+4. Tighten lint/type/test gates and fix drift hotspots.
+5. Refresh docs to match final architecture and operational runbooks.
+6. Execute against the tracked checklist: `docs/re-architecture-core/13-cleanup-refactor-checklist.md`.
 
 ## Technical Constraints (Locked)
 
 1. Keep PII off-chain.
 2. Preserve existing Supabase auth and data model.
-3. Keep all new chain/AI features feature-flagged and non-blocking where possible.
+3. Keep chain/AI features feature-flagged and non-blocking where possible.
+4. Do cleanup/refactor work only after P0-P2 closure (this is decision-locked).
 
 ## Acceptance Bundle
 
@@ -84,13 +85,16 @@ Runbook command:
    - `docs/re-architecture-core/08-gap-checklist.md`
    - `docs/re-architecture-core/07-demo-testplan.md`
    - `hillside-app/docs/PROJECT_STATUS.md`
+   - `docs/re-architecture-core/12-zkp-security-roadmap-rfc.md`
+   - `docs/re-architecture-core/13-cleanup-refactor-checklist.md`
 2. Evidence artifacts:
    - Sepolia tx hashes (lock/release/mint)
    - reconciliation summary
    - forecast + concierge sample outputs
-   - UI screenshots (explorer/map/heatmap).
+   - UI screenshots (explorer/map/heatmap)
 
 ## Immediate Next Step
 
-1. Complete and enforce CI release gate in `.github/workflows/ci.yml`.
-2. Begin P1 explorer UX after CI gate is green.
+1. Run Phase 4 cleanup/refactor using `docs/re-architecture-core/13-cleanup-refactor-checklist.md` with incremental commits.
+2. Checklist A baseline/inventory evidence is tracked in `docs/re-architecture-core/14-cleanup-baseline-inventory.md`.
+3. Close remaining operational/documentation drift discovered during cleanup.
