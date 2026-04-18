@@ -101,3 +101,20 @@ Note: these are valid compatibility bridges today, but should be reviewed for re
    - `supabase/.temp/`
 4. Lint now runs non-interactively and exits successfully with warnings only (no errors).
 5. Warning backlog remains for follow-up cleanup batches (hooks deps and `img` optimization guidance).
+
+## Batch A2 Execution Update (Completed with noted blockers)
+
+1. Added automated migration hygiene guard:
+   - `supabase/scripts/migration_hygiene_check.py`
+   - Root script: `npm run db:hygiene`
+2. Hygiene check result:
+   - `ok: true`
+   - `checked_files: 71`
+   - canonical naming rule: `^\d{11}_[a-z0-9_]+\.sql$`
+3. Explicit waiver tracking added for known historical compatibility pair:
+   - Legacy filename: `20260218_002_payment_rejection_reason.sql`
+   - Duplicate-content pair:
+     - `20260218006_payment_rejection_reason.sql`
+     - `20260218_002_payment_rejection_reason.sql`
+4. `migration_sanity_check.py` still passes after A2 updates.
+5. Local `npm run db:reset` is currently blocked by Docker access/permission on this environment (`//./pipe/dockerDesktopLinuxEngine: Access is denied`).

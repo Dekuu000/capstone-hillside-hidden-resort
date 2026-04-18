@@ -62,6 +62,7 @@ Baseline evidence:
 - [ ] Ensure `supabase db reset` and repository migration sanity checks pass cleanly.
 - [ ] Verify function/policy/trigger definitions are idempotent and parser-safe.
 - [ ] Update migration notes with rationale for any split or reordering.
+- [x] Batch A2: add automated migration hygiene check with explicit waiver tracking for legacy filename/duplicate pair.
 
 ### E) CI, Lint, and Test Hardening
 
