@@ -84,3 +84,20 @@ Note: these are valid compatibility bridges today, but should be reviewed for re
 4. Batch A4: Toolchain stability
    - fix Hardhat `HH505` local compile reliability
    - resolve Next `spawn EPERM` build blocker
+
+## Batch A1 Execution Update (Completed)
+
+1. Added non-interactive ESLint CLI workflow for Next app:
+   - `hillside-next/package.json` (`lint` now runs `eslint .`)
+   - `hillside-next/eslint.config.mjs` (flat config + `.next` ignore)
+2. Installed lint dependencies in workspace:
+   - `eslint`
+   - `eslint-config-next`
+3. Added temp/recovery ignore rules at repo root:
+   - `.tmp-*.log`
+   - `*.tmp`
+   - `recovery_backups/`
+   - `.git_acl_backup_sddl.txt`
+   - `supabase/.temp/`
+4. Lint now runs non-interactively and exits successfully with warnings only (no errors).
+5. Warning backlog remains for follow-up cleanup batches (hooks deps and `img` optimization guidance).

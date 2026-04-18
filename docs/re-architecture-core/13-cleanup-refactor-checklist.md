@@ -32,6 +32,7 @@ Reduce technical debt and improve maintainability/scalability without changing a
 - [x] Capture baseline quality metrics: `pytest`, Next typecheck/build, lint, migration sanity.
 - [x] Inventory duplicate or deprecated paths (API routes, UI components, shared schemas, scripts).
 - [x] Freeze temporary artifacts list to delete after verification.
+- [x] Batch A1: make frontend lint runner non-interactive and define ignore rules for temp/recovery artifacts.
 
 Baseline evidence:
 

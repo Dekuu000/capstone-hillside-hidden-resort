@@ -13,6 +13,11 @@ build/
 # Local tooling
 .codex/
 -Uri
+.tmp-*.log
+*.tmp
+recovery_backups/
+.git_acl_backup_sddl.txt
+supabase/.temp/
 
 # Environment files
 .env
