@@ -138,3 +138,22 @@ Note: these are valid compatibility bridges today, but should be reviewed for re
 4. Validation after A3:
    - `npm --prefix hillside-next run typecheck` passed.
    - `npm --prefix hillside-next run lint` passed with warnings only (0 errors).
+
+## Batch A4 Execution Update (Part 1 Complete)
+
+1. Added Hardhat launcher wrapper to avoid Windows cache permission failures:
+   - `hillside-contracts/scripts/run-hardhat.cjs`
+2. Updated contract scripts to use wrapper entrypoint:
+   - `hillside-contracts/package.json` (`build`, `test`, deploy scripts now call `npm run hardhat -- ...`)
+3. Added repo-local cache ignore for wrapper behavior:
+   - `.gitignore` now ignores `hillside-contracts/.cache/`
+4. Contracts README now documents cache behavior and override flag:
+   - `HILLSIDE_HARDHAT_USE_GLOBAL_CACHE=1` to opt back into global cache.
+5. Validation signal:
+   - Previous `EPERM` on `C:\\Users\\user\\AppData\\Local\\hardhat-nodejs\\Cache\\compilers-v2` is avoided.
+   - Current failure mode became `HH502` (compiler download), which is expected in restricted-network environments.
+
+Remaining A4 blocker:
+
+1. `npm --prefix hillside-next run build` still fails on this environment with `spawn EPERM`.
+2. Root cause appears environment-level child-process restriction, not app-level TypeScript/ESLint issues (typecheck/lint pass).

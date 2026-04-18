@@ -31,5 +31,6 @@ supabase/.temp/
 # Contract artifacts
 hillside-contracts/artifacts/
 hillside-contracts/cache/
+hillside-contracts/.cache/
 hillside-contracts/typechain-types/
 hillside-next/.next/
