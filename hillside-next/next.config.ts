@@ -106,6 +106,23 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: imageRemotePatterns,
   },
+  async redirects() {
+    return [
+      { source: "/admin/checkin", destination: "/admin/check-in", permanent: false },
+      { source: "/admin/scan", destination: "/admin/check-in", permanent: false },
+      { source: "/admin/tours/new", destination: "/admin/walk-in?tab=tour", permanent: false },
+      { source: "/admin/walk-in-tour", destination: "/admin/walk-in?tab=tour", permanent: false },
+      { source: "/admin/walk-in-stay", destination: "/admin/walk-in?tab=stay", permanent: false },
+      { source: "/admin/units/new", destination: "/admin/units", permanent: false },
+      { source: "/admin/reservations/new", destination: "/admin/reservations", permanent: false },
+      { source: "/admin/units/:unitId/edit", destination: "/admin/units?unit_id=:unitId", permanent: false },
+      {
+        source: "/admin/reservations/:reservationId",
+        destination: "/admin/reservations?reservation_id=:reservationId",
+        permanent: false,
+      },
+    ];
+  },
   async headers() {
     return [
       {

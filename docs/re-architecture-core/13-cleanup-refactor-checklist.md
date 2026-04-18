@@ -54,6 +54,7 @@ Baseline evidence:
 - [ ] Normalize API fetch wrappers and error handling across admin/guest modules.
 - [ ] Remove dead components/routes and obsolete compatibility redirects.
 - [ ] Re-run end-to-end manual smoke for reservation, payment, QR, blockchain, AI, sync pages.
+- [x] Batch A3: consolidate legacy admin compatibility redirects from page files into `next.config.ts` redirects.
 
 ### D) Database and Migration Hygiene
 

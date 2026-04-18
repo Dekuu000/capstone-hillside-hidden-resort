@@ -36,8 +36,6 @@ const noPrefetchRoutes = new Set([
   "/admin/blockchain",
   "/admin/sync",
   "/admin/units",
-  "/admin/walk-in-tour",
-  "/admin/walk-in-stay",
 ]);
 
 export function AdminChrome({ children, initialName = null, initialEmail = null }: AdminChromeProps) {

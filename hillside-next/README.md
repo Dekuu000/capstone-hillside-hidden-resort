@@ -45,7 +45,7 @@ Main page (`/`) includes:
   - `/admin` -> dashboard widgets via `GET /v2/dashboard/summary`
   - `/admin/units` -> `GET/PATCH /v2/units*`
   - `/admin/reservations` -> `GET /v2/reservations`
-  - `/admin/walk-in-tour` -> `GET /v2/catalog/services`, `POST /v2/reservations/tours` (`is_advance=false`)
+  - `/admin/walk-in?tab=tour` -> `GET /v2/catalog/services`, `POST /v2/reservations/tours` (`is_advance=false`) (legacy `/admin/walk-in-tour` redirects here)
   - `/admin/check-in` -> `POST /v2/qr/verify`, `POST /v2/operations/checkins`, `POST /v2/operations/checkouts`
   - `/admin/payments` -> `GET/POST /v2/payments*`
   - `/admin/reports` -> `GET /v2/reports/overview`

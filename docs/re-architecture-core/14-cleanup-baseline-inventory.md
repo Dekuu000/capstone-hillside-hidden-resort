@@ -118,3 +118,23 @@ Note: these are valid compatibility bridges today, but should be reviewed for re
      - `20260218_002_payment_rejection_reason.sql`
 4. `migration_sanity_check.py` still passes after A2 updates.
 5. Local `npm run db:reset` is currently blocked by Docker access/permission on this environment (`//./pipe/dockerDesktopLinuxEngine: Access is denied`).
+
+## Batch A3 Execution Update (Completed)
+
+1. Consolidated legacy admin path compatibility to centralized Next redirects:
+   - Added redirect rules in `hillside-next/next.config.ts`
+2. Removed route-file redirect shims:
+   - `hillside-next/app/admin/checkin/page.tsx`
+   - `hillside-next/app/admin/scan/page.tsx`
+   - `hillside-next/app/admin/tours/new/page.tsx`
+   - `hillside-next/app/admin/units/new/page.tsx`
+   - `hillside-next/app/admin/units/[unitId]/edit/page.tsx`
+   - `hillside-next/app/admin/reservations/new/page.tsx`
+   - `hillside-next/app/admin/reservations/[reservationId]/page.tsx`
+   - `hillside-next/app/admin/walk-in-stay/page.tsx`
+   - `hillside-next/app/admin/walk-in-tour/page.tsx`
+3. Updated canonical route documentation:
+   - `hillside-next/README.md` now uses `/admin/walk-in?tab=tour` as canonical path.
+4. Validation after A3:
+   - `npm --prefix hillside-next run typecheck` passed.
+   - `npm --prefix hillside-next run lint` passed with warnings only (0 errors).
