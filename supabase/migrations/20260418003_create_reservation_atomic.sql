@@ -1,9 +1,3 @@
--- ============================================
--- Phase 4: Update deposit rules (exclusive amenities)
--- Created: 2026-02-07
--- Purpose: Include Function Hall / Pavilion deposits
--- ============================================
-
 CREATE OR REPLACE FUNCTION public.create_reservation_atomic(
   p_guest_user_id UUID,
   p_check_in DATE,
@@ -13,12 +7,19 @@ CREATE OR REPLACE FUNCTION public.create_reservation_atomic(
   p_total_amount NUMERIC,
   p_deposit_required NUMERIC DEFAULT NULL,
   p_expected_pay_now NUMERIC DEFAULT NULL,
+  p_guest_count INTEGER DEFAULT 1,
   p_notes TEXT DEFAULT NULL
 ) RETURNS TABLE (
   reservation_id UUID,
   reservation_code TEXT,
   status TEXT,
-  message TEXT
+  message TEXT,
+  deposit_required NUMERIC,
+  expected_pay_now NUMERIC,
+  deposit_policy_version TEXT,
+  deposit_rule_applied TEXT,
+  cancellation_actor TEXT,
+  policy_outcome TEXT
 ) AS $$
 DECLARE
   v_reservation_id UUID;
@@ -30,17 +31,11 @@ DECLARE
   i INTEGER;
   v_rates NUMERIC[];
   v_total NUMERIC := 0;
-  v_has_pavilion BOOLEAN := FALSE;
-  v_has_function_hall BOOLEAN := FALSE;
-  v_has_room BOOLEAN := FALSE;
-  v_has_cottage BOOLEAN := FALSE;
   v_role TEXT;
   v_expected_pay_now NUMERIC;
+  v_deposit_rule TEXT := 'room_cottage_20pct_clamp_500_1000';
+  v_deposit_policy_version TEXT := 'v1_2026_04';
 BEGIN
-  -- ====================
-  -- Input Validation
-  -- ====================
-
   IF p_check_in >= p_check_out THEN
     RAISE EXCEPTION 'Invalid dates: check-out must be after check-in'
       USING HINT = 'Please select a check-out date that is later than the check-in date';
@@ -49,6 +44,11 @@ BEGIN
   IF p_check_in < CURRENT_DATE THEN
     RAISE EXCEPTION 'Invalid dates: check-in must be in the future'
       USING HINT = 'Cannot create reservations for past dates';
+  END IF;
+
+  IF p_guest_count IS NULL OR p_guest_count <= 0 THEN
+    RAISE EXCEPTION 'Guest count must be greater than zero'
+      USING HINT = 'Please provide a valid number of guests';
   END IF;
 
   v_nights := (p_check_out - p_check_in)::INTEGER;
@@ -70,10 +70,6 @@ BEGIN
       USING HINT = 'System error. Please try again.';
   END IF;
 
-  -- ====================
-  -- Atomic Unit Locking
-  -- ====================
-
   BEGIN
     PERFORM * FROM public.units
     WHERE unit_id = ANY(p_unit_ids)
@@ -91,29 +87,15 @@ BEGIN
       USING HINT = 'Some units may have been deactivated. Please refresh and try again.';
   END IF;
 
-  -- ====================
-  -- Availability Check
-  -- ====================
-
   FOR i IN 1..array_length(p_unit_ids, 1) LOOP
     v_unit_id := p_unit_ids[i];
-
-    SELECT public.check_unit_availability(
-      v_unit_id,
-      p_check_in,
-      p_check_out,
-      NULL
-    ) INTO v_available;
-
+    SELECT public.check_unit_availability(v_unit_id, p_check_in, p_check_out, NULL)
+    INTO v_available;
     IF NOT v_available THEN
       RAISE EXCEPTION 'Unit not available for selected dates'
         USING HINT = 'One or more units are already booked for these dates. Please select different dates or units.';
     END IF;
   END LOOP;
-
-  -- ====================
-  -- Compute Rates + Total (server-side)
-  -- ====================
 
   SELECT array_agg(u.base_price ORDER BY x.ord)
   INTO v_rates
@@ -135,32 +117,15 @@ BEGIN
       USING HINT = 'Total amount must be greater than zero';
   END IF;
 
-  -- ====================
-  -- Deposit Rules (server-side)
-  -- ====================
-
-  SELECT
-    bool_or(lower(u.name) LIKE '%pavilion%'),
-    bool_or(lower(u.name) LIKE '%function hall%'),
-    bool_or(u.type = 'room'),
-    bool_or(u.type = 'cottage')
-  INTO v_has_pavilion, v_has_function_hall, v_has_room, v_has_cottage
-  FROM public.units u
-  WHERE u.unit_id = ANY(p_unit_ids);
-
-  v_deposit := CASE
-    WHEN v_has_pavilion OR v_has_function_hall THEN 1000
-    WHEN v_has_room THEN 1000
-    WHEN v_has_cottage THEN 500
-    ELSE 0
-  END;
+  v_deposit := LEAST(v_total, GREATEST(500, LEAST(1000, ROUND(v_total * 0.20, 2))));
 
   SELECT role INTO v_role
   FROM public.users
   WHERE user_id = auth.uid();
 
   IF p_deposit_required IS NOT NULL AND v_role = 'admin' THEN
-    v_deposit := p_deposit_required;
+    v_deposit := LEAST(v_total, p_deposit_required);
+    v_deposit_rule := 'admin_override';
   END IF;
 
   v_expected_pay_now := v_deposit;
@@ -170,10 +135,6 @@ BEGIN
     END IF;
     v_expected_pay_now := p_expected_pay_now;
   END IF;
-
-  -- ====================
-  -- Create Reservation
-  -- ====================
 
   v_code := public.generate_reservation_code();
 
@@ -187,8 +148,11 @@ BEGIN
     expected_pay_now,
     amount_paid_verified,
     status,
+    guest_count,
     notes,
-    hold_expires_at
+    hold_expires_at,
+    deposit_policy_version,
+    deposit_rule_applied
   ) VALUES (
     v_code,
     p_guest_user_id,
@@ -199,30 +163,12 @@ BEGIN
     v_expected_pay_now,
     0,
     'pending_payment',
+    p_guest_count,
     p_notes,
-    NOW() + INTERVAL '24 hours'
+    NOW() + INTERVAL '24 hours',
+    v_deposit_policy_version,
+    v_deposit_rule
   ) RETURNING reservations.reservation_id INTO v_reservation_id;
-
-  -- Create pending payment intent (guest online payments)
-  IF v_role != 'admin' AND v_expected_pay_now > 0 THEN
-    INSERT INTO public.payments (
-      reservation_id,
-      payment_type,
-      method,
-      amount,
-      status
-    ) VALUES (
-      v_reservation_id,
-      CASE WHEN v_expected_pay_now >= v_total THEN 'full' ELSE 'deposit' END,
-      'gcash',
-      v_expected_pay_now,
-      'pending'
-    );
-  END IF;
-
-  -- ====================
-  -- Insert Reservation Units
-  -- ====================
 
   FOR i IN 1..array_length(p_unit_ids, 1) LOOP
     INSERT INTO public.reservation_units (
@@ -238,19 +184,7 @@ BEGIN
     );
   END LOOP;
 
-  -- ====================
-  -- Create Audit Log
-  -- ====================
-
-  INSERT INTO public.audit_logs (
-    performed_by_user_id,
-    entity_type,
-    entity_id,
-    action,
-    data_hash,
-    metadata
-  ) VALUES (
-    p_guest_user_id,
+  PERFORM public.create_audit_log(
     'reservation',
     v_reservation_id::TEXT,
     'create',
@@ -260,7 +194,12 @@ BEGIN
       'check_in', p_check_in,
       'check_out', p_check_out,
       'total_amount', v_total,
-      'unit_count', array_length(p_unit_ids, 1)
+      'guest_count', p_guest_count,
+      'unit_count', array_length(p_unit_ids, 1),
+      'deposit_required', v_deposit,
+      'expected_pay_now', v_expected_pay_now,
+      'deposit_policy_version', v_deposit_policy_version,
+      'deposit_rule_applied', v_deposit_rule
     )
   );
 
@@ -268,7 +207,12 @@ BEGIN
     v_reservation_id,
     v_code,
     'pending_payment'::TEXT,
-    'Reservation created successfully. Please complete payment within 24 hours.'::TEXT;
-
+    'Reservation created successfully. Please complete payment within 24 hours.'::TEXT,
+    v_deposit,
+    v_expected_pay_now,
+    v_deposit_policy_version,
+    v_deposit_rule,
+    NULL::TEXT,
+    NULL::TEXT;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

@@ -289,3 +289,22 @@ Remaining A4 blocker:
 2. Outcome:
    - local Supabase CLI metadata can still exist for local tooling
    - file will no longer appear as a recurring tracked modification in cleanup commits
+
+## Batch D2 Execution Update (Part 2 Complete)
+
+1. Removed legacy underscore-index migration duplicates from tracked set:
+   - deleted old-format files like `20260205_001_...`, `20260207_004_...` etc.
+2. Added split policy rollout migration set:
+   - `supabase/migrations/20260418001_policy_escrow_alignment.sql`
+   - `supabase/migrations/20260418002_drop_create_reservation_atomic.sql`
+   - `supabase/migrations/20260418003_create_reservation_atomic.sql`
+   - `supabase/migrations/20260418004_grant_create_reservation_atomic.sql`
+   - `supabase/migrations/20260418005_drop_create_tour_reservation_atomic.sql`
+   - `supabase/migrations/20260418006_create_tour_reservation_atomic.sql`
+   - `supabase/migrations/20260418007_grant_create_tour_reservation_atomic.sql`
+   - `supabase/migrations/20260418008_create_cancel_reservation.sql`
+   - `supabase/migrations/20260418009_grant_cancel_reservation.sql`
+3. Validation after cleanup:
+   - `npm run db:validate` passed
+   - `checked_files: 71`
+   - explicit legacy waiver remains only for `20260218_002_payment_rejection_reason.sql` pair
