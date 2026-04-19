@@ -568,6 +568,89 @@ def _build_walk_in_notes(payload: WalkInStayCreateRequest) -> str | None:
     return notes or None
 
 
+def _parse_booking_status(raw_status: object) -> BookingStatus:
+    status_text = str(raw_status or BookingStatus.PENDING_PAYMENT.value)
+    try:
+        return BookingStatus(status_text)
+    except ValueError:
+        return BookingStatus.PENDING_PAYMENT
+
+
+def _persist_reservation_source(*, reservation_id: str, source_value: str) -> None:
+    try:
+        update_reservation_source_rpc(reservation_id=reservation_id, reservation_source=source_value)
+    except RuntimeError:
+        logger.exception("Failed to set reservation source=%s (reservation_id=%s)", source_value, reservation_id)
+
+
+def _load_pricing_signals(*, target_date: date) -> dict:
+    try:
+        return get_dynamic_pricing_signals(target_date=target_date.isoformat(), days=45)
+    except RuntimeError:
+        return {}
+
+
+def _validate_tour_reservation_inputs(
+    *,
+    adult_qty: int,
+    kid_qty: int,
+    visit_date: date,
+    auth_role: str,
+    is_advance: bool,
+) -> None:
+    if adult_qty + kid_qty <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="At least one guest is required.",
+        )
+    today = date.today()
+    if visit_date < today:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="visit_date cannot be in the past.",
+        )
+    if auth_role != "admin" and visit_date <= today:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="visit_date must be in the future.",
+        )
+    if auth_role != "admin" and not is_advance:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admins can create walk-in tour reservations.",
+        )
+
+
+def _get_active_tour_service_or_404(service_id: str) -> dict:
+    try:
+        service = get_active_service_by_id_rpc(service_id)
+    except RuntimeError as exc:
+        raise_http_from_runtime_error(exc, default_status=status.HTTP_400_BAD_REQUEST)
+
+    if not service:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Service not found or inactive.",
+        )
+    return service
+
+
+def _compute_tour_total_amount(*, service: dict, adult_qty: int, kid_qty: int) -> float:
+    adult_rate = float(service.get("adult_rate") or 0)
+    kid_rate = float(service.get("kid_rate") or 0)
+    total_amount = adult_qty * adult_rate + kid_qty * kid_rate
+    if total_amount <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Computed total amount must be greater than zero.",
+        )
+    return total_amount
+
+
+def _resolve_tour_reservation_source(*, auth_role: str, is_advance: bool) -> str:
+    return "walk_in" if auth_role == "admin" and not is_advance else "online"
+
+
 @router.post("", response_model=ReservationResponse)
 def create_reservation(
     payload: ReservationCreateRequest,
@@ -618,21 +701,11 @@ def create_reservation(
     except RuntimeError as exc:
         raise_http_from_runtime_error(exc, default_status=status.HTTP_400_BAD_REQUEST)
 
-    status_text = str(created.get("status") or BookingStatus.PENDING_PAYMENT.value)
-    try:
-        status_enum = BookingStatus(status_text)
-    except ValueError:
-        status_enum = BookingStatus.PENDING_PAYMENT
+    status_enum = _parse_booking_status(created.get("status"))
 
     reservation_id = str(created.get("reservation_id") or "")
-    try:
-        update_reservation_source_rpc(reservation_id=reservation_id, reservation_source="online")
-    except RuntimeError:
-        logger.exception("Failed to set reservation source=online (reservation_id=%s)", reservation_id)
-    try:
-        pricing_signals = get_dynamic_pricing_signals(target_date=payload.check_in_date.isoformat(), days=45)
-    except RuntimeError:
-        pricing_signals = {}
+    _persist_reservation_source(reservation_id=reservation_id, source_value="online")
+    pricing_signals = _load_pricing_signals(target_date=payload.check_in_date)
     ai_recommendation = _maybe_get_ai_recommendation(
         reservation_id=reservation_id,
         context={
@@ -678,47 +751,19 @@ def create_tour_reservation(
     if replayed:
         return replayed
 
-    if payload.adult_qty + payload.kid_qty <= 0:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="At least one guest is required.",
-        )
-    today = date.today()
-    if payload.visit_date < today:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="visit_date cannot be in the past.",
-        )
-    if auth.role != "admin" and payload.visit_date <= today:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="visit_date must be in the future.",
-        )
-    if auth.role != "admin" and not payload.is_advance:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only admins can create walk-in tour reservations.",
-        )
-
-    try:
-        service = get_active_service_by_id_rpc(payload.service_id)
-    except RuntimeError as exc:
-        raise_http_from_runtime_error(exc, default_status=status.HTTP_400_BAD_REQUEST)
-
-    if not service:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Service not found or inactive.",
-        )
-
-    adult_rate = float(service.get("adult_rate") or 0)
-    kid_rate = float(service.get("kid_rate") or 0)
-    total_amount = payload.adult_qty * adult_rate + payload.kid_qty * kid_rate
-    if total_amount <= 0:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Computed total amount must be greater than zero.",
-        )
+    _validate_tour_reservation_inputs(
+        adult_qty=payload.adult_qty,
+        kid_qty=payload.kid_qty,
+        visit_date=payload.visit_date,
+        auth_role=auth.role,
+        is_advance=payload.is_advance,
+    )
+    service = _get_active_tour_service_or_404(payload.service_id)
+    total_amount = _compute_tour_total_amount(
+        service=service,
+        adult_qty=payload.adult_qty,
+        kid_qty=payload.kid_qty,
+    )
 
     try:
         created = create_tour_reservation_atomic_rpc(
@@ -735,22 +780,12 @@ def create_tour_reservation(
     except RuntimeError as exc:
         raise_http_from_runtime_error(exc, default_status=status.HTTP_400_BAD_REQUEST)
 
-    status_text = str(created.get("status") or BookingStatus.PENDING_PAYMENT.value)
-    try:
-        status_enum = BookingStatus(status_text)
-    except ValueError:
-        status_enum = BookingStatus.PENDING_PAYMENT
+    status_enum = _parse_booking_status(created.get("status"))
 
     reservation_id = str(created.get("reservation_id") or "")
-    source_value = "walk_in" if auth.role == "admin" and not payload.is_advance else "online"
-    try:
-        update_reservation_source_rpc(reservation_id=reservation_id, reservation_source=source_value)
-    except RuntimeError:
-        logger.exception("Failed to set reservation source=%s (reservation_id=%s)", source_value, reservation_id)
-    try:
-        pricing_signals = get_dynamic_pricing_signals(target_date=payload.visit_date.isoformat(), days=45)
-    except RuntimeError:
-        pricing_signals = {}
+    source_value = _resolve_tour_reservation_source(auth_role=auth.role, is_advance=payload.is_advance)
+    _persist_reservation_source(reservation_id=reservation_id, source_value=source_value)
+    pricing_signals = _load_pricing_signals(target_date=payload.visit_date)
     ai_recommendation = _maybe_get_ai_recommendation(
         reservation_id=reservation_id,
         context={
@@ -829,21 +864,11 @@ def create_walk_in_stay_reservation(
     except RuntimeError as exc:
         raise_http_from_runtime_error(exc, default_status=status.HTTP_400_BAD_REQUEST)
 
-    status_text = str(created.get("status") or BookingStatus.PENDING_PAYMENT.value)
-    try:
-        status_enum = BookingStatus(status_text)
-    except ValueError:
-        status_enum = BookingStatus.PENDING_PAYMENT
+    status_enum = _parse_booking_status(created.get("status"))
 
     reservation_id = str(created.get("reservation_id") or "")
-    try:
-        update_reservation_source_rpc(reservation_id=reservation_id, reservation_source="walk_in")
-    except RuntimeError:
-        logger.exception("Failed to set reservation source=walk_in (reservation_id=%s)", reservation_id)
-    try:
-        pricing_signals = get_dynamic_pricing_signals(target_date=payload.check_in_date.isoformat(), days=45)
-    except RuntimeError:
-        pricing_signals = {}
+    _persist_reservation_source(reservation_id=reservation_id, source_value="walk_in")
+    pricing_signals = _load_pricing_signals(target_date=payload.check_in_date)
     ai_recommendation = _maybe_get_ai_recommendation(
         reservation_id=reservation_id,
         context={
