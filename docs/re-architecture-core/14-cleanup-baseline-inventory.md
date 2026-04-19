@@ -308,3 +308,22 @@ Remaining A4 blocker:
    - `npm run db:validate` passed
    - `checked_files: 71`
    - explicit legacy waiver remains only for `20260218_002_payment_rejection_reason.sql` pair
+
+## Batch B2 Execution Update (Part 1 Complete)
+
+1. Added shared error-mapping helper for route RuntimeError handling:
+   - `hillside-api/app/api/v2/routes/_http_errors.py`
+   - helpers:
+     - `runtime_error_status(...)`
+     - `raise_http_from_runtime_error(...)`
+2. Replaced repeated ad-hoc RuntimeError mapping logic in:
+   - `hillside-api/app/api/v2/routes/reservations.py`
+   - `hillside-api/app/api/v2/routes/payments.py`
+   - `hillside-api/app/api/v2/routes/operations.py`
+3. Removed duplicate local mapping helper in payments route:
+   - removed `_http_status_from_runtime_error(...)` from `payments.py`
+4. Added regression coverage:
+   - `hillside-api/tests/test_v2_error_mapping.py`
+5. Validation:
+   - `hillside-api\\.venv\\Scripts\\python.exe -m pytest hillside-api/tests/test_v2_error_mapping.py hillside-api/tests/test_v2_reservations_contract.py hillside-api/tests/test_v2_payments_contract.py hillside-api/tests/test_v2_qr_operations_contract.py -q`
+   - result: `33 passed`

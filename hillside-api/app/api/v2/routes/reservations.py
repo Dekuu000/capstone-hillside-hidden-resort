@@ -5,6 +5,8 @@ from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
+from app.api.v2.routes._http_errors import raise_http_from_runtime_error
+
 from app.core.auth import (
     AuthContext,
     ensure_reservation_access,
@@ -508,8 +510,7 @@ def create_reservation(
             unit_type=None,
         )
     except RuntimeError as exc:
-        code = status.HTTP_503_SERVICE_UNAVAILABLE if "not configured" in str(exc).lower() else status.HTTP_400_BAD_REQUEST
-        raise HTTPException(status_code=code, detail=str(exc)) from exc
+        raise_http_from_runtime_error(exc, default_status=status.HTTP_400_BAD_REQUEST)
 
     unit_map = {str(unit.get("unit_id")): unit for unit in available_units}
     missing = [unit_id for unit_id in payload.unit_ids if unit_id not in unit_map]
@@ -549,8 +550,7 @@ def create_reservation(
             notes=None,
         )
     except RuntimeError as exc:
-        code = status.HTTP_503_SERVICE_UNAVAILABLE if "not configured" in str(exc).lower() else status.HTTP_400_BAD_REQUEST
-        raise HTTPException(status_code=code, detail=str(exc)) from exc
+        raise_http_from_runtime_error(exc, default_status=status.HTTP_400_BAD_REQUEST)
 
     status_text = str(created.get("status") or BookingStatus.PENDING_PAYMENT.value)
     try:
@@ -637,8 +637,7 @@ def create_tour_reservation(
     try:
         service = get_active_service_by_id_rpc(payload.service_id)
     except RuntimeError as exc:
-        code = status.HTTP_503_SERVICE_UNAVAILABLE if "not configured" in str(exc).lower() else status.HTTP_400_BAD_REQUEST
-        raise HTTPException(status_code=code, detail=str(exc)) from exc
+        raise_http_from_runtime_error(exc, default_status=status.HTTP_400_BAD_REQUEST)
 
     if not service:
         raise HTTPException(
@@ -668,8 +667,7 @@ def create_tour_reservation(
             notes=payload.notes,
         )
     except RuntimeError as exc:
-        code = status.HTTP_503_SERVICE_UNAVAILABLE if "not configured" in str(exc).lower() else status.HTTP_400_BAD_REQUEST
-        raise HTTPException(status_code=code, detail=str(exc)) from exc
+        raise_http_from_runtime_error(exc, default_status=status.HTTP_400_BAD_REQUEST)
 
     status_text = str(created.get("status") or BookingStatus.PENDING_PAYMENT.value)
     try:
@@ -754,8 +752,7 @@ def create_walk_in_stay_reservation(
             unit_type=None,
         )
     except RuntimeError as exc:
-        code = status.HTTP_503_SERVICE_UNAVAILABLE if "not configured" in str(exc).lower() else status.HTTP_400_BAD_REQUEST
-        raise HTTPException(status_code=code, detail=str(exc)) from exc
+        raise_http_from_runtime_error(exc, default_status=status.HTTP_400_BAD_REQUEST)
 
     unit_map = {str(unit.get("unit_id")): unit for unit in available_units}
     missing = [unit_id for unit_id in payload.unit_ids if unit_id not in unit_map]
@@ -794,8 +791,7 @@ def create_walk_in_stay_reservation(
             notes=notes or None,
         )
     except RuntimeError as exc:
-        code = status.HTTP_503_SERVICE_UNAVAILABLE if "not configured" in str(exc).lower() else status.HTTP_400_BAD_REQUEST
-        raise HTTPException(status_code=code, detail=str(exc)) from exc
+        raise_http_from_runtime_error(exc, default_status=status.HTTP_400_BAD_REQUEST)
 
     status_text = str(created.get("status") or BookingStatus.PENDING_PAYMENT.value)
     try:
@@ -867,7 +863,7 @@ def get_reservations(
             sort_dir=sort_dir,
         )
     except RuntimeError as exc:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+        raise_http_from_runtime_error(exc, default_status=status.HTTP_503_SERVICE_UNAVAILABLE)
     return {
         "items": rows,
         "count": total,
@@ -885,7 +881,7 @@ def get_reservation_by_reservation_code(
     try:
         row = get_reservation_by_code(reservation_code)
     except RuntimeError as exc:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+        raise_http_from_runtime_error(exc, default_status=status.HTTP_503_SERVICE_UNAVAILABLE)
     if not row:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation not found")
     ensure_reservation_access(auth, row)
@@ -900,7 +896,7 @@ def get_reservation(
     try:
         row = get_reservation_by_id(reservation_id)
     except RuntimeError as exc:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+        raise_http_from_runtime_error(exc, default_status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
     if row:
         ensure_reservation_access(auth, row)
@@ -918,7 +914,7 @@ def patch_reservation_status(
     try:
         current = get_reservation_by_id(reservation_id)
     except RuntimeError as exc:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+        raise_http_from_runtime_error(exc, default_status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
     if not current:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation not found")
@@ -932,7 +928,7 @@ def patch_reservation_status(
             include_notes="notes" in payload.model_fields_set,
         )
     except RuntimeError as exc:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+        raise_http_from_runtime_error(exc, default_status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
     if not updated:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation not found")
@@ -959,7 +955,7 @@ def cancel_reservation(
     try:
         row = get_reservation_by_id(reservation_id)
     except RuntimeError as exc:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+        raise_http_from_runtime_error(exc, default_status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
     if not row:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation not found")
@@ -975,7 +971,7 @@ def cancel_reservation(
     try:
         cancel_reservation_rpc(access_token=auth.access_token, reservation_id=reservation_id)
     except RuntimeError as exc:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+        raise_http_from_runtime_error(exc, default_status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
     actor, outcome = _derive_cancellation_policy(auth.role)
     _apply_cancellation_policy_metadata(

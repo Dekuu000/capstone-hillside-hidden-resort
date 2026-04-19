@@ -2,6 +2,8 @@ import hashlib
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+
+from app.api.v2.routes._http_errors import raise_http_from_runtime_error
 from pydantic import BaseModel
 
 from app.core.auth import AuthContext, ensure_reservation_access, require_admin, require_authenticated
@@ -32,15 +34,6 @@ logger = logging.getLogger(__name__)
 def _build_idempotency_operation_id(*, route_key: str, user_id: str, idempotency_key: str) -> str:
     digest = hashlib.sha256(f"{route_key}:{user_id}:{idempotency_key}".encode("utf-8")).hexdigest()
     return f"{route_key}:{digest[:40]}"
-
-
-def _http_status_from_runtime_error(exc: RuntimeError) -> int:
-    message = str(exc).lower()
-    if "not configured" in message:
-        return status.HTTP_503_SERVICE_UNAVAILABLE
-    if "proof of payment is required" in message:
-        return status.HTTP_400_BAD_REQUEST
-    return status.HTTP_400_BAD_REQUEST
 
 
 class PaymentSubmissionRequest(BaseModel):
@@ -86,7 +79,7 @@ def get_reservation_payments(
             offset=offset,
         )
     except RuntimeError as exc:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+        raise_http_from_runtime_error(exc, default_status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
     return {
         "items": rows,
@@ -123,7 +116,7 @@ def get_admin_payments(
             settlement_filter=settlement,
         )
     except RuntimeError as exc:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+        raise_http_from_runtime_error(exc, default_status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
     return {
         "items": rows,
@@ -175,7 +168,7 @@ def submit_payment(
     try:
         reservation = get_reservation_by_id(payload.reservation_id)
     except RuntimeError as exc:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+        raise_http_from_runtime_error(exc, default_status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
     if not reservation:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation not found")
@@ -199,7 +192,7 @@ def submit_payment(
             proof_url=proof_url,
         )
     except RuntimeError as exc:
-        raise HTTPException(status_code=_http_status_from_runtime_error(exc), detail=str(exc)) from exc
+        raise_http_from_runtime_error(exc, default_status=status.HTTP_400_BAD_REQUEST)
 
     if isinstance(result, str):
         payment_id = result
@@ -241,7 +234,7 @@ def update_payment_intent(
     try:
         reservation = get_reservation_by_id(payload.reservation_id)
     except RuntimeError as exc:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+        raise_http_from_runtime_error(exc, default_status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
     if not reservation:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation not found")
@@ -267,7 +260,7 @@ def update_payment_intent(
             amount=payload.amount,
         )
     except RuntimeError as exc:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+        raise_http_from_runtime_error(exc, default_status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
     return {"ok": True}
 
@@ -314,7 +307,7 @@ def record_on_site_payment(
     try:
         reservation = get_reservation_by_id(payload.reservation_id)
     except RuntimeError as exc:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+        raise_http_from_runtime_error(exc, default_status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
     if not reservation:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation not found")
@@ -335,7 +328,7 @@ def record_on_site_payment(
             reference_no=payload.reference_no,
         )
     except RuntimeError as exc:
-        raise HTTPException(status_code=_http_status_from_runtime_error(exc), detail=str(exc)) from exc
+        raise_http_from_runtime_error(exc, default_status=status.HTTP_400_BAD_REQUEST)
 
     payment_id = "recorded"
     payment_status = "verified"
@@ -390,7 +383,7 @@ def verify_payment(payment_id: str, auth: AuthContext = Depends(require_admin)):
     try:
         verify_payment_rpc(payment_id, access_token=auth.access_token, approved=True)
     except RuntimeError as exc:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+        raise_http_from_runtime_error(exc, default_status=status.HTTP_503_SERVICE_UNAVAILABLE)
     return {"ok": True, "payment_id": payment_id, "status": "verified"}
 
 
@@ -409,7 +402,7 @@ def reject_payment(
     try:
         reject_payment_rpc(payment_id, access_token=auth.access_token, reason=reason)
     except RuntimeError as exc:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+        raise_http_from_runtime_error(exc, default_status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
     return {
         "ok": True,
