@@ -53,6 +53,7 @@ Baseline evidence:
 - [x] Batch B2 (part 2): add unified API HTTP exception envelope (`detail`, `code`, `context`) for v2 routes and cover with contract tests.
 - [x] Batch B3 (part 1): refactor stay reservation and walk-in route handlers into shared helper functions (validation, availability, pricing, note composition) to reduce handler complexity.
 - [x] Batch B3 (part 2): refactor tour reservation handler flow into shared helper functions (input validation, active-service resolution, total computation, source resolution).
+- [x] Batch B3 (part 3): refactor cancellation/status side-effect flow into shared helpers (reservation fetch, cancellable guard, policy/escrow side-effects, cancel response builder).
 
 ### C) Frontend and Shared Contracts
 

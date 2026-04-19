@@ -392,3 +392,23 @@ Remaining A4 blocker:
 5. Validation:
    - `hillside-api\\.venv\\Scripts\\python.exe -m pytest hillside-api/tests/test_v2_error_mapping.py hillside-api/tests/test_v2_error_envelope_contract.py hillside-api/tests/test_v2_reservations_contract.py hillside-api/tests/test_v2_payments_contract.py hillside-api/tests/test_v2_qr_operations_contract.py -q`
    - result: `36 passed`
+
+## Batch B3 Execution Update (Part 3 Complete)
+
+1. Reduced cancellation/status handler complexity in `reservations.py` by extracting shared helpers:
+   - `_get_reservation_or_404(...)`
+   - `_ensure_reservation_cancellable(...)`
+   - `_apply_cancellation_side_effects(...)`
+   - `_build_cancel_response(...)`
+2. Reused these helpers in:
+   - `get_reservation(...)`
+   - `patch_reservation_status(...)`
+   - `cancel_reservation(...)`
+3. Preserved behavior while removing duplicated logic for:
+   - reservation fetch + not-found handling
+   - cancellable-status guard
+   - cancellation policy metadata + escrow refund side-effects
+   - cancel response payload assembly
+4. Validation:
+   - `hillside-api\\.venv\\Scripts\\python.exe -m pytest hillside-api/tests/test_v2_error_mapping.py hillside-api/tests/test_v2_error_envelope_contract.py hillside-api/tests/test_v2_reservations_contract.py hillside-api/tests/test_v2_payments_contract.py hillside-api/tests/test_v2_qr_operations_contract.py -q`
+   - result: `36 passed`
