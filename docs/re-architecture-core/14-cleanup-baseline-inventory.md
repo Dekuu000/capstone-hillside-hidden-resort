@@ -281,3 +281,11 @@ Remaining A4 blocker:
 3. Added `db:validate` preflight step to keep parser/hygiene checks explicit before runtime validation.
 4. Runbook now aligns with D1 rationale doc:
    - `docs/re-architecture-core/15-migration-split-rationale-20260418.md`
+
+## Batch D2 Execution Update (Part 1 Complete)
+
+1. Removed tracked Supabase temp marker from repository index:
+   - `supabase/.temp/cli-latest` (now untracked, ignored temp state)
+2. Outcome:
+   - local Supabase CLI metadata can still exist for local tooling
+   - file will no longer appear as a recurring tracked modification in cleanup commits
