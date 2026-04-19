@@ -64,10 +64,10 @@ Baseline evidence:
 ### D) Database and Migration Hygiene
 
 - [ ] Standardize migration naming format and ordering consistency.
-- [ ] Remove temporary/recovery files from tracked project scope.
+- [x] Remove temporary/recovery files from tracked project scope.
 - [ ] Ensure `supabase db reset` and repository migration sanity checks pass cleanly.
 - [ ] Verify function/policy/trigger definitions are idempotent and parser-safe.
-- [ ] Update migration notes with rationale for any split or reordering.
+- [x] Update migration notes with rationale for any split or reordering.
 - [x] Batch A2: add automated migration hygiene check with explicit waiver tracking for legacy filename/duplicate pair.
 - [x] Batch D1 (part 1): add a single `db:validate` workflow (`db:sanity` + `db:hygiene`) and re-verify migration checks on current rename/split set.
 - [x] Batch D1 (part 2): document 2026-04-18 migration split/reorder rationale and parser-safety sequencing.
