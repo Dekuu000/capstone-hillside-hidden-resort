@@ -243,3 +243,17 @@ Remaining A4 blocker:
 4. Validation:
    - `npm --workspace @hillside/shared run typecheck` passed.
    - `npm --prefix hillside-next run typecheck` passed.
+
+## Batch D1 Execution Update (Part 1 Complete)
+
+1. Added consolidated migration validation command at repo root:
+   - `package.json` script: `db:validate` -> runs `db:sanity` then `db:hygiene`.
+2. Re-validated migration rename/split set:
+   - `npm run db:validate` passed.
+   - `migration_sanity_check.py`: `ok: true`, `checked_files: 71`.
+   - `migration_hygiene_check.py`: `ok: true`, blocking issues empty, with existing explicit waiver for:
+     - `20260218_002_payment_rejection_reason.sql`
+     - duplicate-content pair with `20260218006_payment_rejection_reason.sql`.
+3. Current blocker unchanged:
+   - `npm run db:reset` is still blocked on this machine by Docker Desktop pipe permissions:
+     - `open //./pipe/dockerDesktopLinuxEngine: Access is denied`.
