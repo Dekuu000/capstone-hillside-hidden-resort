@@ -1,9 +1,3 @@
--- ============================================
--- Phase 4: Tour reservation auth enforcement
--- Created: 2026-02-07
--- Purpose: Ensure guest_user_id matches auth user (unless admin)
--- ============================================
-
 CREATE OR REPLACE FUNCTION public.create_tour_reservation_atomic(
   p_guest_user_id UUID,
   p_service_id UUID,
@@ -12,12 +6,19 @@ CREATE OR REPLACE FUNCTION public.create_tour_reservation_atomic(
   p_kid_qty INTEGER,
   p_is_advance BOOLEAN,
   p_deposit_override NUMERIC DEFAULT NULL,
+  p_expected_pay_now NUMERIC DEFAULT NULL,
   p_notes TEXT DEFAULT NULL
 ) RETURNS TABLE (
   reservation_id UUID,
   reservation_code TEXT,
   status TEXT,
-  message TEXT
+  message TEXT,
+  deposit_required NUMERIC,
+  expected_pay_now NUMERIC,
+  deposit_policy_version TEXT,
+  deposit_rule_applied TEXT,
+  cancellation_actor TEXT,
+  policy_outcome TEXT
 ) AS $$
 DECLARE
   v_reservation_id UUID;
@@ -28,7 +29,14 @@ DECLARE
   v_service public.services%ROWTYPE;
   v_adult_qty INTEGER := COALESCE(p_adult_qty, 0);
   v_kid_qty INTEGER := COALESCE(p_kid_qty, 0);
+  v_expected_pay_now NUMERIC;
+  v_deposit_rule TEXT := 'tour_fixed_500_or_full_if_below_500';
+  v_deposit_policy_version TEXT := 'v1_2026_04';
 BEGIN
+  IF p_guest_user_id IS NULL THEN
+    RAISE EXCEPTION 'Guest user is required';
+  END IF;
+
   SELECT role INTO v_role
   FROM public.users
   WHERE user_id = auth.uid();
@@ -39,6 +47,10 @@ BEGIN
 
   IF v_role != 'admin' AND p_guest_user_id != auth.uid() THEN
     RAISE EXCEPTION 'Not authorized to create this reservation';
+  END IF;
+
+  IF v_role != 'admin' AND p_is_advance IS DISTINCT FROM TRUE THEN
+    RAISE EXCEPTION 'Guests can only create advance tour reservations';
   END IF;
 
   IF p_visit_date < CURRENT_DATE THEN
@@ -54,9 +66,9 @@ BEGIN
   END IF;
 
   SELECT * INTO v_service
-  FROM public.services
-  WHERE service_id = p_service_id
-    AND status = 'active'
+  FROM public.services s
+  WHERE s.service_id = p_service_id
+    AND s.status = 'active'
   FOR UPDATE;
 
   IF NOT FOUND THEN
@@ -69,13 +81,19 @@ BEGIN
     RAISE EXCEPTION 'Invalid total amount';
   END IF;
 
-  v_deposit := CASE
-    WHEN p_is_advance THEN 500
-    ELSE 0
-  END;
+  v_deposit := LEAST(v_total, 500);
 
   IF p_deposit_override IS NOT NULL AND v_role = 'admin' THEN
-    v_deposit := p_deposit_override;
+    v_deposit := LEAST(v_total, p_deposit_override);
+    v_deposit_rule := 'admin_override';
+  END IF;
+
+  v_expected_pay_now := v_deposit;
+  IF p_expected_pay_now IS NOT NULL THEN
+    IF p_expected_pay_now < v_deposit OR p_expected_pay_now > v_total THEN
+      RAISE EXCEPTION 'Expected pay now must be between % and %', v_deposit, v_total;
+    END IF;
+    v_expected_pay_now := p_expected_pay_now;
   END IF;
 
   v_code := public.generate_reservation_code();
@@ -87,21 +105,27 @@ BEGIN
     check_out_date,
     total_amount,
     deposit_required,
+    expected_pay_now,
     amount_paid_verified,
     status,
     notes,
-    hold_expires_at
+    hold_expires_at,
+    deposit_policy_version,
+    deposit_rule_applied
   ) VALUES (
     v_code,
     p_guest_user_id,
     p_visit_date,
-    p_visit_date + INTERVAL '1 day',
+    (p_visit_date + INTERVAL '1 day')::date,
     v_total,
     v_deposit,
+    v_expected_pay_now,
     0,
     'pending_payment',
     p_notes,
-    CASE WHEN p_is_advance THEN NOW() + INTERVAL '24 hours' ELSE NULL END
+    CASE WHEN p_is_advance THEN NOW() + INTERVAL '24 hours' ELSE NULL END,
+    v_deposit_policy_version,
+    v_deposit_rule
   ) RETURNING reservations.reservation_id INTO v_reservation_id;
 
   INSERT INTO public.service_bookings (
@@ -139,7 +163,11 @@ BEGIN
       'service_id', p_service_id,
       'adult_qty', v_adult_qty,
       'kid_qty', v_kid_qty,
-      'total_amount', v_total
+      'total_amount', v_total,
+      'deposit_required', v_deposit,
+      'expected_pay_now', v_expected_pay_now,
+      'deposit_policy_version', v_deposit_policy_version,
+      'deposit_rule_applied', v_deposit_rule
     )
   );
 
@@ -147,6 +175,12 @@ BEGIN
     v_reservation_id,
     v_code,
     'pending_payment'::TEXT,
-    'Tour reservation created successfully. Please complete payment within 24 hours.'::TEXT;
+    'Tour reservation created successfully. Please complete payment within 24 hours.'::TEXT,
+    v_deposit,
+    v_expected_pay_now,
+    v_deposit_policy_version,
+    v_deposit_rule,
+    NULL::TEXT,
+    NULL::TEXT;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
