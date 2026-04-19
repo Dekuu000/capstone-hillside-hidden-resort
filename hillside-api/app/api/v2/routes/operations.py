@@ -15,17 +15,19 @@ from app.integrations.escrow_chain import release_reservation_escrow_onchain
 from app.integrations.supabase_client import (
     perform_checkin as perform_checkin_rpc,
     perform_checkout as perform_checkout_rpc,
-    get_sync_operation_receipt,
     get_reservation_by_id,
     list_reservation_unit_ids,
     update_units_operational_status,
-    upsert_sync_operation_receipt,
     update_reservation_policy_metadata,
     write_reservation_escrow_shadow_metadata,
 )
 from app.schemas.common import CheckOperationResponse, CheckinWelcomeNotificationSummary
 from app.services.checkin_welcome import create_checkin_welcome_notification
-from app.services.idempotency import build_idempotency_operation_id
+from app.services.idempotency import (
+    build_idempotency_operation_id,
+    load_cached_response_payload,
+    store_operation_receipt_safely,
+)
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -229,17 +231,15 @@ def perform_checkin(
             user_id=auth.user_id,
             idempotency_key=payload.idempotency_key,
         )
-        try:
-            existing_receipt = get_sync_operation_receipt(
-                operation_id=operation_id,
-                user_id=auth.user_id,
-                idempotency_key=payload.idempotency_key,
-            )
-        except RuntimeError:
-            logger.warning("Check-in idempotency replay lookup skipped (user_id=%s)", auth.user_id)
-            existing_receipt = None
-        if existing_receipt and isinstance(existing_receipt.get("response_payload"), dict):
-            return existing_receipt["response_payload"]
+        cached_payload = load_cached_response_payload(
+            operation_id=operation_id,
+            user_id=auth.user_id,
+            idempotency_key=payload.idempotency_key,
+            logger=logger,
+            warning_label="Check-in",
+        )
+        if cached_payload:
+            return cached_payload
 
     try:
         row = get_reservation_by_id(payload.reservation_id)
@@ -299,20 +299,17 @@ def perform_checkin(
         "welcome_notification": welcome_summary.model_dump(),
     }
     if payload.idempotency_key and operation_id:
-        try:
-            upsert_sync_operation_receipt(
-                operation_id=operation_id,
-                idempotency_key=payload.idempotency_key,
-                user_id=auth.user_id,
-                entity_type="checkin",
-                entity_id=payload.reservation_id,
-                action="operations.checkins.create",
-                status="applied",
-                http_status=200,
-                response_payload=response,
-            )
-        except RuntimeError:
-            logger.warning("Check-in idempotency receipt store skipped (user_id=%s)", auth.user_id)
+        store_operation_receipt_safely(
+            operation_id=operation_id,
+            idempotency_key=payload.idempotency_key,
+            user_id=auth.user_id,
+            entity_type="checkin",
+            entity_id=payload.reservation_id,
+            action="operations.checkins.create",
+            response_payload=response,
+            logger=logger,
+            warning_label="Check-in",
+        )
     return response
 
 
@@ -328,17 +325,15 @@ def perform_checkout(
             user_id=auth.user_id,
             idempotency_key=payload.idempotency_key,
         )
-        try:
-            existing_receipt = get_sync_operation_receipt(
-                operation_id=operation_id,
-                user_id=auth.user_id,
-                idempotency_key=payload.idempotency_key,
-            )
-        except RuntimeError:
-            logger.warning("Check-out idempotency replay lookup skipped (user_id=%s)", auth.user_id)
-            existing_receipt = None
-        if existing_receipt and isinstance(existing_receipt.get("response_payload"), dict):
-            return existing_receipt["response_payload"]
+        cached_payload = load_cached_response_payload(
+            operation_id=operation_id,
+            user_id=auth.user_id,
+            idempotency_key=payload.idempotency_key,
+            logger=logger,
+            warning_label="Check-out",
+        )
+        if cached_payload:
+            return cached_payload
 
     try:
         row = get_reservation_by_id(payload.reservation_id)
@@ -374,18 +369,15 @@ def perform_checkout(
         "scanner_id": payload.scanner_id,
     }
     if payload.idempotency_key and operation_id:
-        try:
-            upsert_sync_operation_receipt(
-                operation_id=operation_id,
-                idempotency_key=payload.idempotency_key,
-                user_id=auth.user_id,
-                entity_type="checkout",
-                entity_id=payload.reservation_id,
-                action="operations.checkouts.create",
-                status="applied",
-                http_status=200,
-                response_payload=response,
-            )
-        except RuntimeError:
-            logger.warning("Check-out idempotency receipt store skipped (user_id=%s)", auth.user_id)
+        store_operation_receipt_safely(
+            operation_id=operation_id,
+            idempotency_key=payload.idempotency_key,
+            user_id=auth.user_id,
+            entity_type="checkout",
+            entity_id=payload.reservation_id,
+            action="operations.checkouts.create",
+            response_payload=response,
+            logger=logger,
+            warning_label="Check-out",
+        )
     return response
