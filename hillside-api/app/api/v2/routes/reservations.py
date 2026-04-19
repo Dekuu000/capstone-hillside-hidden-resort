@@ -479,6 +479,62 @@ def _apply_cancellation_policy_metadata(
         )
 
 
+def _get_reservation_or_404(reservation_id: str) -> dict:
+    try:
+        row = get_reservation_by_id(reservation_id)
+    except RuntimeError as exc:
+        raise_http_from_runtime_error(exc, default_status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+    if not row:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation not found")
+    return row
+
+
+def _ensure_reservation_cancellable(row: dict) -> None:
+    current_status = str(row.get("status") or "").lower()
+    if current_status in {"cancelled", "checked_out", "no_show"}:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Reservation cannot be cancelled in its current status.",
+        )
+
+
+def _apply_cancellation_side_effects(
+    *,
+    reservation_id: str,
+    reservation_row: dict,
+    actor_role: str,
+) -> tuple[str, str]:
+    actor, outcome = _derive_cancellation_policy(actor_role)
+    _apply_cancellation_policy_metadata(
+        reservation_id=reservation_id,
+        actor=actor,
+        outcome=outcome,
+        rule_applied=_resolve_reservation_policy_rule(reservation_row),
+    )
+    if outcome == "refunded":
+        _maybe_refund_escrow_on_cancel(reservation_row)
+    return actor, outcome
+
+
+def _build_cancel_response(
+    *,
+    reservation_id: str,
+    reservation_row: dict,
+    actor: str,
+    outcome: str,
+) -> dict[str, str | bool | None]:
+    return {
+        "ok": True,
+        "reservation_id": reservation_id,
+        "status": "cancelled",
+        "deposit_policy_version": _resolve_reservation_policy_version(reservation_row),
+        "deposit_rule_applied": _resolve_reservation_policy_rule(reservation_row),
+        "cancellation_actor": actor,
+        "policy_outcome": outcome,
+    }
+
+
 def _validate_stay_reservation_inputs(
     *,
     check_in_date: date,
@@ -954,16 +1010,9 @@ def get_reservation(
     reservation_id: str,
     auth: AuthContext = Depends(require_authenticated),
 ):
-    try:
-        row = get_reservation_by_id(reservation_id)
-    except RuntimeError as exc:
-        raise_http_from_runtime_error(exc, default_status=status.HTTP_503_SERVICE_UNAVAILABLE)
-
-    if row:
-        ensure_reservation_access(auth, row)
-        return row
-
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation not found")
+    row = _get_reservation_or_404(reservation_id)
+    ensure_reservation_access(auth, row)
+    return row
 
 
 @router.patch("/{reservation_id}/status", response_model=ReservationStatusUpdateResponse)
@@ -972,13 +1021,7 @@ def patch_reservation_status(
     payload: ReservationStatusUpdateRequest,
     auth: AuthContext = Depends(require_admin),
 ):
-    try:
-        current = get_reservation_by_id(reservation_id)
-    except RuntimeError as exc:
-        raise_http_from_runtime_error(exc, default_status=status.HTTP_503_SERVICE_UNAVAILABLE)
-
-    if not current:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation not found")
+    current = _get_reservation_or_404(reservation_id)
 
     try:
         updated = update_reservation_status_rpc(
@@ -995,15 +1038,11 @@ def patch_reservation_status(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation not found")
 
     if payload.status == BookingStatus.CANCELLED:
-        actor, outcome = _derive_cancellation_policy("admin")
-        _apply_cancellation_policy_metadata(
+        _apply_cancellation_side_effects(
             reservation_id=reservation_id,
-            actor=actor,
-            outcome=outcome,
-            rule_applied=_resolve_reservation_policy_rule(current),
+            reservation_row=current,
+            actor_role="admin",
         )
-        if outcome == "refunded":
-            _maybe_refund_escrow_on_cancel(current)
 
     return {"ok": True, "reservation": updated}
 
@@ -1013,43 +1052,24 @@ def cancel_reservation(
     reservation_id: str,
     auth: AuthContext = Depends(require_authenticated),
 ):
-    try:
-        row = get_reservation_by_id(reservation_id)
-    except RuntimeError as exc:
-        raise_http_from_runtime_error(exc, default_status=status.HTTP_503_SERVICE_UNAVAILABLE)
-
-    if not row:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation not found")
+    row = _get_reservation_or_404(reservation_id)
 
     ensure_reservation_access(auth, row)
-    current_status = str(row.get("status") or "").lower()
-    if current_status in {"cancelled", "checked_out", "no_show"}:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Reservation cannot be cancelled in its current status.",
-        )
+    _ensure_reservation_cancellable(row)
 
     try:
         cancel_reservation_rpc(access_token=auth.access_token, reservation_id=reservation_id)
     except RuntimeError as exc:
         raise_http_from_runtime_error(exc, default_status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
-    actor, outcome = _derive_cancellation_policy(auth.role)
-    _apply_cancellation_policy_metadata(
+    actor, outcome = _apply_cancellation_side_effects(
         reservation_id=reservation_id,
+        reservation_row=row,
+        actor_role=auth.role,
+    )
+    return _build_cancel_response(
+        reservation_id=reservation_id,
+        reservation_row=row,
         actor=actor,
         outcome=outcome,
-        rule_applied=_resolve_reservation_policy_rule(row),
     )
-    if outcome == "refunded":
-        _maybe_refund_escrow_on_cancel(row)
-
-    return {
-        "ok": True,
-        "reservation_id": reservation_id,
-        "status": "cancelled",
-        "deposit_policy_version": _resolve_reservation_policy_version(row),
-        "deposit_rule_applied": _resolve_reservation_policy_rule(row),
-        "cancellation_actor": actor,
-        "policy_outcome": outcome,
-    }
