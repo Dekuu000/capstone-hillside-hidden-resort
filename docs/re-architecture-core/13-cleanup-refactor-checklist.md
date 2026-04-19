@@ -1,6 +1,6 @@
 # Cleanup & Refactor Checklist (Post-Phase)
 
-Last updated: 2026-04-18  
+Last updated: 2026-04-19  
 Status: Planned  
 Execution gate: Start only after P0-P2 closure (decision-locked)
 
@@ -47,6 +47,7 @@ Baseline evidence:
 - [ ] Standardize error mapping and response envelope behavior.
 - [ ] Refactor large handlers into smaller service functions where complexity is high.
 - [ ] Add/update tests for every refactor hotspot before removal.
+- [x] Batch B1 (part 1): consolidate reservation policy metadata DTO/shared-type definitions and remove repeated route mapping blocks.
 
 ### C) Frontend and Shared Contracts
 
