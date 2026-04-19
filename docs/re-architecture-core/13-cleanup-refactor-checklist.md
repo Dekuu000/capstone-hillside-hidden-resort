@@ -71,6 +71,7 @@ Baseline evidence:
 - [x] Batch A2: add automated migration hygiene check with explicit waiver tracking for legacy filename/duplicate pair.
 - [x] Batch D1 (part 1): add a single `db:validate` workflow (`db:sanity` + `db:hygiene`) and re-verify migration checks on current rename/split set.
 - [x] Batch D1 (part 2): document 2026-04-18 migration split/reorder rationale and parser-safety sequencing.
+- [x] Batch D2 (part 1): untrack `supabase/.temp/cli-latest` so Supabase temp state no longer pollutes repository diffs.
 
 ### E) CI, Lint, and Test Hardening
 
