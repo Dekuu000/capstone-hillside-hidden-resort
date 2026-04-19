@@ -33,6 +33,7 @@ from app.integrations.supabase_client import (
     get_dynamic_pricing_signals,
     list_recent_reservations,
     get_sync_operation_receipt,
+    update_reservation_policy_metadata,
     update_reservation_source as update_reservation_source_rpc,
     upsert_sync_operation_receipt,
 )
@@ -56,6 +57,56 @@ from app.schemas.common import (
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+DEPOSIT_POLICY_VERSION = "v1_2026_04"
+DEPOSIT_RULE_ROOM_COTTAGE = "room_cottage_20pct_clamp_500_1000"
+DEPOSIT_RULE_TOUR = "tour_fixed_500_or_full_if_below_500"
+
+
+def _to_optional_float(value: object) -> float | None:
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _to_optional_str(value: object) -> str | None:
+    candidate = str(value or "").strip()
+    return candidate or None
+
+
+def _resolve_policy_rule(*, is_tour: bool, explicit_rule: str | None) -> str:
+    candidate = (explicit_rule or "").strip()
+    if candidate:
+        return candidate
+    return DEPOSIT_RULE_TOUR if is_tour else DEPOSIT_RULE_ROOM_COTTAGE
+
+
+def _reservation_policy_fields(source: dict, *, is_tour: bool) -> dict[str, float | str | None]:
+    return {
+        "deposit_required": _to_optional_float(source.get("deposit_required")),
+        "expected_pay_now": _to_optional_float(source.get("expected_pay_now")),
+        "deposit_policy_version": _to_optional_str(source.get("deposit_policy_version")) or DEPOSIT_POLICY_VERSION,
+        "deposit_rule_applied": _resolve_policy_rule(
+            is_tour=is_tour,
+            explicit_rule=_to_optional_str(source.get("deposit_rule_applied")),
+        ),
+        "cancellation_actor": _to_optional_str(source.get("cancellation_actor")),
+        "policy_outcome": _to_optional_str(source.get("policy_outcome")),
+    }
+
+
+def _resolve_reservation_policy_rule(row: dict) -> str:
+    return _resolve_policy_rule(
+        is_tour=bool(row.get("service_bookings")),
+        explicit_rule=_to_optional_str(row.get("deposit_rule_applied")),
+    )
+
+
+def _resolve_reservation_policy_version(row: dict) -> str:
+    return _to_optional_str(row.get("deposit_policy_version")) or DEPOSIT_POLICY_VERSION
 
 
 def _build_idempotency_operation_id(*, route_key: str, user_id: str, idempotency_key: str) -> str:
@@ -265,27 +316,32 @@ def _maybe_mint_guest_pass(reservation_id: str) -> GuestPassRef | None:
         return None
 
     active_chain = get_active_chain()
-    if not active_chain.enabled:
+    chain_enabled = bool(getattr(active_chain, "enabled", False))
+    chain_key = str(getattr(active_chain, "key", "unknown"))
+    chain_rpc_url = str(getattr(active_chain, "rpc_url", "") or "")
+    chain_contract = str(getattr(active_chain, "guest_pass_contract_address", "") or "")
+    chain_signer = str(getattr(active_chain, "signer_private_key", "") or "")
+    if not chain_enabled:
         logger.warning(
             "Guest pass mint skipped: active chain disabled (reservation_id=%s, chain=%s)",
             reservation_id,
-            active_chain.key,
+            chain_key,
         )
         return None
-    if not active_chain.rpc_url or not active_chain.guest_pass_contract_address:
+    if not chain_rpc_url or not chain_contract:
         logger.warning(
             "Guest pass mint skipped: chain not fully configured (reservation_id=%s, chain=%s, rpc=%s, nft_contract=%s)",
             reservation_id,
-            active_chain.key,
-            bool(active_chain.rpc_url),
-            bool(active_chain.guest_pass_contract_address),
+            chain_key,
+            bool(chain_rpc_url),
+            bool(chain_contract),
         )
         return None
-    if not active_chain.signer_private_key:
+    if not chain_signer:
         logger.warning(
             "Guest pass mint skipped: signer key missing (reservation_id=%s, chain=%s)",
             reservation_id,
-            active_chain.key,
+            chain_key,
         )
         return None
 
@@ -305,20 +361,20 @@ def _maybe_mint_guest_pass(reservation_id: str) -> GuestPassRef | None:
         logger.exception(
             "Guest pass mint failed (reservation_id=%s, chain=%s)",
             reservation_id,
-            active_chain.key,
+            chain_key,
         )
         return None
 
     logger.info(
         "Guest pass minted (reservation_id=%s, chain=%s, token_id=%s, tx_hash=%s)",
         reservation_id,
-        active_chain.key,
+        chain_key,
         mint_result.token_id,
         mint_result.tx_hash,
     )
     return GuestPassRef(
-        chain_key=active_chain.key,  # type: ignore[arg-type]
-        contract_address=active_chain.guest_pass_contract_address,
+        chain_key=chain_key,  # type: ignore[arg-type]
+        contract_address=chain_contract,
         tx_hash=mint_result.tx_hash,
         token_id=mint_result.token_id,
         reservation_hash=mint_result.reservation_hash,
@@ -388,6 +444,36 @@ def _maybe_refund_escrow_on_cancel(reservation_row: dict) -> None:
             "Escrow refund failed (reservation_id=%s, chain=%s)",
             reservation_id,
             chain.key,
+        )
+
+
+def _derive_cancellation_policy(actor: str) -> tuple[str, str]:
+    actor_normalized = "admin" if actor == "admin" else "guest"
+    outcome = "refunded" if actor_normalized == "admin" else "forfeited"
+    return actor_normalized, outcome
+
+
+def _apply_cancellation_policy_metadata(
+    *,
+    reservation_id: str,
+    actor: str,
+    outcome: str,
+    rule_applied: str | None = None,
+) -> None:
+    try:
+        update_reservation_policy_metadata(
+            reservation_id=reservation_id,
+            deposit_policy_version=DEPOSIT_POLICY_VERSION,
+            deposit_rule_applied=rule_applied or DEPOSIT_RULE_ROOM_COTTAGE,
+            cancellation_actor=actor,
+            policy_outcome=outcome,
+        )
+    except RuntimeError:
+        logger.exception(
+            "Failed to persist cancellation policy metadata (reservation_id=%s, actor=%s, outcome=%s)",
+            reservation_id,
+            actor,
+            outcome,
         )
 
 
@@ -499,6 +585,7 @@ def create_reservation(
         reservation_id=reservation_id,
         reservation_code=str(created.get("reservation_code") or ""),
         status=status_enum,
+        **_reservation_policy_fields(created, is_tour=False),
         escrow_ref=_maybe_apply_escrow_shadow_write(reservation_id),
         guest_pass_ref=_maybe_mint_guest_pass(reservation_id),
         ai_recommendation=ai_recommendation,
@@ -617,6 +704,7 @@ def create_tour_reservation(
         reservation_id=reservation_id,
         reservation_code=str(created.get("reservation_code") or ""),
         status=status_enum,
+        **_reservation_policy_fields(created, is_tour=True),
         escrow_ref=_maybe_apply_escrow_shadow_write(reservation_id),
         guest_pass_ref=_maybe_mint_guest_pass(reservation_id),
         ai_recommendation=ai_recommendation,
@@ -743,6 +831,7 @@ def create_walk_in_stay_reservation(
         reservation_id=reservation_id,
         reservation_code=str(created.get("reservation_code") or ""),
         status=status_enum,
+        **_reservation_policy_fields(created, is_tour=False),
         escrow_ref=_maybe_apply_escrow_shadow_write(reservation_id),
         guest_pass_ref=_maybe_mint_guest_pass(reservation_id),
         ai_recommendation=ai_recommendation,
@@ -849,7 +938,15 @@ def patch_reservation_status(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation not found")
 
     if payload.status == BookingStatus.CANCELLED:
-        _maybe_refund_escrow_on_cancel(current)
+        actor, outcome = _derive_cancellation_policy("admin")
+        _apply_cancellation_policy_metadata(
+            reservation_id=reservation_id,
+            actor=actor,
+            outcome=outcome,
+            rule_applied=_resolve_reservation_policy_rule(current),
+        )
+        if outcome == "refunded":
+            _maybe_refund_escrow_on_cancel(current)
 
     return {"ok": True, "reservation": updated}
 
@@ -880,6 +977,22 @@ def cancel_reservation(
     except RuntimeError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
 
-    _maybe_refund_escrow_on_cancel(row)
+    actor, outcome = _derive_cancellation_policy(auth.role)
+    _apply_cancellation_policy_metadata(
+        reservation_id=reservation_id,
+        actor=actor,
+        outcome=outcome,
+        rule_applied=_resolve_reservation_policy_rule(row),
+    )
+    if outcome == "refunded":
+        _maybe_refund_escrow_on_cancel(row)
 
-    return {"ok": True, "reservation_id": reservation_id, "status": "cancelled"}
+    return {
+        "ok": True,
+        "reservation_id": reservation_id,
+        "status": "cancelled",
+        "deposit_policy_version": _resolve_reservation_policy_version(row),
+        "deposit_rule_applied": _resolve_reservation_policy_rule(row),
+        "cancellation_actor": actor,
+        "policy_outcome": outcome,
+    }

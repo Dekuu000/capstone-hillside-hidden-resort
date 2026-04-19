@@ -12,6 +12,18 @@ export const BOOKING_STATUSES = [
 
 export type BookingStatus = (typeof BOOKING_STATUSES)[number];
 export type ReservationStatus = BookingStatus;
+export type ReservationCancellationActor = "guest" | "admin";
+export type ReservationPolicyOutcome = "released" | "refunded" | "forfeited";
+export type ReservationPolicyMetadata = {
+  deposit_policy_version?: string | null;
+  deposit_rule_applied?: string | null;
+  cancellation_actor?: ReservationCancellationActor | null;
+  policy_outcome?: ReservationPolicyOutcome | null;
+};
+export type ReservationPaymentPolicyMetadata = ReservationPolicyMetadata & {
+  deposit_required?: number | null;
+  expected_pay_now?: number | null;
+};
 
 export const CHAIN_KEYS = ["sepolia", "amoy"] as const;
 export type ChainKey = (typeof CHAIN_KEYS)[number];
@@ -135,7 +147,7 @@ export type ReservationServiceBooking = {
   } | null;
 };
 
-export type ReservationListItem = {
+export type ReservationListItem = ReservationPaymentPolicyMetadata & {
   reservation_id: string;
   reservation_code: string;
   status: ReservationStatus;
@@ -146,8 +158,6 @@ export type ReservationListItem = {
   total_amount: number;
   amount_paid_verified?: number | null;
   balance_due?: number | null;
-  deposit_required?: number | null;
-  expected_pay_now?: number | null;
   guest_count?: number | null;
   notes?: string | null;
   updated_at?: string | null;
@@ -184,7 +194,7 @@ export type ReservationCancelResponse = {
   ok: true;
   reservation_id: string;
   status: "cancelled";
-};
+} & ReservationPolicyMetadata;
 
 export type ReservationStatusUpdateRequest = {
   status: ReservationStatus;
@@ -213,7 +223,7 @@ export type PaymentAdminUser = {
   email?: string | null;
 };
 
-export type PaymentReservationSummary = {
+export type PaymentReservationSummary = ReservationPolicyMetadata & {
   reservation_code: string;
   status?: ReservationStatus | null;
   reservation_source?: "online" | "walk_in" | null;
@@ -357,7 +367,7 @@ export type ReservationCreateRequest = {
   idempotency_key: string;
 };
 
-export type ReservationCreateResponse = {
+export type ReservationCreateResponse = ReservationPaymentPolicyMetadata & {
   reservation_id: string;
   reservation_code: string;
   status: ReservationStatus;

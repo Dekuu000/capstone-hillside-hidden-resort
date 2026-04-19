@@ -102,7 +102,19 @@ class WalkInStayCreateRequest(BaseModel):
     idempotency_key: str | None = None
 
 
-class ReservationResponse(BaseModel):
+class ReservationPolicyMetadata(BaseModel):
+    deposit_policy_version: str | None = None
+    deposit_rule_applied: str | None = None
+    cancellation_actor: Literal["guest", "admin"] | None = None
+    policy_outcome: Literal["released", "refunded", "forfeited"] | None = None
+
+
+class ReservationPaymentPolicyMetadata(ReservationPolicyMetadata):
+    deposit_required: float | None = None
+    expected_pay_now: float | None = None
+
+
+class ReservationResponse(ReservationPaymentPolicyMetadata):
     reservation_id: str
     reservation_code: str
     status: BookingStatus
@@ -365,7 +377,7 @@ class ReservationServiceBookingSummary(BaseModel):
     service: ReservationServiceInfo | None = None
 
 
-class ReservationListItem(BaseModel):
+class ReservationListItem(ReservationPaymentPolicyMetadata):
     reservation_id: str
     reservation_code: str
     status: BookingStatus
@@ -375,8 +387,6 @@ class ReservationListItem(BaseModel):
     total_amount: float
     amount_paid_verified: float | None = None
     balance_due: float | None = None
-    deposit_required: float | None = None
-    expected_pay_now: float | None = None
     guest_count: int | None = None
     notes: str | None = None
     reservation_source: Literal["online", "walk_in"] = "online"
@@ -415,7 +425,7 @@ class MyBookingsResponse(BaseModel):
     totalCount: int
 
 
-class CancelReservationResponse(BaseModel):
+class CancelReservationResponse(ReservationPolicyMetadata):
     ok: bool = True
     reservation_id: str
     status: Literal["cancelled"] = "cancelled"
@@ -432,7 +442,7 @@ class PaymentReservationGuestSummary(BaseModel):
     email: str | None = None
 
 
-class PaymentReservationSummary(BaseModel):
+class PaymentReservationSummary(ReservationPolicyMetadata):
     reservation_code: str
     status: BookingStatus | None = None
     reservation_source: Literal["online", "walk_in"] = "online"

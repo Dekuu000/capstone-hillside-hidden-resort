@@ -8,6 +8,19 @@ import {
 } from "./types";
 
 export const bookingStatusSchema = z.enum(BOOKING_STATUSES);
+export const reservationCancellationActorSchema = z.enum(["guest", "admin"]);
+export const reservationPolicyOutcomeSchema = z.enum(["released", "refunded", "forfeited"]);
+export const reservationPolicyMetadataShape = {
+  deposit_policy_version: z.string().optional().nullable(),
+  deposit_rule_applied: z.string().optional().nullable(),
+  cancellation_actor: reservationCancellationActorSchema.optional().nullable(),
+  policy_outcome: reservationPolicyOutcomeSchema.optional().nullable(),
+} as const;
+export const reservationPaymentPolicyMetadataShape = {
+  deposit_required: z.number().optional().nullable(),
+  expected_pay_now: z.number().optional().nullable(),
+  ...reservationPolicyMetadataShape,
+} as const;
 
 export const escrowStateSchema = z.enum([
   "none",
@@ -147,8 +160,7 @@ export const reservationListItemSchema = z.object({
   total_amount: z.number(),
   amount_paid_verified: z.number().optional().nullable(),
   balance_due: z.number().optional().nullable(),
-  deposit_required: z.number().optional().nullable(),
-  expected_pay_now: z.number().optional().nullable(),
+  ...reservationPaymentPolicyMetadataShape,
   guest_count: z.number().int().positive().optional().nullable(),
   notes: z.string().optional().nullable(),
   updated_at: z.string().optional().nullable(),
@@ -185,6 +197,7 @@ export const reservationCancelResponseSchema = z.object({
   ok: z.literal(true),
   reservation_id: z.string().min(1),
   status: z.literal("cancelled"),
+  ...reservationPolicyMetadataShape,
 });
 
 export const reservationStatusUpdateRequestSchema = z.object({
@@ -213,6 +226,7 @@ export const paymentReservationSummarySchema = z.object({
   reservation_source: z.enum(["online", "walk_in"]).optional().nullable(),
   total_amount: z.number().optional().nullable(),
   deposit_required: z.number().optional().nullable(),
+  ...reservationPolicyMetadataShape,
   guest: z
     .object({
       name: z.string().optional().nullable(),
@@ -360,6 +374,7 @@ export const reservationCreateResponseSchema = z.object({
   reservation_id: z.string().min(1),
   reservation_code: z.string().min(1),
   status: bookingStatusSchema,
+  ...reservationPaymentPolicyMetadataShape,
   escrow_ref: escrowRefSchema.optional().nullable(),
   ai_recommendation: pricingRecommendationSchema.optional().nullable(),
 });

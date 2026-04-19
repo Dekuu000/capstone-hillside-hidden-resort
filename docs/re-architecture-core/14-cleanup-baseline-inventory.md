@@ -1,6 +1,6 @@
 # Cleanup Baseline & Inventory Report
 
-Last updated: 2026-04-18  
+Last updated: 2026-04-19  
 Phase: Post-phase cleanup/refactor (Checklist A)
 
 ## Baseline Snapshot
@@ -157,3 +157,38 @@ Remaining A4 blocker:
 
 1. `npm --prefix hillside-next run build` still fails on this environment with `spawn EPERM`.
 2. Root cause appears environment-level child-process restriction, not app-level TypeScript/ESLint issues (typecheck/lint pass).
+
+## Batch B1 Execution Update (Part 1 Complete)
+
+1. Consolidated reservation policy metadata DTOs in API schemas:
+   - Added reusable Pydantic bases in `hillside-api/app/schemas/common.py`:
+     - `ReservationPolicyMetadata`
+     - `ReservationPaymentPolicyMetadata`
+   - Reused these in:
+     - `ReservationResponse`
+     - `ReservationListItem`
+     - `CancelReservationResponse`
+     - `PaymentReservationSummary`
+2. Consolidated reservation policy field mapping logic in API route layer:
+   - Added helpers in `hillside-api/app/api/v2/routes/reservations.py`:
+     - `_to_optional_str`
+     - `_reservation_policy_fields`
+     - `_resolve_reservation_policy_rule`
+     - `_resolve_reservation_policy_version`
+   - Replaced repeated inline field mapping blocks across create/cancel/status endpoints.
+3. Consolidated shared contract definitions for policy metadata:
+   - `packages/shared/src/schemas.ts` now has:
+     - `reservationCancellationActorSchema`
+     - `reservationPolicyOutcomeSchema`
+     - `reservationPolicyMetadataShape`
+     - `reservationPaymentPolicyMetadataShape`
+   - `packages/shared/src/types.ts` now has:
+     - `ReservationCancellationActor`
+     - `ReservationPolicyOutcome`
+     - `ReservationPolicyMetadata`
+     - `ReservationPaymentPolicyMetadata`
+4. Minor test cleanup:
+   - Removed duplicated monkeypatch line in `hillside-api/tests/test_v2_reservations_contract.py`.
+5. Validation:
+   - `hillside-api\\.venv\\Scripts\\python.exe -m pytest hillside-api/tests/test_v2_reservations_contract.py -q` passed (`14 passed`).
+   - `npm --workspace @hillside/shared run typecheck` passed.

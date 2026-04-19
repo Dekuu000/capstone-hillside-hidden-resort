@@ -104,6 +104,10 @@ def test_cancel_reservation_contract(monkeypatch) -> None:
         called.update(kwargs)
 
     monkeypatch.setattr("app.api.v2.routes.reservations.cancel_reservation_rpc", fake_cancel)
+    monkeypatch.setattr(
+        "app.api.v2.routes.reservations.update_reservation_policy_metadata",
+        lambda **_: None,
+    )
 
     response = client.post(
         "/v2/reservations/res-1/cancel",
@@ -176,7 +180,7 @@ def test_patch_reservation_status_contract(monkeypatch) -> None:
     assert payload["reservation"]["notes"] == "Manual update"
 
 
-def test_cancel_reservation_refunds_escrow_when_locked(monkeypatch) -> None:
+def test_cancel_reservation_refunds_escrow_when_locked_for_admin_actor(monkeypatch) -> None:
     called: dict = {}
 
     class _FakeChain:
@@ -192,16 +196,17 @@ def test_cancel_reservation_refunds_escrow_when_locked(monkeypatch) -> None:
         onchain_booking_id = "0xbooking"
         event_index = 5
 
-    monkeypatch.setattr("app.core.auth.verify_access_token", _mock_guest_auth)
+    monkeypatch.setattr("app.core.auth.verify_access_token", _mock_admin_auth)
     monkeypatch.setattr(
         "app.api.v2.routes.reservations.get_reservation_by_id",
         lambda _: {
             "reservation_id": "res-1",
-            "guest_user_id": "guest-user",
+            "guest_user_id": "another-user",
             "status": "pending_payment",
             "escrow_state": "locked",
             "chain_key": "sepolia",
             "onchain_booking_id": "0xbooking",
+            "deposit_rule_applied": "room_cottage_20pct_clamp_500_1000",
         },
     )
     monkeypatch.setattr("app.api.v2.routes.reservations.cancel_reservation_rpc", lambda **_: None)
@@ -219,17 +224,56 @@ def test_cancel_reservation_refunds_escrow_when_locked(monkeypatch) -> None:
 
     response = client.post(
         "/v2/reservations/res-1/cancel",
-        headers={"Authorization": "Bearer guest-token"},
+        headers=_admin_header(),
     )
     assert response.status_code == 200
     payload = response.json()
     assert payload["ok"] is True
     assert payload["status"] == "cancelled"
+    assert payload["cancellation_actor"] == "admin"
+    assert payload["policy_outcome"] == "refunded"
     assert called["reservation_id"] == "res-1"
     assert called["tx_hash"] == "0xrefundhash"
     assert called["onchain_booking_id"] == "0xbooking"
     assert called["escrow_state"] == "refunded"
     assert called["escrow_event_index"] == 5
+
+
+def test_cancel_reservation_guest_forfeits_and_skips_refund(monkeypatch) -> None:
+    monkeypatch.setattr("app.core.auth.verify_access_token", _mock_guest_auth)
+    monkeypatch.setattr(
+        "app.api.v2.routes.reservations.get_reservation_by_id",
+        lambda _: {
+            "reservation_id": "res-1",
+            "guest_user_id": "guest-user",
+            "status": "pending_payment",
+            "escrow_state": "locked",
+            "chain_key": "sepolia",
+            "onchain_booking_id": "0xbooking",
+            "deposit_rule_applied": "room_cottage_20pct_clamp_500_1000",
+        },
+    )
+    monkeypatch.setattr("app.api.v2.routes.reservations.cancel_reservation_rpc", lambda **_: None)
+    monkeypatch.setattr(
+        "app.api.v2.routes.reservations.update_reservation_policy_metadata",
+        lambda **_: None,
+    )
+    monkeypatch.setattr("app.api.v2.routes.reservations.settings.feature_escrow_onchain_lock", True)
+
+    def _should_not_refund(**_):
+        raise AssertionError("Guest cancellation must not trigger escrow refund.")
+
+    monkeypatch.setattr("app.api.v2.routes.reservations.refund_reservation_escrow_onchain", _should_not_refund)
+
+    response = client.post(
+        "/v2/reservations/res-1/cancel",
+        headers={"Authorization": "Bearer guest-token"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "cancelled"
+    assert payload["cancellation_actor"] == "guest"
+    assert payload["policy_outcome"] == "forfeited"
 
 
 def test_create_tour_reservation_blocks_guest_same_day(monkeypatch) -> None:
@@ -346,6 +390,8 @@ def test_create_reservation_contract_without_shadow(monkeypatch) -> None:
     payload = response.json()
     assert payload["reservation_id"] == "res-1"
     assert payload["escrow_ref"] is None
+    assert payload["deposit_policy_version"] == "v1_2026_04"
+    assert payload["deposit_rule_applied"] == "room_cottage_20pct_clamp_500_1000"
 
 
 def test_create_reservation_contract_with_shadow(monkeypatch) -> None:
@@ -401,6 +447,8 @@ def test_create_reservation_contract_with_shadow(monkeypatch) -> None:
     assert payload["escrow_ref"] is not None
     assert payload["escrow_ref"]["chain_key"] == "sepolia"
     assert payload["escrow_ref"]["chain_id"] == 11155111
+    assert payload["deposit_policy_version"] == "v1_2026_04"
+    assert payload["deposit_rule_applied"] == "room_cottage_20pct_clamp_500_1000"
     assert called["reservation_id"] == "res-shadow-1"
     assert called["escrow_state"] == "pending_lock"
 
@@ -465,6 +513,8 @@ def test_create_reservation_contract_with_onchain_lock(monkeypatch) -> None:
     assert payload["escrow_ref"] is not None
     assert payload["escrow_ref"]["state"] == "locked"
     assert payload["escrow_ref"]["tx_hash"] == "0xlockhash"
+    assert payload["deposit_policy_version"] == "v1_2026_04"
+    assert payload["deposit_rule_applied"] == "room_cottage_20pct_clamp_500_1000"
     assert called["escrow_state"] == "locked"
     assert called["escrow_event_index"] == 7
 
