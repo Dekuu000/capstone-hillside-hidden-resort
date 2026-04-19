@@ -70,6 +70,7 @@ Baseline evidence:
 - [ ] Update migration notes with rationale for any split or reordering.
 - [x] Batch A2: add automated migration hygiene check with explicit waiver tracking for legacy filename/duplicate pair.
 - [x] Batch D1 (part 1): add a single `db:validate` workflow (`db:sanity` + `db:hygiene`) and re-verify migration checks on current rename/split set.
+- [x] Batch D1 (part 2): document 2026-04-18 migration split/reorder rationale and parser-safety sequencing.
 
 ### E) CI, Lint, and Test Hardening
 
@@ -85,6 +86,7 @@ Baseline evidence:
 - [ ] Update developer runbook commands and local dev troubleshooting notes.
 - [ ] Record removed modules/files and migration implications.
 - [ ] Attach final acceptance evidence links (CI run, smoke output, key screenshots).
+- [x] Batch F1 (part 1): align policy rollout runbook with split migration sequence and `db:validate` preflight.
 
 ## Definition of Done
 

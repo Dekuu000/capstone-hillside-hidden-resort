@@ -257,3 +257,27 @@ Remaining A4 blocker:
 3. Current blocker unchanged:
    - `npm run db:reset` is still blocked on this machine by Docker Desktop pipe permissions:
      - `open //./pipe/dockerDesktopLinuxEngine: Access is denied`.
+
+## Batch D1 Execution Update (Part 2 Complete)
+
+1. Added explicit migration split rationale document:
+   - `docs/re-architecture-core/15-migration-split-rationale-20260418.md`
+2. Captured why the sequence was split:
+   - parser/runtime failure context (`cannot insert multiple commands into a prepared statement`)
+   - ordering and idempotency rules applied for drop/create/grant separation
+   - behavior-preservation notes for policy metadata and cancellation capture
+3. Linked validation evidence in rationale:
+   - `db:sanity` pass
+   - `db:hygiene` pass
+   - `db:validate` pass
+4. Environment blocker remains unchanged:
+   - `db:reset` still blocked by Docker Desktop pipe access on this workstation.
+
+## Batch F1 Execution Update (Part 1 Complete)
+
+1. Updated policy rollout runbook for the split migration sequence:
+   - `docs/policy-v1-rollout-checklist.md`
+2. Replaced single-file migration reference with ordered `20260418001..20260418009` execution list.
+3. Added `db:validate` preflight step to keep parser/hygiene checks explicit before runtime validation.
+4. Runbook now aligns with D1 rationale doc:
+   - `docs/re-architecture-core/15-migration-split-rationale-20260418.md`
