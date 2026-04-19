@@ -215,3 +215,15 @@ Remaining A4 blocker:
    - `perform_checkin(...)` now calls helper for released-policy metadata write.
 4. Validation:
    - `hillside-api\\.venv\\Scripts\\python.exe -m pytest hillside-api/tests/test_v2_reservations_contract.py hillside-api/tests/test_v2_qr_operations_contract.py hillside-api/tests/test_v2_payments_contract.py -q` passed (`30 passed`).
+
+## Batch C1 Execution Update (Part 1 Complete)
+
+1. Centralized reservation policy enum constants in shared package:
+   - Added `RESERVATION_CANCELLATION_ACTORS` and `RESERVATION_POLICY_OUTCOMES` in `packages/shared/src/types.ts`.
+   - Kept schema enums sourced from those constants in `packages/shared/src/schemas.ts`.
+2. Aligned frontend cancellation outcome handling with shared contract typing:
+   - `hillside-next/components/my-bookings/MyBookingsClient.tsx` now uses typed `ReservationPolicyOutcome` via `cancellationResultMessage(...)`.
+   - Removed ad-hoc lowercase string comparison logic after cancel API call.
+3. Validation:
+   - `npm --workspace @hillside/shared run typecheck` passed.
+   - `npm --prefix hillside-next run typecheck` passed.

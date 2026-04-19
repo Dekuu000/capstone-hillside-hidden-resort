@@ -58,6 +58,7 @@ Baseline evidence:
 - [ ] Remove dead components/routes and obsolete compatibility redirects.
 - [ ] Re-run end-to-end manual smoke for reservation, payment, QR, blockchain, AI, sync pages.
 - [x] Batch A3: consolidate legacy admin compatibility redirects from page files into `next.config.ts` redirects.
+- [x] Batch C1 (part 1): unify reservation policy enum constants in shared package and align cancellation outcome handling in `MyBookingsClient`.
 
 ### D) Database and Migration Hygiene
 
