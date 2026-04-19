@@ -5,8 +5,10 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.v2.router import router as v2_router
+from app.api.v2.routes._http_errors import ApiHttpError, build_http_error_payload, default_error_code
 from app.core.chains import get_active_chain, get_chain_registry
 from app.core.config import settings
 from app.middleware.correlation import CorrelationIdMiddleware
@@ -37,6 +39,26 @@ app.add_middleware(
 app.add_middleware(GZipMiddleware, minimum_size=1024)
 
 app.include_router(v2_router)
+
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    correlation_id = getattr(request.state, "correlation_id", None)
+    if isinstance(exc, ApiHttpError):
+        payload = build_http_error_payload(
+            status_code=exc.status_code,
+            detail=exc.detail,
+            code=exc.code,
+            context={**exc.context, **({"correlation_id": correlation_id} if correlation_id else {})},
+        )
+    else:
+        payload = build_http_error_payload(
+            status_code=exc.status_code,
+            detail=exc.detail,
+            code=default_error_code(exc.status_code),
+            context={"correlation_id": correlation_id} if correlation_id else {},
+        )
+    return JSONResponse(status_code=exc.status_code, content=payload)
 
 
 @app.on_event("startup")

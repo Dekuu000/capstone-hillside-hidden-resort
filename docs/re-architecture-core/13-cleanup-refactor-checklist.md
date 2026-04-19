@@ -44,12 +44,13 @@ Baseline evidence:
 
 - [ ] Consolidate duplicate DTO/response schema definitions.
 - [ ] Remove deprecated facade fallback paths no longer needed by active flows.
-- [ ] Standardize error mapping and response envelope behavior.
+- [x] Standardize error mapping and response envelope behavior.
 - [ ] Refactor large handlers into smaller service functions where complexity is high.
 - [ ] Add/update tests for every refactor hotspot before removal.
 - [x] Batch B1 (part 1): consolidate reservation policy metadata DTO/shared-type definitions and remove repeated route mapping blocks.
 - [x] Batch B1 (part 2): centralize reservation update/fallback helpers in Supabase integration and remove repeated policy metadata persistence logic in operations route.
 - [x] Batch B2 (part 1): centralize RuntimeError->HTTP status mapping helper and apply it across reservations/payments/operations routes with regression tests.
+- [x] Batch B2 (part 2): add unified API HTTP exception envelope (`detail`, `code`, `context`) for v2 routes and cover with contract tests.
 
 ### C) Frontend and Shared Contracts
 

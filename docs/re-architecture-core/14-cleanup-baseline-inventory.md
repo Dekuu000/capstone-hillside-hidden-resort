@@ -327,3 +327,23 @@ Remaining A4 blocker:
 5. Validation:
    - `hillside-api\\.venv\\Scripts\\python.exe -m pytest hillside-api/tests/test_v2_error_mapping.py hillside-api/tests/test_v2_reservations_contract.py hillside-api/tests/test_v2_payments_contract.py hillside-api/tests/test_v2_qr_operations_contract.py -q`
    - result: `33 passed`
+
+## Batch B2 Execution Update (Part 2 Complete)
+
+1. Added unified HTTP exception envelope for API errors:
+   - shape: `detail`, `code`, `context`
+2. Implemented shared error primitives in:
+   - `hillside-api/app/api/v2/routes/_http_errors.py`
+   - added `ApiHttpError`, `build_http_error_payload(...)`, default status->code mapping
+3. Wired global HTTP exception handler for v2 route exceptions:
+   - `hillside-api/app/main.py`
+   - converts route `HTTPException`/`ApiHttpError` to standardized envelope
+4. Added envelope contract tests:
+   - `hillside-api/tests/test_v2_error_envelope_contract.py`
+   - covers:
+     - admin-forbidden flow (`code=forbidden`)
+     - validation flow (`code=unprocessable_content`)
+     - runtime config failure flow (`code=service_unavailable`)
+5. Validation:
+   - `hillside-api\\.venv\\Scripts\\python.exe -m pytest hillside-api/tests/test_v2_error_mapping.py hillside-api/tests/test_v2_error_envelope_contract.py hillside-api/tests/test_v2_reservations_contract.py hillside-api/tests/test_v2_payments_contract.py hillside-api/tests/test_v2_qr_operations_contract.py -q`
+   - result: `36 passed`
