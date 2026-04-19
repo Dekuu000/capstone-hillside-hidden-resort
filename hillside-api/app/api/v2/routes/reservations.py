@@ -479,6 +479,95 @@ def _apply_cancellation_policy_metadata(
         )
 
 
+def _validate_stay_reservation_inputs(
+    *,
+    check_in_date: date,
+    check_out_date: date,
+    unit_ids: list[str],
+    require_future_check_in: bool = False,
+) -> None:
+    if check_out_date <= check_in_date:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="check_out_date must be after check_in_date.",
+        )
+    if require_future_check_in and check_in_date < date.today():
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="check_in_date cannot be in the past.",
+        )
+    if not unit_ids:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="At least one unit_id is required.",
+        )
+
+
+def _get_available_unit_map(*, check_in_date: date, check_out_date: date) -> dict[str, dict]:
+    try:
+        available_units = get_available_units_rpc(
+            check_in_date=check_in_date.isoformat(),
+            check_out_date=check_out_date.isoformat(),
+            unit_type=None,
+        )
+    except RuntimeError as exc:
+        raise_http_from_runtime_error(exc, default_status=status.HTTP_400_BAD_REQUEST)
+    return {str(unit.get("unit_id")): unit for unit in available_units}
+
+
+def _ensure_selected_units_available(*, unit_ids: list[str], unit_map: dict[str, dict]) -> None:
+    missing = [unit_id for unit_id in unit_ids if unit_id not in unit_map]
+    if missing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="One or more selected units are no longer available.",
+        )
+
+
+def _ensure_guest_count_within_capacity(
+    *,
+    unit_ids: list[str],
+    unit_map: dict[str, dict],
+    guest_count: int,
+) -> None:
+    # Some legacy/read-model projections don't always include capacity.
+    # Fall back to a safe minimum of 1 so contract paths remain backward compatible.
+    total_capacity = sum(max(1, int(unit_map[unit_id].get("capacity") or 1)) for unit_id in unit_ids)
+    if guest_count > total_capacity:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Selected units can host up to {total_capacity} guest(s).",
+        )
+
+
+def _compute_stay_rates_and_total(
+    *,
+    check_in_date: date,
+    check_out_date: date,
+    unit_ids: list[str],
+    unit_map: dict[str, dict],
+) -> tuple[int, list[float], float]:
+    nights = (check_out_date - check_in_date).days
+    rates: list[float] = []
+    total_amount = 0.0
+    for unit_id in unit_ids:
+        base_price = float(unit_map[unit_id].get("base_price") or 0)
+        rates.append(base_price)
+        total_amount += base_price * nights
+    return nights, rates, total_amount
+
+
+def _build_walk_in_notes(payload: WalkInStayCreateRequest) -> str | None:
+    notes_parts = [
+        "Walk-in stay booking (admin).",
+        f"Guest: {payload.guest_name.strip()}" if payload.guest_name and payload.guest_name.strip() else None,
+        f"Phone: {payload.guest_phone.strip()}" if payload.guest_phone and payload.guest_phone.strip() else None,
+        payload.notes.strip() if payload.notes and payload.notes.strip() else None,
+    ]
+    notes = " | ".join(part for part in notes_parts if part)
+    return notes or None
+
+
 @router.post("", response_model=ReservationResponse)
 def create_reservation(
     payload: ReservationCreateRequest,
@@ -492,50 +581,27 @@ def create_reservation(
     if replayed:
         return replayed
 
-    if payload.check_out_date <= payload.check_in_date:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="check_out_date must be after check_in_date.",
-        )
-    if not payload.unit_ids:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="At least one unit_id is required.",
-        )
-
-    try:
-        available_units = get_available_units_rpc(
-            check_in_date=payload.check_in_date.isoformat(),
-            check_out_date=payload.check_out_date.isoformat(),
-            unit_type=None,
-        )
-    except RuntimeError as exc:
-        raise_http_from_runtime_error(exc, default_status=status.HTTP_400_BAD_REQUEST)
-
-    unit_map = {str(unit.get("unit_id")): unit for unit in available_units}
-    missing = [unit_id for unit_id in payload.unit_ids if unit_id not in unit_map]
-    if missing:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="One or more selected units are no longer available.",
-        )
-
-    # Some legacy/read-model projections don't always include capacity.
-    # Fall back to a safe minimum of 1 so contract paths remain backward compatible.
-    total_capacity = sum(max(1, int(unit_map[unit_id].get("capacity") or 1)) for unit_id in payload.unit_ids)
-    if payload.guest_count > total_capacity:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Selected units can host up to {total_capacity} guest(s).",
-        )
-
-    nights = (payload.check_out_date - payload.check_in_date).days
-    rates: list[float] = []
-    total_amount = 0.0
-    for unit_id in payload.unit_ids:
-        base_price = float(unit_map[unit_id].get("base_price") or 0)
-        rates.append(base_price)
-        total_amount += base_price * nights
+    _validate_stay_reservation_inputs(
+        check_in_date=payload.check_in_date,
+        check_out_date=payload.check_out_date,
+        unit_ids=payload.unit_ids,
+    )
+    unit_map = _get_available_unit_map(
+        check_in_date=payload.check_in_date,
+        check_out_date=payload.check_out_date,
+    )
+    _ensure_selected_units_available(unit_ids=payload.unit_ids, unit_map=unit_map)
+    _ensure_guest_count_within_capacity(
+        unit_ids=payload.unit_ids,
+        unit_map=unit_map,
+        guest_count=payload.guest_count,
+    )
+    nights, rates, total_amount = _compute_stay_rates_and_total(
+        check_in_date=payload.check_in_date,
+        check_out_date=payload.check_out_date,
+        unit_ids=payload.unit_ids,
+        unit_map=unit_map,
+    )
 
     try:
         created = create_reservation_atomic_rpc(
@@ -729,54 +795,24 @@ def create_walk_in_stay_reservation(
     if replayed:
         return replayed
 
-    if payload.check_out_date <= payload.check_in_date:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="check_out_date must be after check_in_date.",
-        )
-    if payload.check_in_date < date.today():
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="check_in_date cannot be in the past.",
-        )
-    if not payload.unit_ids:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="At least one unit_id is required.",
-        )
-
-    try:
-        available_units = get_available_units_rpc(
-            check_in_date=payload.check_in_date.isoformat(),
-            check_out_date=payload.check_out_date.isoformat(),
-            unit_type=None,
-        )
-    except RuntimeError as exc:
-        raise_http_from_runtime_error(exc, default_status=status.HTTP_400_BAD_REQUEST)
-
-    unit_map = {str(unit.get("unit_id")): unit for unit in available_units}
-    missing = [unit_id for unit_id in payload.unit_ids if unit_id not in unit_map]
-    if missing:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="One or more selected units are no longer available.",
-        )
-
-    nights = (payload.check_out_date - payload.check_in_date).days
-    rates: list[float] = []
-    total_amount = 0.0
-    for unit_id in payload.unit_ids:
-        base_price = float(unit_map[unit_id].get("base_price") or 0)
-        rates.append(base_price)
-        total_amount += base_price * nights
-
-    notes_parts = [
-        "Walk-in stay booking (admin).",
-        f"Guest: {payload.guest_name.strip()}" if payload.guest_name and payload.guest_name.strip() else None,
-        f"Phone: {payload.guest_phone.strip()}" if payload.guest_phone and payload.guest_phone.strip() else None,
-        payload.notes.strip() if payload.notes and payload.notes.strip() else None,
-    ]
-    notes = " | ".join(part for part in notes_parts if part)
+    _validate_stay_reservation_inputs(
+        check_in_date=payload.check_in_date,
+        check_out_date=payload.check_out_date,
+        unit_ids=payload.unit_ids,
+        require_future_check_in=True,
+    )
+    unit_map = _get_available_unit_map(
+        check_in_date=payload.check_in_date,
+        check_out_date=payload.check_out_date,
+    )
+    _ensure_selected_units_available(unit_ids=payload.unit_ids, unit_map=unit_map)
+    nights, rates, total_amount = _compute_stay_rates_and_total(
+        check_in_date=payload.check_in_date,
+        check_out_date=payload.check_out_date,
+        unit_ids=payload.unit_ids,
+        unit_map=unit_map,
+    )
+    notes = _build_walk_in_notes(payload)
 
     try:
         created = create_reservation_atomic_rpc(
@@ -788,7 +824,7 @@ def create_walk_in_stay_reservation(
             rates=rates,
             total_amount=total_amount,
             expected_pay_now=payload.expected_pay_now,
-            notes=notes or None,
+            notes=notes,
         )
     except RuntimeError as exc:
         raise_http_from_runtime_error(exc, default_status=status.HTTP_400_BAD_REQUEST)

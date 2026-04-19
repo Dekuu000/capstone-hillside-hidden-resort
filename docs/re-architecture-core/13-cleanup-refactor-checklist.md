@@ -51,6 +51,7 @@ Baseline evidence:
 - [x] Batch B1 (part 2): centralize reservation update/fallback helpers in Supabase integration and remove repeated policy metadata persistence logic in operations route.
 - [x] Batch B2 (part 1): centralize RuntimeError->HTTP status mapping helper and apply it across reservations/payments/operations routes with regression tests.
 - [x] Batch B2 (part 2): add unified API HTTP exception envelope (`detail`, `code`, `context`) for v2 routes and cover with contract tests.
+- [x] Batch B3 (part 1): refactor stay reservation and walk-in route handlers into shared helper functions (validation, availability, pricing, note composition) to reduce handler complexity.
 
 ### C) Frontend and Shared Contracts
 
