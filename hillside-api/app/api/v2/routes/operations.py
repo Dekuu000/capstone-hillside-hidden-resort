@@ -5,6 +5,8 @@ from datetime import datetime, timezone
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, status
+
+from app.api.v2.routes._http_errors import raise_http_from_runtime_error
 from pydantic import BaseModel
 
 from app.core.auth import AuthContext, require_admin
@@ -247,7 +249,7 @@ def perform_checkin(
     try:
         row = get_reservation_by_id(payload.reservation_id)
     except RuntimeError as exc:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+        raise_http_from_runtime_error(exc, default_status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
     if not row:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation not found")
@@ -259,7 +261,7 @@ def perform_checkin(
             override_reason=payload.override_reason,
         )
     except RuntimeError as exc:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+        raise_http_from_runtime_error(exc, default_status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
     try:
         unit_ids = list_reservation_unit_ids(reservation_id=payload.reservation_id)
@@ -346,7 +348,7 @@ def perform_checkout(
     try:
         row = get_reservation_by_id(payload.reservation_id)
     except RuntimeError as exc:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+        raise_http_from_runtime_error(exc, default_status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
     if not row:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation not found")
@@ -361,7 +363,7 @@ def perform_checkout(
     try:
         perform_checkout_rpc(access_token=auth.access_token, reservation_id=payload.reservation_id)
     except RuntimeError as exc:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+        raise_http_from_runtime_error(exc, default_status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
     try:
         unit_ids = list_reservation_unit_ids(reservation_id=payload.reservation_id)

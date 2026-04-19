@@ -49,6 +49,7 @@ Baseline evidence:
 - [ ] Add/update tests for every refactor hotspot before removal.
 - [x] Batch B1 (part 1): consolidate reservation policy metadata DTO/shared-type definitions and remove repeated route mapping blocks.
 - [x] Batch B1 (part 2): centralize reservation update/fallback helpers in Supabase integration and remove repeated policy metadata persistence logic in operations route.
+- [x] Batch B2 (part 1): centralize RuntimeError->HTTP status mapping helper and apply it across reservations/payments/operations routes with regression tests.
 
 ### C) Frontend and Shared Contracts
 
