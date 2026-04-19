@@ -4,12 +4,14 @@ import {
   BOOKING_STATUSES,
   CHAIN_KEYS,
   MY_BOOKINGS_TABS,
+  RESERVATION_CANCELLATION_ACTORS,
+  RESERVATION_POLICY_OUTCOMES,
   UNIT_OPERATIONAL_STATUSES,
 } from "./types";
 
 export const bookingStatusSchema = z.enum(BOOKING_STATUSES);
-export const reservationCancellationActorSchema = z.enum(["guest", "admin"]);
-export const reservationPolicyOutcomeSchema = z.enum(["released", "refunded", "forfeited"]);
+export const reservationCancellationActorSchema = z.enum(RESERVATION_CANCELLATION_ACTORS);
+export const reservationPolicyOutcomeSchema = z.enum(RESERVATION_POLICY_OUTCOMES);
 export const reservationPolicyMetadataShape = {
   deposit_policy_version: z.string().optional().nullable(),
   deposit_rule_applied: z.string().optional().nullable(),

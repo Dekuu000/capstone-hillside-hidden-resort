@@ -12,8 +12,10 @@ export const BOOKING_STATUSES = [
 
 export type BookingStatus = (typeof BOOKING_STATUSES)[number];
 export type ReservationStatus = BookingStatus;
-export type ReservationCancellationActor = "guest" | "admin";
-export type ReservationPolicyOutcome = "released" | "refunded" | "forfeited";
+export const RESERVATION_CANCELLATION_ACTORS = ["guest", "admin"] as const;
+export const RESERVATION_POLICY_OUTCOMES = ["released", "refunded", "forfeited"] as const;
+export type ReservationCancellationActor = (typeof RESERVATION_CANCELLATION_ACTORS)[number];
+export type ReservationPolicyOutcome = (typeof RESERVATION_POLICY_OUTCOMES)[number];
 export type ReservationPolicyMetadata = {
   deposit_policy_version?: string | null;
   deposit_rule_applied?: string | null;

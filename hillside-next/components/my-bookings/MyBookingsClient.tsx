@@ -12,6 +12,8 @@ import type {
   PricingRecommendation,
   QrToken,
   ReservationListItem as Booking,
+  ReservationCancelResponse,
+  ReservationPolicyOutcome,
 } from "../../../packages/shared/src/types";
 import {
   paymentSubmissionResponseSchema,
@@ -113,6 +115,25 @@ function getPaymentStateMeta(totalAmount: number, amountPaid: number) {
 
 function canShowQrForBooking(status: string) {
   return ["pending_payment", "for_verification", "confirmed", "checked_in"].includes(status);
+}
+
+function cancellationConsequenceText(booking: Booking | null) {
+  if (!booking) return null;
+  const minimumDeposit = Number(booking.deposit_required ?? 0);
+  if (minimumDeposit > 0) {
+    return `Guest-initiated cancellation forfeits the minimum deposit (${formatPeso(minimumDeposit)}).`;
+  }
+  return "Guest-initiated cancellation may forfeit previously paid minimum deposit based on booking policy.";
+}
+
+function cancellationResultMessage(outcome: ReservationPolicyOutcome | null | undefined) {
+  if (outcome === "forfeited") {
+    return "Booking cancelled. Minimum deposit was marked as forfeited by policy.";
+  }
+  if (outcome === "refunded") {
+    return "Booking cancelled. Refund flow was triggered by policy.";
+  }
+  return "Booking cancelled.";
 }
 
 function parseJwtSub(token: string | null): string | null {
@@ -527,7 +548,7 @@ export function MyBookingsClient({
     setCancelBusy(true);
     setCancelError(null);
     try {
-      await apiFetch(
+      const result = await apiFetch<ReservationCancelResponse>(
         `/v2/reservations/${encodeURIComponent(cancelFor.reservation_id)}/cancel`,
         {
           method: "POST",
@@ -536,7 +557,7 @@ export function MyBookingsClient({
         token,
         reservationCancelResponseSchema,
       );
-      pushActionMessage("Booking cancelled.");
+      pushActionMessage(cancellationResultMessage(result.policy_outcome));
       setCancelFor(null);
       await fetchBookings(null, "replace");
     } catch (unknownError) {
@@ -1083,6 +1104,17 @@ export function MyBookingsClient({
                   className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 outline-none ring-blue-200 transition focus:ring-2"
                 />
               </label>
+              <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                Minimum payment now:{" "}
+                <strong className="text-slate-800">
+                  {formatPeso(
+                    Number(submitFor.expected_pay_now ?? submitFor.deposit_required ?? 0),
+                  )}
+                </strong>
+                {submitFor.deposit_rule_applied ? (
+                  <span className="ml-1 text-slate-500">({submitFor.deposit_rule_applied})</span>
+                ) : null}
+              </p>
               <label className="grid gap-1 text-sm text-slate-700">
                 Reference number
                 <input
@@ -1263,6 +1295,9 @@ export function MyBookingsClient({
               </button>
             </div>
             <p className="text-sm text-slate-600">This booking will be cancelled and removed from active flow.</p>
+            <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+              {cancellationConsequenceText(cancelFor)}
+            </p>
             {cancelError ? <p className="mt-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{cancelError}</p> : null}
             <div className="mt-3 flex justify-end gap-2">
               <button
