@@ -225,6 +225,22 @@ PAYMENT_SELECT = """
         reservation_source,
         total_amount,
         deposit_required,
+        deposit_policy_version,
+        deposit_rule_applied,
+        cancellation_actor,
+        policy_outcome,
+        guest:users!guest_user_id(name,email)
+    )
+"""
+
+PAYMENT_SELECT_NO_POLICY = """
+    *,
+    reservation:reservations!inner(
+        reservation_code,
+        status,
+        reservation_source,
+        total_amount,
+        deposit_required,
         guest:users!guest_user_id(name,email)
     )
 """
@@ -398,6 +414,24 @@ def get_reservation_by_code(reservation_code: str) -> dict[str, Any] | None:
     return _normalize_reservation_row(rows[0]) if rows else None
 
 
+def _update_reservation_and_fetch(
+    *,
+    client: Client,
+    reservation_id: str,
+    payload: dict[str, Any],
+) -> dict[str, Any] | None:
+    client.table("reservations").update(payload).eq("reservation_id", reservation_id).execute()
+    response = (
+        client.table("reservations")
+        .select(RESERVATION_DETAIL_SELECT)
+        .eq("reservation_id", reservation_id)
+        .limit(1)
+        .execute()
+    )
+    rows = response.data or []
+    return _normalize_reservation_row(rows[0]) if rows else None
+
+
 def update_reservation_status(
     *,
     access_token: str,
@@ -411,17 +445,11 @@ def update_reservation_status(
         payload: dict[str, Any] = {"status": status}
         if include_notes:
             payload["notes"] = notes
-
-        client.table("reservations").update(payload).eq("reservation_id", reservation_id).execute()
-        response = (
-            client.table("reservations")
-            .select(RESERVATION_DETAIL_SELECT)
-            .eq("reservation_id", reservation_id)
-            .limit(1)
-            .execute()
+        return _update_reservation_and_fetch(
+            client=client,
+            reservation_id=reservation_id,
+            payload=payload,
         )
-        rows = response.data or []
-        return _normalize_reservation_row(rows[0]) if rows else None
     except Exception as exc:  # noqa: BLE001
         raise _runtime_error_from_exception(exc) from exc
 
@@ -435,18 +463,35 @@ def update_reservation_source(
         raise RuntimeError("Invalid reservation source.")
     try:
         client = get_supabase_client()
-        client.table("reservations").update(
-            {"reservation_source": reservation_source}
-        ).eq("reservation_id", reservation_id).execute()
-        response = (
-            client.table("reservations")
-            .select(RESERVATION_DETAIL_SELECT)
-            .eq("reservation_id", reservation_id)
-            .limit(1)
-            .execute()
+        return _update_reservation_and_fetch(
+            client=client,
+            reservation_id=reservation_id,
+            payload={"reservation_source": reservation_source},
         )
-        rows = response.data or []
-        return _normalize_reservation_row(rows[0]) if rows else None
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def update_reservation_policy_metadata(
+    *,
+    reservation_id: str,
+    deposit_policy_version: str | None = None,
+    deposit_rule_applied: str | None = None,
+    cancellation_actor: str | None = None,
+    policy_outcome: str | None = None,
+) -> dict[str, Any] | None:
+    try:
+        client = get_supabase_client()
+        return _update_reservation_and_fetch(
+            client=client,
+            reservation_id=reservation_id,
+            payload={
+                "deposit_policy_version": deposit_policy_version,
+                "deposit_rule_applied": deposit_rule_applied,
+                "cancellation_actor": cancellation_actor,
+                "policy_outcome": policy_outcome,
+            },
+        )
     except Exception as exc:  # noqa: BLE001
         raise _runtime_error_from_exception(exc) from exc
 
@@ -473,6 +518,26 @@ def _apply_reservation_filters(
 def _is_missing_column_error(exc: Exception, column_name: str) -> bool:
     message = str(exc).lower()
     return f"column" in message and column_name.lower() in message and "does not exist" in message
+
+
+def _run_select_with_missing_column_fallbacks(
+    *,
+    primary_select: str,
+    run_select,
+    missing_column_fallbacks: list[tuple[str, str]],
+) -> tuple[list[dict[str, Any]], int]:
+    try:
+        return run_select(primary_select)
+    except Exception as exc:  # noqa: BLE001
+        current_error: Exception = exc
+        for missing_column, fallback_select in missing_column_fallbacks:
+            if not _is_missing_column_error(current_error, missing_column):
+                continue
+            try:
+                return run_select(fallback_select)
+            except Exception as nested_exc:  # noqa: BLE001
+                current_error = nested_exc
+        raise _runtime_error_from_exception(current_error) from current_error
 
 
 def _infer_reservation_source(row: dict[str, Any]) -> str:
@@ -629,12 +694,17 @@ def list_recent_reservations(
             filtered_rows = [row for row in filtered_rows if _infer_reservation_source(row) == source_filter]
         return filtered_rows[offset : offset + limit], len(filtered_rows)
 
-    try:
-        return _run(RESERVATION_LIST_SELECT, True)
-    except Exception as exc:  # noqa: BLE001
-        if _is_missing_column_error(exc, "reservation_source"):
-            return _run(RESERVATION_LIST_SELECT_LEGACY, False)
-        raise _runtime_error_from_exception(exc) from exc
+    def _run_reservation_select(select_clause: str) -> tuple[list[dict[str, Any]], int]:
+        supports_source_filter = select_clause != RESERVATION_LIST_SELECT_LEGACY
+        return _run(select_clause, supports_source_filter)
+
+    return _run_select_with_missing_column_fallbacks(
+        primary_select=RESERVATION_LIST_SELECT,
+        run_select=_run_reservation_select,
+        missing_column_fallbacks=[
+            ("reservation_source", RESERVATION_LIST_SELECT_LEGACY),
+        ],
+    )
 
 
 def list_reservations_for_escrow_reconciliation(
@@ -1530,12 +1600,14 @@ def list_admin_payments(
             total = len(rows)
         return _attach_admin_users(paginated), total
 
-    try:
-        return _run(PAYMENT_SELECT)
-    except Exception as exc:  # noqa: BLE001
-        if _is_missing_column_error(exc, "reservation_source"):
-            return _run(PAYMENT_SELECT_LEGACY)
-        raise _runtime_error_from_exception(exc) from exc
+    return _run_select_with_missing_column_fallbacks(
+        primary_select=PAYMENT_SELECT,
+        run_select=_run,
+        missing_column_fallbacks=[
+            ("deposit_policy_version", PAYMENT_SELECT_NO_POLICY),
+            ("reservation_source", PAYMENT_SELECT_LEGACY),
+        ],
+    )
 
 
 def list_audit_logs(

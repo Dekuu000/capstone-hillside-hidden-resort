@@ -19,6 +19,7 @@ from app.integrations.supabase_client import (
     list_reservation_unit_ids,
     update_units_operational_status,
     upsert_sync_operation_receipt,
+    update_reservation_policy_metadata,
     write_reservation_escrow_shadow_metadata,
 )
 from app.schemas.common import CheckOperationResponse, CheckinWelcomeNotificationSummary
@@ -26,6 +27,9 @@ from app.services.checkin_welcome import create_checkin_welcome_notification
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+DEPOSIT_POLICY_VERSION = "v1_2026_04"
+DEPOSIT_RULE_ROOM_COTTAGE = "room_cottage_20pct_clamp_500_1000"
+DEPOSIT_RULE_TOUR = "tour_fixed_500_or_full_if_below_500"
 
 
 def _build_idempotency_operation_id(*, route_key: str, user_id: str, idempotency_key: str) -> str:
@@ -52,6 +56,34 @@ def _safe_int(raw: object, default: int = 0) -> int:
         return int(raw)
     except (TypeError, ValueError):
         return default
+
+
+def _optional_str(value: object) -> str | None:
+    text = str(value or "").strip()
+    return text or None
+
+
+def _resolve_policy_rule(reservation_row: dict) -> str:
+    explicit = _optional_str(reservation_row.get("deposit_rule_applied"))
+    if explicit:
+        return explicit
+    return DEPOSIT_RULE_TOUR if bool(reservation_row.get("service_bookings")) else DEPOSIT_RULE_ROOM_COTTAGE
+
+
+def _persist_released_policy_outcome(*, reservation_id: str, reservation_row: dict) -> None:
+    try:
+        update_reservation_policy_metadata(
+            reservation_id=reservation_id,
+            deposit_policy_version=_optional_str(reservation_row.get("deposit_policy_version")) or DEPOSIT_POLICY_VERSION,
+            deposit_rule_applied=_resolve_policy_rule(reservation_row),
+            cancellation_actor=_optional_str(reservation_row.get("cancellation_actor")),
+            policy_outcome="released",
+        )
+    except RuntimeError:
+        logger.exception(
+            "Failed to persist released policy outcome metadata (reservation_id=%s)",
+            reservation_id,
+        )
 
 
 def _maybe_release_escrow_on_checkin(reservation_row: dict) -> EscrowReleaseOutcome:
@@ -237,6 +269,11 @@ def perform_checkin(
         logger.exception("Unit status sync failed on check-in (reservation_id=%s)", payload.reservation_id)
 
     release_outcome = _maybe_release_escrow_on_checkin(row)
+    if release_outcome.state == "released":
+        _persist_released_policy_outcome(
+            reservation_id=payload.reservation_id,
+            reservation_row=row,
+        )
     welcome_summary = CheckinWelcomeNotificationSummary(created=False)
     try:
         summary = create_checkin_welcome_notification(

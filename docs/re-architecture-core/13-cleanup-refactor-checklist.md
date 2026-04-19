@@ -48,6 +48,7 @@ Baseline evidence:
 - [ ] Refactor large handlers into smaller service functions where complexity is high.
 - [ ] Add/update tests for every refactor hotspot before removal.
 - [x] Batch B1 (part 1): consolidate reservation policy metadata DTO/shared-type definitions and remove repeated route mapping blocks.
+- [x] Batch B1 (part 2): centralize reservation update/fallback helpers in Supabase integration and remove repeated policy metadata persistence logic in operations route.
 
 ### C) Frontend and Shared Contracts
 
