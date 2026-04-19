@@ -428,3 +428,19 @@ Remaining A4 blocker:
 4. Validation:
    - `hillside-api\\.venv\\Scripts\\python.exe -m pytest hillside-api/tests/test_services_idempotency.py hillside-api/tests/test_v2_error_mapping.py hillside-api/tests/test_v2_error_envelope_contract.py hillside-api/tests/test_v2_reservations_contract.py hillside-api/tests/test_v2_payments_contract.py hillside-api/tests/test_v2_qr_operations_contract.py -q`
    - result: `39 passed`
+
+## Batch B4 Execution Update (Part 2 Complete)
+
+1. Extended shared idempotency service with receipt wrappers:
+   - `load_cached_response_payload(...)`
+   - `store_operation_receipt_safely(...)`
+2. Replaced duplicated per-route idempotency receipt replay/store try-catch blocks in:
+   - `hillside-api/app/api/v2/routes/payments.py`
+   - `hillside-api/app/api/v2/routes/operations.py`
+   - `hillside-api/app/api/v2/routes/guest_services.py`
+3. Added/expanded service-level tests:
+   - `hillside-api/tests/test_services_idempotency.py`
+   - now validates deterministic operation-id generation + safe receipt wrapper behavior
+4. Validation:
+   - `hillside-api\\.venv\\Scripts\\python.exe -m pytest hillside-api/tests/test_services_idempotency.py hillside-api/tests/test_v2_payments_contract.py hillside-api/tests/test_v2_qr_operations_contract.py hillside-api/tests/test_v2_reservations_contract.py hillside-api/tests/test_v2_error_envelope_contract.py hillside-api/tests/test_v2_error_mapping.py -q`
+   - result: `41 passed`

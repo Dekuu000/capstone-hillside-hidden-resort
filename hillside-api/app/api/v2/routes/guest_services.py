@@ -5,10 +5,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from app.core.auth import AuthContext, require_authenticated
 from app.integrations.supabase_client import (
     create_resort_service_request,
-    get_sync_operation_receipt,
     list_active_resort_services,
     list_resort_service_requests,
-    upsert_sync_operation_receipt,
 )
 from app.schemas.common import (
     ResortServiceListResponse,
@@ -16,7 +14,11 @@ from app.schemas.common import (
     ResortServiceRequestItem,
     ResortServiceRequestListResponse,
 )
-from app.services.idempotency import build_idempotency_operation_id
+from app.services.idempotency import (
+    build_idempotency_operation_id,
+    load_cached_response_payload,
+    store_operation_receipt_safely,
+)
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -56,17 +58,15 @@ def create_guest_service_request(
             user_id=auth.user_id,
             idempotency_key=payload.idempotency_key,
         )
-        try:
-            existing_receipt = get_sync_operation_receipt(
-                operation_id=operation_id,
-                user_id=auth.user_id,
-                idempotency_key=payload.idempotency_key,
-            )
-        except RuntimeError:
-            logger.warning("Service request idempotency replay lookup skipped (user_id=%s)", auth.user_id)
-            existing_receipt = None
-        if existing_receipt and isinstance(existing_receipt.get("response_payload"), dict):
-            return existing_receipt["response_payload"]
+        cached_payload = load_cached_response_payload(
+            operation_id=operation_id,
+            user_id=auth.user_id,
+            idempotency_key=payload.idempotency_key,
+            logger=logger,
+            warning_label="Service request",
+        )
+        if cached_payload:
+            return cached_payload
 
     try:
         row = create_resort_service_request(
@@ -90,20 +90,17 @@ def create_guest_service_request(
     if not row:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to create request.")
     if payload.idempotency_key and operation_id:
-        try:
-            upsert_sync_operation_receipt(
-                operation_id=operation_id,
-                idempotency_key=payload.idempotency_key,
-                user_id=auth.user_id,
-                entity_type="service_request",
-                entity_id=str(row.get("request_id") or ""),
-                action="guest_services.requests.create",
-                status="applied",
-                http_status=200,
-                response_payload=row,
-            )
-        except RuntimeError:
-            logger.warning("Service request idempotency receipt store skipped (user_id=%s)", auth.user_id)
+        store_operation_receipt_safely(
+            operation_id=operation_id,
+            idempotency_key=payload.idempotency_key,
+            user_id=auth.user_id,
+            entity_type="service_request",
+            entity_id=str(row.get("request_id") or ""),
+            action="guest_services.requests.create",
+            response_payload=row,
+            logger=logger,
+            warning_label="Service request",
+        )
     return row
 
 

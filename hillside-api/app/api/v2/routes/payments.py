@@ -15,8 +15,6 @@ from app.integrations.supabase_client import (
     submit_payment_proof as submit_payment_proof_rpc,
     update_payment_intent_amount as update_payment_intent_amount_rpc,
     verify_payment as verify_payment_rpc,
-    get_sync_operation_receipt,
-    upsert_sync_operation_receipt,
 )
 from app.schemas.common import (
     AdminPaymentsResponse,
@@ -25,7 +23,11 @@ from app.schemas.common import (
     RejectPaymentResponse,
     VerifyPaymentResponse,
 )
-from app.services.idempotency import build_idempotency_operation_id
+from app.services.idempotency import (
+    build_idempotency_operation_id,
+    load_cached_response_payload,
+    store_operation_receipt_safely,
+)
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -132,21 +134,14 @@ def submit_payment(
         user_id=auth.user_id,
         idempotency_key=payload.idempotency_key,
     )
-    try:
-        existing_receipt = get_sync_operation_receipt(
-            operation_id=operation_id,
-            user_id=auth.user_id,
-            idempotency_key=payload.idempotency_key,
-        )
-    except RuntimeError:
-        logger.warning(
-            "Payment idempotency replay lookup skipped (user_id=%s, route=%s)",
-            auth.user_id,
-            "payments.submissions.create",
-        )
-        existing_receipt = None
-    if existing_receipt and isinstance(existing_receipt.get("response_payload"), dict):
-        cached_payload = existing_receipt["response_payload"]
+    cached_payload = load_cached_response_payload(
+        operation_id=operation_id,
+        user_id=auth.user_id,
+        idempotency_key=payload.idempotency_key,
+        logger=logger,
+        warning_label="Payment",
+    )
+    if cached_payload:
         return PaymentSubmissionResponse(
             payment_id=str(cached_payload.get("payment_id") or "submitted"),
             status=str(cached_payload.get("status") or "pending"),
@@ -200,24 +195,17 @@ def submit_payment(
         status="pending",
         reservation_status="for_verification",
     )
-    try:
-        upsert_sync_operation_receipt(
-            operation_id=operation_id,
-            idempotency_key=payload.idempotency_key,
-            user_id=auth.user_id,
-            entity_type="payment_submission",
-            entity_id=payment_id,
-            action="payments.submissions.create",
-            status="applied",
-            http_status=200,
-            response_payload=response.model_dump(mode="json"),
-        )
-    except RuntimeError:
-        logger.warning(
-            "Payment idempotency receipt store skipped (user_id=%s, route=%s)",
-            auth.user_id,
-            "payments.submissions.create",
-        )
+    store_operation_receipt_safely(
+        operation_id=operation_id,
+        idempotency_key=payload.idempotency_key,
+        user_id=auth.user_id,
+        entity_type="payment_submission",
+        entity_id=payment_id,
+        action="payments.submissions.create",
+        response_payload=response.model_dump(mode="json"),
+        logger=logger,
+        warning_label="Payment",
+    )
     return response
 
 
@@ -272,20 +260,14 @@ def record_on_site_payment(
             user_id=auth.user_id,
             idempotency_key=payload.idempotency_key,
         )
-        try:
-            existing_receipt = get_sync_operation_receipt(
-                operation_id=operation_id,
-                user_id=auth.user_id,
-                idempotency_key=payload.idempotency_key,
-            )
-        except RuntimeError:
-            logger.warning(
-                "On-site payment idempotency replay lookup skipped (user_id=%s)",
-                auth.user_id,
-            )
-            existing_receipt = None
-        if existing_receipt and isinstance(existing_receipt.get("response_payload"), dict):
-            cached_payload = existing_receipt["response_payload"]
+        cached_payload = load_cached_response_payload(
+            operation_id=operation_id,
+            user_id=auth.user_id,
+            idempotency_key=payload.idempotency_key,
+            logger=logger,
+            warning_label="On-site payment",
+        )
+        if cached_payload:
             return OnSitePaymentResponse(
                 ok=True,
                 payment_id=str(cached_payload.get("payment_id") or "recorded"),
@@ -353,23 +335,17 @@ def record_on_site_payment(
         "reservation_status": next_status,
     }
     if payload.idempotency_key and operation_id:
-        try:
-            upsert_sync_operation_receipt(
-                operation_id=operation_id,
-                idempotency_key=payload.idempotency_key,
-                user_id=auth.user_id,
-                entity_type="payment_submission",
-                entity_id=payment_id,
-                action="payments.on_site.create",
-                status="applied",
-                http_status=200,
-                response_payload=response,
-            )
-        except RuntimeError:
-            logger.warning(
-                "On-site payment idempotency receipt store skipped (user_id=%s)",
-                auth.user_id,
-            )
+        store_operation_receipt_safely(
+            operation_id=operation_id,
+            idempotency_key=payload.idempotency_key,
+            user_id=auth.user_id,
+            entity_type="payment_submission",
+            entity_id=payment_id,
+            action="payments.on_site.create",
+            response_payload=response,
+            logger=logger,
+            warning_label="On-site payment",
+        )
     return response
 
 
