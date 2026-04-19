@@ -227,3 +227,19 @@ Remaining A4 blocker:
 3. Validation:
    - `npm --workspace @hillside/shared run typecheck` passed.
    - `npm --prefix hillside-next run typecheck` passed.
+
+## Batch C1 Execution Update (Part 2 Complete)
+
+1. Centralized stay deposit preview business rule in shared package:
+   - Added in `packages/shared/src/types.ts`:
+     - `STAY_DEPOSIT_RATE`
+     - `STAY_DEPOSIT_MIN`
+     - `STAY_DEPOSIT_MAX`
+     - `computeStayDepositPreview(...)`
+2. Reused shared helper in booking flow UI:
+   - `hillside-next/components/book/BookNowClient.tsx` now imports `computeStayDepositPreview` from shared package (removed local duplicate function).
+3. Reused shared helper in cancellation warning fallback:
+   - `hillside-next/components/my-bookings/MyBookingsClient.tsx` now estimates deposit consequence from `total_amount` when `deposit_required` is missing.
+4. Validation:
+   - `npm --workspace @hillside/shared run typecheck` passed.
+   - `npm --prefix hillside-next run typecheck` passed.

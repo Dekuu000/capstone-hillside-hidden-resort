@@ -15,6 +15,7 @@ import type {
   ReservationCancelResponse,
   ReservationPolicyOutcome,
 } from "../../../packages/shared/src/types";
+import { computeStayDepositPreview } from "../../../packages/shared/src/types";
 import {
   paymentSubmissionResponseSchema,
   myBookingsResponseSchema,
@@ -122,6 +123,10 @@ function cancellationConsequenceText(booking: Booking | null) {
   const minimumDeposit = Number(booking.deposit_required ?? 0);
   if (minimumDeposit > 0) {
     return `Guest-initiated cancellation forfeits the minimum deposit (${formatPeso(minimumDeposit)}).`;
+  }
+  const estimatedDeposit = computeStayDepositPreview(Number(booking.total_amount ?? 0));
+  if (estimatedDeposit > 0) {
+    return `Guest-initiated cancellation may forfeit the minimum deposit (estimated ${formatPeso(estimatedDeposit)}).`;
   }
   return "Guest-initiated cancellation may forfeit previously paid minimum deposit based on booking policy.";
 }

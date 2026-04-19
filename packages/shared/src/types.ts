@@ -16,6 +16,20 @@ export const RESERVATION_CANCELLATION_ACTORS = ["guest", "admin"] as const;
 export const RESERVATION_POLICY_OUTCOMES = ["released", "refunded", "forfeited"] as const;
 export type ReservationCancellationActor = (typeof RESERVATION_CANCELLATION_ACTORS)[number];
 export type ReservationPolicyOutcome = (typeof RESERVATION_POLICY_OUTCOMES)[number];
+export const STAY_DEPOSIT_RATE = 0.2;
+export const STAY_DEPOSIT_MIN = 500;
+export const STAY_DEPOSIT_MAX = 1000;
+
+export function computeStayDepositPreview(totalAmount: number): number {
+  if (!Number.isFinite(totalAmount) || totalAmount <= 0) return 0;
+  const twentyPercent = totalAmount * STAY_DEPOSIT_RATE;
+  const clamped = Math.max(
+    STAY_DEPOSIT_MIN,
+    Math.min(STAY_DEPOSIT_MAX, Math.round(twentyPercent * 100) / 100),
+  );
+  return Math.min(totalAmount, clamped);
+}
+
 export type ReservationPolicyMetadata = {
   deposit_policy_version?: string | null;
   deposit_rule_applied?: string | null;
