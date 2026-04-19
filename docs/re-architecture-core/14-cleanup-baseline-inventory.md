@@ -368,3 +368,27 @@ Remaining A4 blocker:
 4. Validation:
    - `hillside-api\\.venv\\Scripts\\python.exe -m pytest hillside-api/tests/test_v2_error_mapping.py hillside-api/tests/test_v2_error_envelope_contract.py hillside-api/tests/test_v2_reservations_contract.py hillside-api/tests/test_v2_payments_contract.py hillside-api/tests/test_v2_qr_operations_contract.py -q`
    - result: `36 passed`
+
+## Batch B3 Execution Update (Part 2 Complete)
+
+1. Reduced tour-reservation handler complexity in `reservations.py` by extracting shared helpers:
+   - `_validate_tour_reservation_inputs(...)`
+   - `_get_active_tour_service_or_404(...)`
+   - `_compute_tour_total_amount(...)`
+   - `_resolve_tour_reservation_source(...)`
+2. Added cross-flow helper reuse for stay/tour/walk-in response construction support:
+   - `_parse_booking_status(...)`
+   - `_persist_reservation_source(...)`
+   - `_load_pricing_signals(...)`
+3. Reused these helpers in:
+   - `create_reservation(...)`
+   - `create_tour_reservation(...)`
+   - `create_walk_in_stay_reservation(...)`
+4. Preserved contract behavior while removing duplicated in-handler logic for:
+   - tour payload guard checks
+   - service lookup + not-found handling
+   - total amount derivation
+   - source persistence and pricing-signal fetch fallback
+5. Validation:
+   - `hillside-api\\.venv\\Scripts\\python.exe -m pytest hillside-api/tests/test_v2_error_mapping.py hillside-api/tests/test_v2_error_envelope_contract.py hillside-api/tests/test_v2_reservations_contract.py hillside-api/tests/test_v2_payments_contract.py hillside-api/tests/test_v2_qr_operations_contract.py -q`
+   - result: `36 passed`
