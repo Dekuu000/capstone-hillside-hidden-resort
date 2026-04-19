@@ -18,6 +18,7 @@ import type {
   PricingRecommendation,
   ReservationCreateResponse,
 } from "../../../packages/shared/src/types";
+import { computeStayDepositPreview } from "../../../packages/shared/src/types";
 import {
   availableUnitsResponseSchema,
   reservationCreateResponseSchema,
@@ -186,6 +187,7 @@ export function BookNowClient({
 
   const selectedUnits = useMemo(() => units.filter((unit) => selectedUnitIds.includes(unit.unit_id)), [selectedUnitIds, units]);
   const total = useMemo(() => selectedUnits.reduce((sum, unit) => sum + Number(unit.base_price || 0) * nights, 0), [nights, selectedUnits]);
+  const minimumPayNow = useMemo(() => computeStayDepositPreview(total), [total]);
   const unitCount = units.length;
   const selectedCapacity = useMemo(
     () => selectedUnits.reduce((sum, unit) => sum + Number(unit.capacity || 0), 0),
@@ -641,6 +643,10 @@ export function BookNowClient({
 
             <p className="mt-3 text-center text-xs text-slate-500">
               Secure checkout is verified after payment submission. Wallet connection is optional.
+            </p>
+            <p className="mt-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-secondary-ghost)] px-3 py-2 text-xs text-[var(--color-muted)]">
+              Minimum online payment now:{" "}
+              <strong className="text-[var(--color-text)]">{toPeso(minimumPayNow)}</strong> (20% of total, clamped to PHP 500–1000).
             </p>
           </div>
         </aside>

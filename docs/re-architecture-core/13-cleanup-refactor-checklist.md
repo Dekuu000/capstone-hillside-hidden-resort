@@ -59,6 +59,7 @@ Baseline evidence:
 - [ ] Re-run end-to-end manual smoke for reservation, payment, QR, blockchain, AI, sync pages.
 - [x] Batch A3: consolidate legacy admin compatibility redirects from page files into `next.config.ts` redirects.
 - [x] Batch C1 (part 1): unify reservation policy enum constants in shared package and align cancellation outcome handling in `MyBookingsClient`.
+- [x] Batch C1 (part 2): centralize stay deposit preview logic in shared contracts and reuse in booking/cancellation UI messaging.
 
 ### D) Database and Migration Hygiene
 
