@@ -1,5 +1,4 @@
 import logging
-import hashlib
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
@@ -17,14 +16,10 @@ from app.schemas.common import (
     ResortServiceRequestItem,
     ResortServiceRequestListResponse,
 )
+from app.services.idempotency import build_idempotency_operation_id
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
-
-
-def _build_idempotency_operation_id(*, route_key: str, user_id: str, idempotency_key: str) -> str:
-    digest = hashlib.sha256(f"{route_key}:{user_id}:{idempotency_key}".encode("utf-8")).hexdigest()
-    return f"{route_key}:{digest[:40]}"
 
 
 @router.get("", response_model=ResortServiceListResponse)
@@ -56,7 +51,7 @@ def create_guest_service_request(
 ):
     operation_id: str | None = None
     if payload.idempotency_key:
-        operation_id = _build_idempotency_operation_id(
+        operation_id = build_idempotency_operation_id(
             route_key="guest_services.requests.create",
             user_id=auth.user_id,
             idempotency_key=payload.idempotency_key,

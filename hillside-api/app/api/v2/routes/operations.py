@@ -1,5 +1,4 @@
 import logging
-import hashlib
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Literal
@@ -26,17 +25,13 @@ from app.integrations.supabase_client import (
 )
 from app.schemas.common import CheckOperationResponse, CheckinWelcomeNotificationSummary
 from app.services.checkin_welcome import create_checkin_welcome_notification
+from app.services.idempotency import build_idempotency_operation_id
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 DEPOSIT_POLICY_VERSION = "v1_2026_04"
 DEPOSIT_RULE_ROOM_COTTAGE = "room_cottage_20pct_clamp_500_1000"
 DEPOSIT_RULE_TOUR = "tour_fixed_500_or_full_if_below_500"
-
-
-def _build_idempotency_operation_id(*, route_key: str, user_id: str, idempotency_key: str) -> str:
-    digest = hashlib.sha256(f"{route_key}:{user_id}:{idempotency_key}".encode("utf-8")).hexdigest()
-    return f"{route_key}:{digest[:40]}"
 
 
 class CheckOperationRequest(BaseModel):
@@ -229,7 +224,7 @@ def perform_checkin(
 ):
     operation_id: str | None = None
     if payload.idempotency_key:
-        operation_id = _build_idempotency_operation_id(
+        operation_id = build_idempotency_operation_id(
             route_key="operations.checkins.create",
             user_id=auth.user_id,
             idempotency_key=payload.idempotency_key,
@@ -328,7 +323,7 @@ def perform_checkout(
 ):
     operation_id: str | None = None
     if payload.idempotency_key:
-        operation_id = _build_idempotency_operation_id(
+        operation_id = build_idempotency_operation_id(
             route_key="operations.checkouts.create",
             user_id=auth.user_id,
             idempotency_key=payload.idempotency_key,

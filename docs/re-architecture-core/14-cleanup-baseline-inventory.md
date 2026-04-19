@@ -412,3 +412,19 @@ Remaining A4 blocker:
 4. Validation:
    - `hillside-api\\.venv\\Scripts\\python.exe -m pytest hillside-api/tests/test_v2_error_mapping.py hillside-api/tests/test_v2_error_envelope_contract.py hillside-api/tests/test_v2_reservations_contract.py hillside-api/tests/test_v2_payments_contract.py hillside-api/tests/test_v2_qr_operations_contract.py -q`
    - result: `36 passed`
+
+## Batch B4 Execution Update (Part 1 Complete)
+
+1. Added shared idempotency operation-id helper:
+   - `hillside-api/app/services/idempotency.py`
+   - exported: `build_idempotency_operation_id(...)`
+2. Removed duplicated route-local hash helpers and switched to shared helper in:
+   - `hillside-api/app/api/v2/routes/reservations.py`
+   - `hillside-api/app/api/v2/routes/payments.py`
+   - `hillside-api/app/api/v2/routes/operations.py`
+   - `hillside-api/app/api/v2/routes/guest_services.py`
+3. Added service-level regression tests:
+   - `hillside-api/tests/test_services_idempotency.py`
+4. Validation:
+   - `hillside-api\\.venv\\Scripts\\python.exe -m pytest hillside-api/tests/test_services_idempotency.py hillside-api/tests/test_v2_error_mapping.py hillside-api/tests/test_v2_error_envelope_contract.py hillside-api/tests/test_v2_reservations_contract.py hillside-api/tests/test_v2_payments_contract.py hillside-api/tests/test_v2_qr_operations_contract.py -q`
+   - result: `39 passed`

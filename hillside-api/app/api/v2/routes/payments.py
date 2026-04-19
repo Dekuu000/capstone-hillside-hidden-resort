@@ -1,4 +1,3 @@
-import hashlib
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -26,14 +25,10 @@ from app.schemas.common import (
     RejectPaymentResponse,
     VerifyPaymentResponse,
 )
+from app.services.idempotency import build_idempotency_operation_id
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
-
-
-def _build_idempotency_operation_id(*, route_key: str, user_id: str, idempotency_key: str) -> str:
-    digest = hashlib.sha256(f"{route_key}:{user_id}:{idempotency_key}".encode("utf-8")).hexdigest()
-    return f"{route_key}:{digest[:40]}"
 
 
 class PaymentSubmissionRequest(BaseModel):
@@ -132,7 +127,7 @@ def submit_payment(
     payload: PaymentSubmissionRequest,
     auth: AuthContext = Depends(require_authenticated),
 ):
-    operation_id = _build_idempotency_operation_id(
+    operation_id = build_idempotency_operation_id(
         route_key="payments.submissions.create",
         user_id=auth.user_id,
         idempotency_key=payload.idempotency_key,
@@ -272,7 +267,7 @@ def record_on_site_payment(
 ):
     operation_id: str | None = None
     if payload.idempotency_key:
-        operation_id = _build_idempotency_operation_id(
+        operation_id = build_idempotency_operation_id(
             route_key="payments.on_site.create",
             user_id=auth.user_id,
             idempotency_key=payload.idempotency_key,
