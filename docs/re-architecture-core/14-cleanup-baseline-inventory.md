@@ -192,3 +192,26 @@ Remaining A4 blocker:
 5. Validation:
    - `hillside-api\\.venv\\Scripts\\python.exe -m pytest hillside-api/tests/test_v2_reservations_contract.py -q` passed (`14 passed`).
    - `npm --workspace @hillside/shared run typecheck` passed.
+
+## Batch B1 Execution Update (Part 2 Complete)
+
+1. Consolidated reservation update read-back logic in Supabase integration:
+   - Added `_update_reservation_and_fetch(...)` in `hillside-api/app/integrations/supabase_client.py`.
+   - Reused it in:
+     - `update_reservation_status(...)`
+     - `update_reservation_source(...)`
+     - `update_reservation_policy_metadata(...)`
+2. Standardized missing-column fallback handling:
+   - Added `_run_select_with_missing_column_fallbacks(...)`.
+   - Applied to:
+     - `list_recent_reservations(...)`
+     - `list_admin_payments(...)`
+   - This keeps behavior while reducing nested/duplicated try-except fallback branches.
+3. Reduced policy persistence duplication in operations route:
+   - Added helpers in `hillside-api/app/api/v2/routes/operations.py`:
+     - `_optional_str(...)`
+     - `_resolve_policy_rule(...)`
+     - `_persist_released_policy_outcome(...)`
+   - `perform_checkin(...)` now calls helper for released-policy metadata write.
+4. Validation:
+   - `hillside-api\\.venv\\Scripts\\python.exe -m pytest hillside-api/tests/test_v2_reservations_contract.py hillside-api/tests/test_v2_qr_operations_contract.py hillside-api/tests/test_v2_payments_contract.py -q` passed (`30 passed`).
