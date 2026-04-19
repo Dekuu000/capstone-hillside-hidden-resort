@@ -69,6 +69,7 @@ Baseline evidence:
 - [ ] Verify function/policy/trigger definitions are idempotent and parser-safe.
 - [ ] Update migration notes with rationale for any split or reordering.
 - [x] Batch A2: add automated migration hygiene check with explicit waiver tracking for legacy filename/duplicate pair.
+- [x] Batch D1 (part 1): add a single `db:validate` workflow (`db:sanity` + `db:hygiene`) and re-verify migration checks on current rename/split set.
 
 ### E) CI, Lint, and Test Hardening
 
