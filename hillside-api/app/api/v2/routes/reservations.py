@@ -1,5 +1,4 @@
 from datetime import date
-import hashlib
 import logging
 from uuid import uuid4
 
@@ -56,6 +55,7 @@ from app.schemas.common import (
     ReservationListItem,
     ReservationListResponse,
 )
+from app.services.idempotency import build_idempotency_operation_id
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -111,11 +111,6 @@ def _resolve_reservation_policy_version(row: dict) -> str:
     return _to_optional_str(row.get("deposit_policy_version")) or DEPOSIT_POLICY_VERSION
 
 
-def _build_idempotency_operation_id(*, route_key: str, user_id: str, idempotency_key: str) -> str:
-    digest = hashlib.sha256(f"{route_key}:{user_id}:{idempotency_key}".encode("utf-8")).hexdigest()
-    return f"{route_key}:{digest[:40]}"
-
-
 def _try_replay_reservation_response(
     *,
     route_key: str,
@@ -124,7 +119,7 @@ def _try_replay_reservation_response(
 ) -> ReservationResponse | None:
     if not idempotency_key:
         return None
-    operation_id = _build_idempotency_operation_id(
+    operation_id = build_idempotency_operation_id(
         route_key=route_key,
         user_id=user_id,
         idempotency_key=idempotency_key,
@@ -162,7 +157,7 @@ def _store_reservation_idempotency_receipt(
 ) -> None:
     if not idempotency_key:
         return
-    operation_id = _build_idempotency_operation_id(
+    operation_id = build_idempotency_operation_id(
         route_key=route_key,
         user_id=user_id,
         idempotency_key=idempotency_key,
