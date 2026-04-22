@@ -60,6 +60,7 @@ Baseline evidence:
 - [x] Batch B5 (part 1): move route-local auth/qr/payments/check-operation request-response DTOs into `app.schemas.common` to reduce schema duplication across v2 route modules.
 - [x] Batch B5 (part 2): remove legacy missing-column fallback select branches in Supabase reservation/payment list facades now that split migrations and repeated `db:reset` validation are stable.
 - [x] Batch B5 (part 3): move remaining route-local AI/NFT DTOs into `app.schemas.common`, eliminating in-route Pydantic model duplication across v2 modules.
+- [x] Batch B6 (part 1): extract AI route forecast/concierge normalization helpers and add targeted helper tests to reduce duplicated parsing/normalization logic.
 
 ### C) Frontend and Shared Contracts
 
