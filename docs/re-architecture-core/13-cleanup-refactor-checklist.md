@@ -43,7 +43,7 @@ Baseline evidence:
 ### B) API and Service Layer
 
 - [ ] Consolidate duplicate DTO/response schema definitions.
-- [ ] Remove deprecated facade fallback paths no longer needed by active flows.
+- [x] Remove deprecated facade fallback paths no longer needed by active flows.
 - [x] Standardize error mapping and response envelope behavior.
 - [ ] Refactor large handlers into smaller service functions where complexity is high.
 - [ ] Add/update tests for every refactor hotspot before removal.
@@ -58,6 +58,7 @@ Baseline evidence:
 - [x] Batch B4 (part 2): centralize idempotency receipt load/store safe wrappers and remove repeated replay/store try-catch blocks in payments/operations/guest-services routes.
 - [x] Batch B4 (part 3): migrate reservations route idempotency replay/store flow to shared idempotency receipt helpers for full v2 route consistency.
 - [x] Batch B5 (part 1): move route-local auth/qr/payments/check-operation request-response DTOs into `app.schemas.common` to reduce schema duplication across v2 route modules.
+- [x] Batch B5 (part 2): remove legacy missing-column fallback select branches in Supabase reservation/payment list facades now that split migrations and repeated `db:reset` validation are stable.
 
 ### C) Frontend and Shared Contracts
 

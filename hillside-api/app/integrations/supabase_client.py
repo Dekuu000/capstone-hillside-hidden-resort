@@ -68,22 +68,6 @@ RESERVATION_LIST_SELECT = """
     guest:users!guest_user_id(name,email,phone)
 """
 
-RESERVATION_LIST_SELECT_LEGACY = """
-    reservation_id,
-    reservation_code,
-    status,
-    check_in_date,
-    check_out_date,
-    total_amount,
-    amount_paid_verified,
-    balance_due,
-    guest_count,
-    created_at,
-    notes,
-    guest_user_id,
-    guest:users!guest_user_id(name,email,phone)
-"""
-
 RESERVATION_DETAIL_SELECT = """
     *,
     guest:users!guest_user_id(name,email,phone),
@@ -233,18 +217,6 @@ PAYMENT_SELECT = """
     )
 """
 
-PAYMENT_SELECT_NO_POLICY = """
-    *,
-    reservation:reservations!inner(
-        reservation_code,
-        status,
-        reservation_source,
-        total_amount,
-        deposit_required,
-        guest:users!guest_user_id(name,email)
-    )
-"""
-
 MY_BOOKING_LIST_SELECT = """
     reservation_id,
     reservation_code,
@@ -270,17 +242,6 @@ MY_BOOKING_LIST_SELECT = """
         adult_qty,
         kid_qty,
         service:services(service_name)
-    )
-"""
-
-PAYMENT_SELECT_LEGACY = """
-    *,
-    reservation:reservations!inner(
-        reservation_code,
-        status,
-        total_amount,
-        deposit_required,
-        guest:users!guest_user_id(name,email)
     )
 """
 
@@ -515,41 +476,6 @@ def _apply_reservation_filters(
     return query
 
 
-def _is_missing_column_error(exc: Exception, column_name: str) -> bool:
-    message = str(exc).lower()
-    return "column" in message and column_name.lower() in message and "does not exist" in message
-
-
-def _run_select_with_missing_column_fallbacks(
-    *,
-    primary_select: str,
-    run_select,
-    missing_column_fallbacks: list[tuple[str, str]],
-) -> tuple[list[dict[str, Any]], int]:
-    try:
-        return run_select(primary_select)
-    except Exception as exc:  # noqa: BLE001
-        current_error: Exception = exc
-        for missing_column, fallback_select in missing_column_fallbacks:
-            if not _is_missing_column_error(current_error, missing_column):
-                continue
-            try:
-                return run_select(fallback_select)
-            except Exception as nested_exc:  # noqa: BLE001
-                current_error = nested_exc
-        raise _runtime_error_from_exception(current_error) from current_error
-
-
-def _infer_reservation_source(row: dict[str, Any]) -> str:
-    explicit = str(row.get("reservation_source") or "").lower()
-    if explicit in {"online", "walk_in"}:
-        return explicit
-    notes = str(row.get("notes") or "").lower()
-    if "walk-in" in notes or "walk in" in notes:
-        return "walk_in"
-    return "online"
-
-
 def _infer_payment_source(row: dict[str, Any]) -> str:
     reservation = row.get("reservation") or {}
     explicit = str((reservation.get("reservation_source") or "")).lower()
@@ -656,55 +582,29 @@ def list_recent_reservations(
     sort_column = _normalize_sort_column(sort_by)
     descending = str(sort_dir).lower() != "asc"
     search_term = (search or "").strip().lower()
-
-    def _run(select_clause: str, supports_source_filter: bool) -> tuple[list[dict[str, Any]], int]:
-        base_query = (
-            client.table("reservations")
-            .select(select_clause, count="exact")
-            .order(sort_column, desc=descending)
-            .order("reservation_id", desc=descending)
-        )
-        effective_source_filter = source_filter if supports_source_filter else None
-        base_query = _apply_reservation_filters(base_query, status_filter, effective_source_filter)
-
-        if not search_term:
-            if source_filter in {"online", "walk_in"} and not supports_source_filter:
-                full_response = _timed_execute(
-                    "db.reservations.list_recent.fallback_scan",
-                    lambda: base_query.range(0, 999).execute(),
-                )
-                all_rows = [_normalize_reservation_row(row) for row in (full_response.data or [])]
-                filtered_rows = [row for row in all_rows if _infer_reservation_source(row) == source_filter]
-                return filtered_rows[offset : offset + limit], len(filtered_rows)
-
-            response = _timed_execute(
-                "db.reservations.list_recent.page",
-                lambda: base_query.range(offset, offset + limit - 1).execute(),
-            )
-            rows = [_normalize_reservation_row(row) for row in (response.data or [])]
-            return rows, int(response.count or 0)
-
-        full_response = _timed_execute(
-            "db.reservations.list_recent.search_scan",
-            lambda: base_query.range(0, 999).execute(),
-        )
-        rows = full_response.data or []
-        filtered_rows = [_normalize_reservation_row(row) for row in rows if _matches_search(row, search_term)]
-        if source_filter in {"online", "walk_in"} and not supports_source_filter:
-            filtered_rows = [row for row in filtered_rows if _infer_reservation_source(row) == source_filter]
-        return filtered_rows[offset : offset + limit], len(filtered_rows)
-
-    def _run_reservation_select(select_clause: str) -> tuple[list[dict[str, Any]], int]:
-        supports_source_filter = select_clause != RESERVATION_LIST_SELECT_LEGACY
-        return _run(select_clause, supports_source_filter)
-
-    return _run_select_with_missing_column_fallbacks(
-        primary_select=RESERVATION_LIST_SELECT,
-        run_select=_run_reservation_select,
-        missing_column_fallbacks=[
-            ("reservation_source", RESERVATION_LIST_SELECT_LEGACY),
-        ],
+    base_query = (
+        client.table("reservations")
+        .select(RESERVATION_LIST_SELECT, count="exact")
+        .order(sort_column, desc=descending)
+        .order("reservation_id", desc=descending)
     )
+    base_query = _apply_reservation_filters(base_query, status_filter, source_filter)
+
+    if not search_term:
+        response = _timed_execute(
+            "db.reservations.list_recent.page",
+            lambda: base_query.range(offset, offset + limit - 1).execute(),
+        )
+        rows = [_normalize_reservation_row(row) for row in (response.data or [])]
+        return rows, int(response.count or 0)
+
+    full_response = _timed_execute(
+        "db.reservations.list_recent.search_scan",
+        lambda: base_query.range(0, 999).execute(),
+    )
+    rows = full_response.data or []
+    filtered_rows = [_normalize_reservation_row(row) for row in rows if _matches_search(row, search_term)]
+    return filtered_rows[offset : offset + limit], len(filtered_rows)
 
 
 def list_reservations_for_escrow_reconciliation(
@@ -1600,14 +1500,7 @@ def list_admin_payments(
             total = len(rows)
         return _attach_admin_users(paginated), total
 
-    return _run_select_with_missing_column_fallbacks(
-        primary_select=PAYMENT_SELECT,
-        run_select=_run,
-        missing_column_fallbacks=[
-            ("deposit_policy_version", PAYMENT_SELECT_NO_POLICY),
-            ("reservation_source", PAYMENT_SELECT_LEGACY),
-        ],
-    )
+    return _run(PAYMENT_SELECT)
 
 
 def list_audit_logs(

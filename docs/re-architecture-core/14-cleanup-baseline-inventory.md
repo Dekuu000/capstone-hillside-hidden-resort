@@ -640,3 +640,26 @@ Remaining A4 blocker:
    - `npm run lint` -> pass
    - `npm run test:api` -> pass (`90 passed`)
    - `npm run quality:gate` -> pass
+
+## Batch B5 Execution Update (Part 2 Complete)
+
+1. Removed deprecated Supabase facade fallback branches tied to pre-split schema drift:
+   - `hillside-api/app/integrations/supabase_client.py`
+   - removed legacy select constants and missing-column fallback runner:
+     - `RESERVATION_LIST_SELECT_LEGACY`
+     - `PAYMENT_SELECT_NO_POLICY`
+     - `PAYMENT_SELECT_LEGACY`
+     - `_is_missing_column_error(...)`
+     - `_run_select_with_missing_column_fallbacks(...)`
+   - simplified active flows to canonical schema selects for:
+     - `list_recent_reservations(...)`
+     - `list_admin_payments(...)`
+2. Additional cleanup:
+   - removed now-unused `_infer_reservation_source(...)` helper after fallback path removal.
+3. Outcome:
+   - reduced facade complexity and legacy branching in active reservation/payment list paths
+   - behavior remains aligned with current migration-locked schema set
+4. Validation:
+   - `npm run lint` -> pass
+   - `npm run test:api` -> pass (`90 passed`)
+   - `npm run quality:gate` -> pass
