@@ -107,10 +107,9 @@ def _safe_uuid_or_none(value: str | None) -> str | None:
         return None
 
 
-def _build_response_from_saved_forecast(saved: dict[str, Any]) -> OccupancyForecastResponse:
-    raw_series = saved.get("series") if isinstance(saved.get("series"), list) else []
+def _normalize_forecast_items(raw_items: list[Any]) -> list[dict[str, Any]]:
     item_rows: list[dict[str, Any]] = []
-    for row in raw_series:
+    for row in raw_items:
         if not isinstance(row, dict):
             continue
         raw_date = str(row.get("date") or "")
@@ -119,6 +118,27 @@ def _build_response_from_saved_forecast(saved: dict[str, Any]) -> OccupancyForec
         except ValueError:
             continue
         item_rows.append({"date": raw_date, "occupancy": float(row.get("occupancy") or 0)})
+    return item_rows
+
+
+def _normalize_concierge_result(
+    result: Any,
+    *,
+    segment_key_fallback: str,
+) -> tuple[str, str | None, str, list[dict[str, Any]], list[str]]:
+    result_dict = result if isinstance(result, dict) else {}
+    suggestions = [item for item in (result_dict.get("suggestions") or []) if isinstance(item, dict)]
+    notes = [str(item) for item in (result_dict.get("notes") or []) if isinstance(item, (str, int, float))]
+    model_version = str(result_dict.get("model_version")) if result_dict.get("model_version") else None
+    segment_key_raw = str(result_dict.get("segment_key")) if result_dict.get("segment_key") else segment_key_fallback
+    normalized_segment_key = segment_key_raw.strip().lower().replace(" ", "_")
+    source = str(result_dict.get("source") or "hillside-ai")
+    return normalized_segment_key, model_version, source, suggestions, notes
+
+
+def _build_response_from_saved_forecast(saved: dict[str, Any]) -> OccupancyForecastResponse:
+    raw_series = saved.get("series") if isinstance(saved.get("series"), list) else []
+    item_rows = _normalize_forecast_items(raw_series)
     generated_at = saved.get("generated_at") or saved.get("created_at") or datetime.now(timezone.utc).isoformat()
     raw_inputs = saved.get("inputs") if isinstance(saved.get("inputs"), dict) else {}
     return OccupancyForecastResponse(
@@ -237,20 +257,7 @@ def occupancy_forecast(
     if str(forecast.get("model_version") or "").startswith("fallback") and latest_saved:
         return _build_response_from_saved_forecast(latest_saved)
 
-    item_rows: list[dict[str, Any]] = []
-    for row in forecast.get("items") or []:
-        if not isinstance(row, dict):
-            continue
-        try:
-            date.fromisoformat(str(row.get("date")))
-        except ValueError:
-            continue
-        item_rows.append(
-            {
-                "date": str(row.get("date")),
-                "occupancy": float(row.get("occupancy") or 0),
-            }
-        )
+    item_rows = _normalize_forecast_items(forecast.get("items") or [])
 
     try:
         inserted = insert_ai_occupancy_forecast(
@@ -336,27 +343,27 @@ def concierge_recommendation(
         behavior=behavior,
         allow_remote=True,
     )
-    suggestions = result.get("suggestions") if isinstance(result, dict) else []
-    notes = result.get("notes") if isinstance(result, dict) else []
-    model_version = str(result.get("model_version")) if isinstance(result, dict) and result.get("model_version") else None
-    segment_key = str(result.get("segment_key")) if isinstance(result, dict) and result.get("segment_key") else payload.segment_key
+    segment_key, model_version, source, suggestions, notes = _normalize_concierge_result(
+        result,
+        segment_key_fallback=payload.segment_key,
+    )
     try:
         insert_ai_concierge_suggestion(
             created_by_user_id=auth.user_id,
-            segment_key=segment_key.strip().lower().replace(" ", "_"),
+            segment_key=segment_key,
             stay_type=payload.stay_type,
             model_version=model_version or "unknown",
-            source=str(result.get("source") or "hillside-ai") if isinstance(result, dict) else "hillside-ai",
+            source=source,
             behavior=behavior,
-            suggestions=[item for item in (suggestions or []) if isinstance(item, dict)],
-            notes=[str(item) for item in (notes or []) if isinstance(item, (str, int, float))],
+            suggestions=suggestions,
+            notes=notes,
         )
     except RuntimeError:
         pass
     return ConciergeRecommendationResponse(
-        segment_key=segment_key.strip().lower().replace(" ", "_"),
+        segment_key=segment_key,
         stay_type=payload.stay_type,
         model_version=model_version,
-        suggestions=[ConciergeSuggestion(**item) for item in (suggestions or []) if isinstance(item, dict)],
-        notes=[str(item) for item in (notes or []) if isinstance(item, (str, int, float))],
+        suggestions=[ConciergeSuggestion(**item) for item in suggestions],
+        notes=notes,
     )

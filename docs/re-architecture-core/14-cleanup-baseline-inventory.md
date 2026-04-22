@@ -683,3 +683,21 @@ Remaining A4 blocker:
    - `npm run lint` -> pass
    - `npm run test:api` -> pass (`90 passed`)
    - `npm run quality:gate` -> pass
+
+## Batch B6 Execution Update (Part 1 Complete)
+
+1. Reduced AI route parsing/normalization duplication in:
+   - `hillside-api/app/api/v2/routes/ai.py`
+2. Added shared helper functions for consistent normalization:
+   - `_normalize_forecast_items(...)` for forecast item/date filtering and numeric occupancy conversion
+   - `_normalize_concierge_result(...)` for concierge segment/source/model/suggestions/notes normalization
+3. Reused helpers in active handlers:
+   - `occupancy_forecast(...)`
+   - `concierge_recommendation(...)`
+   - `_build_response_from_saved_forecast(...)`
+4. Added focused helper regression tests:
+   - `hillside-api/tests/test_v2_ai_route_helpers.py`
+5. Validation:
+   - `npm run lint` -> pass
+   - `npm run test:api` -> pass (`93 passed`)
+   - `npm run quality:gate` -> pass
