@@ -69,8 +69,7 @@ Note: these are valid compatibility bridges today, but should be reviewed for re
 
 1. No active API warning backlog after Batch E1 part 3 (`pytest` warning-free baseline achieved).
 2. No active frontend ESLint warning backlog after Batch E2 part 3 (`eslint` clean pass).
-3. Tooling notice remains during lint:
-   - `baseline-browser-mapping` dataset staleness notice (`npm i baseline-browser-mapping@latest -D`)
+3. No active tooling warning backlog in lint output after Batch E3 part 1 baseline-data refresh.
 
 ## Recommended First Cleanup Batches
 
@@ -553,3 +552,24 @@ Remaining A4 blocker:
 3. Validation:
    - `npm run lint` -> pass (`eslint` clean, Ruff clean)
    - `npm run typecheck` -> pass
+
+## Batch D3 Execution Update (Part 1 Complete)
+
+1. Revalidated full migration runtime path on local Supabase stack:
+   - `npm run db:reset` now completes end-to-end on this workstation
+2. Outcome:
+   - previously blocking parser/runtime sequence around `20260418001_policy_escrow_alignment.sql` is resolved
+   - split migration sequence `20260418001..20260418009` executes in order without SQL parser failures
+3. Validation:
+   - `npm run db:reset` -> pass
+   - `npm run db:validate` -> pass (`db:sanity` + `db:hygiene`, `checked_files: 71`)
+
+## Batch E3 Execution Update (Part 1 Complete)
+
+1. Refreshed frontend baseline-browser mapping data dependency:
+   - added/updated `baseline-browser-mapping` dev dependency in `hillside-next/package.json`
+   - lockfile refreshed in `hillside-next/package-lock.json`
+2. Outcome:
+   - stale baseline notice is no longer shown in lint output
+3. Validation:
+   - `npm run lint` -> pass (no baseline-browser warning emitted)
