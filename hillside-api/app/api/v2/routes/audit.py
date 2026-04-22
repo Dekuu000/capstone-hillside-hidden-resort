@@ -23,7 +23,7 @@ def get_audit_logs(
 ):
     if from_ts and to_ts and to_ts < from_ts:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="to must be greater than or equal to from.",
         )
 

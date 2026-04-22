@@ -525,17 +525,17 @@ def _validate_stay_reservation_inputs(
 ) -> None:
     if check_out_date <= check_in_date:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="check_out_date must be after check_in_date.",
         )
     if require_future_check_in and check_in_date < date.today():
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="check_in_date cannot be in the past.",
         )
     if not unit_ids:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="At least one unit_id is required.",
         )
 
@@ -572,7 +572,7 @@ def _ensure_guest_count_within_capacity(
     total_capacity = sum(max(1, int(unit_map[unit_id].get("capacity") or 1)) for unit_id in unit_ids)
     if guest_count > total_capacity:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=f"Selected units can host up to {total_capacity} guest(s).",
         )
 
@@ -637,18 +637,18 @@ def _validate_tour_reservation_inputs(
 ) -> None:
     if adult_qty + kid_qty <= 0:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="At least one guest is required.",
         )
     today = date.today()
     if visit_date < today:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="visit_date cannot be in the past.",
         )
     if auth_role != "admin" and visit_date <= today:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="visit_date must be in the future.",
         )
     if auth_role != "admin" and not is_advance:
@@ -678,7 +678,7 @@ def _compute_tour_total_amount(*, service: dict, adult_qty: int, kid_qty: int) -
     total_amount = adult_qty * adult_rate + kid_qty * kid_rate
     if total_amount <= 0:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Computed total amount must be greater than zero.",
         )
     return total_amount

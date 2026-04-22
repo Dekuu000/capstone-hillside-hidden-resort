@@ -47,14 +47,14 @@ def get_reports_overview(
 
     if to_value < from_value:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="to_date must be on or after from_date.",
         )
 
     range_days = (to_value - from_value).days
     if range_days > 366:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Date range cannot exceed 366 days.",
         )
 
@@ -128,14 +128,14 @@ def get_report_transactions(
 ):
     if to_date < from_date:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="to_date must be on or after from_date.",
         )
 
     range_days = (to_date - from_date).days
     if range_days > 366:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Date range cannot exceed 366 days.",
         )
 

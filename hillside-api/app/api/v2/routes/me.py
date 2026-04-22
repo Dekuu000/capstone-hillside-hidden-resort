@@ -74,7 +74,7 @@ def patch_me_profile(
     except RuntimeError as exc:
         message = str(exc).lower()
         if "wallet_address" in message or "wallet" in message:
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid wallet address format.") from exc
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Invalid wallet address format.") from exc
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
     except Exception as exc:  # noqa: BLE001
         logger.exception("Unexpected error in PATCH /v2/me/profile for user_id=%s", auth.user_id)
