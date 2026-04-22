@@ -1,18 +1,9 @@
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel
 
 from app.core.auth import AuthContext, require_authenticated, verify_access_token
+from app.schemas.common import SessionRequest, SessionResponse
 
 router = APIRouter()
-
-
-class SessionRequest(BaseModel):
-    supabase_access_token: str
-
-
-class SessionResponse(BaseModel):
-    session_id: str
-    user: dict
 
 
 @router.post("/session", response_model=SessionResponse)

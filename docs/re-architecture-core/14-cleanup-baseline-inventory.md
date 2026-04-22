@@ -619,3 +619,24 @@ Remaining A4 blocker:
    - `npm run lint` -> pass
    - `npm run test:api` -> pass (`90 passed`)
    - `npm run quality:gate` -> pass
+
+## Batch B5 Execution Update (Part 1 Complete)
+
+1. Consolidated route-local DTO definitions into shared API schema module:
+   - `hillside-api/app/schemas/common.py` now owns:
+     - `SessionRequest`, `SessionResponse`
+     - `QrIssueRequest`, `QrVerifyRequest`, `QrPublicKeyResponse`
+     - `PaymentSubmissionRequest`, `PaymentSubmissionResponse`, `PaymentRejectRequest`, `PaymentIntentUpdateRequest`
+     - `CheckOperationRequest`
+2. Updated v2 routes to consume shared DTOs instead of local in-file duplicates:
+   - `hillside-api/app/api/v2/routes/auth.py`
+   - `hillside-api/app/api/v2/routes/qr.py`
+   - `hillside-api/app/api/v2/routes/payments.py`
+   - `hillside-api/app/api/v2/routes/operations.py`
+3. Outcome:
+   - reduced duplicate schema declarations in route modules
+   - keeps request/response contract types centralized for API cleanup track
+4. Validation:
+   - `npm run lint` -> pass
+   - `npm run test:api` -> pass (`90 passed`)
+   - `npm run quality:gate` -> pass

@@ -2,7 +2,6 @@ from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
 
 from app.core.auth import AuthContext, require_admin, require_authenticated
 from app.core.config import settings
@@ -20,26 +19,14 @@ from app.integrations.supabase_client import (
     get_reservation_by_id,
     validate_qr_checkin,
 )
-from app.schemas.common import QrToken
+from app.schemas.common import (
+    QrIssueRequest,
+    QrPublicKeyResponse,
+    QrToken,
+    QrVerifyRequest,
+)
 
 router = APIRouter()
-
-
-class QrIssueRequest(BaseModel):
-    reservation_id: str
-
-
-class QrVerifyRequest(BaseModel):
-    reservation_code: str | None = None
-    qr_token: QrToken | None = None
-    scanner_id: str
-    offline_mode: bool = False
-
-
-class QrPublicKeyResponse(BaseModel):
-    algorithm: str = "ed25519"
-    key_id: str
-    public_key: str
 
 
 def _effective_rotation_seconds() -> int:

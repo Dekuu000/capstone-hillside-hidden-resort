@@ -53,6 +53,23 @@ class QrToken(BaseModel):
     nft_token_id: int | None = None
 
 
+class QrIssueRequest(BaseModel):
+    reservation_id: str
+
+
+class QrVerifyRequest(BaseModel):
+    reservation_code: str | None = None
+    qr_token: QrToken | None = None
+    scanner_id: str
+    offline_mode: bool = False
+
+
+class QrPublicKeyResponse(BaseModel):
+    algorithm: str = "ed25519"
+    key_id: str
+    public_key: str
+
+
 class AiRecommendation(BaseModel):
     reservation_id: str
     pricing_adjustment: float
@@ -487,6 +504,31 @@ class OnSitePaymentRequest(BaseModel):
     idempotency_key: str | None = None
 
 
+class PaymentSubmissionRequest(BaseModel):
+    reservation_id: str
+    amount: float
+    payment_type: str
+    method: str
+    reference_no: str | None = None
+    proof_url: str | None = None
+    idempotency_key: str
+
+
+class PaymentSubmissionResponse(BaseModel):
+    payment_id: str
+    status: str
+    reservation_status: str
+
+
+class PaymentRejectRequest(BaseModel):
+    reason: str
+
+
+class PaymentIntentUpdateRequest(BaseModel):
+    reservation_id: str
+    amount: float
+
+
 class OnSitePaymentResponse(BaseModel):
     ok: bool = True
     payment_id: str
@@ -515,6 +557,13 @@ class CheckOperationResponse(BaseModel):
     scanner_id: str | None = None
     escrow_release_state: Literal["released", "pending_release", "skipped"] | None = None
     welcome_notification: CheckinWelcomeNotificationSummary | None = None
+
+
+class CheckOperationRequest(BaseModel):
+    reservation_id: str
+    scanner_id: str | None = None
+    override_reason: str | None = None
+    idempotency_key: str | None = None
 
 
 class WelcomeNotification(BaseModel):
@@ -876,3 +925,12 @@ class EscrowReconciliationMonitorResponse(BaseModel):
     last_summary: EscrowReconciliationSummary | None = None
     alert_thresholds: dict[str, int] = Field(default_factory=dict)
     alert_active: bool = False
+
+
+class SessionRequest(BaseModel):
+    supabase_access_token: str
+
+
+class SessionResponse(BaseModel):
+    session_id: str
+    user: dict
