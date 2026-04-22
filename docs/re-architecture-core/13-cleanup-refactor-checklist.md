@@ -61,6 +61,7 @@ Baseline evidence:
 - [x] Batch B5 (part 2): remove legacy missing-column fallback select branches in Supabase reservation/payment list facades now that split migrations and repeated `db:reset` validation are stable.
 - [x] Batch B5 (part 3): move remaining route-local AI/NFT DTOs into `app.schemas.common`, eliminating in-route Pydantic model duplication across v2 modules.
 - [x] Batch B6 (part 1): extract AI route forecast/concierge normalization helpers and add targeted helper tests to reduce duplicated parsing/normalization logic.
+- [x] Batch B6 (part 2): add AI route contract regressions for occupancy/concierge normalization to protect persistence and response-shape behavior.
 
 ### C) Frontend and Shared Contracts
 

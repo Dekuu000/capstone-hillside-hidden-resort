@@ -701,3 +701,20 @@ Remaining A4 blocker:
    - `npm run lint` -> pass
    - `npm run test:api` -> pass (`93 passed`)
    - `npm run quality:gate` -> pass
+
+## Batch B6 Execution Update (Part 2 Complete)
+
+1. Added AI route contract regressions in:
+   - `hillside-api/tests/test_v2_ai_contract.py`
+2. New coverage verifies occupancy normalization behavior:
+   - invalid forecast rows are filtered before persistence
+   - normalized forecast items are returned in response payload
+   - notes scalar normalization remains string-safe
+3. New coverage verifies concierge normalization behavior:
+   - `segment_key` normalization to snake_case
+   - notes filtering/string normalization
+   - persisted payload and response payload stay aligned
+4. Validation:
+   - `npm run lint` -> pass
+   - `npm run test:api` -> pass (`95 passed`)
+   - `npm run quality:gate` -> pass
