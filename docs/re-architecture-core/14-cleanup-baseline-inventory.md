@@ -1,6 +1,6 @@
 # Cleanup Baseline & Inventory Report
 
-Last updated: 2026-04-19  
+Last updated: 2026-04-22  
 Phase: Post-phase cleanup/refactor (Checklist A)
 
 ## Baseline Snapshot
@@ -67,9 +67,7 @@ Note: these are valid compatibility bridges today, but should be reviewed for re
 
 ### 4) Warning Backlog (non-blocking but should be cleaned)
 
-1. FastAPI `@app.on_event` deprecation warnings in `hillside-api/app/main.py`.
-2. `HTTP_422_UNPROCESSABLE_ENTITY` deprecation warning in tests/runtime constants.
-3. `.pytest_cache` write permission warning on this Windows workspace.
+1. `.pytest_cache` write permission warning on this Windows workspace.
 
 ## Recommended First Cleanup Batches
 
@@ -481,3 +479,18 @@ Remaining A4 blocker:
 4. Validation:
    - `hillside-api\\.venv\\Scripts\\python.exe -m pytest hillside-api/tests -q`
    - result: `90 passed`
+
+## Batch E1 Execution Update (Part 2 Complete)
+
+1. Migrated FastAPI lifecycle wiring in `hillside-api/app/main.py`:
+   - replaced deprecated `@app.on_event("startup")` / `@app.on_event("shutdown")`
+   - added lifespan context manager with `_start_escrow_reconciliation_scheduler(...)` and `_stop_escrow_reconciliation_scheduler(...)`
+2. Preserved scheduler behavior:
+   - starts escrow reconciliation loop when feature flag is enabled
+   - cancels/awaits background task cleanly on app shutdown
+3. Outcome:
+   - removed FastAPI startup/shutdown deprecation warnings from test runs
+   - remaining warning backlog is now limited to `.pytest_cache` permission warning on this workstation
+4. Validation:
+   - `hillside-api\\.venv\\Scripts\\python.exe -m pytest hillside-api/tests -q`
+   - result: `90 passed`, `1 warning`

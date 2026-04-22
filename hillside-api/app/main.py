@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,11 +19,42 @@ from app.observability.escrow_reconciliation_monitor import (
     get_escrow_reconciliation_monitor_snapshot,
 )
 
-app = FastAPI(title=settings.app_name, version="0.1.0")
-app.add_middleware(CorrelationIdMiddleware)
-app.add_middleware(ApiPerformanceMiddleware)
 logger = logging.getLogger(__name__)
 _escrow_reconciliation_task: asyncio.Task | None = None
+
+
+async def _start_escrow_reconciliation_scheduler() -> None:
+    global _escrow_reconciliation_task
+    if settings.feature_escrow_reconciliation_scheduler and _escrow_reconciliation_task is None:
+        _escrow_reconciliation_task = asyncio.create_task(escrow_reconciliation_scheduler_loop())
+        logger.info("Started escrow reconciliation scheduler task.")
+
+
+async def _stop_escrow_reconciliation_scheduler() -> None:
+    global _escrow_reconciliation_task
+    task = _escrow_reconciliation_task
+    if task is None:
+        return
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
+    _escrow_reconciliation_task = None
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    await _start_escrow_reconciliation_scheduler()
+    try:
+        yield
+    finally:
+        await _stop_escrow_reconciliation_scheduler()
+
+
+app = FastAPI(title=settings.app_name, version="0.1.0", lifespan=lifespan)
+app.add_middleware(CorrelationIdMiddleware)
+app.add_middleware(ApiPerformanceMiddleware)
 
 cors_origins = [
     origin.strip()
@@ -59,28 +91,6 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
             context={"correlation_id": correlation_id} if correlation_id else {},
         )
     return JSONResponse(status_code=exc.status_code, content=payload)
-
-
-@app.on_event("startup")
-async def startup_tasks() -> None:
-    global _escrow_reconciliation_task
-    if settings.feature_escrow_reconciliation_scheduler and _escrow_reconciliation_task is None:
-        _escrow_reconciliation_task = asyncio.create_task(escrow_reconciliation_scheduler_loop())
-        logger.info("Started escrow reconciliation scheduler task.")
-
-
-@app.on_event("shutdown")
-async def shutdown_tasks() -> None:
-    global _escrow_reconciliation_task
-    task = _escrow_reconciliation_task
-    if task is None:
-        return
-    task.cancel()
-    try:
-        await task
-    except asyncio.CancelledError:
-        pass
-    _escrow_reconciliation_task = None
 
 
 @app.get("/health")
