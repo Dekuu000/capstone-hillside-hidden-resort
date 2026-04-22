@@ -82,7 +82,7 @@ def issue_token(
             status_code=status.HTTP_409_CONFLICT,
             detail="Dynamic QR is disabled.",
         )
-    public_key = _resolve_qr_public_key()
+    _resolve_qr_public_key()
 
     reservation_id = payload.reservation_id
     reservation_row = (

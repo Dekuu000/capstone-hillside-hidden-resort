@@ -67,7 +67,7 @@ Note: these are valid compatibility bridges today, but should be reviewed for re
 
 ### 4) Warning Backlog (non-blocking but should be cleaned)
 
-1. `.pytest_cache` write permission warning on this Windows workspace.
+1. No active API warning backlog after Batch E1 part 3 (`pytest` warning-free baseline achieved).
 
 ## Recommended First Cleanup Batches
 
@@ -494,3 +494,28 @@ Remaining A4 blocker:
 4. Validation:
    - `hillside-api\\.venv\\Scripts\\python.exe -m pytest hillside-api/tests -q`
    - result: `90 passed`, `1 warning`
+
+## Batch E1 Execution Update (Part 3 Complete)
+
+1. Removed persistent Windows pytest cache-permission warning in API test runs:
+   - updated `hillside-api/pyproject.toml`
+   - added `[tool.pytest.ini_options] addopts = "-p no:cacheprovider"`
+2. Outcome:
+   - pytest no longer attempts `.pytest_cache` writes on this workstation
+   - API baseline test output is now warning-free
+3. Validation:
+   - `hillside-api\\.venv\\Scripts\\python.exe -m pytest hillside-api/tests -q`
+   - result: `90 passed`
+
+## Batch E2 Execution Update (Part 1 Complete)
+
+1. Cleared API Ruff baseline violations in touched modules:
+   - `hillside-api/app/api/v2/routes/qr.py`
+     - removed unused `public_key` assignment in `issue_token(...)` while preserving key-resolution guard call
+   - `hillside-api/app/integrations/supabase_client.py`
+     - removed accidental f-string marker in missing-column error matcher
+2. Validation:
+   - `hillside-api\\.venv\\Scripts\\python.exe -m ruff check hillside-api/app hillside-api/tests`
+   - result: `All checks passed!`
+   - `hillside-api\\.venv\\Scripts\\python.exe -m pytest hillside-api/tests -q`
+   - result: `90 passed`

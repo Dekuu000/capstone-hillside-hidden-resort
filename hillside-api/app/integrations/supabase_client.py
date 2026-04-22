@@ -517,7 +517,7 @@ def _apply_reservation_filters(
 
 def _is_missing_column_error(exc: Exception, column_name: str) -> bool:
     message = str(exc).lower()
-    return f"column" in message and column_name.lower() in message and "does not exist" in message
+    return "column" in message and column_name.lower() in message and "does not exist" in message
 
 
 def _run_select_with_missing_column_fallbacks(

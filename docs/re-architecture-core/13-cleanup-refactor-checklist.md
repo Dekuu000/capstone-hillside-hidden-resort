@@ -91,6 +91,8 @@ Baseline evidence:
 - [ ] Publish a final quality report snapshot in `docs/re-architecture-core/perf-report.md`.
 - [x] Batch E1 (part 1): replace deprecated `HTTP_422_UNPROCESSABLE_ENTITY` usage with `HTTP_422_UNPROCESSABLE_CONTENT` across v2 API routes to reduce warning noise in test runs.
 - [x] Batch E1 (part 2): migrate FastAPI app lifecycle from `@app.on_event` to lifespan context management and remove startup/shutdown deprecation warnings.
+- [x] Batch E1 (part 3): disable pytest cache provider in API test runs to remove persistent Windows cache-permission warning noise.
+- [x] Batch E2 (part 1): clear API Ruff baseline violations in touched modules (`qr.py`, `supabase_client.py`) and verify lint + tests stay green.
 
 ### F) Documentation Alignment
 
