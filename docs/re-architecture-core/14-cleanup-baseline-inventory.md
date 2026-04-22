@@ -573,3 +573,30 @@ Remaining A4 blocker:
    - stale baseline notice is no longer shown in lint output
 3. Validation:
    - `npm run lint` -> pass (no baseline-browser warning emitted)
+
+## Batch D3 Execution Update (Part 2 Complete)
+
+1. Re-validated migration idempotency/parsing behavior with an additional full reset cycle:
+   - reran `npm run db:reset` on the same branch after prior success
+2. Outcome:
+   - function/policy/trigger DDL sequence remained stable on repeated reset
+   - no recurrence of prepared-statement parser failure in split policy migration sequence
+3. Validation:
+   - `npm run db:reset` -> pass (repeat run)
+
+## Batch E4 Execution Update (Part 1 Complete)
+
+1. Added consolidated quality gate script in root `package.json`:
+   - `quality:gate` -> `lint` + `typecheck` + `test:api` + `db:validate`
+2. Hardened root testing script consistency:
+   - added `test:api` (venv-pinned pytest)
+   - added `test:contracts`
+   - root `test` now chains `test:api` then `test:contracts`
+3. Validation:
+   - `npm run quality:gate` -> pass
+   - results:
+     - frontend lint clean
+     - API Ruff clean
+     - Next/shared typecheck pass
+     - API tests `90 passed`
+     - migration sanity/hygiene pass (`checked_files: 71`)
