@@ -21,7 +21,7 @@
     "db:sanity": "python supabase/scripts/migration_sanity_check.py",
     "db:hygiene": "python supabase/scripts/migration_hygiene_check.py",
     "db:validate": "npm run db:sanity && npm run db:hygiene",
-    "lint": "npm --prefix hillside-next run lint && cd hillside-api && ruff check app tests",
+    "lint": "npm --prefix hillside-next run lint && hillside-api\\.venv\\Scripts\\python.exe -m ruff check hillside-api/app hillside-api/tests",
     "typecheck": "npm --workspace hillside-next run typecheck && npm --workspace @hillside/shared run typecheck",
     "test": "python -m pytest hillside-api/tests -q && npm --prefix hillside-contracts run test"
   },

@@ -93,6 +93,7 @@ Baseline evidence:
 - [x] Batch E1 (part 2): migrate FastAPI app lifecycle from `@app.on_event` to lifespan context management and remove startup/shutdown deprecation warnings.
 - [x] Batch E1 (part 3): disable pytest cache provider in API test runs to remove persistent Windows cache-permission warning noise.
 - [x] Batch E2 (part 1): clear API Ruff baseline violations in touched modules (`qr.py`, `supabase_client.py`) and verify lint + tests stay green.
+- [x] Batch E2 (part 2): harden monorepo lint script to call Ruff through API venv Python so `npm run lint` works consistently on Windows shells.
 
 ### F) Documentation Alignment
 
