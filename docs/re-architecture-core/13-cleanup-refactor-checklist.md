@@ -57,6 +57,7 @@ Baseline evidence:
 - [x] Batch B4 (part 1): centralize idempotency operation-id generation in shared service helper and remove duplicated hashing helpers across v2 routes.
 - [x] Batch B4 (part 2): centralize idempotency receipt load/store safe wrappers and remove repeated replay/store try-catch blocks in payments/operations/guest-services routes.
 - [x] Batch B4 (part 3): migrate reservations route idempotency replay/store flow to shared idempotency receipt helpers for full v2 route consistency.
+- [x] Batch B5 (part 1): move route-local auth/qr/payments/check-operation request-response DTOs into `app.schemas.common` to reduce schema duplication across v2 route modules.
 
 ### C) Frontend and Shared Contracts
 

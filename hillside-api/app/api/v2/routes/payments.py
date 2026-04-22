@@ -3,7 +3,6 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.api.v2.routes._http_errors import raise_http_from_runtime_error
-from pydantic import BaseModel
 
 from app.core.auth import AuthContext, ensure_reservation_access, require_admin, require_authenticated
 from app.integrations.supabase_client import (
@@ -20,6 +19,10 @@ from app.schemas.common import (
     AdminPaymentsResponse,
     OnSitePaymentRequest,
     OnSitePaymentResponse,
+    PaymentIntentUpdateRequest,
+    PaymentRejectRequest,
+    PaymentSubmissionRequest,
+    PaymentSubmissionResponse,
     RejectPaymentResponse,
     VerifyPaymentResponse,
 )
@@ -31,31 +34,6 @@ from app.services.idempotency import (
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
-
-
-class PaymentSubmissionRequest(BaseModel):
-    reservation_id: str
-    amount: float
-    payment_type: str
-    method: str
-    reference_no: str | None = None
-    proof_url: str | None = None
-    idempotency_key: str
-
-
-class PaymentSubmissionResponse(BaseModel):
-    payment_id: str
-    status: str
-    reservation_status: str
-
-
-class PaymentRejectRequest(BaseModel):
-    reason: str
-
-
-class PaymentIntentUpdateRequest(BaseModel):
-    reservation_id: str
-    amount: float
 
 
 @router.get("/reservations/{reservation_id}")

@@ -6,7 +6,6 @@ from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.api.v2.routes._http_errors import raise_http_from_runtime_error
-from pydantic import BaseModel
 
 from app.core.auth import AuthContext, require_admin
 from app.core.chains import get_active_chain, get_chain_registry
@@ -21,7 +20,11 @@ from app.integrations.supabase_client import (
     update_reservation_policy_metadata,
     write_reservation_escrow_shadow_metadata,
 )
-from app.schemas.common import CheckOperationResponse, CheckinWelcomeNotificationSummary
+from app.schemas.common import (
+    CheckOperationRequest,
+    CheckOperationResponse,
+    CheckinWelcomeNotificationSummary,
+)
 from app.services.checkin_welcome import create_checkin_welcome_notification
 from app.services.idempotency import (
     build_idempotency_operation_id,
@@ -34,13 +37,6 @@ logger = logging.getLogger(__name__)
 DEPOSIT_POLICY_VERSION = "v1_2026_04"
 DEPOSIT_RULE_ROOM_COTTAGE = "room_cottage_20pct_clamp_500_1000"
 DEPOSIT_RULE_TOUR = "tour_fixed_500_or_full_if_below_500"
-
-
-class CheckOperationRequest(BaseModel):
-    reservation_id: str
-    scanner_id: str | None = None
-    override_reason: str | None = None
-    idempotency_key: str | None = None
 
 
 @dataclass(frozen=True)
