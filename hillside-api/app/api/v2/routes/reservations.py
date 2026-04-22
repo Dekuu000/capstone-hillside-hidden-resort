@@ -33,10 +33,8 @@ from app.integrations.supabase_client import (
     get_reservation_by_id,
     get_dynamic_pricing_signals,
     list_recent_reservations,
-    get_sync_operation_receipt,
     update_reservation_policy_metadata,
     update_reservation_source as update_reservation_source_rpc,
-    upsert_sync_operation_receipt,
 )
 from app.schemas.common import (
     AiRecommendation,
@@ -55,7 +53,11 @@ from app.schemas.common import (
     ReservationListItem,
     ReservationListResponse,
 )
-from app.services.idempotency import build_idempotency_operation_id
+from app.services.idempotency import (
+    build_idempotency_operation_id,
+    load_cached_response_payload,
+    store_operation_receipt_safely,
+)
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -124,23 +126,14 @@ def _try_replay_reservation_response(
         user_id=user_id,
         idempotency_key=idempotency_key,
     )
-    try:
-        receipt = get_sync_operation_receipt(
-            operation_id=operation_id,
-            user_id=user_id,
-            idempotency_key=idempotency_key,
-        )
-    except RuntimeError:
-        logger.warning(
-            "Reservation idempotency replay lookup skipped (route=%s, user_id=%s)",
-            route_key,
-            user_id,
-        )
-        return None
-    if not receipt:
-        return None
-    payload = receipt.get("response_payload")
-    if not isinstance(payload, dict):
+    payload = load_cached_response_payload(
+        operation_id=operation_id,
+        user_id=user_id,
+        idempotency_key=idempotency_key,
+        logger=logger,
+        warning_label=f"Reservation ({route_key})",
+    )
+    if not payload:
         return None
     try:
         return ReservationResponse(**payload)
@@ -162,24 +155,17 @@ def _store_reservation_idempotency_receipt(
         user_id=user_id,
         idempotency_key=idempotency_key,
     )
-    try:
-        upsert_sync_operation_receipt(
-            operation_id=operation_id,
-            idempotency_key=idempotency_key,
-            user_id=user_id,
-            entity_type="reservation",
-            entity_id=reservation.reservation_id,
-            action=route_key,
-            status="applied",
-            http_status=200,
-            response_payload=reservation.model_dump(mode="json"),
-        )
-    except RuntimeError:
-        logger.warning(
-            "Reservation idempotency receipt store skipped (route=%s, user_id=%s)",
-            route_key,
-            user_id,
-        )
+    store_operation_receipt_safely(
+        operation_id=operation_id,
+        idempotency_key=idempotency_key,
+        user_id=user_id,
+        entity_type="reservation",
+        entity_id=reservation.reservation_id,
+        action=route_key,
+        response_payload=reservation.model_dump(mode="json"),
+        logger=logger,
+        warning_label=f"Reservation ({route_key})",
+    )
 
 
 def _maybe_get_ai_recommendation(

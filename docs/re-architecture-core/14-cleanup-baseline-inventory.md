@@ -444,3 +444,20 @@ Remaining A4 blocker:
 4. Validation:
    - `hillside-api\\.venv\\Scripts\\python.exe -m pytest hillside-api/tests/test_services_idempotency.py hillside-api/tests/test_v2_payments_contract.py hillside-api/tests/test_v2_qr_operations_contract.py hillside-api/tests/test_v2_reservations_contract.py hillside-api/tests/test_v2_error_envelope_contract.py hillside-api/tests/test_v2_error_mapping.py -q`
    - result: `41 passed`
+
+## Batch B4 Execution Update (Part 3 Complete)
+
+1. Completed idempotency wrapper adoption in reservations route:
+   - `hillside-api/app/api/v2/routes/reservations.py`
+2. Replaced route-local replay/store try-catch receipt handling in:
+   - `_try_replay_reservation_response(...)`
+   - `_store_reservation_idempotency_receipt(...)`
+   with shared helpers:
+   - `load_cached_response_payload(...)`
+   - `store_operation_receipt_safely(...)`
+3. Outcome:
+   - all major v2 idempotent write paths now use shared operation-id and receipt wrappers
+   - fewer duplicated logging/error-handling branches in route modules
+4. Validation:
+   - `hillside-api\\.venv\\Scripts\\python.exe -m pytest hillside-api/tests/test_services_idempotency.py hillside-api/tests/test_v2_reservations_contract.py hillside-api/tests/test_v2_payments_contract.py hillside-api/tests/test_v2_qr_operations_contract.py hillside-api/tests/test_v2_error_envelope_contract.py hillside-api/tests/test_v2_error_mapping.py -q`
+   - result: `41 passed`

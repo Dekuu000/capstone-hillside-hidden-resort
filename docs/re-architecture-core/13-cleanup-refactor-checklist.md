@@ -56,6 +56,7 @@ Baseline evidence:
 - [x] Batch B3 (part 3): refactor cancellation/status side-effect flow into shared helpers (reservation fetch, cancellable guard, policy/escrow side-effects, cancel response builder).
 - [x] Batch B4 (part 1): centralize idempotency operation-id generation in shared service helper and remove duplicated hashing helpers across v2 routes.
 - [x] Batch B4 (part 2): centralize idempotency receipt load/store safe wrappers and remove repeated replay/store try-catch blocks in payments/operations/guest-services routes.
+- [x] Batch B4 (part 3): migrate reservations route idempotency replay/store flow to shared idempotency receipt helpers for full v2 route consistency.
 
 ### C) Frontend and Shared Contracts
 
