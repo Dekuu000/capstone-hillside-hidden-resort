@@ -73,7 +73,7 @@ Baseline evidence:
 
 - [ ] Standardize migration naming format and ordering consistency.
 - [x] Remove temporary/recovery files from tracked project scope.
-- [ ] Ensure `supabase db reset` and repository migration sanity checks pass cleanly.
+- [x] Ensure `supabase db reset` and repository migration sanity checks pass cleanly.
 - [ ] Verify function/policy/trigger definitions are idempotent and parser-safe.
 - [x] Update migration notes with rationale for any split or reordering.
 - [x] Batch A2: add automated migration hygiene check with explicit waiver tracking for legacy filename/duplicate pair.
@@ -95,6 +95,7 @@ Baseline evidence:
 - [x] Batch E2 (part 1): clear API Ruff baseline violations in touched modules (`qr.py`, `supabase_client.py`) and verify lint + tests stay green.
 - [x] Batch E2 (part 2): harden monorepo lint script to call Ruff through API venv Python so `npm run lint` works consistently on Windows shells.
 - [x] Batch E2 (part 3): clear frontend ESLint warning backlog (hooks deps + intentional `img` rule suppressions for current landing/map assets) and re-verify lint/typecheck.
+- [x] Batch E3 (part 1): refresh frontend baseline-browser data dependency to remove stale Baseline notice from lint output.
 
 ### F) Documentation Alignment
 
