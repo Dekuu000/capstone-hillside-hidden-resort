@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from enum import StrEnum
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -40,6 +40,19 @@ class GuestPassRef(BaseModel):
     token_id: int
     reservation_hash: str
     owner: str | None = None
+
+
+class GuestPassVerificationResponse(BaseModel):
+    reservation_id: str
+    minted: bool
+    chain_key: str | None = None
+    contract_address: str | None = None
+    token_id: int | None = None
+    tx_hash: str | None = None
+    reservation_hash: str | None = None
+    owner: str | None = None
+    onchain_valid: bool = False
+    verify_error: str | None = None
 
 
 class QrToken(BaseModel):
@@ -98,6 +111,77 @@ class AiPricingMetricsResponse(BaseModel):
     last_fallback_reason: str | None = None
     last_fallback_at: datetime | None = None
     latency_ms: AiLatencySummary = Field(default_factory=AiLatencySummary)
+
+
+class PricingRecommendationRequest(BaseModel):
+    reservation_id: str | None = None
+    check_in_date: str | None = None
+    check_out_date: str | None = None
+    visit_date: str | None = None
+    total_amount: float | None = None
+    party_size: int | None = None
+    unit_count: int | None = None
+    is_tour: bool = False
+    occupancy_context: dict = Field(default_factory=dict)
+
+
+class OccupancyForecastRequest(BaseModel):
+    start_date: date | None = None
+    horizon_days: int = Field(default=7, ge=1, le=30)
+    history_days: int = Field(default=30, ge=7, le=180)
+
+
+class OccupancyForecastItem(BaseModel):
+    date: date
+    occupancy: float
+
+
+class OccupancyForecastResponse(BaseModel):
+    forecast_id: int | None = None
+    generated_at: str
+    start_date: date
+    horizon_days: int
+    model_version: str
+    source: str
+    items: list[OccupancyForecastItem]
+    forecast_json: list[dict[str, Any]] = Field(default_factory=list)
+    metrics_json: dict[str, Any] = Field(default_factory=dict)
+    notes: list[str] = Field(default_factory=list)
+
+
+class PricingApplyRequest(BaseModel):
+    reservation_id: str | None = None
+    pricing_adjustment: float
+    confidence: float | None = Field(default=None, ge=0.0, le=1.0)
+    explanations: list[str] = Field(default_factory=list)
+    notes: str | None = None
+
+
+class PricingApplyResponse(BaseModel):
+    ok: bool = True
+    logged: bool = True
+    reservation_id: str | None = None
+    applied_at: str
+
+
+class ConciergeRecommendationRequest(BaseModel):
+    segment_key: str = Field(min_length=2, max_length=64)
+    stay_type: str | None = None
+
+
+class ConciergeSuggestion(BaseModel):
+    code: str
+    title: str
+    description: str
+    reasons: list[str] = Field(default_factory=list)
+
+
+class ConciergeRecommendationResponse(BaseModel):
+    segment_key: str
+    stay_type: str | None = None
+    model_version: str | None = None
+    suggestions: list[ConciergeSuggestion]
+    notes: list[str] = Field(default_factory=list)
 
 
 class ReservationCreateRequest(BaseModel):

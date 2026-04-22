@@ -4,7 +4,6 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, Field
 
 from app.core.config import settings
 from app.core.auth import AuthContext, require_admin, require_authenticated
@@ -25,79 +24,19 @@ from app.integrations.supabase_client import (
     insert_ai_occupancy_forecast,
 )
 from app.schemas.common import AiPricingMetricsResponse, AiRecommendation
+from app.schemas.common import (
+    ConciergeRecommendationRequest,
+    ConciergeRecommendationResponse,
+    ConciergeSuggestion,
+    OccupancyForecastItem,
+    OccupancyForecastRequest,
+    OccupancyForecastResponse,
+    PricingApplyRequest,
+    PricingApplyResponse,
+    PricingRecommendationRequest,
+)
 
 router = APIRouter()
-
-
-class PricingRecommendationRequest(BaseModel):
-    reservation_id: str | None = None
-    check_in_date: str | None = None
-    check_out_date: str | None = None
-    visit_date: str | None = None
-    total_amount: float | None = None
-    party_size: int | None = None
-    unit_count: int | None = None
-    is_tour: bool = False
-    occupancy_context: dict = Field(default_factory=dict)
-
-
-class OccupancyForecastRequest(BaseModel):
-    start_date: date | None = None
-    horizon_days: int = Field(default=7, ge=1, le=30)
-    history_days: int = Field(default=30, ge=7, le=180)
-
-
-class OccupancyForecastItem(BaseModel):
-    date: date
-    occupancy: float
-
-
-class OccupancyForecastResponse(BaseModel):
-    forecast_id: int | None = None
-    generated_at: str
-    start_date: date
-    horizon_days: int
-    model_version: str
-    source: str
-    items: list[OccupancyForecastItem]
-    forecast_json: list[dict[str, Any]] = Field(default_factory=list)
-    metrics_json: dict[str, Any] = Field(default_factory=dict)
-    notes: list[str] = Field(default_factory=list)
-
-
-class PricingApplyRequest(BaseModel):
-    reservation_id: str | None = None
-    pricing_adjustment: float
-    confidence: float | None = Field(default=None, ge=0.0, le=1.0)
-    explanations: list[str] = Field(default_factory=list)
-    notes: str | None = None
-
-
-class PricingApplyResponse(BaseModel):
-    ok: bool = True
-    logged: bool = True
-    reservation_id: str | None = None
-    applied_at: str
-
-
-class ConciergeRecommendationRequest(BaseModel):
-    segment_key: str = Field(min_length=2, max_length=64)
-    stay_type: str | None = None
-
-
-class ConciergeSuggestion(BaseModel):
-    code: str
-    title: str
-    description: str
-    reasons: list[str] = Field(default_factory=list)
-
-
-class ConciergeRecommendationResponse(BaseModel):
-    segment_key: str
-    stay_type: str | None = None
-    model_version: str | None = None
-    suggestions: list[ConciergeSuggestion]
-    notes: list[str] = Field(default_factory=list)
 
 
 def _is_weekend_from_payload(payload: PricingRecommendationRequest) -> bool:
