@@ -67,11 +67,10 @@ Note: these are valid compatibility bridges today, but should be reviewed for re
 
 ### 4) Warning Backlog (non-blocking but should be cleaned)
 
-1. Frontend ESLint warning backlog remains (12 warnings; no errors), mostly:
-   - React hooks exhaustive-deps on selected components
-   - `@next/next/no-img-element` suggestions on landing/guest pages
-2. `baseline-browser-mapping` dataset staleness notice appears during frontend lint runs.
-3. No active API warning backlog after Batch E1 part 3 (`pytest` warning-free baseline achieved).
+1. No active API warning backlog after Batch E1 part 3 (`pytest` warning-free baseline achieved).
+2. No active frontend ESLint warning backlog after Batch E2 part 3 (`eslint` clean pass).
+3. Tooling notice remains during lint:
+   - `baseline-browser-mapping` dataset staleness notice (`npm i baseline-browser-mapping@latest -D`)
 
 ## Recommended First Cleanup Batches
 
@@ -535,4 +534,22 @@ Remaining A4 blocker:
    - frontend warnings remain visible and non-blocking
 3. Validation:
    - `npm run lint` -> pass (0 errors, 12 frontend warnings)
+   - `npm run typecheck` -> pass
+
+## Batch E2 Execution Update (Part 3 Complete)
+
+1. Cleared frontend ESLint warning backlog:
+   - fixed hooks dependency warnings in:
+     - `hillside-next/app/login/page.tsx`
+     - `hillside-next/components/guest-services/GuestServicesClient.tsx`
+     - `hillside-next/components/my-bookings/MyBookingsClient.tsx`
+     - `hillside-next/components/shared/SyncEngineProvider.tsx`
+   - applied intentional per-line suppressions for current `img` usage in:
+     - `hillside-next/app/page.tsx`
+     - `hillside-next/components/guest-map/GuestMapClient.tsx`
+     - `hillside-next/components/landing/GuestStoriesCarousel.tsx`
+2. Minor content cleanup:
+   - normalized guest-story rating display in `GuestStoriesCarousel` to ASCII-safe text (`*****`)
+3. Validation:
+   - `npm run lint` -> pass (`eslint` clean, Ruff clean)
    - `npm run typecheck` -> pass

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { env } from "../../lib/env";
 import { getSupabaseBrowserClient } from "../../lib/supabase";
@@ -44,13 +44,13 @@ export function SyncEngineProvider({ children }: { children: ReactNode }) {
     [pathname],
   );
 
-  const getAccessToken = async (): Promise<string | null> => {
+  const getAccessToken = useCallback(async (): Promise<string | null> => {
     const supabase = getSupabaseBrowserClient();
     const { data } = await supabase.auth.getSession();
     return data.session?.access_token ?? null;
-  };
+  }, []);
 
-  const refreshState = async () => {
+  const refreshState = useCallback(async () => {
     if (typeof window === "undefined") return;
     const [outbox, conflicts, syncState] = await Promise.all([
       listOutboxSummary(),
@@ -69,7 +69,7 @@ export function SyncEngineProvider({ children }: { children: ReactNode }) {
       lastSyncedAt: syncState.last_synced_at,
       lastError: syncState.last_error,
     }));
-  };
+  }, [scope]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -106,7 +106,7 @@ export function SyncEngineProvider({ children }: { children: ReactNode }) {
       window.removeEventListener("online", syncOnlineState);
       window.removeEventListener("offline", syncOnlineState);
     };
-  }, [scope]);
+  }, [getAccessToken, refreshState, scope]);
 
   const value = useMemo<SyncRuntimeState>(() => {
     const runNow = async () => {
@@ -119,7 +119,7 @@ export function SyncEngineProvider({ children }: { children: ReactNode }) {
       ...snapshot,
       runNow,
     };
-  }, [scope, snapshot]);
+  }, [getAccessToken, refreshState, scope, snapshot]);
 
   return <SyncEngineContext.Provider value={value}>{children}</SyncEngineContext.Provider>;
 }

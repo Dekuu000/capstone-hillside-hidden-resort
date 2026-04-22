@@ -220,6 +220,7 @@ export function GuestMapClient() {
 
       <section className="surface overflow-hidden p-3">
         <div className="relative overflow-hidden rounded-xl border border-[var(--color-border)]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={MAP_IMAGE_URL}
             alt="Hillside resort static map with amenity pins"

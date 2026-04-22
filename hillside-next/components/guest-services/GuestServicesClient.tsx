@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import {
   ClipboardList,
   Clock3,
@@ -73,28 +73,31 @@ export function GuestServicesClient({ accessToken }: Props) {
   const [notes, setNotes] = useState("");
   const [submitBusy, setSubmitBusy] = useState(false);
 
-  const loadServices = async (nextCategory: ResortServiceCategory) => {
-    if (!accessToken) return;
-    setServicesLoading(true);
-    setServicesError(null);
-    try {
-      const query = new URLSearchParams({ category: nextCategory });
-      const data = await apiFetch(
-        `/v2/guest/services?${query.toString()}`,
-        { method: "GET" },
-        accessToken,
-        resortServiceListResponseSchema,
-      );
-      setServices(data.items ?? []);
-    } catch (unknownError) {
-      setServices([]);
-      setServicesError(unknownError instanceof Error ? unknownError.message : "Failed to load services.");
-    } finally {
-      setServicesLoading(false);
-    }
-  };
+  const loadServices = useCallback(
+    async (nextCategory: ResortServiceCategory) => {
+      if (!accessToken) return;
+      setServicesLoading(true);
+      setServicesError(null);
+      try {
+        const query = new URLSearchParams({ category: nextCategory });
+        const data = await apiFetch(
+          `/v2/guest/services?${query.toString()}`,
+          { method: "GET" },
+          accessToken,
+          resortServiceListResponseSchema,
+        );
+        setServices(data.items ?? []);
+      } catch (unknownError) {
+        setServices([]);
+        setServicesError(unknownError instanceof Error ? unknownError.message : "Failed to load services.");
+      } finally {
+        setServicesLoading(false);
+      }
+    },
+    [accessToken],
+  );
 
-  const loadRequests = async () => {
+  const loadRequests = useCallback(async () => {
     if (!accessToken) return;
     setRequestsLoading(true);
     setRequestsError(null);
@@ -112,12 +115,11 @@ export function GuestServicesClient({ accessToken }: Props) {
     } finally {
       setRequestsLoading(false);
     }
-  };
+  }, [accessToken]);
 
   useEffect(() => {
     void loadServices(category);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category, accessToken]);
+  }, [category, loadServices]);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -139,7 +141,7 @@ export function GuestServicesClient({ accessToken }: Props) {
         setReservations([]);
       }
     })();
-  }, [accessToken]);
+  }, [accessToken, loadRequests]);
 
   const submitRequest = async (event: FormEvent) => {
     event.preventDefault();

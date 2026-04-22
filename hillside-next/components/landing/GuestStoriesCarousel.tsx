@@ -41,6 +41,7 @@ export function GuestStoriesCarousel() {
       <p className="mt-5 text-lg leading-relaxed text-white/90">&ldquo;{story.quote}&rdquo;</p>
 
       <div className="mt-6 flex items-center gap-3">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={story.avatar} alt={story.name} className="h-12 w-12 rounded-full border border-white/25 object-cover" loading="lazy" />
         <div>
           <p className="text-sm font-semibold">{story.name}</p>
@@ -48,7 +49,7 @@ export function GuestStoriesCarousel() {
         </div>
       </div>
 
-      <p className="mt-3 text-yellow-300">★★★★★</p>
+      <p className="mt-3 text-yellow-300">*****</p>
 
       <div className="mt-5 flex items-center gap-2">
         {STORIES.map((item, index) => (

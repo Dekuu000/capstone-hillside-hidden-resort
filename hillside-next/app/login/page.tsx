@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, type ReactNode, useEffect, useRef, useState } from "react";
+import { FormEvent, type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Lock, Mail } from "lucide-react";
@@ -67,13 +67,16 @@ function AuthInput({
 export default function LoginPage() {
   const router = useRouter();
   const hasSessionBootstrapRun = useRef(false);
-  const navigateAfterAuth = (target: string) => {
-    if (typeof window !== "undefined") {
-      window.location.assign(target);
-      return;
-    }
-    router.replace(target);
-  };
+  const navigateAfterAuth = useCallback(
+    (target: string) => {
+      if (typeof window !== "undefined") {
+        window.location.assign(target);
+        return;
+      }
+      router.replace(target);
+    },
+    [router],
+  );
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -174,7 +177,7 @@ export default function LoginPage() {
     return () => {
       mounted = false;
     };
-  }, [nextPath, router]);
+  }, [navigateAfterAuth, nextPath]);
 
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault();

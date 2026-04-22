@@ -94,6 +94,7 @@ Baseline evidence:
 - [x] Batch E1 (part 3): disable pytest cache provider in API test runs to remove persistent Windows cache-permission warning noise.
 - [x] Batch E2 (part 1): clear API Ruff baseline violations in touched modules (`qr.py`, `supabase_client.py`) and verify lint + tests stay green.
 - [x] Batch E2 (part 2): harden monorepo lint script to call Ruff through API venv Python so `npm run lint` works consistently on Windows shells.
+- [x] Batch E2 (part 3): clear frontend ESLint warning backlog (hooks deps + intentional `img` rule suppressions for current landing/map assets) and re-verify lint/typecheck.
 
 ### F) Documentation Alignment
 

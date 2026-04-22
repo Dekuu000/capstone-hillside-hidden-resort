@@ -545,6 +545,7 @@ export function MyBookingsClient({
       submitReferenceNo,
       token,
       uploadProofIfNeeded,
+      pushActionMessage,
     ],
   );
 
@@ -570,7 +571,7 @@ export function MyBookingsClient({
     } finally {
       setCancelBusy(false);
     }
-  }, [cancelFor, fetchBookings, token]);
+  }, [cancelFor, fetchBookings, token, pushActionMessage]);
 
   const issueCheckinQr = useCallback(
     async (reservationId: string) => {

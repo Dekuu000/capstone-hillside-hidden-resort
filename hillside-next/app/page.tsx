@@ -237,6 +237,7 @@ export default async function HomePage() {
               key={item.title}
               className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white shadow-[var(--shadow-md)]"
             >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={item.image} alt={item.title} className="h-52 w-full object-cover" loading="lazy" />
               <div className="p-5">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-secondary)]">
@@ -299,6 +300,7 @@ export default async function HomePage() {
           </ul>
         </div>
         <div className="overflow-hidden rounded-3xl border border-[var(--color-border)] bg-white shadow-[var(--shadow-md)]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=1800&q=80"
             alt="Balcony view at Hillside Hidden Resort"
@@ -342,6 +344,7 @@ export default async function HomePage() {
           <GuestStoriesCarousel />
 
           <article className="overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="https://images.unsplash.com/photo-1615880484746-a134be9a6ecf?auto=format&fit=crop&w=1400&q=80"
               alt="Twilight resort pool view"
@@ -370,6 +373,7 @@ export default async function HomePage() {
           </article>
 
           <article className="relative overflow-hidden bg-[#eff6fb]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/images/resort-map.svg" alt="Hillside resort location map" className="h-full min-h-[320px] w-full object-cover" loading="lazy" />
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
               <span className="rounded-full border border-[var(--color-secondary)] bg-white/90 px-3 py-1 text-xs font-semibold text-[var(--color-primary)] shadow-[var(--shadow-sm)]">
