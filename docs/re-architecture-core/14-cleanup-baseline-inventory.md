@@ -663,3 +663,23 @@ Remaining A4 blocker:
    - `npm run lint` -> pass
    - `npm run test:api` -> pass (`90 passed`)
    - `npm run quality:gate` -> pass
+
+## Batch B5 Execution Update (Part 3 Complete)
+
+1. Consolidated remaining route-local DTOs into shared API schema module:
+   - `hillside-api/app/schemas/common.py` now also owns AI/NFT request-response models:
+     - `PricingRecommendationRequest`
+     - `OccupancyForecastRequest`, `OccupancyForecastItem`, `OccupancyForecastResponse`
+     - `PricingApplyRequest`, `PricingApplyResponse`
+     - `ConciergeRecommendationRequest`, `ConciergeSuggestion`, `ConciergeRecommendationResponse`
+     - `GuestPassVerificationResponse`
+2. Updated route modules to consume shared schema imports:
+   - `hillside-api/app/api/v2/routes/ai.py`
+   - `hillside-api/app/api/v2/routes/nft.py`
+3. Outcome:
+   - removed all in-route Pydantic class definitions in `app/api/v2/routes`
+   - API DTO definitions are now centralized in `app.schemas.common`
+4. Validation:
+   - `npm run lint` -> pass
+   - `npm run test:api` -> pass (`90 passed`)
+   - `npm run quality:gate` -> pass
