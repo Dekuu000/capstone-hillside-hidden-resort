@@ -97,6 +97,7 @@ Baseline evidence:
 - [x] Batch E2 (part 3): clear frontend ESLint warning backlog (hooks deps + intentional `img` rule suppressions for current landing/map assets) and re-verify lint/typecheck.
 - [x] Batch E3 (part 1): refresh frontend baseline-browser data dependency to remove stale Baseline notice from lint output.
 - [x] Batch E4 (part 1): add a consolidated `quality:gate` command to run lint/typecheck/API tests/migration validation together and verify it passes.
+- [x] Batch E4 (part 2): make API Python runner scripts cross-platform (`.venv` autodetect + `python` fallback) so quality gates are reusable on Linux CI and Windows dev.
 
 ### F) Documentation Alignment
 
