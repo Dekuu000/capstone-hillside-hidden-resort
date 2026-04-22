@@ -23,7 +23,10 @@
     "db:validate": "npm run db:sanity && npm run db:hygiene",
     "lint": "npm --prefix hillside-next run lint && hillside-api\\.venv\\Scripts\\python.exe -m ruff check hillside-api/app hillside-api/tests",
     "typecheck": "npm --workspace hillside-next run typecheck && npm --workspace @hillside/shared run typecheck",
-    "test": "python -m pytest hillside-api/tests -q && npm --prefix hillside-contracts run test"
+    "test:api": "hillside-api\\.venv\\Scripts\\python.exe -m pytest hillside-api/tests -q",
+    "test:contracts": "npm --prefix hillside-contracts run test",
+    "test": "npm run test:api && npm run test:contracts",
+    "quality:gate": "npm run lint && npm run typecheck && npm run test:api && npm run db:validate"
   },
   "devDependencies": {
     "supabase": "^2.78.1"
