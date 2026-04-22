@@ -67,7 +67,11 @@ Note: these are valid compatibility bridges today, but should be reviewed for re
 
 ### 4) Warning Backlog (non-blocking but should be cleaned)
 
-1. No active API warning backlog after Batch E1 part 3 (`pytest` warning-free baseline achieved).
+1. Frontend ESLint warning backlog remains (12 warnings; no errors), mostly:
+   - React hooks exhaustive-deps on selected components
+   - `@next/next/no-img-element` suggestions on landing/guest pages
+2. `baseline-browser-mapping` dataset staleness notice appears during frontend lint runs.
+3. No active API warning backlog after Batch E1 part 3 (`pytest` warning-free baseline achieved).
 
 ## Recommended First Cleanup Batches
 
@@ -519,3 +523,16 @@ Remaining A4 blocker:
    - result: `All checks passed!`
    - `hillside-api\\.venv\\Scripts\\python.exe -m pytest hillside-api/tests -q`
    - result: `90 passed`
+
+## Batch E2 Execution Update (Part 2 Complete)
+
+1. Hardened monorepo lint script for Windows reliability:
+   - updated root `package.json` `lint` script
+   - replaced `cd hillside-api && ruff check app tests` with explicit venv invocation:
+     - `hillside-api\\.venv\\Scripts\\python.exe -m ruff check hillside-api/app hillside-api/tests`
+2. Outcome:
+   - `npm run lint` now succeeds consistently in this environment (no `ruff` command-not-found failure)
+   - frontend warnings remain visible and non-blocking
+3. Validation:
+   - `npm run lint` -> pass (0 errors, 12 frontend warnings)
+   - `npm run typecheck` -> pass
