@@ -589,7 +589,7 @@ Remaining A4 blocker:
 1. Added consolidated quality gate script in root `package.json`:
    - `quality:gate` -> `lint` + `typecheck` + `test:api` + `db:validate`
 2. Hardened root testing script consistency:
-   - added `test:api` (venv-pinned pytest)
+   - added `test:api` (dedicated API pytest command)
    - added `test:contracts`
    - root `test` now chains `test:api` then `test:contracts`
 3. Validation:
@@ -600,3 +600,22 @@ Remaining A4 blocker:
      - Next/shared typecheck pass
      - API tests `90 passed`
      - migration sanity/hygiene pass (`checked_files: 71`)
+
+## Batch E4 Execution Update (Part 2 Complete)
+
+1. Added cross-platform API Python launcher:
+   - new helper script: `scripts/run-api-python.mjs`
+   - selects interpreter in order:
+     - `hillside-api/.venv/Scripts/python.exe` (Windows)
+     - `hillside-api/.venv/bin/python` (Linux/macOS)
+     - `python` from PATH (fallback)
+2. Updated root commands to use launcher:
+   - `lint` now runs Ruff via `node scripts/run-api-python.mjs -m ruff ...`
+   - `test:api` now runs pytest via `node scripts/run-api-python.mjs -m pytest ...`
+3. Outcome:
+   - preserved Windows reliability
+   - removed hard Windows path dependency from quality gate chain for CI/Linux reuse
+4. Validation:
+   - `npm run lint` -> pass
+   - `npm run test:api` -> pass (`90 passed`)
+   - `npm run quality:gate` -> pass
