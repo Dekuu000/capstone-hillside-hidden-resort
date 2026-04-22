@@ -90,6 +90,7 @@ Baseline evidence:
 - [ ] Remove flaky or redundant tests and replace with deterministic coverage.
 - [ ] Publish a final quality report snapshot in `docs/re-architecture-core/perf-report.md`.
 - [x] Batch E1 (part 1): replace deprecated `HTTP_422_UNPROCESSABLE_ENTITY` usage with `HTTP_422_UNPROCESSABLE_CONTENT` across v2 API routes to reduce warning noise in test runs.
+- [x] Batch E1 (part 2): migrate FastAPI app lifecycle from `@app.on_event` to lifespan context management and remove startup/shutdown deprecation warnings.
 
 ### F) Documentation Alignment
 
