@@ -492,7 +492,7 @@ def sync_push(
     max_batch = max(1, settings.sync_push_max_batch_size)
     if len(operations) > max_batch:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=f"Max sync push batch size is {max_batch}.",
         )
 

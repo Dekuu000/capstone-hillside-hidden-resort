@@ -461,3 +461,23 @@ Remaining A4 blocker:
 4. Validation:
    - `hillside-api\\.venv\\Scripts\\python.exe -m pytest hillside-api/tests/test_services_idempotency.py hillside-api/tests/test_v2_reservations_contract.py hillside-api/tests/test_v2_payments_contract.py hillside-api/tests/test_v2_qr_operations_contract.py hillside-api/tests/test_v2_error_envelope_contract.py hillside-api/tests/test_v2_error_mapping.py -q`
    - result: `41 passed`
+
+## Batch E1 Execution Update (Part 1 Complete)
+
+1. Replaced deprecated status constant usage in v2 API routes:
+   - changed `status.HTTP_422_UNPROCESSABLE_ENTITY` to `status.HTTP_422_UNPROCESSABLE_CONTENT`
+2. Updated files:
+   - `hillside-api/app/api/v2/routes/audit.py`
+   - `hillside-api/app/api/v2/routes/catalog.py`
+   - `hillside-api/app/api/v2/routes/dashboard.py`
+   - `hillside-api/app/api/v2/routes/me.py`
+   - `hillside-api/app/api/v2/routes/qr.py`
+   - `hillside-api/app/api/v2/routes/reports.py`
+   - `hillside-api/app/api/v2/routes/reservations.py`
+   - `hillside-api/app/api/v2/routes/sync.py`
+3. Outcome:
+   - removed `HTTP_422_UNPROCESSABLE_ENTITY` deprecation warnings from test runs
+   - remaining deprecation warnings are now concentrated on FastAPI `@app.on_event` usage in `app/main.py`
+4. Validation:
+   - `hillside-api\\.venv\\Scripts\\python.exe -m pytest hillside-api/tests -q`
+   - result: `90 passed`

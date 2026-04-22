@@ -187,7 +187,7 @@ def _verify_dynamic_qr(payload: QrVerifyRequest, auth: AuthContext) -> dict:
             if stored_expires_at + timedelta(seconds=leeway) < now:
                 raise HTTPException(status_code=status.HTTP_410_GONE, detail="QR token expired.")
         except ValueError:
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Stored QR token expiry is invalid.")
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Stored QR token expiry is invalid.")
 
     try:
         consumed = consume_qr_token_record(jti=token.jti, scanner_id=payload.scanner_id)
@@ -202,7 +202,7 @@ def _verify_dynamic_qr(payload: QrVerifyRequest, auth: AuthContext) -> dict:
 
     reservation_code = str(reservation.get("reservation_code") or "")
     if not reservation_code:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Reservation code missing.")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Reservation code missing.")
     if token.reservation_code and token.reservation_code != reservation_code:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="QR token reservation code mismatch.")
 

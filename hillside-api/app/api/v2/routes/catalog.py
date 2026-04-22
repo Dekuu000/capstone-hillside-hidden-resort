@@ -24,7 +24,7 @@ def get_available_units(
 ):
     if check_out_date <= check_in_date:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="check_out_date must be after check_in_date.",
         )
 
