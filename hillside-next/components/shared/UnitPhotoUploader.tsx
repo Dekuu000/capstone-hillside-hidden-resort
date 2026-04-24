@@ -9,6 +9,7 @@ import {
   resizeImageToWebp,
   validateUnitImageFile,
 } from "../../lib/unitMedia";
+import { getApiErrorMessage } from "../../lib/apiError";
 
 type UploadStatus = "queued" | "processing" | "uploading" | "done" | "failed";
 
@@ -105,7 +106,7 @@ export function UnitPhotoUploader({
         onUploaded([{ mediumUrl, thumbUrl }]);
         onUploadSuccess?.(item.file.name);
       } catch (unknownError) {
-        const reason = unknownError instanceof Error ? unknownError.message : "Upload failed.";
+        const reason = getApiErrorMessage(unknownError, "Upload failed.");
         updateItem(item.id, {
           status: "failed",
           progress: 0,

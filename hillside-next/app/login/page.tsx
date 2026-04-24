@@ -4,6 +4,7 @@ import { FormEvent, type ReactNode, useCallback, useEffect, useRef, useState } f
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Lock, Mail } from "lucide-react";
+import { getApiErrorMessage } from "../../lib/apiError";
 import { getSupabaseBrowserClient } from "../../lib/supabase";
 import { Button } from "../../components/shared/Button";
 import { Toast } from "../../components/shared/Toast";
@@ -172,7 +173,7 @@ export default function LoginPage() {
       });
     } catch (unknownError) {
       if (!mounted) return;
-      setError(unknownError instanceof Error ? unknownError.message : "Failed to initialize auth.");
+      setError(getApiErrorMessage(unknownError, "Failed to initialize auth."));
     }
     return () => {
       mounted = false;
@@ -207,7 +208,7 @@ export default function LoginPage() {
       const target = await resolveNextPath(nextPath, data.user);
       navigateAfterAuth(target);
     } catch (unknownError) {
-      setError(unknownError instanceof Error ? unknownError.message : "Login failed.");
+      setError(getApiErrorMessage(unknownError, "Login failed."));
     } finally {
       setBusy(false);
     }

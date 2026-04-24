@@ -4,6 +4,7 @@ import { FormEvent, type ReactNode, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Lock, Mail, UserRound } from "lucide-react";
+import { getApiErrorMessage } from "../../lib/apiError";
 import { getSupabaseBrowserClient } from "../../lib/supabase";
 import { Button } from "../../components/shared/Button";
 import { Toast } from "../../components/shared/Toast";
@@ -139,7 +140,7 @@ export default function RegisterPage() {
         router.replace("/auth/sign-in");
       }, 1200);
     } catch (unknownError) {
-      setError(unknownError instanceof Error ? unknownError.message : "Failed to create account.");
+      setError(getApiErrorMessage(unknownError, "Failed to create account."));
     } finally {
       setBusy(false);
     }

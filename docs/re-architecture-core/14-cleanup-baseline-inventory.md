@@ -959,3 +959,22 @@ Remaining A4 blocker:
    - `npm run typecheck` -> pass
    - `npm run test:api` -> pass (`95 passed`)
    - `npm run quality:gate` -> pass
+
+## Batch C2 Execution Update (Part 9 Complete)
+
+1. Expanded `getApiErrorMessage(...)` adoption across auth + shared upload utility:
+   - `hillside-next/app/login/page.tsx`
+   - `hillside-next/app/register/page.tsx`
+   - `hillside-next/app/auth/forgot-password/page.tsx`
+   - `hillside-next/components/shared/UnitPhotoUploader.tsx`
+2. Standardized additional failure branches:
+   - auth bootstrap/login/register/reset error surfaces now use shared API/network normalization
+   - unit image upload queue failure reason now uses shared normalization for consistent user-facing messaging
+3. Outcome:
+   - reduced remaining ad-hoc `instanceof Error` message extraction in auth entrypoints
+   - aligned upload utility errors with the same normalized HTTP/auth/network/offline messaging strategy used in other modules
+4. Validation:
+   - `npm run lint` -> pass
+   - `npm run typecheck` -> pass
+   - `npm run test:api` -> pass (`95 passed`)
+   - `npm run quality:gate` -> pass
