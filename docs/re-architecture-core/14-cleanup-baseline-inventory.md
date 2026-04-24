@@ -794,3 +794,22 @@ Remaining A4 blocker:
    - `npm run typecheck` -> pass
    - `npm run test:api` -> pass (`95 passed`)
    - `npm run quality:gate` -> pass
+
+## Batch C2 Execution Update (Part 4 Complete)
+
+1. Expanded `getApiErrorMessage(...)` adoption in core admin operations clients:
+   - `hillside-next/components/admin-payments/AdminPaymentsClient.tsx`
+   - `hillside-next/components/admin-reservations/AdminReservationsClient.tsx`
+   - `hillside-next/components/admin-units/AdminUnitsClient.tsx`
+2. Standardized additional failure branches:
+   - list/detail/payment-proof/verify/reject/on-site flows now use shared API error normalization
+   - admin auth fallback text (`Sign in required.` / `Admin access required.`) preserved for reservations header state
+   - units timeout-specific UX preserved while using normalized API/network messages for other paths
+3. Outcome:
+   - reduced repeated local error parsing in admin reservation/payment/unit workflows
+   - more consistent messaging for HTTP/auth/network/offline failure modes in high-frequency admin actions
+4. Validation:
+   - `npm run lint` -> pass
+   - `npm run typecheck` -> pass
+   - `npm run test:api` -> pass (`95 passed`)
+   - `npm run quality:gate` -> pass

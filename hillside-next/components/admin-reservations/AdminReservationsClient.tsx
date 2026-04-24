@@ -17,6 +17,7 @@ import {
   reservationListResponseSchema,
 } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
+import { getApiErrorMessage } from "../../lib/apiError";
 import { getSupabaseBrowserClient } from "../../lib/supabase";
 import { ReservationDetailDrawer } from "./ReservationDetailDrawer";
 import { DataFreshnessBadge } from "../shared/DataFreshnessBadge";
@@ -304,7 +305,16 @@ export function AdminReservationsClient({
       } else {
         setItems([]);
         setCount(0);
-        setError(unknownError instanceof Error ? unknownError.message : "Failed to load reservations.");
+        setError(
+          getApiErrorMessage(
+            unknownError,
+            "Failed to load reservations.",
+            {
+              unauthorized: "Sign in required.",
+              forbidden: "Admin access required.",
+            },
+          ),
+        );
         setCachedViewMeta(null);
       }
     } finally {
@@ -440,14 +450,12 @@ export function AdminReservationsClient({
           );
           setReservationPayments(paymentsData.items ?? []);
         } catch (unknownError) {
-          setPaymentsError(
-            unknownError instanceof Error ? unknownError.message : "Failed to load payment submissions.",
-          );
+          setPaymentsError(getApiErrorMessage(unknownError, "Failed to load payment submissions."));
         } finally {
           setPaymentsLoading(false);
         }
       } catch (unknownError) {
-        setDetailsError(unknownError instanceof Error ? unknownError.message : "Failed to load reservation details.");
+        setDetailsError(getApiErrorMessage(unknownError, "Failed to load reservation details."));
       } finally {
         setDetailsLoading(false);
       }
@@ -469,7 +477,7 @@ export function AdminReservationsClient({
         );
         setReservationPayments(paymentsData.items ?? []);
       } catch (unknownError) {
-        setPaymentsError(unknownError instanceof Error ? unknownError.message : "Failed to load payment submissions.");
+        setPaymentsError(getApiErrorMessage(unknownError, "Failed to load payment submissions."));
       } finally {
         setPaymentsLoading(false);
       }
@@ -499,7 +507,7 @@ export function AdminReservationsClient({
         });
         await fetchQuickStats();
       } catch (unknownError) {
-        setPaymentsError(unknownError instanceof Error ? unknownError.message : "Failed to verify payment.");
+        setPaymentsError(getApiErrorMessage(unknownError, "Failed to verify payment."));
       } finally {
         setVerifyBusy((prev) => ({ ...prev, [paymentId]: false }));
       }
@@ -527,7 +535,7 @@ export function AdminReservationsClient({
       }
       window.open(data.signedUrl, "_blank", "noopener,noreferrer");
     } catch (unknownError) {
-      setPaymentsError(unknownError instanceof Error ? unknownError.message : "Failed to open payment proof.");
+      setPaymentsError(getApiErrorMessage(unknownError, "Failed to open payment proof."));
     } finally {
       setProofBusy((prev) => ({ ...prev, [payment.payment_id]: false }));
     }
@@ -545,8 +553,8 @@ export function AdminReservationsClient({
   const canNext = page < totalPages;
 
   const headerLabel = useMemo(() => {
-    if (error?.includes("HTTP 403")) return "Admin access required";
-    if (error?.includes("HTTP 401")) return "Sign in required";
+    if (error === "Admin access required." || error?.includes("HTTP 403")) return "Admin access required";
+    if (error === "Sign in required." || error?.includes("HTTP 401")) return "Sign in required";
     return null;
   }, [error]);
 
