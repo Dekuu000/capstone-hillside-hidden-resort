@@ -938,3 +938,24 @@ Remaining A4 blocker:
    - `npm run typecheck` -> pass
    - `npm run test:api` -> pass (`95 passed`)
    - `npm run quality:gate` -> pass
+
+## Batch C2 Execution Update (Part 8 Complete)
+
+1. Expanded `getApiErrorMessage(...)` adoption in guest bookings core flow:
+   - `hillside-next/components/my-bookings/MyBookingsClient.tsx`
+2. Standardized additional failure branches:
+   - bookings list load (replace/append)
+   - booking details + AI recommendation load
+   - payment submission fallback message mapping
+   - cancel booking error state
+   - QR issue error state
+3. Preserved domain-specific payment guidance:
+   - existing "deposit is not required" fallback path remains intact for full-payment correction messaging
+4. Outcome:
+   - reduced repeated `instanceof Error` parsing in the main guest bookings interaction surface
+   - improved consistency of HTTP/auth/network/offline messaging with other migrated modules
+5. Validation:
+   - `npm run lint` -> pass
+   - `npm run typecheck` -> pass
+   - `npm run test:api` -> pass (`95 passed`)
+   - `npm run quality:gate` -> pass
