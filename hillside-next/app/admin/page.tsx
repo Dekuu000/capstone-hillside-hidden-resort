@@ -1,4 +1,3 @@
-import { cookies } from "next/headers";
 import type { ContractStatusResponse, UnitItem } from "../../../packages/shared/src/types";
 import { contractStatusResponseSchema, resortSnapshotResponseSchema, unitListResponseSchema } from "../../../packages/shared/src/schemas";
 import { GuestVerificationPanel } from "../../components/admin-dashboard/GuestVerificationPanel";
@@ -7,30 +6,11 @@ import { ResourceHeatmapPanel } from "../../components/admin-dashboard/ResourceH
 import { ResortSnapshotPanel } from "../../components/admin-dashboard/ResortSnapshotPanel";
 import { RoomInventorySyncPanel } from "../../components/admin-dashboard/RoomInventorySyncPanel";
 import { RoomManagementPanel } from "../../components/admin-dashboard/RoomManagementPanel";
-
-function getApiBase() {
-  return (process.env.NEXT_PUBLIC_API_BASE_URL || "").replace(/\/+$/, "");
-}
-
-async function fetchJson(path: string, accessToken: string): Promise<unknown | null> {
-  const base = getApiBase();
-  if (!base) return null;
-  try {
-    const response = await fetch(`${base}${path}`, {
-      method: "GET",
-      headers: { Authorization: `Bearer ${accessToken}` },
-      next: { revalidate: 30 },
-    });
-    if (!response.ok) return null;
-    return await response.json();
-  } catch {
-    return null;
-  }
-}
+import { fetchServerApiData } from "../../lib/serverApi";
+import { getServerAccessToken } from "../../lib/serverAuth";
 
 export default async function AdminShellPage() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("hs_at")?.value || null;
+  const token = await getServerAccessToken();
 
   let snapshotError: string | null = null;
   let snapshot = null;
@@ -39,27 +19,38 @@ export default async function AdminShellPage() {
   let initialUnits: UnitItem[] = [];
 
   if (token) {
-    const [snapshotJson, unitsJson, contractStatusJson] = await Promise.all([
-      fetchJson("/v2/dashboard/resort-snapshot", token),
-      fetchJson("/v2/units?limit=200&offset=0", token),
-      fetchJson("/v2/escrow/contract-status?window_days=7&limit=8&offset=0", token),
+    const [snapshotData, unitsData, contractStatusData] = await Promise.all([
+      fetchServerApiData({
+        accessToken: token,
+        path: "/v2/dashboard/resort-snapshot",
+        schema: resortSnapshotResponseSchema,
+        revalidate: 30,
+      }),
+      fetchServerApiData({
+        accessToken: token,
+        path: "/v2/units?limit=200&offset=0",
+        schema: unitListResponseSchema,
+        revalidate: 30,
+      }),
+      fetchServerApiData({
+        accessToken: token,
+        path: "/v2/escrow/contract-status?window_days=7&limit=8&offset=0",
+        schema: contractStatusResponseSchema,
+        revalidate: 30,
+      }),
     ]);
-
-    const snapshotParsed = resortSnapshotResponseSchema.safeParse(snapshotJson);
-    if (snapshotParsed.success) {
-      snapshot = snapshotParsed.data;
+    if (snapshotData) {
+      snapshot = snapshotData;
     } else {
       snapshotError = "Unable to load resort snapshot. Please refresh or check API connectivity.";
     }
 
-    const unitsParsed = unitListResponseSchema.safeParse(unitsJson);
-    if (unitsParsed.success) {
-      initialUnits = unitsParsed.data.items ?? [];
+    if (unitsData) {
+      initialUnits = unitsData.items ?? [];
     }
 
-    const contractStatusParsed = contractStatusResponseSchema.safeParse(contractStatusJson);
-    if (contractStatusParsed.success) {
-      contractStatus = contractStatusParsed.data;
+    if (contractStatusData) {
+      contractStatus = contractStatusData;
     } else {
       ledgerError = "Unable to load ledger transactions. Open Blockchain page for full diagnostics.";
     }

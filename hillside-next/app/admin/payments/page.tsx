@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { AdminPaymentsClient } from "../../../components/admin-payments/AdminPaymentsClient";
 import { getServerAccessToken } from "../../../lib/serverAuth";
+import { fetchServerApiData } from "../../../lib/serverApi";
 import { adminPaymentsResponseSchema } from "../../../../packages/shared/src/schemas";
 import type { AdminPaymentsResponse, AdminPaymentsTab } from "../../../../packages/shared/src/types";
 
@@ -21,8 +22,6 @@ async function fetchInitialPayments(
   search: string,
   page: number,
 ): Promise<AdminPaymentsResponse | null> {
-  const base = (process.env.NEXT_PUBLIC_API_BASE_URL || "").replace(/\/+$/, "");
-  if (!base) return null;
   const offset = Math.max(0, (page - 1) * 10);
   const qs = new URLSearchParams({
     tab,
@@ -32,19 +31,12 @@ async function fetchInitialPayments(
   if (search) {
     qs.set("search", search);
   }
-
-  const response = await fetch(`${base}/v2/payments?${qs.toString()}`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-    next: { revalidate: 8 },
+  return fetchServerApiData({
+    accessToken,
+    path: `/v2/payments?${qs.toString()}`,
+    schema: adminPaymentsResponseSchema,
+    revalidate: 8,
   });
-  if (!response.ok) return null;
-  const json = await response.json();
-  const parsed = adminPaymentsResponseSchema.safeParse(json);
-  if (!parsed.success) return null;
-  return parsed.data;
 }
 
 export default async function AdminPaymentsPage({

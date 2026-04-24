@@ -1,6 +1,7 @@
 import type { AuditLogsResponse, ContractStatusResponse, EscrowReconciliationResponse } from "../../../../packages/shared/src/types";
 import { auditLogsResponseSchema, contractStatusResponseSchema, escrowReconciliationResponseSchema } from "../../../../packages/shared/src/schemas";
 import { BlockchainExplorerClient } from "../../../components/admin-blockchain/BlockchainExplorerClient";
+import { fetchServerApiData } from "../../../lib/serverApi";
 import { getServerAccessToken } from "../../../lib/serverAuth";
 
 type BlockchainTab = "status" | "reconciliation" | "audit";
@@ -15,26 +16,6 @@ function resolveInitialTab(raw: string | undefined): BlockchainTab {
     return raw;
   }
   return "status";
-}
-
-function getApiBase() {
-  return (process.env.NEXT_PUBLIC_API_BASE_URL || "").replace(/\/+$/, "");
-}
-
-async function fetchJson(path: string, accessToken: string): Promise<unknown | null> {
-  const base = getApiBase();
-  if (!base || !accessToken) return null;
-  try {
-    const response = await fetch(`${base}${path}`, {
-      method: "GET",
-      headers: { Authorization: `Bearer ${accessToken}` },
-      next: { revalidate: 30 },
-    });
-    if (!response.ok) return null;
-    return await response.json();
-  } catch {
-    return null;
-  }
 }
 
 export default async function AdminBlockchainPage({
@@ -62,29 +43,40 @@ export default async function AdminBlockchainPage({
     initialContractError = "No active admin session found.";
     initialAuditError = "No active admin session found.";
   } else {
-    const [contractJson, auditJson, reconciliationJson] = await Promise.all([
-      fetchJson("/v2/escrow/contract-status?window_days=7&limit=5&offset=0", token),
-      fetchJson(auditPath, token),
-      fetchJson("/v2/escrow/reconciliation?limit=10&offset=0", token),
+    const [contractData, auditData, reconciliationData] = await Promise.all([
+      fetchServerApiData({
+        accessToken: token,
+        path: "/v2/escrow/contract-status?window_days=7&limit=5&offset=0",
+        schema: contractStatusResponseSchema,
+        revalidate: 30,
+      }),
+      fetchServerApiData({
+        accessToken: token,
+        path: auditPath,
+        schema: auditLogsResponseSchema,
+        revalidate: 30,
+      }),
+      fetchServerApiData({
+        accessToken: token,
+        path: "/v2/escrow/reconciliation?limit=10&offset=0",
+        schema: escrowReconciliationResponseSchema,
+        revalidate: 30,
+      }),
     ]);
-
-    const contractParsed = contractStatusResponseSchema.safeParse(contractJson);
-    if (contractParsed.success) {
-      initialContractStatus = contractParsed.data;
+    if (contractData) {
+      initialContractStatus = contractData;
     } else {
       initialContractError = "Unable to load contract status.";
     }
 
-    const auditParsed = auditLogsResponseSchema.safeParse(auditJson);
-    if (auditParsed.success) {
-      initialAuditLogs = auditParsed.data;
+    if (auditData) {
+      initialAuditLogs = auditData;
     } else {
       initialAuditError = "Unable to load audit logs.";
     }
 
-    const reconciliationParsed = escrowReconciliationResponseSchema.safeParse(reconciliationJson);
-    if (reconciliationParsed.success) {
-      initialReconciliation = reconciliationParsed.data;
+    if (reconciliationData) {
+      initialReconciliation = reconciliationData;
     } else {
       initialReconciliationError = "Unable to load reconciliation.";
     }

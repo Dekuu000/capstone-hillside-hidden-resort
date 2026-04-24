@@ -4,6 +4,7 @@ import type { AuditLogsResponse } from "../../../../packages/shared/src/types";
 import { auditLogsResponseSchema } from "../../../../packages/shared/src/schemas";
 import { Badge, statusToBadgeVariant } from "../../../components/shared/Badge";
 import { getServerAccessToken } from "../../../lib/serverAuth";
+import { fetchServerApiData } from "../../../lib/serverApi";
 
 const PAGE_SIZE = 10;
 
@@ -62,9 +63,6 @@ async function fetchAuditLogs(
     search?: string;
   },
 ): Promise<AuditLogsResponse | null> {
-  const base = (process.env.NEXT_PUBLIC_API_BASE_URL || "").replace(/\/+$/, "");
-  if (!base) return null;
-
   const offset = Math.max(0, (filters.page - 1) * PAGE_SIZE);
   const qs = new URLSearchParams({
     limit: String(PAGE_SIZE),
@@ -74,20 +72,12 @@ async function fetchAuditLogs(
   if (filters.from) qs.set("from", `${filters.from}T00:00:00Z`);
   if (filters.to) qs.set("to", `${filters.to}T23:59:59Z`);
   if (filters.search) qs.set("search", filters.search);
-
-  const response = await fetch(`${base}/v2/audit/logs?${qs.toString()}`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-    next: { revalidate: 10 },
+  return fetchServerApiData({
+    accessToken,
+    path: `/v2/audit/logs?${qs.toString()}`,
+    schema: auditLogsResponseSchema,
+    revalidate: 10,
   });
-  if (!response.ok) return null;
-
-  const json = await response.json();
-  const parsed = auditLogsResponseSchema.safeParse(json);
-  if (!parsed.success) return null;
-  return parsed.data;
 }
 
 export default async function AdminAuditPage({

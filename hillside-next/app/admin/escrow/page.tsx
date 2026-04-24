@@ -4,6 +4,7 @@ import {
 } from "../../../../packages/shared/src/schemas";
 import type { EscrowReconciliationResponse } from "../../../../packages/shared/src/types";
 import { getServerAccessToken } from "../../../lib/serverAuth";
+import { fetchServerApiData } from "../../../lib/serverApi";
 import { AdminEscrowTableClient } from "../../../components/admin-escrow/AdminEscrowTableClient";
 
 const PAGE_SIZE = 10;
@@ -24,24 +25,13 @@ async function fetchEscrowReconciliation(
   accessToken: string,
   page: number,
 ): Promise<EscrowReconciliationResponse | null> {
-  const base = (process.env.NEXT_PUBLIC_API_BASE_URL || "").replace(/\/+$/, "");
-  if (!base) return null;
   const offset = Math.max(0, (page - 1) * PAGE_SIZE);
-  const response = await fetch(
-    `${base}/v2/escrow/reconciliation?limit=${PAGE_SIZE}&offset=${offset}`,
-    {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-      next: { revalidate: 15 },
-    },
-  );
-  if (!response.ok) return null;
-  const json = await response.json();
-  const parsed = escrowReconciliationResponseSchema.safeParse(json);
-  if (!parsed.success) return null;
-  return parsed.data;
+  return fetchServerApiData({
+    accessToken,
+    path: `/v2/escrow/reconciliation?limit=${PAGE_SIZE}&offset=${offset}`,
+    schema: escrowReconciliationResponseSchema,
+    revalidate: 15,
+  });
 }
 
 export default async function AdminEscrowPage({

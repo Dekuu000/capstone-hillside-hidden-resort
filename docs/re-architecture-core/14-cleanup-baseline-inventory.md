@@ -718,3 +718,31 @@ Remaining A4 blocker:
    - `npm run lint` -> pass
    - `npm run test:api` -> pass (`95 passed`)
    - `npm run quality:gate` -> pass
+
+## Batch C2 Execution Update (Part 1 Complete)
+
+1. Added shared server-side API bootstrap helper:
+   - `hillside-next/lib/serverApi.ts`
+   - new utility `fetchServerApiData(...)` centralizes:
+     - API base URL normalization
+     - bearer-token request wiring
+     - optional timeout/abort handling
+     - response schema validation via `safeParse`
+     - null-safe failure behavior for SSR pages
+2. Migrated server-rendered admin pages from duplicated fetch/parse blocks to shared helper:
+   - `hillside-next/app/admin/page.tsx`
+   - `hillside-next/app/admin/blockchain/page.tsx`
+   - `hillside-next/app/admin/escrow/page.tsx`
+   - `hillside-next/app/admin/audit/page.tsx`
+   - `hillside-next/app/admin/reports/page.tsx`
+   - `hillside-next/app/admin/payments/page.tsx`
+   - `hillside-next/app/admin/reservations/page.tsx`
+   - `hillside-next/app/admin/units/page.tsx`
+3. Outcome:
+   - reduced repeated SSR API bootstrap code across admin screens
+   - standardized parse/error-null fallback behavior for initial page hydration data
+4. Validation:
+   - `npm run lint` -> pass
+   - `npm run typecheck` -> pass
+   - `npm run test:api` -> pass (`95 passed`)
+   - `npm run quality:gate` -> pass

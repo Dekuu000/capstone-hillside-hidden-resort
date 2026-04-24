@@ -1,27 +1,17 @@
 import { redirect } from "next/navigation";
 import { AdminReservationsClient } from "../../../components/admin-reservations/AdminReservationsClient";
 import { getServerAccessToken, getServerEmailHint } from "../../../lib/serverAuth";
+import { fetchServerApiData } from "../../../lib/serverApi";
 import { reservationListResponseSchema } from "../../../../packages/shared/src/schemas";
 import type { ReservationListResponse } from "../../../../packages/shared/src/types";
 
 async function fetchInitialReservations(accessToken: string): Promise<ReservationListResponse | null> {
-  const base = (process.env.NEXT_PUBLIC_API_BASE_URL || "").replace(/\/+$/, "");
-  if (!base) return null;
-  const response = await fetch(
-    `${base}/v2/reservations?limit=10&offset=0&sort_by=created_at&sort_dir=desc`,
-    {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-      next: { revalidate: 8 },
-    },
-  );
-  if (!response.ok) return null;
-  const json = await response.json();
-  const parsed = reservationListResponseSchema.safeParse(json);
-  if (!parsed.success) return null;
-  return parsed.data;
+  return fetchServerApiData({
+    accessToken,
+    path: "/v2/reservations?limit=10&offset=0&sort_by=created_at&sort_dir=desc",
+    schema: reservationListResponseSchema,
+    revalidate: 8,
+  });
 }
 
 export default async function AdminReservationsPage({
