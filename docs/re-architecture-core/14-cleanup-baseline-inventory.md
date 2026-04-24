@@ -856,3 +856,24 @@ Remaining A4 blocker:
    - `npm run typecheck` -> pass
    - `npm run test:api` -> pass (`95 passed`)
    - `npm run quality:gate` -> pass
+
+## Batch C2 Execution Update (Part 6 Complete)
+
+1. Expanded `getApiErrorMessage(...)` adoption in check-in operations:
+   - `hillside-next/components/admin-checkin/AdminCheckinClient.tsx`
+2. Standardized additional failure branches:
+   - preload refresh failure toast
+   - scan/manual validation failure toasts
+   - queue sync failure status messages
+   - check-out failure toast
+3. Preserved domain-specific UX while normalizing transport failures:
+   - existing check-in specific conflict/payment/offline guidance kept via `friendlyCheckinFailure(...)`
+   - network detection now also covers normalized offline/network error text
+4. Outcome:
+   - reduced repeated ad-hoc `instanceof Error` message extraction in a high-traffic admin module
+   - aligned check-in messaging behavior with shared API/network error normalization used in other admin flows
+5. Validation:
+   - `npm run lint` -> pass
+   - `npm run typecheck` -> pass
+   - `npm run test:api` -> pass (`95 passed`)
+   - `npm run quality:gate` -> pass

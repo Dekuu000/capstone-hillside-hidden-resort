@@ -29,6 +29,7 @@ import {
   syncPushResultSchema,
 } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
+import { getApiErrorMessage } from "../../lib/apiError";
 import { clearEncryptedQueue, loadEncryptedQueue, saveEncryptedQueue } from "../../lib/secureOfflineQueue";
 import { loadTodayArrivalsCache, saveTodayArrivalsCache, type CachedArrival } from "../../lib/checkinOfflineCache";
 import {
@@ -139,7 +140,12 @@ function normalizeOfflineQueue(items: unknown[]): QueuedAction[] {
 function isLikelyNetworkError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error ?? "");
   const lowered = message.toLowerCase();
-  return lowered.includes("failed to fetch") || lowered.includes("networkerror");
+  return (
+    lowered.includes("failed to fetch") ||
+    lowered.includes("networkerror") ||
+    lowered.includes("network request failed") ||
+    lowered.startsWith("offline:")
+  );
 }
 
 function pendingLabel(item: QueuedAction): string {
@@ -157,11 +163,18 @@ function friendlyInvalidReason(reason?: string | null, fallback?: string | null)
 }
 
 function friendlyCheckinFailure(error: unknown, currentStatus?: string | null): string {
-  const message = error instanceof Error ? error.message : String(error ?? "Check-in failed.");
+  const message = getApiErrorMessage(error, "Check-in failed.");
   const lowered = message.toLowerCase();
   if (String(currentStatus || "").toLowerCase() === "checked_in") return "Reservation is already checked in.";
   if (lowered.includes("already checked in") || lowered.includes("http 409")) return "Reservation is already checked in.";
-  if (lowered.includes("failed to fetch") || lowered.includes("networkerror")) return "Network error. Please check connection and try again.";
+  if (
+    lowered.includes("failed to fetch") ||
+    lowered.includes("networkerror") ||
+    lowered.includes("network error") ||
+    lowered.startsWith("offline:")
+  ) {
+    return "Network error. Please check connection and try again.";
+  }
   return message || "Check-in failed.";
 }
 
@@ -559,7 +572,7 @@ export function AdminCheckinClient({
       }
     } catch (e) {
       if (!silent) {
-        showToast({ type: "error", title: "Pack refresh failed", message: e instanceof Error ? e.message : "Unable to refresh arrivals." });
+        showToast({ type: "error", title: "Pack refresh failed", message: getApiErrorMessage(e, "Unable to refresh arrivals.") });
       }
     } finally {
       preloadBusyRef.current = false;
@@ -818,7 +831,7 @@ export function AdminCheckinClient({
             showToast({
               type: "error",
               title: "Validation failed",
-              message: error instanceof Error ? error.message : "Unable to validate scanned QR.",
+              message: getApiErrorMessage(error, "Unable to validate scanned QR."),
             });
           } finally {
             await stopCamera();
@@ -957,7 +970,7 @@ export function AdminCheckinClient({
       }
     } catch (e) {
       setOutcome("invalid");
-      const message = e instanceof Error ? e.message : "Validation failed.";
+      const message = getApiErrorMessage(e, "Validation failed.");
       showToast({ type: "error", title: "Validation failed", message });
     } finally {
       setBusy(false);
@@ -1060,12 +1073,12 @@ export function AdminCheckinClient({
           setOutcome("valid");
         }
         syncedCount += 1;
-      } catch (e) {
-        if (isLikelyNetworkError(e)) break;
-        const message = e instanceof Error ? e.message : "Sync failed.";
-        nextQueue = nextQueue.map((entry) =>
-          entry.id === item.id
-            ? { ...entry, syncStatus: "failed", syncMessage: message, syncHint: null, syncHttpStatus: null }
+    } catch (e) {
+      if (isLikelyNetworkError(e)) break;
+      const message = getApiErrorMessage(e, "Sync failed.");
+      nextQueue = nextQueue.map((entry) =>
+        entry.id === item.id
+          ? { ...entry, syncStatus: "failed", syncMessage: message, syncHint: null, syncHttpStatus: null }
             : entry,
         );
         reportEntries.push({
@@ -1369,12 +1382,12 @@ export function AdminCheckinClient({
         showToast({ type: "success", title: "Check-out successful" });
       })
       .catch(async (e) => {
-        if (isLikelyNetworkError(e)) {
-          const queued = await enqueueAction("checkout", mode === "scan" ? "scan" : "code");
-          if (queued) return;
-        }
-        showToast({ type: "error", title: "Check-out failed", message: e instanceof Error ? e.message : "Request failed." });
-      })
+      if (isLikelyNetworkError(e)) {
+        const queued = await enqueueAction("checkout", mode === "scan" ? "scan" : "code");
+        if (queued) return;
+      }
+      showToast({ type: "error", title: "Check-out failed", message: getApiErrorMessage(e, "Request failed.") });
+    })
       .finally(() => setActionBusy(null));
   }, [enqueueAction, mode, networkOnline, result, scannerId, showToast, token]);
 
