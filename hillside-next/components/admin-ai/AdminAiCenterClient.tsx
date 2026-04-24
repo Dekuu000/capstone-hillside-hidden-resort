@@ -13,9 +13,19 @@ import {
   TrendingUp,
   Users,
 } from "lucide-react";
-import { z } from "zod";
-import { aiPricingMetricsResponseSchema, pricingRecommendationSchema } from "../../../packages/shared/src/schemas";
-import type { AiPricingMetricsResponse, PricingRecommendation } from "../../../packages/shared/src/types";
+import {
+  aiPricingMetricsResponseSchema,
+  conciergeResponseSchema,
+  occupancyForecastResponseSchema,
+  pricingApplyResponseSchema,
+  pricingRecommendationSchema,
+} from "../../../packages/shared/src/schemas";
+import type {
+  AiPricingMetricsResponse,
+  ConciergeResponse,
+  OccupancyForecastResponse,
+  PricingRecommendation,
+} from "../../../packages/shared/src/types";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
 import { AIPricingInsightCard } from "../ai/AIPricingInsightCard";
@@ -31,48 +41,6 @@ import { useToast } from "../shared/ToastProvider";
 type AdminAiCenterClientProps = {
   token: string;
 };
-
-const occupancyItemSchema = z.object({
-  date: z.string().min(1),
-  occupancy: z.number(),
-});
-
-const occupancyForecastResponseSchema = z.object({
-  forecast_id: z.number().int().optional().nullable(),
-  generated_at: z.string(),
-  start_date: z.string(),
-  horizon_days: z.number().int(),
-  model_version: z.string(),
-  source: z.string(),
-  items: z.array(occupancyItemSchema),
-  notes: z.array(z.string()).default([]),
-});
-
-type OccupancyForecastResponse = z.infer<typeof occupancyForecastResponseSchema>;
-
-const conciergeSuggestionSchema = z.object({
-  code: z.string(),
-  title: z.string(),
-  description: z.string(),
-  reasons: z.array(z.string()).default([]),
-});
-
-const conciergeResponseSchema = z.object({
-  segment_key: z.string(),
-  stay_type: z.string().optional().nullable(),
-  model_version: z.string().optional().nullable(),
-  suggestions: z.array(conciergeSuggestionSchema),
-  notes: z.array(z.string()).default([]),
-});
-
-type ConciergeResponse = z.infer<typeof conciergeResponseSchema>;
-
-const pricingApplyResponseSchema = z.object({
-  ok: z.boolean(),
-  logged: z.boolean(),
-  reservation_id: z.string().optional().nullable(),
-  applied_at: z.string(),
-});
 
 const tabItems = [
   { id: "pricing", label: "Pricing", icon: <TrendingUp className="h-4 w-4" /> },

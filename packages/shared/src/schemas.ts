@@ -104,6 +104,44 @@ export const aiPricingMetricsResponseSchema = z.object({
   latency_ms: aiLatencySummarySchema,
 });
 
+export const occupancyForecastItemSchema = z.object({
+  date: z.string().min(1),
+  occupancy: z.number(),
+});
+
+export const occupancyForecastResponseSchema = z.object({
+  forecast_id: z.number().int().optional().nullable(),
+  generated_at: z.string(),
+  start_date: z.string(),
+  horizon_days: z.number().int(),
+  model_version: z.string(),
+  source: z.string(),
+  items: z.array(occupancyForecastItemSchema),
+  notes: z.array(z.string()).default([]),
+});
+
+export const conciergeSuggestionSchema = z.object({
+  code: z.string(),
+  title: z.string(),
+  description: z.string(),
+  reasons: z.array(z.string()).default([]),
+});
+
+export const conciergeResponseSchema = z.object({
+  segment_key: z.string(),
+  stay_type: z.string().optional().nullable(),
+  model_version: z.string().optional().nullable(),
+  suggestions: z.array(conciergeSuggestionSchema),
+  notes: z.array(z.string()).default([]),
+});
+
+export const pricingApplyResponseSchema = z.object({
+  ok: z.boolean(),
+  logged: z.boolean(),
+  reservation_id: z.string().optional().nullable(),
+  applied_at: z.string(),
+});
+
 export const myBookingsTabSchema = z.enum(MY_BOOKINGS_TABS);
 
 export const myBookingsCursorSchema = z.object({

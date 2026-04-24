@@ -124,6 +124,44 @@ export type AiPricingMetricsResponse = {
   latency_ms: AiLatencySummary;
 };
 
+export type OccupancyForecastItem = {
+  date: string;
+  occupancy: number;
+};
+
+export type OccupancyForecastResponse = {
+  forecast_id?: number | null;
+  generated_at: string;
+  start_date: string;
+  horizon_days: number;
+  model_version: string;
+  source: string;
+  items: OccupancyForecastItem[];
+  notes: string[];
+};
+
+export type ConciergeSuggestion = {
+  code: string;
+  title: string;
+  description: string;
+  reasons: string[];
+};
+
+export type ConciergeResponse = {
+  segment_key: string;
+  stay_type?: string | null;
+  model_version?: string | null;
+  suggestions: ConciergeSuggestion[];
+  notes: string[];
+};
+
+export type PricingApplyResponse = {
+  ok: boolean;
+  logged: boolean;
+  reservation_id?: string | null;
+  applied_at: string;
+};
+
 export type MyBookingsCursor = {
   checkInDate?: string | null;
   createdAt: string;
