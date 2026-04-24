@@ -74,6 +74,7 @@ Baseline evidence:
 - [x] Batch C1 (part 1): unify reservation policy enum constants in shared package and align cancellation outcome handling in `MyBookingsClient`.
 - [x] Batch C1 (part 2): centralize stay deposit preview logic in shared contracts and reuse in booking/cancellation UI messaging.
 - [x] Batch C2 (part 1): centralize server-rendered admin page API bootstrap fetch + schema-parse flow via shared `serverApi` helper and migrate core admin screens.
+- [x] Batch C2 (part 2): extend shared `serverApi` bootstrap usage to guest/public SSR pages (bookings, tours, my-stay) and admin walk-in preloads for consistent fetch/error handling.
 
 ### D) Database and Migration Hygiene
 

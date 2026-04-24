@@ -8,6 +8,7 @@ import { GuestShell } from "../../../components/layout/GuestShell";
 import { PageHeader } from "../../../components/layout/PageHeader";
 import { Badge } from "../../../components/shared/Badge";
 import { NetworkStatusBadge } from "../../../components/shared/NetworkStatusBadge";
+import { fetchServerApiData } from "../../../lib/serverApi";
 import { getServerAccessToken, getServerEmailHint } from "../../../lib/serverAuth";
 
 const guestPassSchema = z.object({
@@ -62,33 +63,24 @@ function roomFallbackDisplay(stay: ReservationListItem) {
 }
 
 async function fetchStayDashboard(accessToken: string): Promise<StayDashboardResponse | null> {
-  const base = (process.env.NEXT_PUBLIC_API_BASE_URL || "").replace(/\/+$/, "");
-  if (!base) return null;
-  const response = await fetch(`${base}/v2/me/stay-dashboard`, {
-    method: "GET",
-    headers: { Authorization: `Bearer ${accessToken}` },
-    cache: "no-store",
+  return fetchServerApiData({
+    accessToken,
+    path: "/v2/me/stay-dashboard",
+    schema: stayDashboardResponseSchema,
+    revalidate: 0,
   });
-  if (!response.ok) return null;
-  const json = await response.json();
-  const parsed = stayDashboardResponseSchema.safeParse(json);
-  if (!parsed.success) return null;
-  return parsed.data;
 }
 
-async function fetchGuestPass(accessToken: string, reservationId: string) {
-  const base = (process.env.NEXT_PUBLIC_API_BASE_URL || "").replace(/\/+$/, "");
-  if (!base) return null;
-  const response = await fetch(`${base}/v2/nft/guest-pass/${reservationId}`, {
-    method: "GET",
-    headers: { Authorization: `Bearer ${accessToken}` },
-    cache: "no-store",
+async function fetchGuestPass(
+  accessToken: string,
+  reservationId: string,
+): Promise<z.infer<typeof guestPassSchema> | null> {
+  return fetchServerApiData({
+    accessToken,
+    path: `/v2/nft/guest-pass/${reservationId}`,
+    schema: guestPassSchema,
+    revalidate: 0,
   });
-  if (!response.ok) return null;
-  const json = await response.json();
-  const parsed = guestPassSchema.safeParse(json);
-  if (!parsed.success) return null;
-  return parsed.data;
 }
 
 export default async function GuestMyStayPage() {

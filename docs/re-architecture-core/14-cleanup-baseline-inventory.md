@@ -746,3 +746,25 @@ Remaining A4 blocker:
    - `npm run typecheck` -> pass
    - `npm run test:api` -> pass (`95 passed`)
    - `npm run quality:gate` -> pass
+
+## Batch C2 Execution Update (Part 2 Complete)
+
+1. Extended shared `fetchServerApiData(...)` adoption to guest/public SSR preload flows and admin walk-in preload:
+   - `hillside-next/app/book/page.tsx`
+   - `hillside-next/app/my-bookings/page.tsx`
+   - `hillside-next/app/tours/page.tsx`
+   - `hillside-next/app/guest/my-stay/page.tsx`
+   - `hillside-next/app/admin/walk-in/page.tsx`
+2. Standardized schema-validated bootstrap for these paths:
+   - available units preload (`availableUnitsResponseSchema`)
+   - bookings preload (`myBookingsResponseSchema`)
+   - services preload (`serviceListResponseSchema`)
+   - stay dashboard + guest pass preload (`stayDashboardResponseSchema`, local guest pass schema)
+3. Outcome:
+   - reduced duplicated base-url/headers/response parsing branches outside admin core screens
+   - consistent null-safe SSR fallback behavior now spans both admin and guest page bootstrap calls
+4. Validation:
+   - `npm run lint` -> pass
+   - `npm run typecheck` -> pass
+   - `npm run test:api` -> pass (`95 passed`)
+   - `npm run quality:gate` -> pass

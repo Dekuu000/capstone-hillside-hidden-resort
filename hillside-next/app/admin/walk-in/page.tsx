@@ -2,23 +2,16 @@ import { redirect } from "next/navigation";
 import type { ServiceListResponse } from "../../../../packages/shared/src/types";
 import { serviceListResponseSchema } from "../../../../packages/shared/src/schemas";
 import { AdminWalkInConsoleClient } from "../../../components/admin-walkin/AdminWalkInConsoleClient";
+import { fetchServerApiData } from "../../../lib/serverApi";
 import { getServerAccessToken } from "../../../lib/serverAuth";
 
 async function fetchInitialServices(accessToken: string): Promise<ServiceListResponse | null> {
-  const base = (process.env.NEXT_PUBLIC_API_BASE_URL || "").replace(/\/+$/, "");
-  if (!base) return null;
-  const response = await fetch(`${base}/v2/catalog/services`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-    next: { revalidate: 30 },
+  return fetchServerApiData({
+    accessToken,
+    path: "/v2/catalog/services",
+    schema: serviceListResponseSchema,
+    revalidate: 30,
   });
-  if (!response.ok) return null;
-  const json = await response.json();
-  const parsed = serviceListResponseSchema.safeParse(json);
-  if (!parsed.success) return null;
-  return parsed.data;
 }
 
 export default async function AdminWalkInPage({
