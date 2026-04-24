@@ -1,25 +1,18 @@
 import { redirect } from "next/navigation";
 import { MyBookingsClient } from "../../components/my-bookings/MyBookingsClient";
 import { GuestShell } from "../../components/layout/GuestShell";
+import { fetchServerApiData } from "../../lib/serverApi";
 import { getServerAccessToken, getServerAuthContext, getServerEmailHint } from "../../lib/serverAuth";
 import { myBookingsResponseSchema } from "../../../packages/shared/src/schemas";
 import type { MyBookingsResponse } from "../../../packages/shared/src/types";
 
 async function fetchInitialBookings(accessToken: string): Promise<MyBookingsResponse | null> {
-  const base = (process.env.NEXT_PUBLIC_API_BASE_URL || "").replace(/\/+$/, "");
-  if (!base) return null;
-  const response = await fetch(`${base}/v2/me/bookings?tab=upcoming&limit=10`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-    cache: "no-store",
+  return fetchServerApiData({
+    accessToken,
+    path: "/v2/me/bookings?tab=upcoming&limit=10",
+    schema: myBookingsResponseSchema,
+    revalidate: 0,
   });
-  if (!response.ok) return null;
-  const json = await response.json();
-  const parsed = myBookingsResponseSchema.safeParse(json);
-  if (!parsed.success) return null;
-  return parsed.data;
 }
 
 export default async function MyBookingsPage() {

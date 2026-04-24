@@ -1,5 +1,8 @@
 import { BookNowClient } from "../../components/book/BookNowClient";
 import { GuestShell } from "../../components/layout/GuestShell";
+import { availableUnitsResponseSchema } from "../../../packages/shared/src/schemas";
+import type { AvailableUnitsResponse } from "../../../packages/shared/src/types";
+import { fetchServerApiData } from "../../lib/serverApi";
 import { getServerAccessToken, getServerAuthContext, getServerEmailHint } from "../../lib/serverAuth";
 
 function isoLocalDate(dayOffset: number) {
@@ -15,22 +18,17 @@ async function fetchInitialAvailableUnits(
   accessToken: string,
   checkInDate: string,
   checkOutDate: string,
-) {
-  const base = (process.env.NEXT_PUBLIC_API_BASE_URL || "").replace(/\/+$/, "");
-  if (!base) return null;
+): Promise<AvailableUnitsResponse | null> {
   const qs = new URLSearchParams({
     check_in_date: checkInDate,
     check_out_date: checkOutDate,
   });
-  const response = await fetch(`${base}/v2/catalog/units/available?${qs.toString()}`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-    cache: "no-store",
+  return fetchServerApiData({
+    accessToken,
+    path: `/v2/catalog/units/available?${qs.toString()}`,
+    schema: availableUnitsResponseSchema,
+    revalidate: 0,
   });
-  if (!response.ok) return null;
-  return response.json();
 }
 
 export default async function BookPage() {
