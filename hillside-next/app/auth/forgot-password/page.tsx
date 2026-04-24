@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
+import { getApiErrorMessage } from "../../../lib/apiError";
 import { getSupabaseBrowserClient } from "../../../lib/supabase";
 import { AuthShell } from "../../../components/layout/AuthShell";
 import { Input } from "../../../components/shared/Input";
@@ -29,7 +30,7 @@ export default function ForgotPasswordPage() {
       }
       setSent(true);
     } catch (unknownError) {
-      setError(unknownError instanceof Error ? unknownError.message : "Failed to send reset link.");
+      setError(getApiErrorMessage(unknownError, "Failed to send reset link."));
     } finally {
       setBusy(false);
     }
