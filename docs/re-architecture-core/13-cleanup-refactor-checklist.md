@@ -77,6 +77,7 @@ Baseline evidence:
 - [x] Batch C2 (part 2): extend shared `serverApi` bootstrap usage to guest/public SSR pages (bookings, tours, my-stay) and admin walk-in preloads for consistent fetch/error handling.
 - [x] Batch C2 (part 3): add shared client-side API error normalizer and adopt it across high-traffic booking/operations clients to unify user-facing API/network failure messaging.
 - [x] Batch C2 (part 4): expand shared client-side API error normalizer adoption across admin reservations/payments/units clients and align auth/network fallback messaging.
+- [x] Batch C2 (part 5): expand shared client-side API error normalizer adoption across admin AI center and room-management dashboard flows.
 
 ### D) Database and Migration Hygiene
 

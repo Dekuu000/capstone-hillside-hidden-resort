@@ -813,3 +813,20 @@ Remaining A4 blocker:
    - `npm run typecheck` -> pass
    - `npm run test:api` -> pass (`95 passed`)
    - `npm run quality:gate` -> pass
+
+## Batch C2 Execution Update (Part 5 Complete)
+
+1. Expanded `getApiErrorMessage(...)` adoption in additional admin surfaces:
+   - `hillside-next/components/admin-ai/AdminAiCenterClient.tsx`
+   - `hillside-next/components/admin-dashboard/RoomManagementPanel.tsx`
+2. Standardized additional failure branches:
+   - AI pricing metrics/recommendation/apply/forecast/concierge errors now use shared API/network normalization.
+   - Room management load/save errors now use shared API/network normalization for inline + toast messaging.
+3. Outcome:
+   - reduced remaining ad-hoc `unknownError instanceof Error ? ...` branches in admin AI/dashboard flows
+   - improved consistency of HTTP/auth/network failure messaging across core admin operations
+4. Validation:
+   - `npm run lint` -> pass
+   - `npm run typecheck` -> pass
+   - `npm run test:api` -> pass (`95 passed`)
+   - `npm run quality:gate` -> pass

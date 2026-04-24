@@ -17,6 +17,7 @@ import { z } from "zod";
 import { aiPricingMetricsResponseSchema, pricingRecommendationSchema } from "../../../packages/shared/src/schemas";
 import type { AiPricingMetricsResponse, PricingRecommendation } from "../../../packages/shared/src/types";
 import { apiFetch } from "../../lib/apiClient";
+import { getApiErrorMessage } from "../../lib/apiError";
 import { AIPricingInsightCard } from "../ai/AIPricingInsightCard";
 import { PageHeader } from "../layout/PageHeader";
 import { Badge } from "../shared/Badge";
@@ -297,7 +298,7 @@ export function AdminAiCenterClient({ token }: AdminAiCenterClientProps) {
       setMetrics(data);
       setLastUpdated(new Date().toISOString());
     } catch (unknownError) {
-      setMetricsError(unknownError instanceof Error ? unknownError.message : "Failed to load AI pricing metrics.");
+      setMetricsError(getApiErrorMessage(unknownError, "Failed to load AI pricing metrics."));
     } finally {
       setMetricsLoading(false);
     }
@@ -337,7 +338,7 @@ export function AdminAiCenterClient({ token }: AdminAiCenterClientProps) {
       setRecommendation(data);
       setLastUpdated(new Date().toISOString());
     } catch (unknownError) {
-      setRecommendationError(unknownError instanceof Error ? unknownError.message : "Failed to generate recommendation.");
+      setRecommendationError(getApiErrorMessage(unknownError, "Failed to generate recommendation."));
     } finally {
       setRecommendationLoading(false);
     }
@@ -370,9 +371,8 @@ export function AdminAiCenterClient({ token }: AdminAiCenterClientProps) {
         message: "Pricing action was logged successfully.",
       });
     } catch (unknownError) {
-      setPricingActionMessage(
-        unknownError instanceof Error ? `Apply failed: ${unknownError.message}` : "Apply failed.",
-      );
+      const applyMessage = getApiErrorMessage(unknownError, "Failed to apply recommendation.");
+      setPricingActionMessage(`Apply failed: ${applyMessage}`);
     }
   };
 
@@ -395,7 +395,7 @@ export function AdminAiCenterClient({ token }: AdminAiCenterClientProps) {
       setForecast(data);
       setLastUpdated(new Date().toISOString());
     } catch (unknownError) {
-      setForecastError(unknownError instanceof Error ? unknownError.message : "Failed to generate forecast.");
+      setForecastError(getApiErrorMessage(unknownError, "Failed to generate forecast."));
     } finally {
       setForecastLoading(false);
     }
@@ -421,7 +421,7 @@ export function AdminAiCenterClient({ token }: AdminAiCenterClientProps) {
       setConcierge(data);
       setLastUpdated(new Date().toISOString());
     } catch (unknownError) {
-      setConciergeError(unknownError instanceof Error ? unknownError.message : "Failed to load concierge recommendations.");
+      setConciergeError(getApiErrorMessage(unknownError, "Failed to load concierge recommendations."));
     } finally {
       setConciergeLoading(false);
     }

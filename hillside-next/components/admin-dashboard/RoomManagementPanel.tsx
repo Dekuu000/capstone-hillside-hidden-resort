@@ -6,6 +6,7 @@ import { CheckCircle2, Settings2 } from "lucide-react";
 import { unitListResponseSchema, unitWriteResponseSchema } from "../../../packages/shared/src/schemas";
 import type { UnitItem } from "../../../packages/shared/src/types";
 import { apiFetch } from "../../lib/apiClient";
+import { getApiErrorMessage } from "../../lib/apiError";
 import { useToast } from "../shared/ToastProvider";
 
 type UnitOperationalStatus = "cleaned" | "occupied" | "dirty" | "maintenance";
@@ -82,7 +83,7 @@ export function RoomManagementPanel({
           setSelectedUnitId(nextItems[0].unit_id);
         }
       } catch (loadError) {
-        setError(loadError instanceof Error ? loadError.message : "Failed to load units.");
+        setError(getApiErrorMessage(loadError, "Failed to load units."));
       } finally {
         setLoading(false);
       }
@@ -168,7 +169,7 @@ export function RoomManagementPanel({
       });
       void loadUnits(true);
     } catch (saveError) {
-      const message = saveError instanceof Error ? saveError.message : "Failed to save unit.";
+      const message = getApiErrorMessage(saveError, "Failed to save unit.");
       setError(message);
       showToast({ type: "error", title: "Save failed", message });
     } finally {
