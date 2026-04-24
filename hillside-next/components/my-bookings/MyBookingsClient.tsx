@@ -25,6 +25,7 @@ import {
   reservationListItemSchema,
 } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
+import { getApiErrorMessage } from "../../lib/apiError";
 import { loadLastIssuedQrToken, saveLastIssuedQrToken } from "../../lib/guestQrTokenCache";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
 import { queuePaymentSubmissionWithFile } from "../../lib/offlineSync/paymentSubmission";
@@ -281,11 +282,11 @@ export function MyBookingsClient({
             setCachedViewMeta(`Using cached data from ${formatCachedAt(cached.cached_at)}`);
             setError(null);
           } else {
-            setError(unknownError instanceof Error ? unknownError.message : "Failed to load bookings.");
+            setError(getApiErrorMessage(unknownError, "Failed to load bookings."));
             setCachedViewMeta(null);
           }
         } else {
-          setError(unknownError instanceof Error ? unknownError.message : "Failed to load bookings.");
+          setError(getApiErrorMessage(unknownError, "Failed to load bookings."));
         }
       } finally {
         if (requestIdRef.current === currentRequestId) {
@@ -367,14 +368,12 @@ export function MyBookingsClient({
           );
           setDetailsAiRecommendation(aiData);
         } catch (unknownError) {
-          setDetailsAiError(
-            unknownError instanceof Error ? unknownError.message : "Failed to load AI recommendation.",
-          );
+          setDetailsAiError(getApiErrorMessage(unknownError, "Failed to load AI recommendation."));
         } finally {
           setDetailsAiLoading(false);
         }
       } catch (unknownError) {
-        setDetailsError(unknownError instanceof Error ? unknownError.message : "Failed to load booking details.");
+        setDetailsError(getApiErrorMessage(unknownError, "Failed to load booking details."));
       } finally {
         setDetailsLoading(false);
       }
@@ -523,7 +522,7 @@ export function MyBookingsClient({
         }
       } catch (unknownError) {
         const rawMessage = unknownError instanceof Error ? unknownError.message : String(unknownError ?? "");
-        const message = rawMessage || "Failed to submit payment.";
+        const message = getApiErrorMessage(unknownError, "Failed to submit payment.");
         if (rawMessage.toLowerCase().includes("deposit is not required")) {
           setSubmitError(
             `This booking requires full payment. Update amount to ${formatPeso(Math.max(0, Number(submitFor.total_amount ?? 0) - Number(submitFor.amount_paid_verified ?? 0)))} and submit again.`,
@@ -567,7 +566,7 @@ export function MyBookingsClient({
       setCancelFor(null);
       await fetchBookings(null, "replace");
     } catch (unknownError) {
-      setCancelError(unknownError instanceof Error ? unknownError.message : "Failed to cancel booking.");
+      setCancelError(getApiErrorMessage(unknownError, "Failed to cancel booking."));
     } finally {
       setCancelBusy(false);
     }
@@ -600,7 +599,7 @@ export function MyBookingsClient({
         });
       } catch (unknownError) {
         setQrToken(null);
-        setQrError(unknownError instanceof Error ? unknownError.message : "Failed to issue check-in QR token.");
+        setQrError(getApiErrorMessage(unknownError, "Failed to issue check-in QR token."));
       } finally {
         setQrBusy(false);
       }
