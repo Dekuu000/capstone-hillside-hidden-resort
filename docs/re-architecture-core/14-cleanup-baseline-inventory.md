@@ -915,3 +915,26 @@ Remaining A4 blocker:
    - `npm run typecheck` -> pass
    - `npm run test:api` -> pass (`95 passed`)
    - `npm run quality:gate` -> pass
+
+## Batch C3 Execution Update (Part 3 Complete)
+
+1. Moved API health contract into shared package:
+   - added schemas in `packages/shared/src/schemas.ts`:
+     - `apiHealthChainStatusSchema`
+     - `apiHealthMonitorSchema`
+     - `apiHealthResponseSchema`
+   - added types in `packages/shared/src/types.ts`:
+     - `ApiHealthChainStatus`
+     - `ApiHealthMonitor`
+     - `ApiHealthResponse`
+2. Updated status widget to use shared contract parsing:
+   - `hillside-next/components/SessionAndApiStatus.tsx`
+   - removed local `ApiHealth` type and switched to `apiHealthResponseSchema.safeParse(...)`
+3. Outcome:
+   - reduced local contract duplication for `/health` response
+   - improved contract drift detection in dev status widget through explicit shape validation
+4. Validation:
+   - `npm run lint` -> pass
+   - `npm run typecheck` -> pass
+   - `npm run test:api` -> pass (`95 passed`)
+   - `npm run quality:gate` -> pass

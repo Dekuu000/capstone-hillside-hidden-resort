@@ -82,6 +82,7 @@ Baseline evidence:
 - [x] Batch C2 (part 7): expand shared client-side API error normalizer adoption across guest profile/stay/wallet interaction flows.
 - [x] Batch C3 (part 1): move admin AI center forecast/concierge/apply response contracts into `packages/shared` and remove local duplicate Zod/type definitions.
 - [x] Batch C3 (part 2): move QR public-key response contract into `packages/shared` and remove admin check-in inline response typing.
+- [x] Batch C3 (part 3): move API health response contract into `packages/shared` and replace local status widget typing with shared schema/type parsing.
 
 ### D) Database and Migration Hygiene
 

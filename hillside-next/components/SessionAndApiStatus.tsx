@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { apiHealthResponseSchema } from "../../packages/shared/src/schemas";
+import type { ApiHealthResponse } from "../../packages/shared/src/types";
+import { getApiErrorMessage } from "../lib/apiError";
 import { getSupabaseBrowserClient } from "../lib/supabase";
 import { env } from "../lib/env";
 
@@ -11,13 +14,6 @@ type SessionState = {
   error: string | null;
 };
 
-type ApiHealth = {
-  ok: boolean;
-  service?: string;
-  env?: string;
-  api_version?: string;
-};
-
 export function SessionAndApiStatus() {
   const [sessionState, setSessionState] = useState<SessionState>({
     hasSession: false,
@@ -25,7 +21,7 @@ export function SessionAndApiStatus() {
     email: null,
     error: null,
   });
-  const [apiHealth, setApiHealth] = useState<ApiHealth | null>(null);
+  const [apiHealth, setApiHealth] = useState<ApiHealthResponse | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
 
   const apiHealthUrl = useMemo(() => {
@@ -57,14 +53,14 @@ export function SessionAndApiStatus() {
           if (!mounted) return;
           setSessionState((prev) => ({
             ...prev,
-            error: error instanceof Error ? error.message : "Failed to read session.",
+            error: getApiErrorMessage(error, "Failed to read session."),
           }));
         });
     } catch (error) {
       if (!mounted) return;
       setSessionState((prev) => ({
         ...prev,
-        error: error instanceof Error ? error.message : "Supabase client init failed.",
+        error: getApiErrorMessage(error, "Supabase client init failed."),
       }));
     }
 
@@ -85,13 +81,19 @@ export function SessionAndApiStatus() {
           setApiError(`HTTP ${response.status}: ${body}`);
           return;
         }
-        const data = (await response.json()) as ApiHealth;
-        setApiHealth(data);
+        const json = (await response.json()) as unknown;
+        const parsed = apiHealthResponseSchema.safeParse(json);
+        if (!parsed.success) {
+          setApiHealth(null);
+          setApiError("Health check returned an unexpected response shape.");
+          return;
+        }
+        setApiHealth(parsed.data);
         setApiError(null);
       })
       .catch((error: unknown) => {
         if (!mounted) return;
-        setApiError(error instanceof Error ? error.message : "Health check failed.");
+        setApiError(getApiErrorMessage(error, "Health check failed."));
       });
 
     return () => {

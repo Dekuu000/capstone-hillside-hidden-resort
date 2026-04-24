@@ -130,6 +130,36 @@ export type AiPricingMetricsResponse = {
   latency_ms: AiLatencySummary;
 };
 
+export type ApiHealthChainStatus = {
+  chain_id: number;
+  enabled?: boolean;
+  rpc_configured: boolean;
+  contract_configured: boolean;
+  guest_pass_contract_configured: boolean;
+};
+
+export type ApiHealthMonitor = {
+  running: boolean;
+  last_success_at: string | null;
+  alert_active: boolean;
+};
+
+export type ApiHealthResponse = {
+  ok: boolean;
+  service?: string;
+  env?: string;
+  api_version?: string;
+  supabase_configured?: boolean;
+  escrow_shadow_write_enabled?: boolean;
+  escrow_onchain_lock_enabled?: boolean;
+  nft_guest_pass_enabled?: boolean;
+  dynamic_qr_enabled?: boolean;
+  escrow_reconciliation_scheduler_enabled?: boolean;
+  escrow_reconciliation_monitor?: ApiHealthMonitor;
+  active_chain?: ApiHealthChainStatus & { key: string };
+  chains?: Record<string, ApiHealthChainStatus>;
+};
+
 export type OccupancyForecastItem = {
   date: string;
   occupancy: number;
