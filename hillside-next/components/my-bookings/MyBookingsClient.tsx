@@ -521,9 +521,8 @@ export function MyBookingsClient({
           await fetchBookings(null, "replace");
         }
       } catch (unknownError) {
-        const rawMessage = unknownError instanceof Error ? unknownError.message : String(unknownError ?? "");
         const message = getApiErrorMessage(unknownError, "Failed to submit payment.");
-        if (rawMessage.toLowerCase().includes("deposit is not required")) {
+        if (message.toLowerCase().includes("deposit is not required")) {
           setSubmitError(
             `This booking requires full payment. Update amount to ${formatPeso(Math.max(0, Number(submitFor.total_amount ?? 0) - Number(submitFor.amount_paid_verified ?? 0)))} and submit again.`,
           );
