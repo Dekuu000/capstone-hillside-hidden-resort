@@ -6,6 +6,7 @@ import { QRCodeSVG } from "qrcode.react";
 import type { QrToken } from "../../../packages/shared/src/types";
 import { qrTokenSchema } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
+import { getApiErrorMessage } from "../../lib/apiError";
 import { loadLastIssuedQrToken, saveLastIssuedQrToken } from "../../lib/guestQrTokenCache";
 import { compactQrTokenPayload } from "../../lib/qrPayload";
 import { StatusPill } from "../shared/StatusPill";
@@ -58,7 +59,7 @@ export function GuestOfflineQrCard({ accessToken, reservationId, reservationCode
         cached_at: new Date().toISOString(),
       });
     } catch (unknownError) {
-      setError(unknownError instanceof Error ? unknownError.message : "Failed to issue check-in token.");
+      setError(getApiErrorMessage(unknownError, "Failed to issue check-in token."));
     } finally {
       setLoading(false);
     }

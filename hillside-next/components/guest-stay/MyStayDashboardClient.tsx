@@ -6,6 +6,7 @@ import Link from "next/link";
 import { welcomeNotificationSchema } from "../../../packages/shared/src/schemas";
 import type { WelcomeNotification } from "../../../packages/shared/src/types";
 import { apiFetch } from "../../lib/apiClient";
+import { getApiErrorMessage } from "../../lib/apiError";
 import { useToast } from "../shared/ToastProvider";
 import { GuestOfflineQrCard } from "./GuestOfflineQrCard";
 
@@ -87,7 +88,7 @@ export function MyStayDashboardClient({
       showToast({
         type: "error",
         title: "Unable to dismiss",
-        message: error instanceof Error ? error.message : "Try again.",
+        message: getApiErrorMessage(error, "Try again."),
       });
     } finally {
       setDismissBusy(false);

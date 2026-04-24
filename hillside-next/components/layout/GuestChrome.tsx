@@ -7,6 +7,7 @@ import { BedDouble, ChevronDown, LogOut, Plug, RefreshCcw, Unplug, UserRound, Wa
 import { myProfileResponseSchema } from "../../../packages/shared/src/schemas";
 import type { MyProfileResponse } from "../../../packages/shared/src/types";
 import { apiFetch } from "../../lib/apiClient";
+import { getApiErrorMessage } from "../../lib/apiError";
 import { getSupabaseBrowserClient } from "../../lib/supabase";
 import { useToast } from "../shared/ToastProvider";
 
@@ -155,7 +156,7 @@ export function GuestChrome({ children, initialName = null, initialEmail = null 
       showToast({
         type: "error",
         title: "Wallet connection failed",
-        message: unknownError instanceof Error ? unknownError.message : "Unable to connect wallet.",
+        message: getApiErrorMessage(unknownError, "Unable to connect wallet."),
       });
     } finally {
       setWalletBusy(false);
@@ -171,7 +172,7 @@ export function GuestChrome({ children, initialName = null, initialEmail = null 
       showToast({
         type: "error",
         title: "Wallet update failed",
-        message: unknownError instanceof Error ? unknownError.message : "Unable to disconnect wallet.",
+        message: getApiErrorMessage(unknownError, "Unable to disconnect wallet."),
       });
     } finally {
       setWalletBusy(false);
