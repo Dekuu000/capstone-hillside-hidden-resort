@@ -110,6 +110,41 @@ export const aiPricingMetricsResponseSchema = z.object({
   latency_ms: aiLatencySummarySchema,
 });
 
+export const apiHealthChainStatusSchema = z.object({
+  chain_id: z.number().int().nonnegative(),
+  enabled: z.boolean().optional(),
+  rpc_configured: z.boolean(),
+  contract_configured: z.boolean(),
+  guest_pass_contract_configured: z.boolean(),
+});
+
+export const apiHealthMonitorSchema = z.object({
+  running: z.boolean(),
+  last_success_at: z.string().nullable(),
+  alert_active: z.boolean(),
+});
+
+export const apiHealthResponseSchema = z.object({
+  ok: z.boolean(),
+  service: z.string().optional(),
+  env: z.string().optional(),
+  api_version: z.string().optional(),
+  supabase_configured: z.boolean().optional(),
+  escrow_shadow_write_enabled: z.boolean().optional(),
+  escrow_onchain_lock_enabled: z.boolean().optional(),
+  nft_guest_pass_enabled: z.boolean().optional(),
+  dynamic_qr_enabled: z.boolean().optional(),
+  escrow_reconciliation_scheduler_enabled: z.boolean().optional(),
+  escrow_reconciliation_monitor: apiHealthMonitorSchema.optional(),
+  active_chain: apiHealthChainStatusSchema
+    .extend({
+      key: z.string().min(1),
+      enabled: z.boolean().optional(),
+    })
+    .optional(),
+  chains: z.record(z.string(), apiHealthChainStatusSchema).optional(),
+});
+
 export const occupancyForecastItemSchema = z.object({
   date: z.string().min(1),
   occupancy: z.number(),
