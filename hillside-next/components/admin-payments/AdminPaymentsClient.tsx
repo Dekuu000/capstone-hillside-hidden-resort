@@ -20,6 +20,7 @@ import {
   reservationListItemSchema,
 } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
+import { getApiErrorMessage } from "../../lib/apiError";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
 import { loadPaymentsSnapshot, savePaymentsSnapshot } from "../../lib/offlineSync/store";
 import { getSupabaseBrowserClient } from "../../lib/supabase";
@@ -346,7 +347,7 @@ export function AdminPaymentsClient({
         setItems([]);
         setCount(0);
         setCachedViewMeta(null);
-        setError(unknownError instanceof Error ? unknownError.message : "Failed to load payments.");
+        setError(getApiErrorMessage(unknownError, "Failed to load payments."));
       }
     } finally {
       setLoading(false);
@@ -448,7 +449,7 @@ export function AdminPaymentsClient({
           });
         }
       } catch (unknownError) {
-        setError(unknownError instanceof Error ? unknownError.message : "Failed to verify payment.");
+        setError(getApiErrorMessage(unknownError, "Failed to verify payment."));
       }
     },
     [fetchList, fetchTabCounts, showToast, token],
@@ -516,7 +517,7 @@ export function AdminPaymentsClient({
         });
       }
     } catch (unknownError) {
-      setRejectError(unknownError instanceof Error ? unknownError.message : "Failed to reject payment.");
+      setRejectError(getApiErrorMessage(unknownError, "Failed to reject payment."));
     } finally {
       setRejectBusy(false);
     }
@@ -545,7 +546,7 @@ export function AdminPaymentsClient({
       }
       window.open(data.signedUrl, "_blank", "noopener,noreferrer");
     } catch (unknownError) {
-      setError(unknownError instanceof Error ? unknownError.message : "Failed to open proof.");
+      setError(getApiErrorMessage(unknownError, "Failed to open proof."));
     } finally {
       setProofBusy((prev) => ({ ...prev, [payment.payment_id]: false }));
     }
@@ -656,11 +657,15 @@ export function AdminPaymentsClient({
         await fetchTabCounts();
       }
     } catch (unknownError) {
-      if (unknownError instanceof Error && unknownError.message === "Failed to fetch") {
-        setError("Failed to reach API. Check if hillside-api is running and NEXT_PUBLIC_API_BASE_URL is correct.");
-      } else {
-        setError(unknownError instanceof Error ? unknownError.message : "Failed to record on-site payment.");
-      }
+      setError(
+        getApiErrorMessage(
+          unknownError,
+          "Failed to record on-site payment.",
+          {
+            network: "Failed to reach API. Check if hillside-api is running and NEXT_PUBLIC_API_BASE_URL is correct.",
+          },
+        ),
+      );
     } finally {
       setOnSiteBusy(false);
     }

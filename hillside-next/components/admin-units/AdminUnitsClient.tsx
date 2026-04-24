@@ -11,6 +11,7 @@ import {
   unitWriteResponseSchema,
 } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
+import { getApiErrorMessage } from "../../lib/apiError";
 import { ImageLightbox } from "../shared/ImageLightbox";
 import { UnitImageGallery } from "../shared/UnitImageGallery";
 import { UnitPhotoUploader } from "../shared/UnitPhotoUploader";
@@ -63,14 +64,11 @@ function normalizeUnitsError(error: unknown): string {
   if (error instanceof DOMException && error.name === "AbortError") {
     return "Units API timed out. Check if hillside-api is running on port 8000.";
   }
-  if (error instanceof Error) {
-    const message = error.message || "";
-    if (/aborted/i.test(message)) {
-      return "Units API timed out. Check if hillside-api is running on port 8000.";
-    }
-    return message;
+  const resolved = getApiErrorMessage(error, "Failed to load units.");
+  if (/aborted/i.test(resolved)) {
+    return "Units API timed out. Check if hillside-api is running on port 8000.";
   }
-  return "Failed to load units.";
+  return resolved;
 }
 
 export function AdminUnitsClient({
@@ -211,7 +209,7 @@ export function AdminUnitsClient({
         setEditImageThumbUrls(normalizeUnitThumbUrls(normalizedImages, unit.image_thumb_urls ?? null));
         setGalleryIndex(0);
       } catch (unknownError) {
-        setError(unknownError instanceof Error ? unknownError.message : "Failed to load unit details.");
+        setError(getApiErrorMessage(unknownError, "Failed to load unit details."));
       } finally {
         setUnitDetailLoading(false);
       }
@@ -330,7 +328,7 @@ export function AdminUnitsClient({
         message: "Photo removed successfully.",
       });
     } catch (unknownError) {
-      const message = unknownError instanceof Error ? unknownError.message : "Failed to remove image.";
+      const message = getApiErrorMessage(unknownError, "Failed to remove image.");
       setError(message);
       showToast({
         type: "error",
@@ -406,7 +404,7 @@ export function AdminUnitsClient({
       await fetchUnits();
       resetEditor();
     } catch (unknownError) {
-      setError(unknownError instanceof Error ? unknownError.message : "Failed to update unit.");
+      setError(getApiErrorMessage(unknownError, "Failed to update unit."));
     } finally {
       setEditorBusy(false);
     }
@@ -454,7 +452,7 @@ export function AdminUnitsClient({
         setNotice(`${unit.name} is now ${unit.is_active ? "inactive" : "active"}.`);
         await fetchUnits();
       } catch (unknownError) {
-        setError(unknownError instanceof Error ? unknownError.message : "Failed to update unit status.");
+        setError(getApiErrorMessage(unknownError, "Failed to update unit status."));
       } finally {
         setToggleBusy((prev) => ({ ...prev, [unit.unit_id]: false }));
       }
