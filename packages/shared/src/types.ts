@@ -82,6 +82,12 @@ export type QrToken = {
   nft_token_id?: number | null;
 };
 
+export type QrPublicKeyResponse = {
+  algorithm: string;
+  key_id: string;
+  public_key: string;
+};
+
 export type PricingRecommendation = {
   reservation_id: string;
   pricing_adjustment: number;
