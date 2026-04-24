@@ -15,6 +15,7 @@ import {
   serviceListResponseSchema,
 } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
+import { getApiErrorMessage } from "../../lib/apiError";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
 import { FancyDatePicker } from "../shared/FancyDatePicker";
 import { useToast } from "../shared/ToastProvider";
@@ -93,7 +94,7 @@ export function AdminWalkInTourClient({
       } catch (unknownError) {
         if (cancelled) return;
         setServices([]);
-        setServicesError(unknownError instanceof Error ? unknownError.message : "Failed to load tour services.");
+        setServicesError(getApiErrorMessage(unknownError, "Failed to load tour services."));
       } finally {
         if (!cancelled) {
           setServicesLoading(false);
@@ -188,7 +189,7 @@ export function AdminWalkInTourClient({
         )}&method=cash`,
       );
     } catch (unknownError) {
-      setSubmitError(unknownError instanceof Error ? unknownError.message : "Failed to create walk-in tour.");
+      setSubmitError(getApiErrorMessage(unknownError, "Failed to create walk-in tour."));
     } finally {
       setSubmitBusy(false);
     }

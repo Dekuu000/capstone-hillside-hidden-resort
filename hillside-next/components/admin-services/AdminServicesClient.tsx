@@ -17,6 +17,7 @@ import {
   resortServiceRequestListResponseSchema,
 } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
+import { getApiErrorMessage } from "../../lib/apiError";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
 import { DetailDrawer } from "../shared/DetailDrawer";
 import { EmptyState } from "../shared/EmptyState";
@@ -82,7 +83,7 @@ export function AdminServicesClient({ accessToken }: Props) {
       setRows(data.items ?? []);
     } catch (unknownError) {
       setRows([]);
-      setError(unknownError instanceof Error ? unknownError.message : "Failed to load service queue.");
+      setError(getApiErrorMessage(unknownError, "Failed to load service queue."));
     } finally {
       setLoading(false);
     }
@@ -170,7 +171,7 @@ export function AdminServicesClient({ accessToken }: Props) {
       showToast({
         type: "error",
         title: "Update failed",
-        message: unknownError instanceof Error ? unknownError.message : "Unable to update request.",
+        message: getApiErrorMessage(unknownError, "Unable to update request."),
       });
     } finally {
       setActionBusy(false);

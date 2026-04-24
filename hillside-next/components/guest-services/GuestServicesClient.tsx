@@ -23,6 +23,7 @@ import {
   resortServiceRequestItemSchema,
 } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
+import { getApiErrorMessage } from "../../lib/apiError";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
 import { EmptyState } from "../shared/EmptyState";
 import { Skeleton } from "../shared/Skeleton";
@@ -89,7 +90,7 @@ export function GuestServicesClient({ accessToken }: Props) {
         setServices(data.items ?? []);
       } catch (unknownError) {
         setServices([]);
-        setServicesError(unknownError instanceof Error ? unknownError.message : "Failed to load services.");
+        setServicesError(getApiErrorMessage(unknownError, "Failed to load services."));
       } finally {
         setServicesLoading(false);
       }
@@ -111,7 +112,7 @@ export function GuestServicesClient({ accessToken }: Props) {
       setRequests(data.items ?? []);
     } catch (unknownError) {
       setRequests([]);
-      setRequestsError(unknownError instanceof Error ? unknownError.message : "Failed to load request history.");
+      setRequestsError(getApiErrorMessage(unknownError, "Failed to load request history."));
     } finally {
       setRequestsLoading(false);
     }
@@ -210,7 +211,7 @@ export function GuestServicesClient({ accessToken }: Props) {
       showToast({
         type: "error",
         title: "Request failed",
-        message: unknownError instanceof Error ? unknownError.message : "Unable to submit request.",
+        message: getApiErrorMessage(unknownError, "Unable to submit request."),
       });
     } finally {
       setSubmitBusy(false);

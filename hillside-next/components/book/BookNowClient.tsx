@@ -24,6 +24,7 @@ import {
   reservationCreateResponseSchema,
 } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
+import { getApiErrorMessage } from "../../lib/apiError";
 import { getSupabaseBrowserClient } from "../../lib/supabase";
 import { FancyDatePicker } from "../shared/FancyDatePicker";
 import { ImageLightbox } from "../shared/ImageLightbox";
@@ -167,7 +168,7 @@ export function BookNowClient({
         if (cancelled) return;
         setUnits([]);
         setSelectedUnitIds([]);
-        setUnitsError(unknownError instanceof Error ? unknownError.message : "Failed to load available units.");
+        setUnitsError(getApiErrorMessage(unknownError, "Failed to load available units."));
       } finally {
         if (!cancelled) setUnitsLoading(false);
       }
@@ -266,7 +267,7 @@ export function BookNowClient({
         setLatestAiRecommendation(null);
       }
     } catch (unknownError) {
-      setSubmitError(unknownError instanceof Error ? unknownError.message : "Failed to create reservation.");
+      setSubmitError(getApiErrorMessage(unknownError, "Failed to create reservation."));
     } finally {
       setSubmitBusy(false);
     }

@@ -6,6 +6,7 @@ import { AlertCircle, BedDouble, CheckCircle2, Loader2, Phone, User, Wallet } fr
 import type { AvailableUnitsResponse, ReservationCreateResponse, ReservationListItem } from "../../../packages/shared/src/types";
 import { availableUnitsResponseSchema, reservationCreateResponseSchema, reservationListItemSchema } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
+import { getApiErrorMessage } from "../../lib/apiError";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
 import { FancyDatePicker } from "../shared/FancyDatePicker";
 import { useToast } from "../shared/ToastProvider";
@@ -97,7 +98,7 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
         if (cancelled) return;
         setAvailableUnits([]);
         setSelectedUnitIds([]);
-        setUnitsError(unknownError instanceof Error ? unknownError.message : "Failed to load available units.");
+        setUnitsError(getApiErrorMessage(unknownError, "Failed to load available units."));
       } finally {
         if (!cancelled) {
           setUnitsLoading(false);
@@ -220,7 +221,7 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
         message: "Choose the next front-desk action below.",
       });
     } catch (unknownError) {
-      setSubmitError(unknownError instanceof Error ? unknownError.message : "Failed to create walk-in stay.");
+      setSubmitError(getApiErrorMessage(unknownError, "Failed to create walk-in stay."));
     } finally {
       setSubmitBusy(false);
     }
@@ -244,9 +245,7 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
         }
       } catch (unknownError) {
         if (!cancelled) {
-          setCreatedReservationError(
-            unknownError instanceof Error ? unknownError.message : "Failed to load latest reservation status.",
-          );
+          setCreatedReservationError(getApiErrorMessage(unknownError, "Failed to load latest reservation status."));
         }
       } finally {
         if (!cancelled) setCreatedReservationLoading(false);

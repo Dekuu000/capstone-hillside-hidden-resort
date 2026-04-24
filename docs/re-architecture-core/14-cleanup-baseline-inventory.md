@@ -768,3 +768,29 @@ Remaining A4 blocker:
    - `npm run typecheck` -> pass
    - `npm run test:api` -> pass (`95 passed`)
    - `npm run quality:gate` -> pass
+
+## Batch C2 Execution Update (Part 3 Complete)
+
+1. Added shared client-side API error normalization helper:
+   - `hillside-next/lib/apiError.ts`
+   - new utility: `getApiErrorMessage(error, fallback, overrides?)`
+   - normalizes:
+     - network/offline failures
+     - `HTTP <status>: ...` payloads from `apiFetch`
+     - common status defaults (`401/403/404/409/422/503`) with optional overrides
+2. Adopted helper in high-traffic booking/operations clients:
+   - `hillside-next/components/book/BookNowClient.tsx`
+   - `hillside-next/components/tours/ToursBookingClient.tsx`
+   - `hillside-next/components/admin-walkin-tour/AdminWalkInTourClient.tsx`
+   - `hillside-next/components/admin-walkin-stay/AdminWalkInStayClient.tsx`
+   - `hillside-next/components/admin-services/AdminServicesClient.tsx`
+   - `hillside-next/components/admin-blockchain/BlockchainExplorerClient.tsx`
+   - `hillside-next/components/guest-services/GuestServicesClient.tsx`
+3. Outcome:
+   - removed repeated ad-hoc `unknownError instanceof Error ? ...` branches in selected clients
+   - standardized API/network failure text behavior for toasts and inline error banners
+4. Validation:
+   - `npm run lint` -> pass
+   - `npm run typecheck` -> pass
+   - `npm run test:api` -> pass (`95 passed`)
+   - `npm run quality:gate` -> pass
