@@ -140,7 +140,7 @@ function normalizeOfflineQueue(items: unknown[]): QueuedAction[] {
 }
 
 function isLikelyNetworkError(error: unknown): boolean {
-  const message = error instanceof Error ? error.message : String(error ?? "");
+  const message = String(error ?? "");
   const lowered = message.toLowerCase();
   return (
     lowered.includes("failed to fetch") ||
@@ -780,7 +780,7 @@ export function AdminCheckinClient({
         return;
       }
       setOutcome("invalid");
-      const message = friendlyInvalidReason(null, e instanceof Error ? e.message : "Validation failed.");
+      const message = friendlyInvalidReason(null, getApiErrorMessage(e, "Validation failed."));
       showToast({ type: "error", title: "Validation failed", message });
     }
     void raw;
@@ -843,12 +843,12 @@ export function AdminCheckinClient({
       }, () => {});
         setScanActive(true);
         const videoEl = document.querySelector(`#${CAMERA_READER_ID} video`) as HTMLVideoElement | null;
-        const mediaTrack = videoEl?.srcObject instanceof MediaStream ? videoEl.srcObject.getVideoTracks()[0] ?? null : null;
-        videoTrackRef.current = mediaTrack;
-        const caps = mediaTrack?.getCapabilities?.() as { torch?: boolean } | undefined;
-        setTorchSupported(Boolean(caps?.torch));
+      const mediaTrack = videoEl?.srcObject instanceof MediaStream ? videoEl.srcObject.getVideoTracks()[0] ?? null : null;
+      videoTrackRef.current = mediaTrack;
+      const caps = mediaTrack?.getCapabilities?.() as { torch?: boolean } | undefined;
+      setTorchSupported(Boolean(caps?.torch));
       } catch (e) {
-      const rawMessage = e instanceof Error ? e.message : "Failed to start camera.";
+      const rawMessage = String(e ?? "Failed to start camera.");
       const chunkError = /failed to load chunk|loading chunk|chunkloaderror/i.test(rawMessage);
       const message = chunkError
         ? "Camera module is not cached yet. Go online once and open Scan to warm the scanner."

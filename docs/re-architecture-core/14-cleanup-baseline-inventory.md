@@ -978,3 +978,21 @@ Remaining A4 blocker:
    - `npm run typecheck` -> pass
    - `npm run test:api` -> pass (`95 passed`)
    - `npm run quality:gate` -> pass
+
+## Batch C2 Execution Update (Part 10 Complete)
+
+1. Removed remaining ad-hoc `instanceof Error` fallback branches in active Next app flows:
+   - `hillside-next/components/my-bookings/MyBookingsClient.tsx`
+   - `hillside-next/components/admin-checkin/AdminCheckinClient.tsx`
+2. Standardized edge-path error text behavior:
+   - payment submit edge handling in My Bookings now checks normalized message text
+   - check-in token validation fallback now uses normalized message before applying user-facing reason mapping
+   - camera startup branch now uses direct string coercion for detection-only paths (chunk/permission hints)
+3. Outcome:
+   - no remaining `instanceof Error ? ...` fallback expression branches in `hillside-next/app` + `hillside-next/components`
+   - cleaner and more consistent error handling behavior across booking/check-in high-frequency user actions
+4. Validation:
+   - `npm run lint` -> pass
+   - `npm run typecheck` -> pass
+   - `npm run test:api` -> pass (`95 passed`)
+   - `npm run quality:gate` -> pass
