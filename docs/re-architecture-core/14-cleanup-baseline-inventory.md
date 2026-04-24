@@ -894,3 +894,24 @@ Remaining A4 blocker:
    - `npm run typecheck` -> pass
    - `npm run test:api` -> pass (`95 passed`)
    - `npm run quality:gate` -> pass
+
+## Batch C2 Execution Update (Part 7 Complete)
+
+1. Expanded `getApiErrorMessage(...)` adoption across guest-facing account/stay flows:
+   - `hillside-next/components/guest-profile/GuestProfileClient.tsx`
+   - `hillside-next/components/guest-stay/GuestOfflineQrCard.tsx`
+   - `hillside-next/components/guest-stay/MyStayDashboardClient.tsx`
+   - `hillside-next/components/layout/GuestChrome.tsx`
+2. Standardized additional failure branches:
+   - guest profile load/save/account-update errors
+   - offline QR issue error
+   - welcome-card dismiss failure toast
+   - wallet connect/disconnect toast failures
+3. Outcome:
+   - reduced ad-hoc `instanceof Error` branches in guest account/stay interactions
+   - aligned guest messaging with shared HTTP/auth/network/offline normalization behavior
+4. Validation:
+   - `npm run lint` -> pass
+   - `npm run typecheck` -> pass
+   - `npm run test:api` -> pass (`95 passed`)
+   - `npm run quality:gate` -> pass

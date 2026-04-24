@@ -79,6 +79,7 @@ Baseline evidence:
 - [x] Batch C2 (part 4): expand shared client-side API error normalizer adoption across admin reservations/payments/units clients and align auth/network fallback messaging.
 - [x] Batch C2 (part 5): expand shared client-side API error normalizer adoption across admin AI center and room-management dashboard flows.
 - [x] Batch C2 (part 6): expand shared client-side API error normalizer adoption across admin check-in validation/sync/checkout failure flows.
+- [x] Batch C2 (part 7): expand shared client-side API error normalizer adoption across guest profile/stay/wallet interaction flows.
 - [x] Batch C3 (part 1): move admin AI center forecast/concierge/apply response contracts into `packages/shared` and remove local duplicate Zod/type definitions.
 - [x] Batch C3 (part 2): move QR public-key response contract into `packages/shared` and remove admin check-in inline response typing.
 

@@ -5,6 +5,7 @@ import { KeyRound, Mail, Save, User } from "lucide-react";
 import { myProfileResponseSchema } from "../../../packages/shared/src/schemas";
 import type { MyProfileResponse } from "../../../packages/shared/src/types";
 import { apiFetch } from "../../lib/apiClient";
+import { getApiErrorMessage } from "../../lib/apiError";
 import { getSupabaseBrowserClient } from "../../lib/supabase";
 import { Button } from "../shared/Button";
 import { Input } from "../shared/Input";
@@ -54,7 +55,7 @@ export function GuestProfileClient({ accessToken, initialEmail = null }: GuestPr
         setEmailDraft(resolvedEmail);
       } catch (unknownError) {
         if (cancelled) return;
-        setProfileError(unknownError instanceof Error ? unknownError.message : "Failed to load guest profile.");
+        setProfileError(getApiErrorMessage(unknownError, "Failed to load guest profile."));
       } finally {
         if (!cancelled) setProfileLoading(false);
       }
@@ -83,7 +84,7 @@ export function GuestProfileClient({ accessToken, initialEmail = null }: GuestPr
       setName(nextProfile.name?.trim() || "");
       showToast({ type: "success", title: "Profile saved", message: "Guest profile details updated." });
     } catch (unknownError) {
-      setProfileError(unknownError instanceof Error ? unknownError.message : "Failed to save profile.");
+      setProfileError(getApiErrorMessage(unknownError, "Failed to save profile."));
     } finally {
       setProfileBusy(false);
     }
@@ -108,7 +109,7 @@ export function GuestProfileClient({ accessToken, initialEmail = null }: GuestPr
         message: "Check your inbox to confirm the new email.",
       });
     } catch (unknownError) {
-      setAccountError(unknownError instanceof Error ? unknownError.message : "Failed to update email.");
+      setAccountError(getApiErrorMessage(unknownError, "Failed to update email."));
     } finally {
       setAccountBusy(false);
     }
@@ -137,7 +138,7 @@ export function GuestProfileClient({ accessToken, initialEmail = null }: GuestPr
         message: "Your account password was changed successfully.",
       });
     } catch (unknownError) {
-      setAccountError(unknownError instanceof Error ? unknownError.message : "Failed to update password.");
+      setAccountError(getApiErrorMessage(unknownError, "Failed to update password."));
     } finally {
       setAccountBusy(false);
     }
