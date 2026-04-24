@@ -2,6 +2,7 @@ import type { ReportsOverviewResponse } from "../../../../packages/shared/src/ty
 import { reportsOverviewResponseSchema } from "../../../../packages/shared/src/schemas";
 import { ReportsDateRangeForm } from "../../../components/admin-reports/ReportsDateRangeForm";
 import { getServerAccessToken } from "../../../lib/serverAuth";
+import { fetchServerApiData } from "../../../lib/serverApi";
 
 function toLocalIsoDate(dayOffset: number) {
   const d = new Date();
@@ -41,26 +42,16 @@ async function fetchOverview(
   fromDate: string,
   toDate: string,
 ): Promise<ReportsOverviewResponse | null> {
-  const base = (process.env.NEXT_PUBLIC_API_BASE_URL || "").replace(/\/+$/, "");
-  if (!base) return null;
-
   const qs = new URLSearchParams({
     from_date: fromDate,
     to_date: toDate,
   });
-  const response = await fetch(`${base}/v2/reports/overview?${qs.toString()}`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-    next: { revalidate: 20 },
+  return fetchServerApiData({
+    accessToken,
+    path: `/v2/reports/overview?${qs.toString()}`,
+    schema: reportsOverviewResponseSchema,
+    revalidate: 20,
   });
-  if (!response.ok) return null;
-
-  const json = await response.json();
-  const parsed = reportsOverviewResponseSchema.safeParse(json);
-  if (!parsed.success) return null;
-  return parsed.data;
 }
 
 export default async function AdminReportsPage({

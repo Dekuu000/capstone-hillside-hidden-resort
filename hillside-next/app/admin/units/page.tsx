@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { AdminUnitsClient } from "../../../components/admin-units/AdminUnitsClient";
 import { getServerAccessToken } from "../../../lib/serverAuth";
+import { fetchServerApiData } from "../../../lib/serverApi";
 import { unitListResponseSchema } from "../../../../packages/shared/src/schemas";
 import type { UnitListResponse } from "../../../../packages/shared/src/types";
 
@@ -34,9 +35,6 @@ async function fetchInitialUnits(
   search: string,
   showInactive: boolean,
 ): Promise<UnitListResponse | null> {
-  const base = (process.env.NEXT_PUBLIC_API_BASE_URL || "").replace(/\/+$/, "");
-  if (!base) return null;
-
   const qs = new URLSearchParams({
     limit: String(PAGE_SIZE),
     offset: String(Math.max(0, (page - 1) * PAGE_SIZE)),
@@ -45,29 +43,13 @@ async function fetchInitialUnits(
   if (operationalStatus) qs.set("operational_status", operationalStatus);
   if (!showInactive) qs.set("is_active", "true");
   if (search) qs.set("search", search);
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 5000);
-  try {
-    const response = await fetch(`${base}/v2/units?${qs.toString()}`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-      signal: controller.signal,
-      next: { revalidate: 10 },
-    });
-    if (!response.ok) return null;
-
-    const json = await response.json();
-    const parsed = unitListResponseSchema.safeParse(json);
-    if (!parsed.success) return null;
-    return parsed.data;
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(timeout);
-  }
+  return fetchServerApiData({
+    accessToken,
+    path: `/v2/units?${qs.toString()}`,
+    schema: unitListResponseSchema,
+    revalidate: 10,
+    timeoutMs: 5000,
+  });
 }
 
 export default async function AdminUnitsPage({

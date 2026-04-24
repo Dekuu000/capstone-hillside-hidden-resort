@@ -73,6 +73,7 @@ Baseline evidence:
 - [x] Batch A3: consolidate legacy admin compatibility redirects from page files into `next.config.ts` redirects.
 - [x] Batch C1 (part 1): unify reservation policy enum constants in shared package and align cancellation outcome handling in `MyBookingsClient`.
 - [x] Batch C1 (part 2): centralize stay deposit preview logic in shared contracts and reuse in booking/cancellation UI messaging.
+- [x] Batch C2 (part 1): centralize server-rendered admin page API bootstrap fetch + schema-parse flow via shared `serverApi` helper and migrate core admin screens.
 
 ### D) Database and Migration Hygiene
 
