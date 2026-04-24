@@ -830,3 +830,29 @@ Remaining A4 blocker:
    - `npm run typecheck` -> pass
    - `npm run test:api` -> pass (`95 passed`)
    - `npm run quality:gate` -> pass
+
+## Batch C3 Execution Update (Part 1 Complete)
+
+1. Moved admin AI center response contracts into shared package:
+   - added schemas in `packages/shared/src/schemas.ts`:
+     - `occupancyForecastItemSchema`
+     - `occupancyForecastResponseSchema`
+     - `conciergeSuggestionSchema`
+     - `conciergeResponseSchema`
+     - `pricingApplyResponseSchema`
+   - added shared types in `packages/shared/src/types.ts`:
+     - `OccupancyForecastItem`
+     - `OccupancyForecastResponse`
+     - `ConciergeSuggestion`
+     - `ConciergeResponse`
+     - `PricingApplyResponse`
+2. Removed local duplicate contract definitions from:
+   - `hillside-next/components/admin-ai/AdminAiCenterClient.tsx`
+3. Outcome:
+   - admin AI center now consumes shared schema/type source-of-truth for forecast/concierge/apply flows
+   - reduced client-local contract drift risk and removed duplicate Zod definitions
+4. Validation:
+   - `npm run lint` -> pass
+   - `npm run typecheck` -> pass
+   - `npm run test:api` -> pass (`95 passed`)
+   - `npm run quality:gate` -> pass
