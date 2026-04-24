@@ -5,6 +5,7 @@ import { Activity, FileSearch, ShieldAlert } from "lucide-react";
 import type { AuditLogsResponse, ChainKey, ContractStatusResponse, EscrowReconciliationResponse } from "../../../packages/shared/src/types";
 import { auditLogsResponseSchema, contractStatusResponseSchema, escrowReconciliationResponseSchema } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
+import { getApiErrorMessage } from "../../lib/apiError";
 import { useToast } from "../shared/ToastProvider";
 import { Tabs } from "../shared/Tabs";
 import { AuditLogsPanel, type AuditFilterState } from "./AuditLogsPanel";
@@ -105,7 +106,7 @@ export function BlockchainExplorerClient({
         );
         setContractStatus(response);
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Failed to load contract status.";
+        const message = getApiErrorMessage(error, "Failed to load contract status.");
         setContractError(message);
         showToast({ type: "error", title: "Contract status failed", message });
       } finally {
@@ -132,7 +133,7 @@ export function BlockchainExplorerClient({
         );
         setAuditLogs(response);
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Failed to load audit logs.";
+        const message = getApiErrorMessage(error, "Failed to load audit logs.");
         setAuditError(message);
         showToast({ type: "error", title: "Audit logs failed", message });
       } finally {
@@ -159,7 +160,7 @@ export function BlockchainExplorerClient({
         );
         setReconciliation(response);
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Failed to load reconciliation.";
+        const message = getApiErrorMessage(error, "Failed to load reconciliation.");
         setReconciliationError(message);
         showToast({ type: "error", title: "Reconciliation failed", message });
       } finally {

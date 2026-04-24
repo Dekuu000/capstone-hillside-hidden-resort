@@ -16,6 +16,7 @@ import {
   serviceListResponseSchema,
 } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
+import { getApiErrorMessage } from "../../lib/apiError";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
 import { queuePaymentSubmissionWithFile } from "../../lib/offlineSync/paymentSubmission";
 import { getSupabaseBrowserClient } from "../../lib/supabase";
@@ -120,7 +121,7 @@ export function ToursBookingClient({
       } catch (unknownError) {
         if (cancelled) return;
         setServices([]);
-        setServicesError(unknownError instanceof Error ? unknownError.message : "Failed to load active tours.");
+        setServicesError(getApiErrorMessage(unknownError, "Failed to load active tours."));
       } finally {
         if (!cancelled) {
           setServicesLoading(false);
@@ -286,7 +287,7 @@ export function ToursBookingClient({
         window.setTimeout(() => router.push("/my-bookings"), 900);
       }
     } catch (unknownError) {
-      setSubmitError(unknownError instanceof Error ? unknownError.message : "Failed to create tour booking.");
+      setSubmitError(getApiErrorMessage(unknownError, "Failed to create tour booking."));
     } finally {
       setSubmitBusy(false);
     }
