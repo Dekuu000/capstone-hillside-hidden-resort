@@ -877,3 +877,20 @@ Remaining A4 blocker:
    - `npm run typecheck` -> pass
    - `npm run test:api` -> pass (`95 passed`)
    - `npm run quality:gate` -> pass
+
+## Batch C3 Execution Update (Part 2 Complete)
+
+1. Moved QR public-key response contract into shared package:
+   - added schema: `qrPublicKeyResponseSchema` in `packages/shared/src/schemas.ts`
+   - added type: `QrPublicKeyResponse` in `packages/shared/src/types.ts`
+2. Removed inline response typing from admin check-in client:
+   - `hillside-next/components/admin-checkin/AdminCheckinClient.tsx`
+   - switched `/v2/qr/public-key` call from inline generic object to shared type + schema parsing
+3. Outcome:
+   - reduced frontend contract drift risk for QR key bootstrap flow
+   - improved consistency with shared schema/type source-of-truth strategy used across other admin/guest API calls
+4. Validation:
+   - `npm run lint` -> pass
+   - `npm run typecheck` -> pass
+   - `npm run test:api` -> pass (`95 passed`)
+   - `npm run quality:gate` -> pass

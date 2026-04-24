@@ -54,6 +54,12 @@ export const qrTokenSchema = z.object({
   nft_token_id: z.number().int().optional().nullable(),
 });
 
+export const qrPublicKeyResponseSchema = z.object({
+  algorithm: z.string().min(1),
+  key_id: z.string().min(1),
+  public_key: z.string().min(1),
+});
+
 export const pricingRecommendationSchema = z.object({
   reservation_id: z.string().min(1),
   pricing_adjustment: z.number(),

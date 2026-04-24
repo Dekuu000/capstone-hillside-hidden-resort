@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import type {
   CheckOperationResponse,
+  QrPublicKeyResponse,
   QrToken,
   QrVerifyResponse,
   ReservationListResponse,
@@ -22,6 +23,7 @@ import type {
 } from "../../../packages/shared/src/types";
 import {
   checkOperationResponseSchema,
+  qrPublicKeyResponseSchema,
   qrTokenSchema,
   qrVerifyResponseSchema,
   reservationListResponseSchema,
@@ -469,10 +471,11 @@ export function AdminCheckinClient({
 
   useEffect(() => {
     if (!token || !networkOnline) return;
-    void apiFetch<{ algorithm: string; key_id: string; public_key: string }>(
+    void apiFetch<QrPublicKeyResponse>(
       "/v2/qr/public-key",
       { method: "GET" },
       token,
+      qrPublicKeyResponseSchema,
     )
       .then((row) => {
         if (!row?.public_key) return;
