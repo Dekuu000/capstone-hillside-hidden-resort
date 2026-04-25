@@ -1154,6 +1154,20 @@ Remaining A4 blocker:
 3. Outcome:
    - improved screen-reader clarity and consistent accessible modal structure across guest-critical interactions.
 
+## Batch G4 Execution Update (Part 1 Complete - Offline Confidence)
+
+1. Added offline-confidence messaging updates in:
+   - `hillside-next/components/book/BookNowClient.tsx`
+   - `hillside-next/components/tours/ToursBookingClient.tsx`
+   - `hillside-next/components/guest-services/GuestServicesClient.tsx`
+   - `hillside-next/components/guest-stay/MyStayDashboardClient.tsx`
+2. Offline UX improvements delivered:
+   - consistent offline warning banners on guest action surfaces
+   - direct `Open Sync Center` shortcuts where queued behavior is expected
+   - clearer queued-success feedback alignment in services and booking flows
+3. Outcome:
+   - guests now get clearer expectations for offline behavior and explicit recovery path to sync visibility.
+
 ## Batch C4 Execution Update (Part 1 Complete)
 
 1. Standardized admin loading-state primitives to the shared skeleton component:

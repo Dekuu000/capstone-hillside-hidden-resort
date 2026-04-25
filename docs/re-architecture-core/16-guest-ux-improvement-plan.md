@@ -166,3 +166,17 @@ Deliverables:
    - improved status/error announcement semantics (`role="status"` / `role="alert"` in modal feedback)
 3. Kept scope UI-only:
    - no business logic, API, or policy behavior changes
+
+### G4 - Part 1 (Offline Confidence Messaging)
+
+1. Added consistent offline guidance banners and sync pathways across guest flows:
+   - `BookNowClient`
+   - `ToursBookingClient`
+   - `GuestServicesClient`
+   - `MyStayDashboardClient`
+2. Messaging updates delivered:
+   - explicit "queued for sync" expectations while offline
+   - direct `Open Sync Center` action in offline/queued contexts
+   - unified tone between offline warnings and queued-success notices
+3. Kept scope UI-only:
+   - no changes to offline queue logic, APIs, or business rules

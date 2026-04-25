@@ -54,10 +54,22 @@ export function MyStayDashboardClient({
   const [nowMs, setNowMs] = useState<number | null>(null);
   const [welcomeCard, setWelcomeCard] = useState<WelcomeNotification | null>(welcomeNotification);
   const [dismissBusy, setDismissBusy] = useState(false);
+  const [networkOnline, setNetworkOnline] = useState(true);
 
   useEffect(() => {
     setWelcomeCard(welcomeNotification);
   }, [welcomeNotification]);
+
+  useEffect(() => {
+    const sync = () => setNetworkOnline(window.navigator.onLine);
+    sync();
+    window.addEventListener("online", sync);
+    window.addEventListener("offline", sync);
+    return () => {
+      window.removeEventListener("online", sync);
+      window.removeEventListener("offline", sync);
+    };
+  }, []);
 
   useEffect(() => {
     setNowMs(Date.now());
@@ -142,6 +154,17 @@ export function MyStayDashboardClient({
             <p className="mt-1 text-sm font-semibold capitalize text-[var(--color-text)]">{formatReservationStatus(status)}</p>
           </div>
         </div>
+        {!networkOnline ? (
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            <p>You are offline. QR refresh and welcome updates may be delayed until internet returns.</p>
+            <Link
+              href="/guest/sync"
+              className="inline-flex h-7 items-center rounded-full border border-amber-300 bg-white px-3 font-semibold text-amber-900"
+            >
+              Open Sync Center
+            </Link>
+          </div>
+        ) : null}
 
         {visibleWelcome ? (
           <article className="mt-4 rounded-xl border border-[var(--color-secondary-soft)] bg-[var(--color-secondary-ghost)] p-3">
