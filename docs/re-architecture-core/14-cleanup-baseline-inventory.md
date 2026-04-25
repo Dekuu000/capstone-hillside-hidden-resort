@@ -1069,3 +1069,18 @@ Remaining A4 blocker:
    - new completed batch markers for E5/F2 inserted
 3. Outcome:
    - post-phase cleanup documentation now reflects current batch progression and remaining acceptance-evidence items
+
+## Batch C4 Execution Update (Part 1 Complete)
+
+1. Standardized admin loading-state primitives to the shared skeleton component:
+   - `hillside-next/app/admin/check-in/loading.tsx`
+   - `hillside-next/app/admin/escrow/loading.tsx`
+2. Cleanup details:
+   - replaced route-local raw `div` placeholders (`bg-slate-*`, `animate-pulse`) with shared `Skeleton` nodes
+   - preserved existing layout structure and dimensions to avoid UX behavior drift
+3. Outcome:
+   - reduced duplicated placeholder styling logic in admin routes
+   - aligned loading-state rendering with shared UI primitive usage already present in other modules
+4. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass

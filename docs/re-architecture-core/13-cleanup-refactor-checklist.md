@@ -87,6 +87,7 @@ Baseline evidence:
 - [x] Batch C3 (part 2): move QR public-key response contract into `packages/shared` and remove admin check-in inline response typing.
 - [x] Batch C3 (part 3): move API health response contract into `packages/shared` and replace local status widget typing with shared schema/type parsing.
 - [x] Batch C3 (part 4): move guest map amenity pack contract into `packages/shared` and remove local amenity-pin type/normalization duplication.
+- [x] Batch C4 (part 1): standardize admin check-in/escrow loading placeholders to shared `Skeleton` component for consistent loading-state primitives.
 
 ### D) Database and Migration Hygiene
 
