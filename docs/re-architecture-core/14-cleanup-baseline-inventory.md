@@ -1100,6 +1100,19 @@ Remaining A4 blocker:
 4. Outcome:
    - improved guest orientation and recovery paths without changing booking/payment rules.
 
+## Batch G2 Execution Update (Part 1 Complete - Copy Consistency)
+
+1. Updated guest microcopy and action clarity in:
+   - `hillside-next/components/my-bookings/MyBookingsClient.tsx`
+   - `hillside-next/components/guest-stay/MyStayDashboardClient.tsx`
+   - `hillside-next/components/guest-services/GuestServicesClient.tsx`
+2. Copy consistency updates delivered:
+   - clearer check-in timer/QR wording for stay flow
+   - clearer online vs offline request behavior and sync guidance for services
+   - clearer payment submission next-step guidance and queued-action visual tone in bookings
+3. Outcome:
+   - guest-facing messaging is more explicit about what to do next and what status/state changes to expect.
+
 ## Batch C4 Execution Update (Part 1 Complete)
 
 1. Standardized admin loading-state primitives to the shared skeleton component:

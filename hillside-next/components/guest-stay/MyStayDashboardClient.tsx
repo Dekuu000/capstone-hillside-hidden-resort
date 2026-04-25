@@ -35,6 +35,10 @@ function buildCheckInTarget(checkInDate: string) {
   return new Date(`${checkInDate}T08:00:00+08:00`);
 }
 
+function formatReservationStatus(status: string) {
+  return status.replaceAll("_", " ");
+}
+
 export function MyStayDashboardClient({
   accessToken,
   reservationId,
@@ -67,10 +71,10 @@ export function MyStayDashboardClient({
   const remainingSeconds = Math.ceil((checkInTarget.getTime() - (nowMs ?? checkInTarget.getTime())) / 1000);
 
   const countdownLabel = nowMs === null
-    ? "Preparing check-in clock..."
+    ? "Preparing check-in timer..."
     : remainingSeconds > 0
       ? `Check-in opens in ${formatDuration(remainingSeconds)}`
-      : "Check-in window is open";
+      : "You may now check in";
   const visibleWelcome = welcomeCard && !welcomeCard.read_at ? welcomeCard : null;
 
   const dismissWelcome = useCallback(async () => {
@@ -103,15 +107,19 @@ export function MyStayDashboardClient({
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">My stay dashboard</p>
             <h2 className="mt-2 text-xl font-semibold text-[var(--color-text)]">{reservationCode}</h2>
             <p className="mt-1 text-sm text-[var(--color-muted)]">{checkInDate} to {checkOutDate}</p>
+            <p className="mt-1 text-xs text-[var(--color-muted)]">Check-in starts at 8:00 AM local time.</p>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowQr(true)}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 text-sm font-semibold text-white"
-          >
-            <QrCode className="h-4 w-4" />
-            Show Check-in QR
-          </button>
+          <div className="space-y-1">
+            <button
+              type="button"
+              onClick={() => setShowQr(true)}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 text-sm font-semibold text-white"
+            >
+              <QrCode className="h-4 w-4" />
+              Open Check-in QR
+            </button>
+            <p className="text-xs text-[var(--color-muted)]">Show this at the front desk during arrival.</p>
+          </div>
         </div>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
@@ -131,7 +139,7 @@ export function MyStayDashboardClient({
           </div>
           <div className="rounded-xl border border-[var(--color-border)] bg-slate-50 p-3">
             <p className="text-xs text-[var(--color-muted)]">Reservation status</p>
-            <p className="mt-1 text-sm font-semibold capitalize text-[var(--color-text)]">{status.replaceAll("_", " ")}</p>
+            <p className="mt-1 text-sm font-semibold capitalize text-[var(--color-text)]">{formatReservationStatus(status)}</p>
           </div>
         </div>
 
