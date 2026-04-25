@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -102,11 +103,13 @@ export function BookNowClient({
   const [submitBusy, setSubmitBusy] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [successHasSyncCta, setSuccessHasSyncCta] = useState(false);
   const [latestAiRecommendation, setLatestAiRecommendation] = useState<PricingRecommendation | null>(null);
   const [refreshNonce, setRefreshNonce] = useState(0);
   const [galleryUnit, setGalleryUnit] = useState<AvailableUnit | null>(null);
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [networkOnline, setNetworkOnline] = useState(true);
 
   const initialQueryKey = `${initialCheckInDate || tomorrow}|${initialCheckOutDate || defaultCheckout}|all`;
   const [skipInitialFetch, setSkipInitialFetch] = useState(Boolean(initialUnitsData && initialToken));
@@ -133,6 +136,17 @@ export function BookNowClient({
       authSub.subscription.unsubscribe();
     };
   }, [initialToken]);
+
+  useEffect(() => {
+    const sync = () => setNetworkOnline(window.navigator.onLine);
+    sync();
+    window.addEventListener("online", sync);
+    window.addEventListener("offline", sync);
+    return () => {
+      window.removeEventListener("online", sync);
+      window.removeEventListener("offline", sync);
+    };
+  }, []);
 
   useEffect(() => {
     if (!token) return;
@@ -237,6 +251,7 @@ export function BookNowClient({
     setSubmitBusy(true);
     setSubmitError(null);
     setSuccessMessage(null);
+    setSuccessHasSyncCta(false);
     setLatestAiRecommendation(null);
     try {
       const payload = {
@@ -265,12 +280,14 @@ export function BookNowClient({
       });
       if (outcome.mode === "online") {
         setSuccessMessage(`Reservation ${outcome.data.reservation_code} created.`);
+        setSuccessHasSyncCta(false);
         setLatestAiRecommendation(outcome.data.ai_recommendation ?? null);
         window.setTimeout(() => {
           router.push("/my-bookings");
         }, 900);
       } else {
         setSuccessMessage("Reservation saved offline. It will sync automatically when connection is restored.");
+        setSuccessHasSyncCta(true);
         setLatestAiRecommendation(null);
       }
     } catch (unknownError) {
@@ -352,7 +369,35 @@ export function BookNowClient({
         </div>
       </header>
 
-      {successMessage ? <p className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">{successMessage}</p> : null}
+      {!networkOnline ? (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          <p>You are offline. New bookings will be saved locally and synced when internet returns.</p>
+          <Link
+            href="/guest/sync"
+            className="inline-flex h-8 items-center rounded-full border border-amber-300 bg-white px-3 text-xs font-semibold text-amber-900"
+          >
+            Open Sync Center
+          </Link>
+        </div>
+      ) : null}
+      {successMessage ? (
+        <div
+          className={`mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3 ${
+            successHasSyncCta ? "border-amber-200 bg-amber-50" : "border-emerald-200 bg-emerald-50"
+          }`}
+          role="status"
+        >
+          <p className={`text-sm ${successHasSyncCta ? "text-amber-800" : "text-emerald-700"}`}>{successMessage}</p>
+          {successHasSyncCta ? (
+            <Link
+              href="/guest/sync"
+              className="inline-flex h-8 items-center rounded-full border border-amber-300 bg-white px-3 text-xs font-semibold text-amber-900"
+            >
+              Open Sync Center
+            </Link>
+          ) : null}
+        </div>
+      ) : null}
       {submitError ? <p className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{submitError}</p> : null}
       {latestAiRecommendation ? (
         <div className="mb-5 rounded-[var(--radius-md)] border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900 shadow-[var(--shadow-sm)]">

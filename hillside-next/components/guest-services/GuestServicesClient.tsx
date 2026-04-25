@@ -81,6 +81,9 @@ export function GuestServicesClient({ accessToken }: Props) {
   const [reservationId, setReservationId] = useState("");
   const [notes, setNotes] = useState("");
   const [submitBusy, setSubmitBusy] = useState(false);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [actionHasSyncCta, setActionHasSyncCta] = useState(false);
+  const [networkOnline, setNetworkOnline] = useState(true);
   const estimatedTotal = useMemo(
     () => (selectedService ? Number(selectedService.price || 0) * quantity : 0),
     [quantity, selectedService],
@@ -135,6 +138,17 @@ export function GuestServicesClient({ accessToken }: Props) {
   }, [category, loadServices]);
 
   useEffect(() => {
+    const sync = () => setNetworkOnline(window.navigator.onLine);
+    sync();
+    window.addEventListener("online", sync);
+    window.addEventListener("offline", sync);
+    return () => {
+      window.removeEventListener("online", sync);
+      window.removeEventListener("offline", sync);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!accessToken) return;
     void loadRequests();
     void (async () => {
@@ -160,6 +174,8 @@ export function GuestServicesClient({ accessToken }: Props) {
     event.preventDefault();
     if (!accessToken || !selectedService) return;
     setSubmitBusy(true);
+    setActionMessage(null);
+    setActionHasSyncCta(false);
     try {
       const payload: ResortServiceRequestCreateRequest = {
         service_item_id: selectedService.service_item_id,
@@ -196,6 +212,8 @@ export function GuestServicesClient({ accessToken }: Props) {
         }),
       });
       if (outcome.mode === "queued") {
+        setActionMessage(`${selectedService.service_name} request queued for sync.`);
+        setActionHasSyncCta(true);
         showToast({
           type: "warning",
           title: "Saved offline",
@@ -205,6 +223,8 @@ export function GuestServicesClient({ accessToken }: Props) {
           setRequests((previous) => [outcome.data as ResortServiceRequestItem, ...previous]);
         }
       } else {
+        setActionMessage(`${selectedService.service_name} request sent to front desk.`);
+        setActionHasSyncCta(false);
         showToast({
           type: "success",
           title: "Request submitted",
@@ -256,6 +276,29 @@ export function GuestServicesClient({ accessToken }: Props) {
           </Link>
         </div>
       </section>
+      {!networkOnline ? (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          You are offline. Service requests will be queued and synced automatically when internet returns.
+        </div>
+      ) : null}
+      {actionMessage ? (
+        <div
+          className={`flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3 ${
+            actionHasSyncCta ? "border-amber-200 bg-amber-50" : "border-emerald-200 bg-emerald-50"
+          }`}
+          role="status"
+        >
+          <p className={`text-sm ${actionHasSyncCta ? "text-amber-800" : "text-emerald-700"}`}>{actionMessage}</p>
+          {actionHasSyncCta ? (
+            <Link
+              href="/guest/sync"
+              className="inline-flex h-8 items-center rounded-full border border-amber-300 bg-white px-3 text-xs font-semibold text-amber-900"
+            >
+              Open Sync Center
+            </Link>
+          ) : null}
+        </div>
+      ) : null}
 
       <section className="grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
         <article className="surface p-4">

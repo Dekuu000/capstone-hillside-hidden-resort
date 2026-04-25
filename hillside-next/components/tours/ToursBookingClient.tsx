@@ -95,11 +95,23 @@ export function ToursBookingClient({
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [successHasSyncCta, setSuccessHasSyncCta] = useState(false);
   const [latestAiRecommendation, setLatestAiRecommendation] = useState<PricingRecommendation | null>(null);
+  const [networkOnline, setNetworkOnline] = useState(true);
 
   const setSuccessNotice = (message: string | null, withSyncCta = false) => {
     setSuccessMessage(message);
     setSuccessHasSyncCta(withSyncCta);
   };
+
+  useEffect(() => {
+    const sync = () => setNetworkOnline(window.navigator.onLine);
+    sync();
+    window.addEventListener("online", sync);
+    window.addEventListener("offline", sync);
+    return () => {
+      window.removeEventListener("online", sync);
+      window.removeEventListener("offline", sync);
+    };
+  }, []);
 
   useEffect(() => {
     if (!token) return;
@@ -337,6 +349,17 @@ export function ToursBookingClient({
           </div>
         </div>
       </header>
+      {!networkOnline ? (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          <p>You are offline. Tour booking and payment actions will queue for sync.</p>
+          <Link
+            href="/guest/sync"
+            className="inline-flex h-8 items-center rounded-full border border-amber-300 bg-white px-3 text-xs font-semibold text-amber-900"
+          >
+            Open Sync Center
+          </Link>
+        </div>
+      ) : null}
 
       {successMessage ? (
         <div
