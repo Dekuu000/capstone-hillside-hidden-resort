@@ -1196,3 +1196,14 @@ Remaining A4 blocker:
 4. Validation:
    - `npm --prefix hillside-next run lint` -> pass
    - `npm --prefix hillside-next run typecheck` -> pass
+
+## Batch G5 Execution Update (Part 1 Complete - Acceptance Pack)
+
+1. Added guest UX validation checklist and evidence template:
+   - `docs/re-architecture-core/17-guest-ux-acceptance-checklist.md`
+2. Included closure-ready validation assets:
+   - route-by-route manual scenario matrix for `/book`, `/tours`, `/my-bookings`, `/guest/my-stay`, `/guest/map`, `/guest/services`, `/guest/profile`, `/guest/sync`
+   - screenshot naming convention and evidence-folder standard for reproducible sign-off
+   - accessibility spot-check list and pass/fail sign-off table
+3. Outcome:
+   - G5 validation stage is prepared and ready for manual execution with linked evidence capture.
