@@ -27,6 +27,8 @@ Store screenshots/log captures under:
 1. `docs/re-architecture-core/evidence/guest-ux/`
 2. Fill run results in:
    - `docs/re-architecture-core/evidence/guest-ux/manual-run-template.md`
+3. Optional helper to generate a dated run sheet:
+   - `powershell -ExecutionPolicy Bypass -File docs/re-architecture-core/scripts/prepare-guest-ux-manual-run.ps1 -Tester "Your Name"`
 
 Recommended filename pattern:
 
