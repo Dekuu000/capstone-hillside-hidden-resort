@@ -1,6 +1,6 @@
 # Next Gap Closure Plan (Post-Defense)
 
-Last updated: 2026-04-18
+Last updated: 2026-04-25
 Context: Core guide-compliance scope (A-D) remains complete. This plan now reflects actual implementation status, closes the P2 design requirement, and locks the post-phase cleanup track.
 
 ## Prioritized Workstream
@@ -14,7 +14,7 @@ Context: Core guide-compliance scope (A-D) remains complete. This plan now refle
 | P1 | QR/PWA module completion (offline map) | Offline-capable resort map in guest app | 2-3 days | Completed (2026-04-18) | Map route available offline with cached shell + location markers |
 | P1 | Dashboard module completion (resource heatmap) | Cleaning/staff heatmap panel in admin | 1.5-2 days | Completed (2026-04-18) | Heatmap panel rendered from reservation/check-in density context |
 | P2 | Security & privacy roadmap (ZKP) | Design RFC only (not implementation) | 0.5-1 day | Completed (2026-04-18) | Approved design note with constraints, threat model, phased rollout |
-| P3 | Post-phase code cleanup + refactor | Cleaner, easier-to-maintain and scalable codebase | 2-4 days | Planned (starts after P0-P2 closure) | Cleanup checklist executed with green lint/tests and documented removals |
+| P3 | Post-phase code cleanup + refactor | Cleaner, easier-to-maintain and scalable codebase | 2-4 days | In progress | Cleanup checklist executed with green lint/tests and documented removals |
 
 ## Execution Order
 
@@ -95,6 +95,8 @@ This phase is intentionally scheduled after completion of P0-P2.
 
 ## Immediate Next Step
 
-1. Run Phase 4 cleanup/refactor using `docs/re-architecture-core/13-cleanup-refactor-checklist.md` with incremental commits.
-2. Checklist A baseline/inventory evidence is tracked in `docs/re-architecture-core/14-cleanup-baseline-inventory.md`.
+1. Continue Phase 4 cleanup/refactor using `docs/re-architecture-core/13-cleanup-refactor-checklist.md` with incremental commits.
+2. Complete remaining acceptance evidence:
+   - manual smoke output bundle (reservation/payment/QR/blockchain/AI/sync)
+   - CI evidence link/log for `quality:gate` parity
 3. Close remaining operational/documentation drift discovered during cleanup.
