@@ -26,6 +26,8 @@ Purpose: store G5 manual-validation screenshots and notes for guest UX closure.
 
 1. Use `manual-run-template.md` in this folder to record pass/fail and notes.
 2. Keep filenames stable so plan/checklist references remain valid.
-3. Link this evidence folder in:
+3. Optional helper command (from repo root) to create dated run sheet:
+   - `powershell -ExecutionPolicy Bypass -File docs/re-architecture-core/scripts/prepare-guest-ux-manual-run.ps1 -Tester "Your Name"`
+4. Link this evidence folder in:
    - `docs/re-architecture-core/16-guest-ux-improvement-plan.md`
    - `docs/re-architecture-core/14-cleanup-baseline-inventory.md`

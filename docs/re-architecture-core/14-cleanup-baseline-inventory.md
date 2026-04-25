@@ -1241,3 +1241,13 @@ Remaining A4 blocker:
    - DB validation -> pass (`checked_files: 70`, zero waivers)
 3. Outcome:
    - technical baseline is green for G5 manual UX acceptance execution.
+
+## Batch G5 Execution Update (Part 4 Complete - Manual-Run Bootstrap)
+
+1. Added helper script to bootstrap manual sign-off execution:
+   - `docs/re-architecture-core/scripts/prepare-guest-ux-manual-run.ps1`
+2. Added checklist/readme references for helper usage:
+   - `docs/re-architecture-core/17-guest-ux-acceptance-checklist.md`
+   - `docs/re-architecture-core/evidence/guest-ux/README.md`
+3. Outcome:
+   - tester can generate a dated run sheet quickly and start G5 scenario execution with less setup friction.

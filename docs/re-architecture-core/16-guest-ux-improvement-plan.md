@@ -237,3 +237,13 @@ Deliverables:
    - DB validation pass (`checked_files: 70`, zero hygiene waivers)
 3. Next step:
    - execute G5 manual route scenarios and attach screenshot evidence in `docs/re-architecture-core/evidence/guest-ux/`.
+
+### G5 - Part 4 (Manual-Run Bootstrap Helper)
+
+1. Added helper script for faster manual evidence execution startup:
+   - `docs/re-architecture-core/scripts/prepare-guest-ux-manual-run.ps1`
+2. Helper output:
+   - creates dated run sheet from `manual-run-template.md`
+   - auto-fills run date and tester name
+3. Next step:
+   - run helper and execute scenario matrix in the generated run sheet.
