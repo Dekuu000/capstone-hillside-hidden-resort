@@ -844,12 +844,18 @@ export function MyBookingsClient({
       </div>
 
       {actionMessage ? (
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
-          <p className="text-sm text-emerald-700">{actionMessage}</p>
+        <div
+          className={`mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3 ${
+            actionHasSyncCta
+              ? "border-amber-200 bg-amber-50"
+              : "border-emerald-200 bg-emerald-50"
+          }`}
+        >
+          <p className={`text-sm ${actionHasSyncCta ? "text-amber-800" : "text-emerald-700"}`}>{actionMessage}</p>
           {actionHasSyncCta ? (
             <Link
               href="/guest/sync"
-              className="inline-flex h-8 items-center rounded-full border border-emerald-300 bg-white px-3 text-xs font-semibold text-emerald-800"
+              className="inline-flex h-8 items-center rounded-full border border-amber-300 bg-white px-3 text-xs font-semibold text-amber-900"
             >
               Open Sync Center
             </Link>
@@ -1140,6 +1146,9 @@ export function MyBookingsClient({
                 x
               </button>
             </div>
+            <p className="mb-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+              Next step after submit: payment status changes to <strong>For verification</strong> while admin reviews your proof.
+            </p>
             <form className="grid gap-3" onSubmit={submitPayment}>
               <label className="grid gap-1 text-sm text-slate-700">
                 Amount

@@ -115,3 +115,15 @@ Deliverables:
    - upgraded loading-state placeholders from plain text to skeleton cards
 3. Kept scope UI-only:
    - no business-rule, API-contract, or policy logic changes
+
+### G2 - Part 1 (Copy Consistency Started)
+
+1. Aligned guest-facing microcopy across stay/bookings/services flows:
+   - clearer check-in timing and QR action wording in `MyStayDashboardClient`
+   - clearer online/offline service-request expectations and sync hint in `GuestServicesClient`
+   - clearer payment-proof next-step and queued-action feedback styling in `MyBookingsClient`
+2. Updated tone objective:
+   - use direct action language and explicit next steps after user actions
+   - reduce ambiguous status phrases in guest-critical paths
+3. Kept scope UI-only:
+   - no changes to reservation, payment, sync, or API business logic

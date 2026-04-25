@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   ClipboardList,
   Clock3,
@@ -232,9 +233,17 @@ export function GuestServicesClient({ accessToken }: Props) {
           onChange={(id) => setCategory(id as ResortServiceCategory)}
           className="sm:grid-cols-2"
         />
-        <p className="mt-3 text-sm text-[var(--color-muted)]">
-          Request services anytime. Front desk sees requests instantly in the admin queue.
-        </p>
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm text-[var(--color-muted)]">
+            Request services anytime. Online requests are sent instantly; offline requests queue for sync.
+          </p>
+          <Link
+            href="/guest/sync"
+            className="inline-flex h-8 items-center rounded-full border border-[var(--color-border)] bg-white px-3 text-xs font-semibold text-[var(--color-text)]"
+          >
+            Open Sync Center
+          </Link>
+        </div>
       </section>
 
       <section className="grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
@@ -299,6 +308,9 @@ export function GuestServicesClient({ accessToken }: Props) {
             <ClipboardList className="h-4 w-4 text-[var(--color-secondary)]" />
             Request Timeline
           </h2>
+          <p className="mt-2 text-xs text-[var(--color-muted)]">
+            Track each request from <strong>New</strong> to <strong>Done</strong>.
+          </p>
           {requestsLoading ? (
             <div className="mt-3 space-y-2">
               <Skeleton className="h-16 w-full" />
@@ -324,7 +336,7 @@ export function GuestServicesClient({ accessToken }: Props) {
                   {item.service_item?.service_name || "Service request"}
                 </p>
                 <p className="mt-1 text-xs text-[var(--color-muted)]">
-                  {STATUS_LABEL[item.status] || item.status} | Qty {item.quantity}
+                  {STATUS_LABEL[item.status] || item.status} • Qty {item.quantity}
                 </p>
                 <p className="mt-1 inline-flex items-center gap-1 text-xs text-[var(--color-muted)]">
                   <Clock3 className="h-3.5 w-3.5" />
@@ -341,6 +353,9 @@ export function GuestServicesClient({ accessToken }: Props) {
           <div className="max-h-[92vh] w-full overflow-auto rounded-t-2xl border border-[var(--color-border)] bg-white p-4 md:max-w-xl md:rounded-2xl">
             <h3 className="text-lg font-semibold text-[var(--color-text)]">Request {selectedService.service_name}</h3>
             <p className="mt-1 text-sm text-[var(--color-muted)]">{toPeso(Number(selectedService.price || 0))} per item</p>
+            <p className="mt-2 rounded-lg border border-[var(--color-border)] bg-slate-50 px-3 py-2 text-xs text-[var(--color-muted)]">
+              After submit: front desk receives this request immediately when online. If offline, it will auto-sync later.
+            </p>
             <form className="mt-3 grid gap-3" onSubmit={submitRequest}>
               <label className="grid gap-1 text-sm text-[var(--color-text)]">
                 Quantity
