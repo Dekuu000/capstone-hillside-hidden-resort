@@ -25,6 +25,8 @@ Provide a single manual validation script and evidence template for the guest UX
 Store screenshots/log captures under:
 
 1. `docs/re-architecture-core/evidence/guest-ux/`
+2. Fill run results in:
+   - `docs/re-architecture-core/evidence/guest-ux/manual-run-template.md`
 
 Recommended filename pattern:
 
@@ -80,7 +82,8 @@ Recommended filename pattern:
 ## Closure Criteria
 
 1. All matrix rows marked pass with evidence links.
-2. Any failed row converted into follow-up backlog items with owner/date.
-3. Summary linked back into:
+2. `manual-run-template.md` is filled and checked in with tester/date.
+3. Any failed row converted into follow-up backlog items with owner/date.
+4. Summary linked back into:
    - `docs/re-architecture-core/16-guest-ux-improvement-plan.md`
    - `docs/re-architecture-core/14-cleanup-baseline-inventory.md`

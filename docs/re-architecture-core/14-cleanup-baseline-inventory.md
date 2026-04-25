@@ -1207,3 +1207,14 @@ Remaining A4 blocker:
    - accessibility spot-check list and pass/fail sign-off table
 3. Outcome:
    - G5 validation stage is prepared and ready for manual execution with linked evidence capture.
+
+## Batch G5 Execution Update (Part 2 Complete - Evidence Workspace)
+
+1. Added guest UX evidence workspace files:
+   - `docs/re-architecture-core/evidence/guest-ux/README.md`
+   - `docs/re-architecture-core/evidence/guest-ux/manual-run-template.md`
+2. Prepared manual-run capture structure:
+   - stable screenshot naming map aligned to G5 scenario rows
+   - ready-to-fill pass/fail matrix + accessibility check table for closure evidence
+3. Outcome:
+   - manual sign-off can now be executed in one pass with standardized artifact output.

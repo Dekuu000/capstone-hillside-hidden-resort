@@ -204,3 +204,14 @@ Deliverables:
    - sign-off table for final pass/fail tracking
 3. Next step:
    - execute manual run and attach evidence links for closure sign-off
+
+### G5 - Part 2 (Evidence Workspace Scaffolded)
+
+1. Added evidence workspace assets:
+   - `docs/re-architecture-core/evidence/guest-ux/README.md`
+   - `docs/re-architecture-core/evidence/guest-ux/manual-run-template.md`
+2. Validation execution support delivered:
+   - fixed filename checklist aligned with acceptance matrix evidence rows
+   - manual run table template with pass/fail + notes + follow-up fields
+3. Next step:
+   - execute manual scenarios and fill `manual-run-template.md` for final sign-off.
