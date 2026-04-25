@@ -1229,3 +1229,15 @@ Remaining A4 blocker:
 3. Validation:
    - `npm --prefix hillside-next run lint` -> pass
    - `npm --prefix hillside-next run typecheck` -> pass
+
+## Batch G5 Execution Update (Part 3 Complete - Preflight Gate)
+
+1. Executed full integration quality gate prior to manual guest UX sign-off:
+   - `npm run quality:gate`
+2. Validation summary:
+   - lint -> pass
+   - typecheck -> pass
+   - API tests -> pass (`95 passed`)
+   - DB validation -> pass (`checked_files: 70`, zero waivers)
+3. Outcome:
+   - technical baseline is green for G5 manual UX acceptance execution.
