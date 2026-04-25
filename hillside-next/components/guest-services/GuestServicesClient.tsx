@@ -47,6 +47,13 @@ const STATUS_LABEL: Record<string, string> = {
   cancelled: "Cancelled",
 };
 
+const STATUS_BADGE_CLASS: Record<string, string> = {
+  new: "bg-blue-100 text-blue-800",
+  in_progress: "bg-amber-100 text-amber-800",
+  done: "bg-emerald-100 text-emerald-800",
+  cancelled: "bg-slate-200 text-slate-700",
+};
+
 function toPeso(value: number) {
   return new Intl.NumberFormat("en-PH", {
     style: "currency",
@@ -74,6 +81,10 @@ export function GuestServicesClient({ accessToken }: Props) {
   const [reservationId, setReservationId] = useState("");
   const [notes, setNotes] = useState("");
   const [submitBusy, setSubmitBusy] = useState(false);
+  const estimatedTotal = useMemo(
+    () => (selectedService ? Number(selectedService.price || 0) * quantity : 0),
+    [quantity, selectedService],
+  );
 
   const loadServices = useCallback(
     async (nextCategory: ResortServiceCategory) => {
@@ -264,7 +275,16 @@ export function GuestServicesClient({ accessToken }: Props) {
             </div>
           ) : null}
           {servicesError ? (
-            <p className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{servicesError}</p>
+            <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              <p>{servicesError}</p>
+              <button
+                type="button"
+                className="mt-2 inline-flex h-8 items-center rounded-lg border border-red-200 bg-white px-3 text-xs font-semibold text-red-700"
+                onClick={() => void loadServices(category)}
+              >
+                Retry
+              </button>
+            </div>
           ) : null}
           {!servicesLoading && !servicesError && services.length === 0 ? (
             <div className="mt-3">
@@ -318,7 +338,16 @@ export function GuestServicesClient({ accessToken }: Props) {
             </div>
           ) : null}
           {requestsError ? (
-            <p className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{requestsError}</p>
+            <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              <p>{requestsError}</p>
+              <button
+                type="button"
+                className="mt-2 inline-flex h-8 items-center rounded-lg border border-red-200 bg-white px-3 text-xs font-semibold text-red-700"
+                onClick={() => void loadRequests()}
+              >
+                Retry
+              </button>
+            </div>
           ) : null}
           {!requestsLoading && !requestsError && filteredRequests.length === 0 ? (
             <div className="mt-3">
@@ -336,7 +365,14 @@ export function GuestServicesClient({ accessToken }: Props) {
                   {item.service_item?.service_name || "Service request"}
                 </p>
                 <p className="mt-1 text-xs text-[var(--color-muted)]">
-                  {STATUS_LABEL[item.status] || item.status} • Qty {item.quantity}
+                  <span
+                    className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                      STATUS_BADGE_CLASS[item.status] || STATUS_BADGE_CLASS.cancelled
+                    }`}
+                  >
+                    {STATUS_LABEL[item.status] || item.status}
+                  </span>{" "}
+                  • Qty {item.quantity}
                 </p>
                 <p className="mt-1 inline-flex items-center gap-1 text-xs text-[var(--color-muted)]">
                   <Clock3 className="h-3.5 w-3.5" />
@@ -359,14 +395,35 @@ export function GuestServicesClient({ accessToken }: Props) {
             <form className="mt-3 grid gap-3" onSubmit={submitRequest}>
               <label className="grid gap-1 text-sm text-[var(--color-text)]">
                 Quantity
-                <input
-                  type="number"
-                  min={1}
-                  value={quantity}
-                  onChange={(event) => setQuantity(Math.max(1, Number(event.target.value || 1)))}
-                  className="h-11 rounded-lg border border-[var(--color-border)] bg-slate-50 px-3"
-                />
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setQuantity((value) => Math.max(1, value - 1))}
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-[var(--color-border)] bg-white text-lg font-semibold text-[var(--color-text)]"
+                    aria-label="Decrease quantity"
+                  >
+                    -
+                  </button>
+                  <input
+                    type="number"
+                    min={1}
+                    value={quantity}
+                    onChange={(event) => setQuantity(Math.max(1, Number(event.target.value || 1)))}
+                    className="h-11 w-24 rounded-lg border border-[var(--color-border)] bg-slate-50 px-3 text-center"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setQuantity((value) => value + 1)}
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-[var(--color-border)] bg-white text-lg font-semibold text-[var(--color-text)]"
+                    aria-label="Increase quantity"
+                  >
+                    +
+                  </button>
+                </div>
               </label>
+              <p className="rounded-lg border border-[var(--color-border)] bg-slate-50 px-3 py-2 text-xs text-[var(--color-muted)]">
+                Estimated total: <strong className="text-[var(--color-text)]">{toPeso(estimatedTotal)}</strong>
+              </p>
               <label className="grid gap-1 text-sm text-[var(--color-text)]">
                 Attach reservation (optional)
                 <select
@@ -390,6 +447,7 @@ export function GuestServicesClient({ accessToken }: Props) {
                   onChange={(event) => setPreferredTime(event.target.value)}
                   className="h-11 rounded-lg border border-[var(--color-border)] bg-slate-50 px-3"
                 />
+                <span className="text-xs text-[var(--color-muted)]">Leave blank if you want the next available slot.</span>
               </label>
               <label className="grid gap-1 text-sm text-[var(--color-text)]">
                 Notes (optional)

@@ -127,3 +127,17 @@ Deliverables:
    - reduce ambiguous status phrases in guest-critical paths
 3. Kept scope UI-only:
    - no changes to reservation, payment, sync, or API business logic
+
+### G3 - Part 1 (Interaction and Mobile Polish Started)
+
+1. Improved booking interaction clarity in `BookNowClient`:
+   - explicit blocker message when booking action is disabled
+   - selected-unit counter and quick "clear selection" action
+   - clearer selection state copy ("tap to remove")
+2. Improved guest-services request interactions in `GuestServicesClient`:
+   - retry controls for service and timeline load failures
+   - touch-friendly quantity stepper controls (+/-)
+   - estimated total price preview before submit
+   - color-coded status badges in request timeline
+3. Kept scope UI-only:
+   - no changes to backend routes, payload shapes, or booking/payment policies
