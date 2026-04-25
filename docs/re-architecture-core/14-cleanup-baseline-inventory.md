@@ -1251,3 +1251,13 @@ Remaining A4 blocker:
    - `docs/re-architecture-core/evidence/guest-ux/README.md`
 3. Outcome:
    - tester can generate a dated run sheet quickly and start G5 scenario execution with less setup friction.
+
+## Batch G5 Execution Update (Part 5 Complete - Closure Summary Scaffold)
+
+1. Added G5 closure summary template:
+   - `docs/re-architecture-core/evidence/guest-ux/g5-closure-summary-template.md`
+2. Updated acceptance references:
+   - `docs/re-architecture-core/17-guest-ux-acceptance-checklist.md`
+   - `docs/re-architecture-core/evidence/guest-ux/README.md`
+3. Outcome:
+   - final decision artifact is ready once manual pass/fail evidence is completed.
