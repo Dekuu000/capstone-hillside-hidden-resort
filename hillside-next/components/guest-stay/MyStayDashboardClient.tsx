@@ -184,10 +184,15 @@ export function MyStayDashboardClient({
       </section>
 
       {showQr ? (
-        <div className="fixed inset-0 z-40 flex items-end justify-center bg-slate-900/55 p-0 md:items-center md:p-4">
-          <div className="max-h-[92vh] w-full overflow-auto rounded-t-2xl border border-[var(--color-border)] bg-white p-4 md:max-w-3xl md:rounded-2xl">
+        <div className="fixed inset-0 z-40 flex items-end justify-center bg-slate-900/55 p-0 md:items-center md:p-4" role="presentation">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="my-stay-qr-title"
+            className="max-h-[92vh] w-full overflow-auto rounded-t-2xl border border-[var(--color-border)] bg-white p-4 md:max-w-3xl md:rounded-2xl"
+          >
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-[var(--color-text)]">Check-in QR</h3>
+              <h3 id="my-stay-qr-title" className="text-lg font-semibold text-[var(--color-text)]">Check-in QR</h3>
               <button
                 type="button"
                 onClick={() => setShowQr(false)}

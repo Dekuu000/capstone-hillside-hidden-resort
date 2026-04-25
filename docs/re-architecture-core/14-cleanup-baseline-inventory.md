@@ -1141,6 +1141,19 @@ Remaining A4 blocker:
 4. Outcome:
    - improved completion guidance and action confidence in the guest tours flow without altering core booking/payment behavior.
 
+## Batch G3 Execution Update (Part 3 Complete - Accessibility)
+
+1. Applied modal accessibility semantics in:
+   - `hillside-next/components/book/BookNowClient.tsx`
+   - `hillside-next/components/my-bookings/MyBookingsClient.tsx`
+   - `hillside-next/components/guest-services/GuestServicesClient.tsx`
+   - `hillside-next/components/guest-stay/MyStayDashboardClient.tsx`
+2. Accessibility improvements delivered:
+   - dialog semantics (`role="dialog"`, `aria-modal`, `aria-labelledby`)
+   - status and error announcement semantics in modal feedback areas
+3. Outcome:
+   - improved screen-reader clarity and consistent accessible modal structure across guest-critical interactions.
+
 ## Batch C4 Execution Update (Part 1 Complete)
 
 1. Standardized admin loading-state primitives to the shared skeleton component:

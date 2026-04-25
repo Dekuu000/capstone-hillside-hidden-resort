@@ -681,11 +681,16 @@ export function BookNowClient({
         </aside>
       </div>
       {galleryUnit ? (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/55 p-0 md:items-center md:p-4">
-          <div className="max-h-[92vh] w-full overflow-y-auto rounded-t-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 md:max-w-3xl md:rounded-2xl md:p-5">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/55 p-0 md:items-center md:p-4" role="presentation">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="book-unit-gallery-title"
+            className="max-h-[92vh] w-full overflow-y-auto rounded-t-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 md:max-w-3xl md:rounded-2xl md:p-5"
+          >
             <div className="mb-3 flex items-center justify-between gap-3">
               <div>
-                <h3 className="text-lg font-semibold text-[var(--color-text)]">{galleryUnit.name}</h3>
+                <h3 id="book-unit-gallery-title" className="text-lg font-semibold text-[var(--color-text)]">{galleryUnit.name}</h3>
                 <p className="text-xs text-[var(--color-muted)]">Unit photos</p>
               </div>
               <button
