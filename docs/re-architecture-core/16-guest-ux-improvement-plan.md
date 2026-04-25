@@ -193,3 +193,14 @@ Deliverables:
    - sync-center offline guidance text aligned with queue-and-reconnect flow
 3. Kept scope UI-only:
    - no data-model, API, or policy changes
+
+### G5 - Part 1 (Validation Pack Prepared)
+
+1. Added manual validation and evidence checklist:
+   - `docs/re-architecture-core/17-guest-ux-acceptance-checklist.md`
+2. Prepared closure assets:
+   - scenario matrix for booking/tours/stay/map/services/profile/sync
+   - screenshot naming convention and evidence folder standard
+   - sign-off table for final pass/fail tracking
+3. Next step:
+   - execute manual run and attach evidence links for closure sign-off
