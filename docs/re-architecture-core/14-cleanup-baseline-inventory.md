@@ -1218,3 +1218,14 @@ Remaining A4 blocker:
    - ready-to-fill pass/fail matrix + accessibility check table for closure evidence
 3. Outcome:
    - manual sign-off can now be executed in one pass with standardized artifact output.
+
+## Batch G3 Execution Update (Part 4 Complete - Sync Loading Parity)
+
+1. Added route-level loading shell for guest sync route:
+   - `hillside-next/app/guest/sync/loading.tsx`
+2. UI consistency updates delivered:
+   - Sync Center now has explicit skeleton placeholders during route/content load
+   - loading-state parity improved across guest-critical route set
+3. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass

@@ -215,3 +215,13 @@ Deliverables:
    - manual run table template with pass/fail + notes + follow-up fields
 3. Next step:
    - execute manual scenarios and fill `manual-run-template.md` for final sign-off.
+
+### G3 - Part 4 (Loading-State Coverage Parity)
+
+1. Added missing route-level loading shell for guest sync flow:
+   - `hillside-next/app/guest/sync/loading.tsx`
+2. UX polish delivered:
+   - consistent skeleton-first load experience before Sync Center content resolves
+   - parity with other guest-critical routes already using explicit loading surfaces
+3. Kept scope UI-only:
+   - no sync queue logic, API behavior, or policy rules changed.
