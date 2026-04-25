@@ -15,6 +15,7 @@ Context: Core guide-compliance scope (A-D) remains complete. This plan now refle
 | P1 | Dashboard module completion (resource heatmap) | Cleaning/staff heatmap panel in admin | 1.5-2 days | Completed (2026-04-18) | Heatmap panel rendered from reservation/check-in density context |
 | P2 | Security & privacy roadmap (ZKP) | Design RFC only (not implementation) | 0.5-1 day | Completed (2026-04-18) | Approved design note with constraints, threat model, phased rollout |
 | P3 | Post-phase code cleanup + refactor | Cleaner, easier-to-maintain and scalable codebase | 2-4 days | In progress | Cleanup checklist executed with green lint/tests and documented removals |
+| P4 | Guest UI/UX optimization | Improve guest journey clarity, mobile usability, and offline confidence | 1-2 days | Planned (2026-04-25) | Guest UX plan executed with evidence-backed improvements across booking/stay/map/services |
 
 ## Execution Order
 
@@ -99,4 +100,5 @@ This phase is intentionally scheduled after completion of P0-P2.
 2. Complete remaining acceptance evidence:
    - manual smoke output bundle (reservation/payment/QR/blockchain/AI/sync)
    - CI evidence link/log for `quality:gate` parity
-3. Close remaining operational/documentation drift discovered during cleanup.
+3. Start guest UX optimization track using `docs/re-architecture-core/16-guest-ux-improvement-plan.md` (G1 audit backlog first).
+4. Close remaining operational/documentation drift discovered during cleanup.
