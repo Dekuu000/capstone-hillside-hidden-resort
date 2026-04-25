@@ -144,6 +144,19 @@ export function ToursBookingClient({
     if (totalAmount <= 0) return 0;
     return totalAmount <= 500 ? totalAmount : 500;
   }, [totalAmount]);
+  const submitBlockerMessage = useMemo(() => {
+    if (!serviceId) return "Select a tour service first.";
+    if (adultQty + kidQty <= 0) return "At least one guest is required.";
+    if (!visitDate) return "Visit date is required.";
+    if (totalAmount <= 0) return "Computed total must be greater than zero.";
+    if (payNow < minRequired || payNow > totalAmount) {
+      return `Pay now must be between ${toPeso(minRequired)} and ${toPeso(totalAmount)}.`;
+    }
+    if (proofMode === "url" && !proofUrl.trim()) return "Provide a proof URL.";
+    if (proofMode === "file" && !proofFile) return "Upload a payment proof file.";
+    return null;
+  }, [adultQty, kidQty, minRequired, payNow, proofFile, proofMode, proofUrl, serviceId, totalAmount, visitDate]);
+  const canSubmitTour = submitBlockerMessage === null && !submitBusy;
 
   async function uploadProofIfNeeded(reservationId: string): Promise<string | null> {
     if (proofMode === "url") {
@@ -326,12 +339,18 @@ export function ToursBookingClient({
       </header>
 
       {successMessage ? (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
-          <p className="text-sm text-emerald-700">{successMessage}</p>
+        <div
+          className={`mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3 ${
+            successHasSyncCta ? "border-amber-200 bg-amber-50" : "border-emerald-200 bg-emerald-50"
+          }`}
+          role="status"
+          aria-live="polite"
+        >
+          <p className={`text-sm ${successHasSyncCta ? "text-amber-800" : "text-emerald-700"}`}>{successMessage}</p>
           {successHasSyncCta ? (
             <Link
               href="/guest/sync"
-              className="inline-flex h-8 items-center rounded-full border border-emerald-300 bg-white px-3 text-xs font-semibold text-emerald-800"
+              className="inline-flex h-8 items-center rounded-full border border-amber-300 bg-white px-3 text-xs font-semibold text-amber-900"
             >
               Open Sync Center
             </Link>
@@ -339,7 +358,9 @@ export function ToursBookingClient({
         </div>
       ) : null}
       {submitError ? (
-        <p className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{submitError}</p>
+        <p className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">
+          {submitError}
+        </p>
       ) : null}
       {latestAiRecommendation ? (
         <div className="mb-4 rounded-2xl border border-indigo-200 bg-indigo-50 p-4 text-sm text-indigo-900 shadow-sm">
@@ -378,7 +399,30 @@ export function ToursBookingClient({
               ))}
             </select>
             {servicesLoading ? <span className="text-xs text-slate-500">Loading active tours...</span> : null}
-            {servicesError ? <span className="text-xs text-red-600">{servicesError}</span> : null}
+            {servicesError ? (
+              <span className="mt-1 inline-flex flex-wrap items-center gap-2 text-xs text-red-600">
+                <span>{servicesError}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setServicesError(null);
+                    setServicesLoading(true);
+                    void apiFetch<ServiceListResponse>(
+                      "/v2/catalog/services",
+                      { method: "GET" },
+                      token,
+                      serviceListResponseSchema,
+                    )
+                      .then((data) => setServices(data.items ?? []))
+                      .catch((error) => setServicesError(getApiErrorMessage(error, "Failed to load active tours.")))
+                      .finally(() => setServicesLoading(false));
+                  }}
+                  className="inline-flex h-7 items-center rounded-md border border-red-200 bg-white px-2.5 font-semibold text-red-700"
+                >
+                  Retry
+                </button>
+              </span>
+            ) : null}
           </label>
 
           <FancyDatePicker
@@ -390,24 +434,60 @@ export function ToursBookingClient({
 
           <label className="grid gap-1 text-sm text-slate-700">
             Adults
-            <input
-              type="number"
-              min={0}
-              value={adultQty}
-              onChange={(event) => setAdultQty(Math.max(0, Number(event.target.value || 0)))}
-              className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 outline-none ring-blue-200 transition focus:ring-2"
-            />
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setAdultQty((value) => Math.max(0, value - 1))}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-300 bg-white text-lg font-semibold text-slate-700"
+                aria-label="Decrease adult guests"
+              >
+                -
+              </button>
+              <input
+                type="number"
+                min={0}
+                value={adultQty}
+                onChange={(event) => setAdultQty(Math.max(0, Number(event.target.value || 0)))}
+                className="h-10 w-24 rounded-lg border border-slate-300 bg-slate-50 px-3 text-center outline-none ring-blue-200 transition focus:ring-2"
+              />
+              <button
+                type="button"
+                onClick={() => setAdultQty((value) => value + 1)}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-300 bg-white text-lg font-semibold text-slate-700"
+                aria-label="Increase adult guests"
+              >
+                +
+              </button>
+            </div>
           </label>
 
           <label className="grid gap-1 text-sm text-slate-700">
             Kids
-            <input
-              type="number"
-              min={0}
-              value={kidQty}
-              onChange={(event) => setKidQty(Math.max(0, Number(event.target.value || 0)))}
-              className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 outline-none ring-blue-200 transition focus:ring-2"
-            />
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setKidQty((value) => Math.max(0, value - 1))}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-300 bg-white text-lg font-semibold text-slate-700"
+                aria-label="Decrease kid guests"
+              >
+                -
+              </button>
+              <input
+                type="number"
+                min={0}
+                value={kidQty}
+                onChange={(event) => setKidQty(Math.max(0, Number(event.target.value || 0)))}
+                className="h-10 w-24 rounded-lg border border-slate-300 bg-slate-50 px-3 text-center outline-none ring-blue-200 transition focus:ring-2"
+              />
+              <button
+                type="button"
+                onClick={() => setKidQty((value) => value + 1)}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-300 bg-white text-lg font-semibold text-slate-700"
+                aria-label="Increase kid guests"
+              >
+                +
+              </button>
+            </div>
           </label>
         </div>
 
@@ -489,11 +569,14 @@ export function ToursBookingClient({
         <button
           type="button"
           onClick={() => void submitTourBooking()}
-          disabled={submitBusy}
+          disabled={!canSubmitTour}
           className="mt-6 w-full rounded-lg bg-[var(--color-cta)] px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {submitBusy ? "Creating..." : "Reserve Tour"}
         </button>
+        {submitBlockerMessage ? (
+          <p className="mt-2 text-center text-xs font-medium text-slate-600">{submitBlockerMessage}</p>
+        ) : null}
       </div>
     </section>
   );
