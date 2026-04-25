@@ -195,7 +195,14 @@ export function BookNowClient({
     [selectedUnits],
   );
   const hasCapacityGap = selectedUnitIds.length > 0 && selectedCapacity < guestCount;
-  const canSubmitReservation = selectedUnitIds.length > 0 && !hasCapacityGap && guestCount > 0 && nights > 0;
+  const submitBlockerMessage = useMemo(() => {
+    if (selectedUnitIds.length === 0) return "Select at least one unit to continue.";
+    if (nights <= 0) return "Choose a valid check-in and check-out date.";
+    if (guestCount <= 0) return "Guest count must be at least 1.";
+    if (hasCapacityGap) return `Selected units can host up to ${selectedCapacity} guest(s).`;
+    return null;
+  }, [guestCount, hasCapacityGap, nights, selectedCapacity, selectedUnitIds.length]);
+  const canSubmitReservation = submitBlockerMessage === null;
   const galleryImages = useMemo(
     () => normalizeUnitImageUrls(galleryUnit?.image_urls, galleryUnit?.image_url),
     [galleryUnit],
@@ -451,8 +458,26 @@ export function BookNowClient({
                 <Moon className="h-5 w-5 text-[var(--color-secondary)]" />
                 Available Units
               </h2>
-              <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">Step 2</span>
+              <div className="flex items-center gap-2">
+                {selectedUnitIds.length > 0 ? (
+                  <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                    {selectedUnitIds.length} selected
+                  </span>
+                ) : null}
+                <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">Step 2</span>
+              </div>
             </div>
+            {selectedUnitIds.length > 0 ? (
+              <div className="mb-3 flex items-center justify-end">
+                <button
+                  type="button"
+                  onClick={() => setSelectedUnitIds([])}
+                  className="inline-flex h-8 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-white px-3 text-xs font-semibold text-[var(--color-text)] transition-colors duration-150 hover:border-[var(--color-primary)]"
+                >
+                  Clear selection
+                </button>
+              </div>
+            ) : null}
             {unitsError ? (
               <div className="mb-3 rounded-[var(--radius-sm)] border border-red-200 bg-red-50 p-3 text-sm text-red-700">
                 <p>{unitsError}</p>
@@ -548,7 +573,7 @@ export function BookNowClient({
                         </div>
                       ) : null}
                       <div className="mt-3 flex items-center justify-between gap-2">
-                        <span className="text-xs text-slate-500">{selected ? "Selected" : "Tap to select"}</span>
+                        <span className="text-xs text-slate-500">{selected ? "Selected (tap to remove)" : "Tap to select"}</span>
                         <div className="flex items-center gap-2">
                           {normalizedImages.length > 0 ? (
                             <button
@@ -640,6 +665,9 @@ export function BookNowClient({
               <p className="mt-2 text-center text-xs font-medium text-amber-700">
                 Increase selected capacity to continue.
               </p>
+            ) : null}
+            {submitBlockerMessage && !hasCapacityGap ? (
+              <p className="mt-2 text-center text-xs font-medium text-slate-600">{submitBlockerMessage}</p>
             ) : null}
 
             <p className="mt-3 text-center text-xs text-slate-500">

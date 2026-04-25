@@ -1113,6 +1113,20 @@ Remaining A4 blocker:
 3. Outcome:
    - guest-facing messaging is more explicit about what to do next and what status/state changes to expect.
 
+## Batch G3 Execution Update (Part 1 Complete - Interaction Polish)
+
+1. Updated booking interaction affordances in:
+   - `hillside-next/components/book/BookNowClient.tsx`
+2. Updated service-request interaction affordances in:
+   - `hillside-next/components/guest-services/GuestServicesClient.tsx`
+3. Interaction improvements delivered:
+   - actionable disabled-state guidance and selection controls in booking flow
+   - retry buttons for failed service/request history fetches
+   - touch-friendly quantity controls with estimated total preview
+   - status badge visual hierarchy in service timeline
+4. Outcome:
+   - reduced interaction ambiguity and improved mobile-friendly touch ergonomics in guest-critical actions.
+
 ## Batch C4 Execution Update (Part 1 Complete)
 
 1. Standardized admin loading-state primitives to the shared skeleton component:
