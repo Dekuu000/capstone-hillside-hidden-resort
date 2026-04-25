@@ -1,6 +1,6 @@
 # Cleanup Baseline & Inventory Report
 
-Last updated: 2026-04-22  
+Last updated: 2026-04-25  
 Phase: Post-phase cleanup/refactor (Checklist A)
 
 ## Baseline Snapshot
@@ -1041,3 +1041,31 @@ Remaining A4 blocker:
    - `npm run typecheck` -> pass
    - `npm run test:api` -> pass (`95 passed`)
    - `npm run quality:gate` -> pass
+
+## Batch E5 Execution Update (Part 1 Complete)
+
+1. Refreshed cleanup quality report snapshot:
+   - updated `docs/re-architecture-core/perf-report.md`
+2. Captured latest integrated validation output from:
+   - `npm run quality:gate`
+3. Recorded passing status for:
+   - lint
+   - typecheck
+   - API tests (`95 passed`)
+   - DB validation (`db:sanity` + `db:hygiene`, both pass with zero waivers)
+4. Outcome:
+   - quality snapshot now reflects current cleanup state instead of legacy February-only performance notes
+   - Checklist E final-report evidence target is now materially covered by a current gate snapshot
+
+## Batch F2 Execution Update (Part 1 Complete)
+
+1. Aligned cleanup status docs with current execution state:
+   - `docs/re-architecture-core/10-next-gap-closure-plan.md`
+   - `docs/re-architecture-core/13-cleanup-refactor-checklist.md`
+   - `docs/re-architecture-core/14-cleanup-baseline-inventory.md`
+2. Updated tracked status:
+   - P3 marked `In progress`
+   - checklist `Last updated` date refreshed
+   - new completed batch markers for E5/F2 inserted
+3. Outcome:
+   - post-phase cleanup documentation now reflects current batch progression and remaining acceptance-evidence items

@@ -95,4 +95,4 @@ Status key:
 4. Add scikit/Prophet-ready AI forecasting endpoint and persist forecast results. (`Completed`)
 5. Complete ZKP as design-only RFC (no implementation in this phase). (`Completed`)
 6. Sepolia reliability loop target (`10/10`) for escrow + guest pass + check-in + reconciliation. (`Completed`)
-7. Lock post-phase cleanup/refactor track and publish executable checklist in `docs/re-architecture-core/13-cleanup-refactor-checklist.md`. (`Completed; execution pending`)
+7. Lock post-phase cleanup/refactor track and publish executable checklist in `docs/re-architecture-core/13-cleanup-refactor-checklist.md`. (`Completed; execution in progress`)
