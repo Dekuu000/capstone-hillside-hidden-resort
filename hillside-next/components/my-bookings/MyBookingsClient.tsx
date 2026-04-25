@@ -1054,10 +1054,17 @@ export function MyBookingsClient({
       ) : null}
 
       {(detailsLoading || details) && (
-        <div className="fixed inset-0 z-40 flex items-end justify-center bg-slate-900/50 p-0 md:items-center md:p-4">
-          <div className="max-h-[92vh] w-full overflow-auto rounded-t-2xl border border-slate-200/70 bg-white p-4 md:max-w-2xl md:rounded-2xl">
+        <div className="fixed inset-0 z-40 flex items-end justify-center bg-slate-900/50 p-0 md:items-center md:p-4" role="presentation">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="booking-details-title"
+            className="max-h-[92vh] w-full overflow-auto rounded-t-2xl border border-slate-200/70 bg-white p-4 md:max-w-2xl md:rounded-2xl"
+          >
             <div className="mb-3 flex items-center justify-between gap-2">
-              <h3 className="text-lg font-semibold text-slate-900">{details?.reservation_code ?? "Loading..."}</h3>
+              <h3 id="booking-details-title" className="text-lg font-semibold text-slate-900">
+                {details?.reservation_code ?? "Loading..."}
+              </h3>
               <button
                 type="button"
                 onClick={() => {
@@ -1072,8 +1079,8 @@ export function MyBookingsClient({
                 x
               </button>
             </div>
-            {detailsLoading ? <p className="text-sm text-slate-600">Loading details...</p> : null}
-            {detailsError ? <p className="mb-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{detailsError}</p> : null}
+            {detailsLoading ? <p className="text-sm text-slate-600" role="status">Loading details...</p> : null}
+            {detailsError ? <p className="mb-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">{detailsError}</p> : null}
 
             {details ? (
               <div className="space-y-4">
@@ -1133,10 +1140,15 @@ export function MyBookingsClient({
       )}
 
       {submitFor ? (
-        <div className="fixed inset-0 z-40 flex items-end justify-center bg-slate-900/50 p-0 md:items-center md:p-4">
-          <div className="max-h-[92vh] w-full overflow-auto rounded-t-2xl border border-slate-200/70 bg-white p-4 md:max-w-xl md:rounded-2xl">
+        <div className="fixed inset-0 z-40 flex items-end justify-center bg-slate-900/50 p-0 md:items-center md:p-4" role="presentation">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="payment-proof-title"
+            className="max-h-[92vh] w-full overflow-auto rounded-t-2xl border border-slate-200/70 bg-white p-4 md:max-w-xl md:rounded-2xl"
+          >
             <div className="mb-3 flex items-center justify-between gap-2">
-              <h3 className="text-lg font-semibold text-slate-900">Submit payment proof</h3>
+              <h3 id="payment-proof-title" className="text-lg font-semibold text-slate-900">Submit payment proof</h3>
               <button
                 type="button"
                 onClick={closeSubmitModal}
@@ -1230,7 +1242,7 @@ export function MyBookingsClient({
                   />
                 )}
               </div>
-              {submitError ? <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{submitError}</p> : null}
+              {submitError ? <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">{submitError}</p> : null}
               <div className="mt-1 flex justify-end gap-2">
                 <button
                   type="button"
@@ -1253,10 +1265,15 @@ export function MyBookingsClient({
       ) : null}
 
       {qrFor ? (
-        <div className="fixed inset-0 z-40 flex items-end justify-center bg-slate-900/50 p-0 md:items-center md:p-4">
-          <div className="max-h-[92vh] w-full overflow-auto rounded-t-2xl border border-slate-200/70 bg-white p-4 md:max-w-2xl md:rounded-2xl">
+        <div className="fixed inset-0 z-40 flex items-end justify-center bg-slate-900/50 p-0 md:items-center md:p-4" role="presentation">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="checkin-qr-title"
+            className="max-h-[92vh] w-full overflow-auto rounded-t-2xl border border-slate-200/70 bg-white p-4 md:max-w-2xl md:rounded-2xl"
+          >
             <div className="mb-3 flex items-center justify-between gap-2">
-              <h3 className="text-lg font-semibold text-slate-900">Check-in QR Token</h3>
+              <h3 id="checkin-qr-title" className="text-lg font-semibold text-slate-900">Check-in QR Token</h3>
               <button
                 type="button"
                 onClick={() => {
@@ -1285,8 +1302,8 @@ export function MyBookingsClient({
               </p>
             ) : null}
 
-            {qrError ? <p className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{qrError}</p> : null}
-            {qrBusy ? <p className="mt-3 text-sm text-slate-600">Generating token...</p> : null}
+            {qrError ? <p className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">{qrError}</p> : null}
+            {qrBusy ? <p className="mt-3 text-sm text-slate-600" role="status">Generating token...</p> : null}
 
             {qrToken ? (
               <>
@@ -1338,10 +1355,15 @@ export function MyBookingsClient({
       ) : null}
 
       {cancelFor ? (
-        <div className="fixed inset-0 z-40 flex items-end justify-center bg-slate-900/50 p-0 md:items-center md:p-4">
-          <div className="max-h-[92vh] w-full overflow-auto rounded-t-2xl border border-slate-200/70 bg-white p-4 md:max-w-md md:rounded-2xl">
+        <div className="fixed inset-0 z-40 flex items-end justify-center bg-slate-900/50 p-0 md:items-center md:p-4" role="presentation">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cancel-booking-title"
+            className="max-h-[92vh] w-full overflow-auto rounded-t-2xl border border-slate-200/70 bg-white p-4 md:max-w-md md:rounded-2xl"
+          >
             <div className="mb-3 flex items-center justify-between gap-2">
-              <h3 className="text-lg font-semibold text-slate-900">Cancel booking?</h3>
+              <h3 id="cancel-booking-title" className="text-lg font-semibold text-slate-900">Cancel booking?</h3>
               <button
                 type="button"
                 onClick={() => setCancelFor(null)}
@@ -1355,7 +1377,7 @@ export function MyBookingsClient({
             <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
               {cancellationConsequenceText(cancelFor)}
             </p>
-            {cancelError ? <p className="mt-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{cancelError}</p> : null}
+            {cancelError ? <p className="mt-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">{cancelError}</p> : null}
             <div className="mt-3 flex justify-end gap-2">
               <button
                 type="button"
@@ -1377,10 +1399,15 @@ export function MyBookingsClient({
         </div>
       ) : null}
       {detailGalleryOpen ? (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/55 p-0 md:items-center md:p-4">
-          <div className="max-h-[92vh] w-full overflow-auto rounded-t-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 md:max-w-3xl md:rounded-2xl md:p-5">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/55 p-0 md:items-center md:p-4" role="presentation">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="unit-gallery-title"
+            className="max-h-[92vh] w-full overflow-auto rounded-t-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 md:max-w-3xl md:rounded-2xl md:p-5"
+          >
             <div className="mb-3 flex items-center justify-between gap-3">
-              <h3 className="text-lg font-semibold text-[var(--color-text)]">{detailGalleryTitle}</h3>
+              <h3 id="unit-gallery-title" className="text-lg font-semibold text-[var(--color-text)]">{detailGalleryTitle}</h3>
               <button
                 type="button"
                 onClick={() => {

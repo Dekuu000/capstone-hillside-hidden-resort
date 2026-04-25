@@ -153,3 +153,16 @@ Deliverables:
    - `hillside-next/app/tours/loading.tsx`
 3. Kept scope UI-only:
    - no changes to tour reservation, payment, or policy business logic
+
+### G3 - Part 3 (Accessibility Pass)
+
+1. Improved guest modal accessibility semantics across major guest flows:
+   - `BookNowClient` gallery modal
+   - `MyBookingsClient` detail/payment/QR/cancel/gallery modals
+   - `GuestServicesClient` request modal
+   - `MyStayDashboardClient` QR modal
+2. Accessibility updates delivered:
+   - added dialog semantics (`role="dialog"`, `aria-modal="true"`, `aria-labelledby`)
+   - improved status/error announcement semantics (`role="status"` / `role="alert"` in modal feedback)
+3. Kept scope UI-only:
+   - no business logic, API, or policy behavior changes
