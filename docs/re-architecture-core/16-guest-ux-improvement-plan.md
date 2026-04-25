@@ -225,3 +225,15 @@ Deliverables:
    - parity with other guest-critical routes already using explicit loading surfaces
 3. Kept scope UI-only:
    - no sync queue logic, API behavior, or policy rules changed.
+
+### G5 - Part 3 (Preflight Validation Gate)
+
+1. Ran integrated quality gate before manual UX sign-off:
+   - `npm run quality:gate`
+2. Validation result:
+   - lint pass
+   - typecheck pass
+   - API tests pass (`95 passed`)
+   - DB validation pass (`checked_files: 70`, zero hygiene waivers)
+3. Next step:
+   - execute G5 manual route scenarios and attach screenshot evidence in `docs/re-architecture-core/evidence/guest-ux/`.
