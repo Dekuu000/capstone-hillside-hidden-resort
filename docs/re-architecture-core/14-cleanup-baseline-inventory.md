@@ -1070,6 +1070,21 @@ Remaining A4 blocker:
 3. Outcome:
    - post-phase cleanup documentation now reflects current batch progression and remaining acceptance-evidence items
 
+## Batch G1 Execution Update (Part 1 Complete - Planning)
+
+1. Added dedicated guest UX improvement execution plan:
+   - `docs/re-architecture-core/16-guest-ux-improvement-plan.md`
+2. Defined UX-specific batch track (G1-G5):
+   - audit/backlog
+   - copy/information consistency
+   - interaction/mobile/accessibility polish
+   - offline trust messaging
+   - validation evidence closure
+3. Linked the new track in phase planning:
+   - `docs/re-architecture-core/10-next-gap-closure-plan.md` now includes P4 guest UX optimization.
+4. Outcome:
+   - guest UX work now has a concrete, execution-ready plan instead of being implicitly bundled under generic cleanup.
+
 ## Batch C4 Execution Update (Part 1 Complete)
 
 1. Standardized admin loading-state primitives to the shared skeleton component:
