@@ -1127,6 +1127,20 @@ Remaining A4 blocker:
 4. Outcome:
    - reduced interaction ambiguity and improved mobile-friendly touch ergonomics in guest-critical actions.
 
+## Batch G3 Execution Update (Part 2 Complete - Tours UX)
+
+1. Updated tour booking interactions in:
+   - `hillside-next/components/tours/ToursBookingClient.tsx`
+2. Added route-level loading shell:
+   - `hillside-next/app/tours/loading.tsx`
+3. Interaction improvements delivered:
+   - explicit disabled-state blocker guidance before submit
+   - guest-count steppers for better touch/mobile ergonomics
+   - retry button for service catalog fetch failures
+   - clearer queued-sync success signaling in tour booking notices
+4. Outcome:
+   - improved completion guidance and action confidence in the guest tours flow without altering core booking/payment behavior.
+
 ## Batch C4 Execution Update (Part 1 Complete)
 
 1. Standardized admin loading-state primitives to the shared skeleton component:

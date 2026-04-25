@@ -141,3 +141,15 @@ Deliverables:
    - color-coded status badges in request timeline
 3. Kept scope UI-only:
    - no changes to backend routes, payload shapes, or booking/payment policies
+
+### G3 - Part 2 (Tours Interaction and Loading Polish)
+
+1. Improved tour-booking interactions in `ToursBookingClient`:
+   - disabled submit guidance with explicit blocker text
+   - touch-friendly guest-count steppers for adults/kids
+   - retry affordance for service list load failures
+   - queued-vs-online success notice tone alignment with sync CTA
+2. Added route-level loading shell:
+   - `hillside-next/app/tours/loading.tsx`
+3. Kept scope UI-only:
+   - no changes to tour reservation, payment, or policy business logic
