@@ -247,3 +247,13 @@ Deliverables:
    - auto-fills run date and tester name
 3. Next step:
    - run helper and execute scenario matrix in the generated run sheet.
+
+### G5 - Part 5 (Closure Summary Scaffolded)
+
+1. Added closure summary template:
+   - `docs/re-architecture-core/evidence/guest-ux/g5-closure-summary-template.md`
+2. Added checklist/readme linkage for closure handoff:
+   - `docs/re-architecture-core/17-guest-ux-acceptance-checklist.md`
+   - `docs/re-architecture-core/evidence/guest-ux/README.md`
+3. Next step:
+   - fill manual run sheet + evidence, then finalize closure summary and mark P4 completion decision.

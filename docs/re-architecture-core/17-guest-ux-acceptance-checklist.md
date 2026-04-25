@@ -86,6 +86,8 @@ Recommended filename pattern:
 1. All matrix rows marked pass with evidence links.
 2. `manual-run-template.md` is filled and checked in with tester/date.
 3. Any failed row converted into follow-up backlog items with owner/date.
-4. Summary linked back into:
+4. Closure summary is filled:
+   - `docs/re-architecture-core/evidence/guest-ux/g5-closure-summary-template.md`
+5. Summary linked back into:
    - `docs/re-architecture-core/16-guest-ux-improvement-plan.md`
    - `docs/re-architecture-core/14-cleanup-baseline-inventory.md`
