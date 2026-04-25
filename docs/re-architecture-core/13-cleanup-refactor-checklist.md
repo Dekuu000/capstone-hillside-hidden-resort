@@ -90,7 +90,7 @@ Baseline evidence:
 
 ### D) Database and Migration Hygiene
 
-- [ ] Standardize migration naming format and ordering consistency.
+- [x] Standardize migration naming format and ordering consistency.
 - [x] Remove temporary/recovery files from tracked project scope.
 - [x] Ensure `supabase db reset` and repository migration sanity checks pass cleanly.
 - [x] Verify function/policy/trigger definitions are idempotent and parser-safe.
@@ -100,6 +100,7 @@ Baseline evidence:
 - [x] Batch D1 (part 2): document 2026-04-18 migration split/reorder rationale and parser-safety sequencing.
 - [x] Batch D2 (part 1): untrack `supabase/.temp/cli-latest` so Supabase temp state no longer pollutes repository diffs.
 - [x] Batch D2 (part 2): remove legacy underscore-index migration duplicates and add split `20260418001..20260418009` policy rollout migrations.
+- [x] Batch D3 (part 1): remove legacy duplicate waiver migration (`20260218_002_*`) and enforce zero-waiver canonical naming/duplicate hygiene baseline.
 
 ### E) CI, Lint, and Test Hardening
 

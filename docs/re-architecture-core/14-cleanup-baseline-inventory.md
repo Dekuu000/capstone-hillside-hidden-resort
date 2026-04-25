@@ -1022,3 +1022,22 @@ Remaining A4 blocker:
    - `npm run typecheck` -> pass
    - `npm run test:api` -> pass (`95 passed`)
    - `npm run quality:gate` -> pass
+
+## Batch D3 Execution Update (Part 1 Complete)
+
+1. Removed the final legacy duplicate waiver migration file:
+   - deleted `supabase/migrations/20260218_002_payment_rejection_reason.sql`
+2. Enforced zero-waiver hygiene baseline in checker configuration:
+   - `supabase/scripts/migration_hygiene_check.py`
+   - `ALLOWED_LEGACY_FILENAMES` now empty
+   - `ALLOWED_DUPLICATE_GROUPS` now empty
+3. Outcome:
+   - migration filename set now follows canonical naming only (`^\d{11}_[a-z0-9_]+\.sql$`)
+   - duplicate-content waiver pair removed; hygiene now passes without legacy exceptions
+4. Validation:
+   - `npm run db:validate` -> pass
+   - `python supabase/scripts/migration_hygiene_check.py` -> `ok: true`, `waived.legacy_filenames=[]`, `waived.duplicate_groups=[]`
+   - `npm run lint` -> pass
+   - `npm run typecheck` -> pass
+   - `npm run test:api` -> pass (`95 passed`)
+   - `npm run quality:gate` -> pass
