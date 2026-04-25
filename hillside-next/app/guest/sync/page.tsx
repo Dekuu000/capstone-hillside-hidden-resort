@@ -7,7 +7,7 @@ export default function GuestSyncPage() {
       <SyncCenter
         scope="me"
         title="My Sync Center"
-        description="Track saved-offline actions, pending uploads, and sync completion for your bookings."
+        description="Track queued offline actions, pending uploads, and sync completion for your bookings."
       />
     </GuestShell>
   );

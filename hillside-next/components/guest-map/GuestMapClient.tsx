@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { Compass, MapPinned, Route } from "lucide-react";
 import { guestMapAmenityPackSchema } from "../../../packages/shared/src/schemas";
 import type { GuestMapAmenityPin } from "../../../packages/shared/src/types";
@@ -81,6 +82,18 @@ export function GuestMapClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cachedMeta, setCachedMeta] = useState<string | null>(null);
+  const [networkOnline, setNetworkOnline] = useState(true);
+
+  useEffect(() => {
+    const sync = () => setNetworkOnline(window.navigator.onLine);
+    sync();
+    window.addEventListener("online", sync);
+    window.addEventListener("offline", sync);
+    return () => {
+      window.removeEventListener("online", sync);
+      window.removeEventListener("offline", sync);
+    };
+  }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -197,6 +210,19 @@ export function GuestMapClient() {
         {error ? <p className="mt-3 text-xs text-[var(--color-error)]">{error}</p> : null}
         {cachedMeta ? <p className="mt-2 text-xs font-semibold text-amber-700">{cachedMeta}</p> : null}
       </section>
+      {!networkOnline ? (
+        <section className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p>Offline mode: map stays available from cached data. New map updates will sync when internet returns.</p>
+            <Link
+              href="/guest/sync"
+              className="inline-flex h-8 items-center rounded-full border border-amber-300 bg-white px-3 text-xs font-semibold text-amber-900"
+            >
+              Open Sync Center
+            </Link>
+          </div>
+        </section>
+      ) : null}
 
       <section className="surface overflow-hidden p-3">
         <div className="relative overflow-hidden rounded-xl border border-[var(--color-border)]">

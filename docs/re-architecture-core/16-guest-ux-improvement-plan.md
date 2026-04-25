@@ -180,3 +180,16 @@ Deliverables:
    - unified tone between offline warnings and queued-success notices
 3. Kept scope UI-only:
    - no changes to offline queue logic, APIs, or business rules
+
+### G4 - Part 2 (Map/Profile/Sync Alignment)
+
+1. Extended offline-guidance consistency to:
+   - `GuestMapClient`
+   - `GuestProfileClient`
+   - `SyncCenter` guest experience
+2. Messaging and action updates delivered:
+   - map offline banner with explicit cached-data expectation and sync shortcut
+   - profile offline banner plus disabled save/update actions while offline
+   - sync-center offline guidance text aligned with queue-and-reconnect flow
+3. Kept scope UI-only:
+   - no data-model, API, or policy changes
