@@ -11,19 +11,10 @@ MIGRATIONS_DIR = ROOT / "supabase" / "migrations"
 
 CANONICAL_PATTERN = re.compile(r"^\d{11}_[a-z0-9_]+\.sql$")
 
-# Historical compatibility waivers that are intentionally retained.
-ALLOWED_LEGACY_FILENAMES = {
-    "20260218_002_payment_rejection_reason.sql",
-}
+# Legacy compatibility waivers are intentionally empty after D3 cleanup.
+ALLOWED_LEGACY_FILENAMES: set[str] = set()
 
-ALLOWED_DUPLICATE_GROUPS = {
-    frozenset(
-        {
-            "20260218006_payment_rejection_reason.sql",
-            "20260218_002_payment_rejection_reason.sql",
-        }
-    )
-}
+ALLOWED_DUPLICATE_GROUPS: set[frozenset[str]] = set()
 
 
 def _hash_file(path: Path) -> str:

@@ -41,14 +41,14 @@ To make the rollout parser-safe and replay-safe, we split the change set into sm
    - `policy_outcome`
 2. Tour reservation RPC returns the same policy metadata shape.
 3. Cancellation RPC captures actor/outcome and writes audit log metadata.
-4. Existing waiver pair remains intentionally untouched:
-   - `20260218006_payment_rejection_reason.sql`
-   - `20260218_002_payment_rejection_reason.sql`
+4. Legacy duplicate waiver pair was later cleaned up in D3:
+   - retained canonical file: `20260218006_payment_rejection_reason.sql`
+   - removed legacy duplicate file: `20260218_002_payment_rejection_reason.sql`
 
 ## Validation evidence
 
 1. `python supabase/scripts/migration_sanity_check.py` -> `ok: true`
-2. `python supabase/scripts/migration_hygiene_check.py` -> `ok: true` (with explicit legacy waiver)
+2. `python supabase/scripts/migration_hygiene_check.py` -> `ok: true` (no legacy waivers)
 3. `npm run db:validate` -> pass
 
 ## Remaining environment blocker
