@@ -1,7 +1,7 @@
 # Guest UX Improvement Plan
 
 Last updated: 2026-04-25  
-Status: Planned (ready to execute)  
+Status: In progress  
 Scope: Next.js guest experience refinement only (no business-rule changes)
 
 ## Objective
@@ -100,3 +100,18 @@ Deliverables:
 1. New business features outside current guide scope.
 2. Data-model or policy changes unrelated to UX clarity.
 3. ZKP implementation (still design-roadmap only).
+
+## Execution Updates
+
+### G1 - Part 2 (Quick Wins Implemented)
+
+1. Added route-level loading UI for guest-critical pages:
+   - `hillside-next/app/book/loading.tsx`
+   - `hillside-next/app/my-bookings/loading.tsx`
+2. Improved `My Bookings` orientation and recovery affordances:
+   - tab-context hint text per booking tab
+   - persistent quick link to Sync Center
+   - empty-state CTAs to `/book` and `/tours`
+   - upgraded loading-state placeholders from plain text to skeleton cards
+3. Kept scope UI-only:
+   - no business-rule, API-contract, or policy logic changes

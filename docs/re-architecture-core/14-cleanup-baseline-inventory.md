@@ -1085,6 +1085,21 @@ Remaining A4 blocker:
 4. Outcome:
    - guest UX work now has a concrete, execution-ready plan instead of being implicitly bundled under generic cleanup.
 
+## Batch G1 Execution Update (Part 2 Complete - Quick Wins)
+
+1. Added route-level loading skeleton pages for high-traffic guest routes:
+   - `hillside-next/app/book/loading.tsx`
+   - `hillside-next/app/my-bookings/loading.tsx`
+2. Improved guest bookings usability cues in:
+   - `hillside-next/components/my-bookings/MyBookingsClient.tsx`
+3. UX quick wins delivered:
+   - tab-specific contextual helper text
+   - always-visible shortcut to `/guest/sync`
+   - stronger empty-state recovery CTAs (book stay / browse tours)
+   - booking-list loading skeleton cards (replacing plain loading text)
+4. Outcome:
+   - improved guest orientation and recovery paths without changing booking/payment rules.
+
 ## Batch C4 Execution Update (Part 1 Complete)
 
 1. Standardized admin loading-state primitives to the shared skeleton component:

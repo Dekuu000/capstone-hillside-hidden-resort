@@ -51,6 +51,13 @@ const TAB_LABELS: Record<TabKey, string> = {
   cancelled: "Cancelled",
 };
 
+const TAB_HINTS: Record<TabKey, string> = {
+  upcoming: "Your upcoming reservations and actions that need attention.",
+  pending_payment: "Bookings waiting for payment or payment verification.",
+  completed: "Finished reservations for your records.",
+  cancelled: "Cancelled reservations and policy outcomes.",
+};
+
 const STATUS_BADGE_CLASS: Record<string, string> = {
   pending_payment: "bg-yellow-100 text-yellow-800",
   for_verification: "bg-blue-100 text-blue-800",
@@ -825,6 +832,15 @@ export function MyBookingsClient({
             </label>
           </div>
         </div>
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-2 px-1 text-xs text-slate-500">
+          <p>{TAB_HINTS[tab]}</p>
+          <Link
+            href="/guest/sync"
+            className="inline-flex items-center rounded-full border border-slate-300 bg-white px-2.5 py-1 font-semibold text-slate-700 transition hover:border-blue-300 hover:text-blue-700"
+          >
+            Open Sync Center
+          </Link>
+        </div>
       </div>
 
       {actionMessage ? (
@@ -848,12 +864,40 @@ export function MyBookingsClient({
       {error ? (
         <p className="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">{error}</p>
       ) : null}
-      {loading ? <p className="text-sm text-slate-600">Loading bookings...</p> : null}
+      {loading ? (
+        <div className="grid gap-3">
+          {Array.from({ length: 3 }).map((_, idx) => (
+            <div key={`booking-skeleton-${idx}`} className="rounded-2xl border border-slate-200/70 bg-white p-5 shadow-sm">
+              <div className="skeleton h-6 w-48" />
+              <div className="mt-2 skeleton h-4 w-64" />
+              <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                <div className="skeleton h-8" />
+                <div className="skeleton h-8" />
+                <div className="skeleton h-8" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : null}
 
       {!loading && items.length === 0 ? (
         <div className="rounded-2xl border border-slate-200/70 bg-white p-6 text-center shadow-sm">
           <p className="text-sm font-semibold text-slate-900">No bookings found for this tab.</p>
-          <p className="mt-2 text-sm text-slate-600">Try switching tabs or adjust your search.</p>
+          <p className="mt-2 text-sm text-slate-600">Try switching tabs, adjusting your search, or create a new reservation.</p>
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+            <Link
+              href="/book"
+              className="inline-flex h-9 items-center rounded-lg border border-blue-700 bg-blue-700 px-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800"
+            >
+              Book a stay
+            </Link>
+            <Link
+              href="/tours"
+              className="inline-flex h-9 items-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:border-blue-300 hover:text-blue-700"
+            >
+              Browse tours
+            </Link>
+          </div>
         </div>
       ) : null}
 
