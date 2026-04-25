@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { KeyRound, Mail, Save, User } from "lucide-react";
 import { myProfileResponseSchema } from "../../../packages/shared/src/schemas";
 import type { MyProfileResponse } from "../../../packages/shared/src/types";
@@ -35,6 +36,18 @@ export function GuestProfileClient({ accessToken, initialEmail = null }: GuestPr
   const [confirmPassword, setConfirmPassword] = useState("");
   const [profileError, setProfileError] = useState<string | null>(null);
   const [accountError, setAccountError] = useState<string | null>(null);
+  const [networkOnline, setNetworkOnline] = useState(true);
+
+  useEffect(() => {
+    const sync = () => setNetworkOnline(window.navigator.onLine);
+    sync();
+    window.addEventListener("online", sync);
+    window.addEventListener("offline", sync);
+    return () => {
+      window.removeEventListener("online", sync);
+      window.removeEventListener("offline", sync);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -158,6 +171,19 @@ export function GuestProfileClient({ accessToken, initialEmail = null }: GuestPr
 
   return (
     <div className="space-y-4">
+      {!networkOnline ? (
+        <section className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p>You are offline. Profile and security updates require internet to save.</p>
+            <Link
+              href="/guest/sync"
+              className="inline-flex h-8 items-center rounded-full border border-amber-300 bg-white px-3 text-xs font-semibold text-amber-900"
+            >
+              Open Sync Center
+            </Link>
+          </div>
+        </section>
+      ) : null}
       <section className="surface p-5">
         <h2 className="inline-flex items-center gap-2 text-base font-semibold text-[var(--color-text)]">
           <User className="h-4 w-4 text-[var(--color-secondary)]" />
@@ -176,10 +202,11 @@ export function GuestProfileClient({ accessToken, initialEmail = null }: GuestPr
             type="button"
             leftSlot={<Save className="h-4 w-4" />}
             loading={profileBusy}
+            disabled={!networkOnline}
             onClick={() => void saveProfile()}
             className="w-full sm:w-auto"
           >
-            Save profile
+            {networkOnline ? "Save profile" : "Reconnect to save"}
           </Button>
           <p className="text-xs text-[var(--color-muted)]">
             Wallet connect/disconnect is now available in the top-right profile menu.
@@ -203,8 +230,8 @@ export function GuestProfileClient({ accessToken, initialEmail = null }: GuestPr
             <div className="mt-3 space-y-3">
               <Input id="guest-email" label="Email address" type="email" value={emailDraft} onChange={(event) => setEmailDraft(event.target.value)} />
               <p className="text-xs text-[var(--color-muted)]">Current: {email || "Not set"}</p>
-              <Button type="button" variant="secondary" loading={accountBusy} onClick={() => void updateEmail()} className="w-full">
-                Update email
+              <Button type="button" variant="secondary" loading={accountBusy} disabled={!networkOnline} onClick={() => void updateEmail()} className="w-full">
+                {networkOnline ? "Update email" : "Reconnect to update"}
               </Button>
             </div>
           </article>
@@ -230,8 +257,8 @@ export function GuestProfileClient({ accessToken, initialEmail = null }: GuestPr
                 value={confirmPassword}
                 onChange={(event) => setConfirmPassword(event.target.value)}
               />
-              <Button type="button" variant="secondary" loading={accountBusy} onClick={() => void updatePassword()} className="w-full">
-                Update password
+              <Button type="button" variant="secondary" loading={accountBusy} disabled={!networkOnline} onClick={() => void updatePassword()} className="w-full">
+                {networkOnline ? "Update password" : "Reconnect to update"}
               </Button>
             </div>
           </article>

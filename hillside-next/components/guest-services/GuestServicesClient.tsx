@@ -415,7 +415,7 @@ export function GuestServicesClient({ accessToken }: Props) {
                   >
                     {STATUS_LABEL[item.status] || item.status}
                   </span>{" "}
-                  • Qty {item.quantity}
+                  | Qty {item.quantity}
                 </p>
                 <p className="mt-1 inline-flex items-center gap-1 text-xs text-[var(--color-muted)]">
                   <Clock3 className="h-3.5 w-3.5" />
@@ -539,3 +539,4 @@ export function GuestServicesClient({ accessToken }: Props) {
     </div>
   );
 }
+

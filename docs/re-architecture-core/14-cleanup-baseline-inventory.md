@@ -1168,6 +1168,20 @@ Remaining A4 blocker:
 3. Outcome:
    - guests now get clearer expectations for offline behavior and explicit recovery path to sync visibility.
 
+## Batch G4 Execution Update (Part 2 Complete - Alignment)
+
+1. Extended offline confidence updates in:
+   - `hillside-next/components/guest-map/GuestMapClient.tsx`
+   - `hillside-next/components/guest-profile/GuestProfileClient.tsx`
+   - `hillside-next/components/shared/SyncCenter.tsx`
+   - `hillside-next/app/guest/sync/page.tsx`
+2. Alignment improvements delivered:
+   - map offline banner with cached-data expectation and sync CTA
+   - profile offline state banner and guarded update actions until reconnection
+   - sync center offline guidance text aligned to queued-actions behavior
+3. Outcome:
+   - offline/cached language is now more consistent across guest map, profile, and sync surfaces.
+
 ## Batch C4 Execution Update (Part 1 Complete)
 
 1. Standardized admin loading-state primitives to the shared skeleton component:

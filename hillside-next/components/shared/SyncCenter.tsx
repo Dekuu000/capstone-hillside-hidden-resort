@@ -317,6 +317,11 @@ export function SyncCenter({ title, description, scope }: SyncCenterProps) {
             <span>{sync.lastError}</span>
           </div>
         ) : null}
+        {!sync.online ? (
+          <div className="mt-3 rounded-[var(--radius-md)] border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+            Offline mode: your actions stay queued locally. Reconnect and tap <strong>Run sync now</strong> to send updates.
+          </div>
+        ) : null}
       </div>
 
       <div className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-white">
