@@ -198,6 +198,21 @@ export type PricingApplyResponse = {
   applied_at: string;
 };
 
+export type GuestMapAmenityKind = "trail" | "facility";
+
+export type GuestMapAmenityPin = {
+  id: string;
+  name: string;
+  description: string;
+  x: number;
+  y: number;
+  kind: GuestMapAmenityKind;
+};
+
+export type GuestMapAmenityPack = {
+  amenities: GuestMapAmenityPin[];
+};
+
 export type MyBookingsCursor = {
   checkInDate?: string | null;
   createdAt: string;
