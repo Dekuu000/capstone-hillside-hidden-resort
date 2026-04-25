@@ -996,3 +996,29 @@ Remaining A4 blocker:
    - `npm run typecheck` -> pass
    - `npm run test:api` -> pass (`95 passed`)
    - `npm run quality:gate` -> pass
+
+## Batch C3 Execution Update (Part 4 Complete)
+
+1. Moved guest map amenity pack contract into shared package:
+   - added schemas in `packages/shared/src/schemas.ts`:
+     - `guestMapAmenityKindSchema`
+     - `guestMapAmenityPinSchema`
+     - `guestMapAmenityPackSchema`
+   - added shared types in `packages/shared/src/types.ts`:
+     - `GuestMapAmenityKind`
+     - `GuestMapAmenityPin`
+     - `GuestMapAmenityPack`
+2. Removed local map-contract duplication in:
+   - `hillside-next/components/guest-map/GuestMapClient.tsx`
+   - replaced local `AmenityPin` type + normalization with shared schema parsing for:
+     - network JSON pack
+     - cache JSON pack
+     - offline snapshot amenities
+3. Outcome:
+   - reduced map data-shape drift risk between static amenity JSON, cache reads, and UI rendering
+   - aligned guest map data handling with shared schema/type source-of-truth cleanup direction
+4. Validation:
+   - `npm run lint` -> pass
+   - `npm run typecheck` -> pass
+   - `npm run test:api` -> pass (`95 passed`)
+   - `npm run quality:gate` -> pass

@@ -2,25 +2,18 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Compass, MapPinned, Route } from "lucide-react";
+import { guestMapAmenityPackSchema } from "../../../packages/shared/src/schemas";
+import type { GuestMapAmenityPin } from "../../../packages/shared/src/types";
 import { NetworkStatusBadge } from "../shared/NetworkStatusBadge";
 import { Skeleton } from "../shared/Skeleton";
 import { StatusPill } from "../shared/StatusPill";
 import { loadMapSnapshot, saveMapSnapshot } from "../../lib/offlineSync/store";
 
-type AmenityPin = {
-  id: string;
-  name: string;
-  description: string;
-  x: number;
-  y: number;
-  kind: "trail" | "facility";
-};
-
 const MAP_IMAGE_URL = "/images/resort-map.svg";
 const AMENITY_DATA_URL = "/data/guest-map-amenities.json";
 const MAP_CACHE_NAME = "guest-map-v2";
 
-const FALLBACK_AMENITIES: AmenityPin[] = [
+const FALLBACK_AMENITIES: GuestMapAmenityPin[] = [
   { id: "lobby", name: "Lobby", description: "Front desk and guest assistance.", x: 18, y: 18, kind: "facility" },
   { id: "pool", name: "Main Pool", description: "Infinity pool and lounge area.", x: 58, y: 24, kind: "facility" },
   { id: "cottages", name: "Cottage Zone", description: "Family cottages and grilling area.", x: 38, y: 54, kind: "facility" },
@@ -28,21 +21,7 @@ const FALLBACK_AMENITIES: AmenityPin[] = [
   { id: "hall", name: "Function Hall", description: "Events and private bookings.", x: 22, y: 74, kind: "facility" },
 ];
 
-function normalizeAmenityPin(raw: Partial<AmenityPin>): AmenityPin | null {
-  if (!raw.id || !raw.name || !raw.description) return null;
-  if (typeof raw.x !== "number" || typeof raw.y !== "number") return null;
-  const kind = raw.kind === "trail" ? "trail" : "facility";
-  return {
-    id: raw.id,
-    name: raw.name,
-    description: raw.description,
-    x: raw.x,
-    y: raw.y,
-    kind,
-  };
-}
-
-async function loadAmenityPack(): Promise<AmenityPin[]> {
+async function loadAmenityPack(): Promise<GuestMapAmenityPin[]> {
   const fallback = FALLBACK_AMENITIES;
   if (!("caches" in window)) return fallback;
 
@@ -52,10 +31,10 @@ async function loadAmenityPack(): Promise<AmenityPin[]> {
     if (!response.ok) throw new Error("Failed to load amenity pack.");
     const cloned = response.clone();
     await cache.put(AMENITY_DATA_URL, cloned);
-    const payload = (await response.json()) as { amenities?: Partial<AmenityPin>[] };
-    if (!Array.isArray(payload.amenities) || payload.amenities.length === 0) return fallback;
-    const normalized = payload.amenities.map(normalizeAmenityPin).filter((item): item is AmenityPin => Boolean(item));
-    return normalized.length ? normalized : fallback;
+    const payload = (await response.json()) as unknown;
+    const parsed = guestMapAmenityPackSchema.safeParse(payload);
+    if (!parsed.success || parsed.data.amenities.length === 0) return fallback;
+    return parsed.data.amenities;
   };
 
   try {
@@ -66,11 +45,9 @@ async function loadAmenityPack(): Promise<AmenityPin[]> {
 
   const cached = await cache.match(AMENITY_DATA_URL);
   if (cached) {
-    const payload = (await cached.json()) as { amenities?: Partial<AmenityPin>[] };
-    if (Array.isArray(payload.amenities) && payload.amenities.length > 0) {
-      const normalized = payload.amenities.map(normalizeAmenityPin).filter((item): item is AmenityPin => Boolean(item));
-      if (normalized.length) return normalized;
-    }
+    const payload = (await cached.json()) as unknown;
+    const parsed = guestMapAmenityPackSchema.safeParse(payload);
+    if (parsed.success && parsed.data.amenities.length > 0) return parsed.data.amenities;
   }
   return fallback;
 }
@@ -80,7 +57,7 @@ function formatCachedAt(value?: string | null) {
   return new Date(value).toLocaleString();
 }
 
-function buildDirections(origin: AmenityPin, destination: AmenityPin): string[] {
+function buildDirections(origin: GuestMapAmenityPin, destination: GuestMapAmenityPin): string[] {
   if (origin.id === destination.id) {
     return [`You are already at ${destination.name}.`];
   }
@@ -97,7 +74,7 @@ function buildDirections(origin: AmenityPin, destination: AmenityPin): string[] 
 }
 
 export function GuestMapClient() {
-  const [amenities, setAmenities] = useState<AmenityPin[]>([]);
+  const [amenities, setAmenities] = useState<GuestMapAmenityPin[]>([]);
   const [activeAmenityId, setActiveAmenityId] = useState<string | null>(null);
   const [originAmenityId, setOriginAmenityId] = useState<string | null>(null);
   const [kindFilter, setKindFilter] = useState<"all" | "trail" | "facility">("all");
@@ -122,8 +99,11 @@ export function GuestMapClient() {
       } catch {
         const cached = await loadMapSnapshot("me");
         if (cached?.data?.amenities?.length) {
-          const cachedAmenities = cached.data.amenities.map(normalizeAmenityPin).filter((item): item is AmenityPin => Boolean(item));
-          const nextAmenities = cachedAmenities.length ? cachedAmenities : FALLBACK_AMENITIES;
+          const parsed = guestMapAmenityPackSchema.safeParse({ amenities: cached.data.amenities });
+          const nextAmenities =
+            parsed.success && parsed.data.amenities.length > 0
+              ? parsed.data.amenities
+              : FALLBACK_AMENITIES;
           setAmenities(nextAmenities);
           setActiveAmenityId(nextAmenities[0]?.id || null);
           setOriginAmenityId(nextAmenities[0]?.id || null);

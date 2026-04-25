@@ -145,6 +145,21 @@ export const apiHealthResponseSchema = z.object({
   chains: z.record(z.string(), apiHealthChainStatusSchema).optional(),
 });
 
+export const guestMapAmenityKindSchema = z.enum(["trail", "facility"]);
+
+export const guestMapAmenityPinSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  description: z.string().min(1),
+  x: z.number(),
+  y: z.number(),
+  kind: guestMapAmenityKindSchema,
+});
+
+export const guestMapAmenityPackSchema = z.object({
+  amenities: z.array(guestMapAmenityPinSchema).default([]),
+});
+
 export const occupancyForecastItemSchema = z.object({
   date: z.string().min(1),
   occupancy: z.number(),
