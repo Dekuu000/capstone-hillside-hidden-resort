@@ -1,7 +1,6 @@
 ﻿"use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -29,6 +28,7 @@ import { getApiErrorMessage } from "../../lib/apiError";
 import { getSupabaseBrowserClient } from "../../lib/supabase";
 import { FancyDatePicker } from "../shared/FancyDatePicker";
 import { ImageLightbox } from "../shared/ImageLightbox";
+import { SyncAlertBanner } from "../shared/SyncAlertBanner";
 import { UnitImageGallery } from "../shared/UnitImageGallery";
 import { normalizeUnitImageUrls, normalizeUnitThumbUrls } from "../../lib/unitMedia";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
@@ -370,33 +370,20 @@ export function BookNowClient({
       </header>
 
       {!networkOnline ? (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-          <p>You are offline. New bookings will be saved locally and synced when internet returns.</p>
-          <Link
-            href="/guest/sync"
-            className="inline-flex h-8 items-center rounded-full border border-amber-300 bg-white px-3 text-xs font-semibold text-amber-900"
-          >
-            Open Sync Center
-          </Link>
-        </div>
+        <SyncAlertBanner
+          className="mb-4"
+          message="You are offline. New bookings will be saved locally and synced when internet returns."
+          showSyncCta
+        />
       ) : null}
       {successMessage ? (
-        <div
-          className={`mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3 ${
-            successHasSyncCta ? "border-amber-200 bg-amber-50" : "border-emerald-200 bg-emerald-50"
-          }`}
+        <SyncAlertBanner
+          className="mb-4"
+          message={successMessage}
+          tone={successHasSyncCta ? "warning" : "success"}
+          showSyncCta={successHasSyncCta}
           role="status"
-        >
-          <p className={`text-sm ${successHasSyncCta ? "text-amber-800" : "text-emerald-700"}`}>{successMessage}</p>
-          {successHasSyncCta ? (
-            <Link
-              href="/guest/sync"
-              className="inline-flex h-8 items-center rounded-full border border-amber-300 bg-white px-3 text-xs font-semibold text-amber-900"
-            >
-              Open Sync Center
-            </Link>
-          ) : null}
-        </div>
+        />
       ) : null}
       {submitError ? <p className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{submitError}</p> : null}
       {latestAiRecommendation ? (

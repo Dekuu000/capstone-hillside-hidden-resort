@@ -257,3 +257,18 @@ Deliverables:
    - `docs/re-architecture-core/evidence/guest-ux/README.md`
 3. Next step:
    - fill manual run sheet + evidence, then finalize closure summary and mark P4 completion decision.
+
+### G3 - Part 5 (Shared Sync Banner Consolidation)
+
+1. Added reusable sync-feedback primitive:
+   - `hillside-next/components/shared/SyncAlertBanner.tsx`
+2. Replaced repeated inline offline/queued/success banner markup in:
+   - `hillside-next/components/book/BookNowClient.tsx`
+   - `hillside-next/components/tours/ToursBookingClient.tsx`
+   - `hillside-next/components/my-bookings/MyBookingsClient.tsx`
+   - `hillside-next/components/guest-services/GuestServicesClient.tsx`
+   - `hillside-next/components/guest-map/GuestMapClient.tsx`
+   - `hillside-next/components/guest-profile/GuestProfileClient.tsx`
+   - `hillside-next/components/guest-stay/MyStayDashboardClient.tsx`
+3. Outcome:
+   - consistent guest sync/offline messaging styles with reduced duplicate JSX branches.

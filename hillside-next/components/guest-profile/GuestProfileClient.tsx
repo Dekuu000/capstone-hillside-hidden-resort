@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { KeyRound, Mail, Save, User } from "lucide-react";
 import { myProfileResponseSchema } from "../../../packages/shared/src/schemas";
 import type { MyProfileResponse } from "../../../packages/shared/src/types";
@@ -10,6 +9,7 @@ import { getApiErrorMessage } from "../../lib/apiError";
 import { getSupabaseBrowserClient } from "../../lib/supabase";
 import { Button } from "../shared/Button";
 import { Input } from "../shared/Input";
+import { SyncAlertBanner } from "../shared/SyncAlertBanner";
 import { useToast } from "../shared/ToastProvider";
 
 type GuestProfileClientProps = {
@@ -172,17 +172,10 @@ export function GuestProfileClient({ accessToken, initialEmail = null }: GuestPr
   return (
     <div className="space-y-4">
       {!networkOnline ? (
-        <section className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p>You are offline. Profile and security updates require internet to save.</p>
-            <Link
-              href="/guest/sync"
-              className="inline-flex h-8 items-center rounded-full border border-amber-300 bg-white px-3 text-xs font-semibold text-amber-900"
-            >
-              Open Sync Center
-            </Link>
-          </div>
-        </section>
+        <SyncAlertBanner
+          message="You are offline. Profile and security updates require internet to save."
+          showSyncCta
+        />
       ) : null}
       <section className="surface p-5">
         <h2 className="inline-flex items-center gap-2 text-base font-semibold text-[var(--color-text)]">

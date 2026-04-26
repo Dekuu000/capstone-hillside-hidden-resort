@@ -7,6 +7,7 @@ import { welcomeNotificationSchema } from "../../../packages/shared/src/schemas"
 import type { WelcomeNotification } from "../../../packages/shared/src/types";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
+import { SyncAlertBanner } from "../shared/SyncAlertBanner";
 import { useToast } from "../shared/ToastProvider";
 import { GuestOfflineQrCard } from "./GuestOfflineQrCard";
 
@@ -155,15 +156,13 @@ export function MyStayDashboardClient({
           </div>
         </div>
         {!networkOnline ? (
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-            <p>You are offline. QR refresh and welcome updates may be delayed until internet returns.</p>
-            <Link
-              href="/guest/sync"
-              className="inline-flex h-7 items-center rounded-full border border-amber-300 bg-white px-3 font-semibold text-amber-900"
-            >
-              Open Sync Center
-            </Link>
-          </div>
+          <SyncAlertBanner
+            className="mt-3 px-3 py-2"
+            message="You are offline. QR refresh and welcome updates may be delayed until internet returns."
+            showSyncCta
+            messageClassName="text-xs text-amber-800"
+            syncLinkClassName="h-7 px-3 text-[11px] font-semibold"
+          />
         ) : null}
 
         {visibleWelcome ? (
