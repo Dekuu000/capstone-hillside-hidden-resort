@@ -389,3 +389,16 @@ Deliverables:
    - `npm --prefix hillside-next run lint` -> pass
    - `npm --prefix hillside-next run typecheck` -> pass
    - `npm run quality:gate` -> pass
+
+### G3 - Part 15 (Date-Time Display Helper Consolidation)
+
+1. Added shared date-time display helpers:
+   - `hillside-next/lib/dateDisplay.ts`
+2. Replaced duplicated guest-local date-time formatting logic in:
+   - `hillside-next/components/my-bookings/MyBookingsClient.tsx`
+   - `hillside-next/components/guest-map/GuestMapClient.tsx`
+   - `hillside-next/components/guest-services/GuestServicesClient.tsx`
+3. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+   - `npm run quality:gate` -> pass

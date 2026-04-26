@@ -26,6 +26,7 @@ import {
 } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
+import { formatCachedAt, formatLocalDateTime } from "../../lib/dateDisplay";
 import { formatPhpPeso as formatPeso } from "../../lib/formatCurrency";
 import { parseJwtSub } from "../../lib/jwt";
 import { loadLastIssuedQrToken, saveLastIssuedQrToken } from "../../lib/guestQrTokenCache";
@@ -83,16 +84,6 @@ function formatDate(value?: string | null) {
     day: "numeric",
     year: "numeric",
   });
-}
-
-function formatDateTime(value?: string | null) {
-  if (!value) return "-";
-  return new Date(value).toLocaleString();
-}
-
-function formatCachedAt(value?: string | null) {
-  if (!value) return "-";
-  return new Date(value).toLocaleString();
 }
 
 function toTitleCase(value: string) {
@@ -891,7 +882,7 @@ export function MyBookingsClient({
                 <div className={canCancel ? "pr-28 md:pr-40" : undefined}>
                   <h2 className="text-xl font-semibold text-slate-900">{booking.reservation_code}</h2>
                   <p className="mt-1 text-sm font-medium text-slate-700">{bookingTarget || `${bookingLabel} reservation`}</p>
-                  <p className="text-xs text-slate-500">Booked on {formatDateTime(booking.created_at)}</p>
+                  <p className="text-xs text-slate-500">Booked on {formatLocalDateTime(booking.created_at)}</p>
                   <div className="mt-2 flex flex-wrap items-center gap-2">
                     <span
                       className={`inline-flex max-w-fit items-center rounded-full px-2 py-1 text-[10px] font-semibold tracking-wide sm:px-2.5 sm:text-[11px] ${statusClass}`}
@@ -1220,7 +1211,7 @@ export function MyBookingsClient({
               <>
                 <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
                   <p>
-                    Expires: <strong>{formatDateTime(qrToken.expires_at)}</strong>
+                    Expires: <strong>{formatLocalDateTime(qrToken.expires_at)}</strong>
                   </p>
                   <p>
                     Seconds left: <strong>{qrSecondsLeft}</strong>

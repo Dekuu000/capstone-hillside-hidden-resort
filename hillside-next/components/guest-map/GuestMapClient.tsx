@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Compass, MapPinned, Route } from "lucide-react";
 import { guestMapAmenityPackSchema } from "../../../packages/shared/src/schemas";
 import type { GuestMapAmenityPin } from "../../../packages/shared/src/types";
+import { formatCachedAt } from "../../lib/dateDisplay";
 import { useNetworkOnline } from "../../lib/hooks/useNetworkOnline";
 import { InsetPanel } from "../shared/InsetPanel";
 import { NetworkStatusBadge } from "../shared/NetworkStatusBadge";
@@ -54,11 +55,6 @@ async function loadAmenityPack(): Promise<GuestMapAmenityPin[]> {
     if (parsed.success && parsed.data.amenities.length > 0) return parsed.data.amenities;
   }
   return fallback;
-}
-
-function formatCachedAt(value?: string | null) {
-  if (!value) return "-";
-  return new Date(value).toLocaleString();
 }
 
 function buildDirections(origin: GuestMapAmenityPin, destination: GuestMapAmenityPin): string[] {

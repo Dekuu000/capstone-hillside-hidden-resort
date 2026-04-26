@@ -25,6 +25,7 @@ import {
 } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
+import { formatLocalDateTime } from "../../lib/dateDisplay";
 import { formatPhpPeso as toPeso } from "../../lib/formatCurrency";
 import { useNetworkOnline } from "../../lib/hooks/useNetworkOnline";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
@@ -393,7 +394,7 @@ export function GuestServicesClient({ accessToken }: Props) {
                 </p>
                 <p className="mt-1 inline-flex items-center gap-1 text-xs text-[var(--color-muted)]">
                   <Clock3 className="h-3.5 w-3.5" />
-                  {new Date(item.requested_at).toLocaleString()}
+                  {formatLocalDateTime(item.requested_at)}
                 </p>
               </InsetPanel>
             ))}
