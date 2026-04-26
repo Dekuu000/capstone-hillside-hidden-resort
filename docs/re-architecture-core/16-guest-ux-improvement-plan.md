@@ -326,3 +326,16 @@ Deliverables:
    - `npm --prefix hillside-next run lint` -> pass
    - `npm --prefix hillside-next run typecheck` -> pass
    - `npm run quality:gate` -> pass
+
+### G3 - Part 10 (Segmented Filter/Tab Control Consolidation)
+
+1. Extended shared tab primitive flexibility:
+   - `hillside-next/components/shared/Tabs.tsx`
+   - added `ariaLabel`, `mobileMode`, and tab style override hooks for reuse across layouts
+2. Replaced guest-local segmented/filter controls with shared tabs in:
+   - `hillside-next/components/my-bookings/MyBookingsClient.tsx` (booking status segmented tabs)
+   - `hillside-next/components/guest-map/GuestMapClient.tsx` (amenity kind filter chips)
+3. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+   - `npm run quality:gate` -> pass

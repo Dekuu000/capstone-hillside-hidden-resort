@@ -38,6 +38,7 @@ import { ImageLightbox } from "../shared/ImageLightbox";
 import { GcashPaymentGuide } from "../shared/GcashPaymentGuide";
 import { ModalDialog } from "../shared/ModalDialog";
 import { SyncAlertBanner } from "../shared/SyncAlertBanner";
+import { Tabs } from "../shared/Tabs";
 import { UnitImageGallery } from "../shared/UnitImageGallery";
 import { normalizeUnitImageUrls, normalizeUnitThumbUrls } from "../../lib/unitMedia";
 
@@ -774,28 +775,17 @@ export function MyBookingsClient({
       <div className="mb-4 rounded-2xl border border-slate-200/70 bg-white p-2.5 shadow-sm sm:p-3">
         <div className="grid items-center gap-2 lg:grid-cols-[1fr_0.72fr]">
           <div className="min-w-0 self-center rounded-xl border border-slate-200/70 bg-slate-50 p-1 text-sm">
-            <div
-              className="no-scrollbar flex items-center gap-0.5 overflow-x-auto scroll-smooth sm:grid sm:grid-cols-4 sm:overflow-visible"
-              role="tablist"
-              aria-label="Booking status"
-            >
-              {(Object.keys(TAB_LABELS) as TabKey[]).map((key) => (
-                <button
-                  key={key}
-                  type="button"
-                  role="tab"
-                  aria-selected={tab === key}
-                  className={`h-11 shrink-0 min-w-[132px] rounded-lg px-2.5 text-sm font-semibold leading-5 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 sm:min-w-0 ${
-                    tab === key
-                      ? "bg-white text-slate-900 shadow-sm"
-                      : "text-slate-600 hover:bg-white/70 hover:text-slate-900"
-                  }`}
-                  onClick={() => setTab(key)}
-                >
-                  {TAB_LABELS[key]}
-                </button>
-              ))}
-            </div>
+            <Tabs
+              items={(Object.keys(TAB_LABELS) as TabKey[]).map((key) => ({ id: key, label: TAB_LABELS[key] }))}
+              value={tab}
+              onChange={(next) => setTab(next as TabKey)}
+              ariaLabel="Booking status"
+              mobileMode="scroll"
+              className="border-none bg-transparent p-0 sm:grid-cols-4"
+              tabClassName="h-11 shrink-0 min-w-[132px] rounded-lg px-2.5 text-sm font-semibold leading-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 sm:min-w-0"
+              activeClassName="bg-white text-slate-900 shadow-sm"
+              inactiveClassName="text-slate-600 hover:bg-white/70 hover:text-slate-900"
+            />
           </div>
           <div className="min-w-0 self-center rounded-xl border border-slate-200/70 bg-slate-50 p-1">
             <label className="relative block">

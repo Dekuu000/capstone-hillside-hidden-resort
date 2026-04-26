@@ -10,6 +10,7 @@ import { NetworkStatusBadge } from "../shared/NetworkStatusBadge";
 import { Skeleton } from "../shared/Skeleton";
 import { StatusPill } from "../shared/StatusPill";
 import { SyncAlertBanner } from "../shared/SyncAlertBanner";
+import { Tabs } from "../shared/Tabs";
 import { loadMapSnapshot, saveMapSnapshot } from "../../lib/offlineSync/store";
 
 const MAP_IMAGE_URL = "/images/resort-map.svg";
@@ -163,40 +164,21 @@ export function GuestMapClient() {
           </div>
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setKindFilter("all")}
-            className={`inline-flex h-9 items-center rounded-full border px-3 text-xs font-semibold ${
-              kindFilter === "all"
-                ? "border-[var(--color-secondary)] bg-teal-50 text-[var(--color-text)]"
-                : "border-[var(--color-border)] bg-white text-[var(--color-muted)]"
-            }`}
-          >
-            All
-          </button>
-          <button
-            type="button"
-            onClick={() => setKindFilter("trail")}
-            className={`inline-flex h-9 items-center rounded-full border px-3 text-xs font-semibold ${
-              kindFilter === "trail"
-                ? "border-[var(--color-secondary)] bg-teal-50 text-[var(--color-text)]"
-                : "border-[var(--color-border)] bg-white text-[var(--color-muted)]"
-            }`}
-          >
-            Trails
-          </button>
-          <button
-            type="button"
-            onClick={() => setKindFilter("facility")}
-            className={`inline-flex h-9 items-center rounded-full border px-3 text-xs font-semibold ${
-              kindFilter === "facility"
-                ? "border-[var(--color-secondary)] bg-teal-50 text-[var(--color-text)]"
-                : "border-[var(--color-border)] bg-white text-[var(--color-muted)]"
-            }`}
-          >
-            Facilities
-          </button>
-          <span className="ml-auto text-xs text-[var(--color-muted)]">Pins: {visibleAmenities.length}</span>
+          <Tabs
+            items={[
+              { id: "all", label: "All" },
+              { id: "trail", label: "Trails" },
+              { id: "facility", label: "Facilities" },
+            ]}
+            value={kindFilter}
+            onChange={(next) => setKindFilter(next as "all" | "trail" | "facility")}
+            ariaLabel="Map pin filter"
+            className="w-full max-w-md border-none bg-transparent p-0 sm:grid-cols-3"
+            tabClassName="h-9 rounded-full px-3 text-xs"
+            activeClassName="border border-[var(--color-secondary)] bg-teal-50 text-[var(--color-text)]"
+            inactiveClassName="border border-[var(--color-border)] bg-white text-[var(--color-muted)] hover:bg-slate-50"
+          />
+          <span className="text-xs text-[var(--color-muted)] sm:ml-auto">Pins: {visibleAmenities.length}</span>
         </div>
         {error ? <p className="mt-3 text-xs text-[var(--color-error)]">{error}</p> : null}
         {cachedMeta ? <p className="mt-2 text-xs font-semibold text-amber-700">{cachedMeta}</p> : null}
