@@ -1411,3 +1411,15 @@ Remaining A4 blocker:
    - `npm --prefix hillside-next run lint` -> pass
    - `npm --prefix hillside-next run typecheck` -> pass
    - `npm run quality:gate` -> pass
+
+## Batch G6 Execution Update (Part 1 Complete - Guest Hero Foundation)
+
+1. Upgraded shared header primitive for visual-consistency reuse:
+   - `hillside-next/components/layout/PageHeader.tsx`
+2. Applied hero-style header treatment to guest booking entry routes:
+   - `hillside-next/components/book/BookNowClient.tsx`
+   - `hillside-next/components/tours/ToursBookingClient.tsx`
+3. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+   - `npm run quality:gate` -> pass

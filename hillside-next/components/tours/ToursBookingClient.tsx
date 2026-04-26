@@ -24,6 +24,7 @@ import { parseJwtSub } from "../../lib/jwt";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
 import { queuePaymentSubmissionWithFile } from "../../lib/offlineSync/paymentSubmission";
 import { getSupabaseBrowserClient } from "../../lib/supabase";
+import { PageHeader } from "../layout/PageHeader";
 import { FancyDatePicker } from "../shared/FancyDatePicker";
 import { GcashPaymentGuide } from "../shared/GcashPaymentGuide";
 import { SyncAlertBanner } from "../shared/SyncAlertBanner";
@@ -279,10 +280,12 @@ export function ToursBookingClient({
   if (!token) {
     return (
       <section className="mx-auto w-full max-w-4xl">
-        <header className="mb-4 rounded-3xl border border-slate-200/70 bg-gradient-to-br from-white via-slate-50 to-blue-50 p-6 shadow-sm">
-          <h1 className="text-3xl font-bold text-slate-900">Book a Tour</h1>
-          <p className="mt-2 text-sm text-slate-600">Reserve a guided experience and secure your slot.</p>
-        </header>
+        <PageHeader
+          variant="hero"
+          eyebrow="Experiences"
+          title="Book a Tour"
+          subtitle="Reserve a guided experience and secure your slot."
+        />
         <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
           Please sign in first to reserve a tour.
         </p>
@@ -292,21 +295,23 @@ export function ToursBookingClient({
 
   return (
     <section className="mx-auto w-full max-w-4xl">
-      <header className="mb-6 rounded-3xl border border-slate-200/70 bg-gradient-to-br from-white via-slate-50 to-blue-50 p-6 shadow-sm">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Experiences</p>
-            <h1 className="mt-2 text-3xl font-bold text-slate-900">Book a Tour</h1>
-            <p className="mt-2 text-sm text-slate-600">
-              Signed in as <strong>{sessionEmail ?? "guest"}</strong>
-            </p>
-          </div>
+      <PageHeader
+        variant="hero"
+        className="mb-6"
+        eyebrow="Experiences"
+        title="Book a Tour"
+        subtitle={
+          <>
+            Signed in as <strong>{sessionEmail ?? "guest"}</strong>
+          </>
+        }
+        rightSlot={
           <div className="rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-xs text-slate-600">
             <p className="font-semibold text-slate-900">Quick tip</p>
             <p className="mt-1">Advance tours require payment proof.</p>
           </div>
-        </div>
-      </header>
+        }
+      />
       {!networkOnline ? (
         <SyncAlertBanner
           className="mb-4"

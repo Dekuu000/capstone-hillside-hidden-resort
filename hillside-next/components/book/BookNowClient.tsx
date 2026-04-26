@@ -10,7 +10,6 @@ import {
   Moon,
   Search,
   ShieldCheck,
-  Sparkles,
   Users,
 } from "lucide-react";
 import type {
@@ -30,6 +29,7 @@ import { addDaysToIsoDate, todayPlusLocalIsoDate } from "../../lib/dateIso";
 import { formatPhpPeso as toPeso } from "../../lib/formatCurrency";
 import { useNetworkOnline } from "../../lib/hooks/useNetworkOnline";
 import { getSupabaseBrowserClient } from "../../lib/supabase";
+import { PageHeader } from "../layout/PageHeader";
 import { FancyDatePicker } from "../shared/FancyDatePicker";
 import { ImageLightbox } from "../shared/ImageLightbox";
 import { ModalDialog } from "../shared/ModalDialog";
@@ -301,10 +301,12 @@ export function BookNowClient({
   if (!token) {
     return (
       <section className="mx-auto w-full max-w-6xl">
-        <header className="mb-4 rounded-3xl border border-slate-200/70 bg-gradient-to-br from-white via-slate-50 to-blue-50 p-6 shadow-sm">
-          <h1 className="text-3xl font-bold text-slate-900">Book Your Stay</h1>
-          <p className="mt-2 text-sm text-slate-600">Choose dates and reserve your stay.</p>
-        </header>
+        <PageHeader
+          variant="hero"
+          eyebrow="Guest Booking"
+          title="Book Your Stay"
+          subtitle="Choose dates and reserve your stay."
+        />
         <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
           Please sign in first to create a booking.
         </p>
@@ -314,18 +316,17 @@ export function BookNowClient({
 
   return (
     <section className="mx-auto w-full max-w-7xl px-1">
-      <header className="mb-8 overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-gradient-to-br from-[#ffffff] via-[#f3fbfb] to-[#eef4ff] p-6 shadow-[var(--shadow-md)]">
-        <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
-          <div>
-            <p className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-white/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.15em] text-[var(--color-muted)]">
-              <Sparkles className="h-3.5 w-3.5 text-[var(--color-secondary)]" />
-              Guest Booking
-            </p>
-            <h1 className="mt-3 text-3xl font-bold text-[var(--color-text)] md:text-4xl">Book Your Stay</h1>
-            <p className="mt-2 text-sm text-[var(--color-muted)]">
-              Signed in as <strong>{sessionEmail ?? "guest"}</strong>
-            </p>
-          </div>
+      <PageHeader
+        variant="hero"
+        className="mb-8"
+        eyebrow="Guest Booking"
+        title={<span className="md:text-4xl">Book Your Stay</span>}
+        subtitle={
+          <>
+            Signed in as <strong>{sessionEmail ?? "guest"}</strong>
+          </>
+        }
+        rightSlot={
           <div className="grid gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white/90 px-4 py-3 text-xs text-[var(--color-muted)]">
             <p className="font-semibold text-[var(--color-text)]">Secure 3-step flow</p>
             <p>Select dates • pick units • confirm booking</p>
@@ -334,8 +335,8 @@ export function BookNowClient({
               Payment verification is required before check-in.
             </p>
           </div>
-        </div>
-      </header>
+        }
+      />
 
       {!networkOnline ? (
         <SyncAlertBanner
