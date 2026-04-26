@@ -18,6 +18,7 @@ import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
 import { formatPhpPeso as toPeso } from "../../lib/formatCurrency";
 import { useNetworkOnline } from "../../lib/hooks/useNetworkOnline";
+import { parseJwtSub } from "../../lib/jwt";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
 import { queuePaymentSubmissionWithFile } from "../../lib/offlineSync/paymentSubmission";
 import { getSupabaseBrowserClient } from "../../lib/supabase";
@@ -38,20 +39,6 @@ function todayPlus(days: number) {
   const month = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
-}
-
-function parseJwtSub(token: string | null): string | null {
-  if (!token) return null;
-  try {
-    const segment = token.split(".")[1];
-    if (!segment) return null;
-    const normalized = segment.replace(/-/g, "+").replace(/_/g, "/");
-    const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
-    const payload = JSON.parse(atob(padded)) as { sub?: string };
-    return payload.sub ?? null;
-  } catch {
-    return null;
-  }
 }
 
 function getAiSource(recommendation: PricingRecommendation | null) {

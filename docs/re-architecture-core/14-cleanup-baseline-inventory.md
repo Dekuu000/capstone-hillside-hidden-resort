@@ -1362,3 +1362,15 @@ Remaining A4 blocker:
    - `npm --prefix hillside-next run lint` -> pass
    - `npm --prefix hillside-next run typecheck` -> pass
    - `npm run quality:gate` -> pass
+
+## Batch C4 Execution Update (Part 9 Complete - JWT Subject Parser Reuse)
+
+1. Added shared JWT parser helper:
+   - `hillside-next/lib/jwt.ts`
+2. Replaced repeated guest token-sub parsing helpers in:
+   - `hillside-next/components/tours/ToursBookingClient.tsx`
+   - `hillside-next/components/my-bookings/MyBookingsClient.tsx`
+3. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+   - `npm run quality:gate` -> pass
