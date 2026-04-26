@@ -28,6 +28,7 @@ import { getApiErrorMessage } from "../../lib/apiError";
 import { useNetworkOnline } from "../../lib/hooks/useNetworkOnline";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
 import { EmptyState } from "../shared/EmptyState";
+import { ModalDialog } from "../shared/ModalDialog";
 import { Skeleton } from "../shared/Skeleton";
 import { SyncAlertBanner } from "../shared/SyncAlertBanner";
 import { Tabs } from "../shared/Tabs";
@@ -407,14 +408,14 @@ export function GuestServicesClient({ accessToken }: Props) {
       </section>
 
       {selectedService ? (
-        <div className="fixed inset-0 z-40 flex items-end justify-center bg-slate-900/50 p-0 md:items-center md:p-4" role="presentation">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="service-request-title"
-            className="max-h-[92vh] w-full overflow-auto rounded-t-2xl border border-[var(--color-border)] bg-white p-4 md:max-w-xl md:rounded-2xl"
-          >
-            <h3 id="service-request-title" className="text-lg font-semibold text-[var(--color-text)]">Request {selectedService.service_name}</h3>
+        <ModalDialog
+          titleId="service-request-title"
+          title={`Request ${selectedService.service_name}`}
+          onClose={() => setSelectedService(null)}
+          panelClassName="border-[var(--color-border)] bg-white"
+          closeLabel="Close service request dialog"
+          closeButtonClassName="border-[var(--color-border)] text-[var(--color-text)]"
+        >
             <p className="mt-1 text-sm text-[var(--color-muted)]">{toPeso(Number(selectedService.price || 0))} per item</p>
             <p className="mt-2 rounded-lg border border-[var(--color-border)] bg-slate-50 px-3 py-2 text-xs text-[var(--color-muted)]">
               After submit: front desk receives this request immediately when online. If offline, it will auto-sync later.
@@ -512,8 +513,7 @@ export function GuestServicesClient({ accessToken }: Props) {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+        </ModalDialog>
       ) : null}
     </div>
   );

@@ -1309,3 +1309,17 @@ Remaining A4 blocker:
    - `npm --prefix hillside-next run lint` -> pass
    - `npm --prefix hillside-next run typecheck` -> pass
    - `npm run quality:gate` -> pass
+
+## Batch C4 Execution Update (Part 5 Complete - Modal Shell Reuse Expansion)
+
+1. Expanded shared modal shell usage:
+   - `hillside-next/components/book/BookNowClient.tsx`
+   - `hillside-next/components/guest-services/GuestServicesClient.tsx`
+   - `hillside-next/components/guest-stay/MyStayDashboardClient.tsx`
+2. Cleanup details:
+   - replaced repeated overlay + dialog + close scaffolding with `ModalDialog`
+   - preserved component-specific modal content and action flows
+3. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+   - `npm run quality:gate` -> pass
