@@ -35,6 +35,7 @@ import { compactQrTokenPayload } from "../../lib/qrPayload";
 import { AIPricingInsightCard } from "../ai/AIPricingInsightCard";
 import { ImageLightbox } from "../shared/ImageLightbox";
 import { GcashPaymentGuide } from "../shared/GcashPaymentGuide";
+import { SyncAlertBanner } from "../shared/SyncAlertBanner";
 import { UnitImageGallery } from "../shared/UnitImageGallery";
 import { normalizeUnitImageUrls, normalizeUnitThumbUrls } from "../../lib/unitMedia";
 
@@ -844,23 +845,13 @@ export function MyBookingsClient({
       </div>
 
       {actionMessage ? (
-        <div
-          className={`mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3 ${
-            actionHasSyncCta
-              ? "border-amber-200 bg-amber-50"
-              : "border-emerald-200 bg-emerald-50"
-          }`}
-        >
-          <p className={`text-sm ${actionHasSyncCta ? "text-amber-800" : "text-emerald-700"}`}>{actionMessage}</p>
-          {actionHasSyncCta ? (
-            <Link
-              href="/guest/sync"
-              className="inline-flex h-8 items-center rounded-full border border-amber-300 bg-white px-3 text-xs font-semibold text-amber-900"
-            >
-              Open Sync Center
-            </Link>
-          ) : null}
-        </div>
+        <SyncAlertBanner
+          className="mb-3"
+          message={actionMessage}
+          tone={actionHasSyncCta ? "warning" : "success"}
+          showSyncCta={actionHasSyncCta}
+          role="status"
+        />
       ) : null}
       {cachedViewMeta ? (
         <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-semibold text-amber-800">

@@ -28,6 +28,7 @@ import { getApiErrorMessage } from "../../lib/apiError";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
 import { EmptyState } from "../shared/EmptyState";
 import { Skeleton } from "../shared/Skeleton";
+import { SyncAlertBanner } from "../shared/SyncAlertBanner";
 import { Tabs } from "../shared/Tabs";
 import { useToast } from "../shared/ToastProvider";
 
@@ -277,27 +278,15 @@ export function GuestServicesClient({ accessToken }: Props) {
         </div>
       </section>
       {!networkOnline ? (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-          You are offline. Service requests will be queued and synced automatically when internet returns.
-        </div>
+        <SyncAlertBanner message="You are offline. Service requests will be queued and synced automatically when internet returns." />
       ) : null}
       {actionMessage ? (
-        <div
-          className={`flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3 ${
-            actionHasSyncCta ? "border-amber-200 bg-amber-50" : "border-emerald-200 bg-emerald-50"
-          }`}
+        <SyncAlertBanner
+          message={actionMessage}
+          tone={actionHasSyncCta ? "warning" : "success"}
+          showSyncCta={actionHasSyncCta}
           role="status"
-        >
-          <p className={`text-sm ${actionHasSyncCta ? "text-amber-800" : "text-emerald-700"}`}>{actionMessage}</p>
-          {actionHasSyncCta ? (
-            <Link
-              href="/guest/sync"
-              className="inline-flex h-8 items-center rounded-full border border-amber-300 bg-white px-3 text-xs font-semibold text-amber-900"
-            >
-              Open Sync Center
-            </Link>
-          ) : null}
-        </div>
+        />
       ) : null}
 
       <section className="grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">

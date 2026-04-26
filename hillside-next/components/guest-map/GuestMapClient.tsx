@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { Compass, MapPinned, Route } from "lucide-react";
 import { guestMapAmenityPackSchema } from "../../../packages/shared/src/schemas";
 import type { GuestMapAmenityPin } from "../../../packages/shared/src/types";
 import { NetworkStatusBadge } from "../shared/NetworkStatusBadge";
 import { Skeleton } from "../shared/Skeleton";
 import { StatusPill } from "../shared/StatusPill";
+import { SyncAlertBanner } from "../shared/SyncAlertBanner";
 import { loadMapSnapshot, saveMapSnapshot } from "../../lib/offlineSync/store";
 
 const MAP_IMAGE_URL = "/images/resort-map.svg";
@@ -211,17 +211,10 @@ export function GuestMapClient() {
         {cachedMeta ? <p className="mt-2 text-xs font-semibold text-amber-700">{cachedMeta}</p> : null}
       </section>
       {!networkOnline ? (
-        <section className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p>Offline mode: map stays available from cached data. New map updates will sync when internet returns.</p>
-            <Link
-              href="/guest/sync"
-              className="inline-flex h-8 items-center rounded-full border border-amber-300 bg-white px-3 text-xs font-semibold text-amber-900"
-            >
-              Open Sync Center
-            </Link>
-          </div>
-        </section>
+        <SyncAlertBanner
+          message="Offline mode: map stays available from cached data. New map updates will sync when internet returns."
+          showSyncCta
+        />
       ) : null}
 
       <section className="surface overflow-hidden p-3">

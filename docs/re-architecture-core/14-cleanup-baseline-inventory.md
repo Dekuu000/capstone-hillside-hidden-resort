@@ -1261,3 +1261,20 @@ Remaining A4 blocker:
    - `docs/re-architecture-core/evidence/guest-ux/README.md`
 3. Outcome:
    - final decision artifact is ready once manual pass/fail evidence is completed.
+
+## Batch C4 Execution Update (Part 2 Complete - Guest Sync Banner Reuse)
+
+1. Added shared sync-feedback banner component:
+   - `hillside-next/components/shared/SyncAlertBanner.tsx`
+2. Replaced repeated offline/queued banner markup in:
+   - `hillside-next/components/book/BookNowClient.tsx`
+   - `hillside-next/components/tours/ToursBookingClient.tsx`
+   - `hillside-next/components/my-bookings/MyBookingsClient.tsx`
+   - `hillside-next/components/guest-services/GuestServicesClient.tsx`
+   - `hillside-next/components/guest-map/GuestMapClient.tsx`
+   - `hillside-next/components/guest-profile/GuestProfileClient.tsx`
+   - `hillside-next/components/guest-stay/MyStayDashboardClient.tsx`
+3. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+   - `npm run quality:gate` -> pass

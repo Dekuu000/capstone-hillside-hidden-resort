@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type {
   PaymentSubmissionResponse,
@@ -22,6 +21,7 @@ import { queuePaymentSubmissionWithFile } from "../../lib/offlineSync/paymentSub
 import { getSupabaseBrowserClient } from "../../lib/supabase";
 import { FancyDatePicker } from "../shared/FancyDatePicker";
 import { GcashPaymentGuide } from "../shared/GcashPaymentGuide";
+import { SyncAlertBanner } from "../shared/SyncAlertBanner";
 
 type ToursBookingClientProps = {
   initialToken?: string | null;
@@ -350,35 +350,22 @@ export function ToursBookingClient({
         </div>
       </header>
       {!networkOnline ? (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-          <p>You are offline. Tour booking and payment actions will queue for sync.</p>
-          <Link
-            href="/guest/sync"
-            className="inline-flex h-8 items-center rounded-full border border-amber-300 bg-white px-3 text-xs font-semibold text-amber-900"
-          >
-            Open Sync Center
-          </Link>
-        </div>
+        <SyncAlertBanner
+          className="mb-4"
+          message="You are offline. Tour booking and payment actions will queue for sync."
+          showSyncCta
+        />
       ) : null}
 
       {successMessage ? (
-        <div
-          className={`mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3 ${
-            successHasSyncCta ? "border-amber-200 bg-amber-50" : "border-emerald-200 bg-emerald-50"
-          }`}
+        <SyncAlertBanner
+          className="mb-4"
+          message={successMessage}
+          tone={successHasSyncCta ? "warning" : "success"}
+          showSyncCta={successHasSyncCta}
           role="status"
           aria-live="polite"
-        >
-          <p className={`text-sm ${successHasSyncCta ? "text-amber-800" : "text-emerald-700"}`}>{successMessage}</p>
-          {successHasSyncCta ? (
-            <Link
-              href="/guest/sync"
-              className="inline-flex h-8 items-center rounded-full border border-amber-300 bg-white px-3 text-xs font-semibold text-amber-900"
-            >
-              Open Sync Center
-            </Link>
-          ) : null}
-        </div>
+        />
       ) : null}
       {submitError ? (
         <p className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">
