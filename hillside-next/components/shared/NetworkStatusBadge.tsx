@@ -1,22 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Wifi, WifiOff } from "lucide-react";
+import { useNetworkOnline } from "../../lib/hooks/useNetworkOnline";
 import { Badge } from "./Badge";
 
 export function NetworkStatusBadge() {
-  const [online, setOnline] = useState(true);
-
-  useEffect(() => {
-    const sync = () => setOnline(window.navigator.onLine);
-    sync();
-    window.addEventListener("online", sync);
-    window.addEventListener("offline", sync);
-    return () => {
-      window.removeEventListener("online", sync);
-      window.removeEventListener("offline", sync);
-    };
-  }, []);
+  const online = useNetworkOnline();
 
   return (
     <span className="inline-flex items-center gap-2">

@@ -6,6 +6,7 @@ import { myProfileResponseSchema } from "../../../packages/shared/src/schemas";
 import type { MyProfileResponse } from "../../../packages/shared/src/types";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
+import { useNetworkOnline } from "../../lib/hooks/useNetworkOnline";
 import { getSupabaseBrowserClient } from "../../lib/supabase";
 import { Button } from "../shared/Button";
 import { Input } from "../shared/Input";
@@ -36,18 +37,7 @@ export function GuestProfileClient({ accessToken, initialEmail = null }: GuestPr
   const [confirmPassword, setConfirmPassword] = useState("");
   const [profileError, setProfileError] = useState<string | null>(null);
   const [accountError, setAccountError] = useState<string | null>(null);
-  const [networkOnline, setNetworkOnline] = useState(true);
-
-  useEffect(() => {
-    const sync = () => setNetworkOnline(window.navigator.onLine);
-    sync();
-    window.addEventListener("online", sync);
-    window.addEventListener("offline", sync);
-    return () => {
-      window.removeEventListener("online", sync);
-      window.removeEventListener("offline", sync);
-    };
-  }, []);
+  const networkOnline = useNetworkOnline();
 
   useEffect(() => {
     let cancelled = false;

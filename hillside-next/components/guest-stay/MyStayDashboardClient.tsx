@@ -7,6 +7,7 @@ import { welcomeNotificationSchema } from "../../../packages/shared/src/schemas"
 import type { WelcomeNotification } from "../../../packages/shared/src/types";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
+import { useNetworkOnline } from "../../lib/hooks/useNetworkOnline";
 import { SyncAlertBanner } from "../shared/SyncAlertBanner";
 import { useToast } from "../shared/ToastProvider";
 import { GuestOfflineQrCard } from "./GuestOfflineQrCard";
@@ -55,22 +56,11 @@ export function MyStayDashboardClient({
   const [nowMs, setNowMs] = useState<number | null>(null);
   const [welcomeCard, setWelcomeCard] = useState<WelcomeNotification | null>(welcomeNotification);
   const [dismissBusy, setDismissBusy] = useState(false);
-  const [networkOnline, setNetworkOnline] = useState(true);
+  const networkOnline = useNetworkOnline();
 
   useEffect(() => {
     setWelcomeCard(welcomeNotification);
   }, [welcomeNotification]);
-
-  useEffect(() => {
-    const sync = () => setNetworkOnline(window.navigator.onLine);
-    sync();
-    window.addEventListener("online", sync);
-    window.addEventListener("offline", sync);
-    return () => {
-      window.removeEventListener("online", sync);
-      window.removeEventListener("offline", sync);
-    };
-  }, []);
 
   useEffect(() => {
     setNowMs(Date.now());

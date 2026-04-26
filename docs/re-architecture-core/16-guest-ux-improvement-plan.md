@@ -272,3 +272,20 @@ Deliverables:
    - `hillside-next/components/guest-stay/MyStayDashboardClient.tsx`
 3. Outcome:
    - consistent guest sync/offline messaging styles with reduced duplicate JSX branches.
+
+### G3 - Part 6 (Online-State Hook Consolidation)
+
+1. Added shared network-state hook:
+   - `hillside-next/lib/hooks/useNetworkOnline.ts`
+2. Replaced repeated online/offline event wiring in:
+   - `hillside-next/components/book/BookNowClient.tsx`
+   - `hillside-next/components/tours/ToursBookingClient.tsx`
+   - `hillside-next/components/my-bookings/MyBookingsClient.tsx`
+   - `hillside-next/components/guest-services/GuestServicesClient.tsx`
+   - `hillside-next/components/guest-map/GuestMapClient.tsx`
+   - `hillside-next/components/guest-profile/GuestProfileClient.tsx`
+   - `hillside-next/components/guest-stay/MyStayDashboardClient.tsx`
+   - `hillside-next/components/guest-stay/GuestOfflineQrCard.tsx`
+   - `hillside-next/components/shared/NetworkStatusBadge.tsx`
+3. Outcome:
+   - reduced duplicated connectivity listener logic while keeping existing guest UX behavior unchanged.

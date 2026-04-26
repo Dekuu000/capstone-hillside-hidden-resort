@@ -1278,3 +1278,22 @@ Remaining A4 blocker:
    - `npm --prefix hillside-next run lint` -> pass
    - `npm --prefix hillside-next run typecheck` -> pass
    - `npm run quality:gate` -> pass
+
+## Batch C4 Execution Update (Part 3 Complete - Network Hook Reuse)
+
+1. Added shared online/offline hook:
+   - `hillside-next/lib/hooks/useNetworkOnline.ts`
+2. Replaced repeated connectivity listener blocks in:
+   - `hillside-next/components/book/BookNowClient.tsx`
+   - `hillside-next/components/tours/ToursBookingClient.tsx`
+   - `hillside-next/components/my-bookings/MyBookingsClient.tsx`
+   - `hillside-next/components/guest-services/GuestServicesClient.tsx`
+   - `hillside-next/components/guest-map/GuestMapClient.tsx`
+   - `hillside-next/components/guest-profile/GuestProfileClient.tsx`
+   - `hillside-next/components/guest-stay/MyStayDashboardClient.tsx`
+   - `hillside-next/components/guest-stay/GuestOfflineQrCard.tsx`
+   - `hillside-next/components/shared/NetworkStatusBadge.tsx`
+3. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+   - `npm run quality:gate` -> pass

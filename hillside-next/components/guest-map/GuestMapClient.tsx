@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Compass, MapPinned, Route } from "lucide-react";
 import { guestMapAmenityPackSchema } from "../../../packages/shared/src/schemas";
 import type { GuestMapAmenityPin } from "../../../packages/shared/src/types";
+import { useNetworkOnline } from "../../lib/hooks/useNetworkOnline";
 import { NetworkStatusBadge } from "../shared/NetworkStatusBadge";
 import { Skeleton } from "../shared/Skeleton";
 import { StatusPill } from "../shared/StatusPill";
@@ -82,18 +83,7 @@ export function GuestMapClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cachedMeta, setCachedMeta] = useState<string | null>(null);
-  const [networkOnline, setNetworkOnline] = useState(true);
-
-  useEffect(() => {
-    const sync = () => setNetworkOnline(window.navigator.onLine);
-    sync();
-    window.addEventListener("online", sync);
-    window.addEventListener("offline", sync);
-    return () => {
-      window.removeEventListener("online", sync);
-      window.removeEventListener("offline", sync);
-    };
-  }, []);
+  const networkOnline = useNetworkOnline();
 
   useEffect(() => {
     setLoading(true);
