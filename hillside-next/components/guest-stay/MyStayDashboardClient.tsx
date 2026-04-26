@@ -8,6 +8,7 @@ import type { WelcomeNotification } from "../../../packages/shared/src/types";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
 import { useNetworkOnline } from "../../lib/hooks/useNetworkOnline";
+import { InsetPanel } from "../shared/InsetPanel";
 import { ModalDialog } from "../shared/ModalDialog";
 import { SyncAlertBanner } from "../shared/SyncAlertBanner";
 import { useToast } from "../shared/ToastProvider";
@@ -127,24 +128,24 @@ export function MyStayDashboardClient({
         </div>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          <div className="rounded-xl border border-[var(--color-border)] bg-slate-50 p-3">
+          <InsetPanel>
             <p className="text-xs text-[var(--color-muted)]">Countdown</p>
             <p className="mt-1 inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-text)]">
               <Clock3 className="h-4 w-4 text-[var(--color-secondary)]" />
               {countdownLabel}
             </p>
-          </div>
-          <div className="rounded-xl border border-[var(--color-border)] bg-slate-50 p-3">
+          </InsetPanel>
+          <InsetPanel>
             <p className="text-xs text-[var(--color-muted)]">Room</p>
             <p className="mt-1 inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-text)]">
               <BedDouble className="h-4 w-4 text-[var(--color-secondary)]" />
               {roomDisplay}
             </p>
-          </div>
-          <div className="rounded-xl border border-[var(--color-border)] bg-slate-50 p-3">
+          </InsetPanel>
+          <InsetPanel>
             <p className="text-xs text-[var(--color-muted)]">Reservation status</p>
             <p className="mt-1 text-sm font-semibold capitalize text-[var(--color-text)]">{formatReservationStatus(status)}</p>
-          </div>
+          </InsetPanel>
         </div>
         {!networkOnline ? (
           <SyncAlertBanner

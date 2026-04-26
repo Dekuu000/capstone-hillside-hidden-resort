@@ -313,3 +313,16 @@ Deliverables:
    - `npm --prefix hillside-next run lint` -> pass
    - `npm --prefix hillside-next run typecheck` -> pass
    - `npm run quality:gate` -> pass
+
+### G3 - Part 9 (Inset Card/List Primitive Consolidation)
+
+1. Added shared inset card/list primitive:
+   - `hillside-next/components/shared/InsetPanel.tsx`
+2. Replaced repeated guest card/list wrapper markup in:
+   - `hillside-next/components/guest-services/GuestServicesClient.tsx`
+   - `hillside-next/components/guest-map/GuestMapClient.tsx`
+   - `hillside-next/components/guest-stay/MyStayDashboardClient.tsx`
+3. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+   - `npm run quality:gate` -> pass

@@ -1323,3 +1323,16 @@ Remaining A4 blocker:
    - `npm --prefix hillside-next run lint` -> pass
    - `npm --prefix hillside-next run typecheck` -> pass
    - `npm run quality:gate` -> pass
+
+## Batch C4 Execution Update (Part 6 Complete - Inset Card/List Primitive Reuse)
+
+1. Added shared inset panel primitive:
+   - `hillside-next/components/shared/InsetPanel.tsx`
+2. Reused primitive across guest-facing card/list clusters:
+   - `hillside-next/components/guest-services/GuestServicesClient.tsx`
+   - `hillside-next/components/guest-map/GuestMapClient.tsx`
+   - `hillside-next/components/guest-stay/MyStayDashboardClient.tsx`
+3. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+   - `npm run quality:gate` -> pass

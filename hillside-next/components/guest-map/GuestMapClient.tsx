@@ -5,6 +5,7 @@ import { Compass, MapPinned, Route } from "lucide-react";
 import { guestMapAmenityPackSchema } from "../../../packages/shared/src/schemas";
 import type { GuestMapAmenityPin } from "../../../packages/shared/src/types";
 import { useNetworkOnline } from "../../lib/hooks/useNetworkOnline";
+import { InsetPanel } from "../shared/InsetPanel";
 import { NetworkStatusBadge } from "../shared/NetworkStatusBadge";
 import { Skeleton } from "../shared/Skeleton";
 import { StatusPill } from "../shared/StatusPill";
@@ -295,14 +296,14 @@ export function GuestMapClient() {
             </p>
             <ul className="mt-3 space-y-2">
               {directionSteps.map((step, index) => (
-                <li key={step} className="rounded-xl border border-[var(--color-border)] bg-slate-50 p-3 text-sm text-[var(--color-text)]">
+                <InsetPanel as="li" key={step} className="text-sm text-[var(--color-text)]">
                   <span className="mr-1 font-semibold text-[var(--color-secondary)]">{index + 1}.</span>
                   {step}
-                </li>
+                </InsetPanel>
               ))}
             </ul>
             {activeAmenity ? (
-              <div className="mt-3 rounded-xl border border-[var(--color-border)] bg-white p-3">
+              <InsetPanel tone="surface" className="mt-3">
                 <p className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--color-text)]">
                   <Route className="h-4 w-4 text-[var(--color-secondary)]" aria-hidden="true" />
                   Destination: {activeAmenity.name}
@@ -322,7 +323,7 @@ export function GuestMapClient() {
                     Selected
                   </span>
                 </div>
-              </div>
+              </InsetPanel>
             ) : null}
           </section>
         </div>
