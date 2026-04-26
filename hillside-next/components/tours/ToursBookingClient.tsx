@@ -15,6 +15,7 @@ import {
   serviceListResponseSchema,
 } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
+import { getAiSource } from "../../lib/aiPricing";
 import { getApiErrorMessage } from "../../lib/apiError";
 import { formatPhpPeso as toPeso } from "../../lib/formatCurrency";
 import { useNetworkOnline } from "../../lib/hooks/useNetworkOnline";
@@ -39,12 +40,6 @@ function todayPlus(days: number) {
   const month = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
-}
-
-function getAiSource(recommendation: PricingRecommendation | null) {
-  if (!recommendation) return null;
-  const explains = recommendation.explanations.map((item) => item.toLowerCase());
-  return explains.some((item) => item.includes("fallback")) ? "fallback" : "live";
 }
 
 export function ToursBookingClient({

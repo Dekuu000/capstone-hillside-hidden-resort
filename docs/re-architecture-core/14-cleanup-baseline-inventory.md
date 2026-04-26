@@ -1374,3 +1374,15 @@ Remaining A4 blocker:
    - `npm --prefix hillside-next run lint` -> pass
    - `npm --prefix hillside-next run typecheck` -> pass
    - `npm run quality:gate` -> pass
+
+## Batch C4 Execution Update (Part 10 Complete - AI Source Helper Reuse)
+
+1. Added shared AI pricing source helper:
+   - `hillside-next/lib/aiPricing.ts`
+2. Replaced repeated `getAiSource` helper in:
+   - `hillside-next/components/book/BookNowClient.tsx`
+   - `hillside-next/components/tours/ToursBookingClient.tsx`
+3. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+   - `npm run quality:gate` -> pass
