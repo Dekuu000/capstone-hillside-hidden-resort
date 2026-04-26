@@ -402,3 +402,16 @@ Deliverables:
    - `npm --prefix hillside-next run lint` -> pass
    - `npm --prefix hillside-next run typecheck` -> pass
    - `npm run quality:gate` -> pass
+
+### G6 - Part 1 (Guest Hero Visual Foundation)
+
+1. Extended shared page header primitive to support hero style:
+   - `hillside-next/components/layout/PageHeader.tsx`
+   - added optional `variant="hero"`, `eyebrow`, and flexible `ReactNode` title/subtitle support
+2. Applied hero-header consistency to high-traffic guest booking routes:
+   - `hillside-next/components/book/BookNowClient.tsx`
+   - `hillside-next/components/tours/ToursBookingClient.tsx`
+3. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+   - `npm run quality:gate` -> pass
