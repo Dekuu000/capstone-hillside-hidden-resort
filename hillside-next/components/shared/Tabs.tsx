@@ -15,11 +15,21 @@ export function Tabs({
   value,
   onChange,
   className,
+  ariaLabel,
+  mobileMode = "grid",
+  tabClassName,
+  activeClassName,
+  inactiveClassName,
 }: {
   items: TabItem[];
   value: string;
   onChange: (value: string) => void;
   className?: string;
+  ariaLabel?: string;
+  mobileMode?: "grid" | "scroll";
+  tabClassName?: string;
+  activeClassName?: string;
+  inactiveClassName?: string;
 }) {
   const activeIndex = useMemo(
     () => Math.max(0, items.findIndex((item) => item.id === value)),
@@ -39,9 +49,16 @@ export function Tabs({
   return (
     <div
       role="tablist"
+      aria-label={ariaLabel}
       aria-orientation="horizontal"
       onKeyDown={onKeyDown}
-      className={cn("grid gap-2 rounded-2xl border border-[var(--color-border)] bg-slate-50 p-1 sm:grid-cols-3", className)}
+      className={cn(
+        "rounded-2xl border border-[var(--color-border)] bg-slate-50 p-1",
+        mobileMode === "scroll"
+          ? "no-scrollbar flex items-center gap-0.5 overflow-x-auto scroll-smooth sm:grid sm:overflow-visible sm:gap-2 sm:grid-cols-3"
+          : "grid gap-2 sm:grid-cols-3",
+        className,
+      )}
     >
       {items.map((item) => {
         const active = item.id === value;
@@ -57,8 +74,9 @@ export function Tabs({
             className={cn(
               "inline-flex h-11 min-w-0 items-center justify-center gap-2 rounded-xl px-2.5 text-xs font-semibold transition sm:px-3 sm:text-sm",
               active
-                ? "border border-[var(--color-border)] bg-white text-[var(--color-text)] shadow-sm"
-                : "text-[var(--color-muted)] hover:bg-slate-100",
+                ? (activeClassName ?? "border border-[var(--color-border)] bg-white text-[var(--color-text)] shadow-sm")
+                : (inactiveClassName ?? "text-[var(--color-muted)] hover:bg-slate-100"),
+              tabClassName,
             )}
           >
             {item.icon ? <span className="inline-flex h-4 w-4 items-center justify-center">{item.icon}</span> : null}
