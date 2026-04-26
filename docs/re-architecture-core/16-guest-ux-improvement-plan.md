@@ -339,3 +339,17 @@ Deliverables:
    - `npm --prefix hillside-next run lint` -> pass
    - `npm --prefix hillside-next run typecheck` -> pass
    - `npm run quality:gate` -> pass
+
+### G3 - Part 11 (Currency Formatter Consolidation)
+
+1. Added shared PHP currency formatter utility:
+   - `hillside-next/lib/formatCurrency.ts`
+2. Replaced duplicated guest-local currency formatters in:
+   - `hillside-next/components/book/BookNowClient.tsx`
+   - `hillside-next/components/tours/ToursBookingClient.tsx`
+   - `hillside-next/components/guest-services/GuestServicesClient.tsx`
+   - `hillside-next/components/my-bookings/MyBookingsClient.tsx`
+3. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+   - `npm run quality:gate` -> pass
