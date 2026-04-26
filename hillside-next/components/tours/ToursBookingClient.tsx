@@ -353,7 +353,7 @@ export function ToursBookingClient({
 
       <div className="rounded-2xl border border-slate-200/70 bg-white p-6 shadow-sm">
         <div className="grid gap-4 md:grid-cols-2">
-          <label className="grid gap-1 text-sm text-slate-700">
+          <label className="guest-form-label">
             Select Tour
             <select
               value={serviceId}
@@ -362,7 +362,7 @@ export function ToursBookingClient({
                 setPayNow(0);
               }}
               disabled={servicesLoading}
-              className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 outline-none ring-blue-200 transition focus:ring-2"
+              className="guest-field-control"
             >
               <option value="">Select a service</option>
               {services.map((service) => (
@@ -405,13 +405,13 @@ export function ToursBookingClient({
             onChange={setVisitDate}
           />
 
-          <label className="grid gap-1 text-sm text-slate-700">
+          <label className="guest-form-label">
             Adults
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => setAdultQty((value) => Math.max(0, value - 1))}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-300 bg-white text-lg font-semibold text-slate-700"
+                className="guest-stepper-btn"
                 aria-label="Decrease adult guests"
               >
                 -
@@ -421,12 +421,12 @@ export function ToursBookingClient({
                 min={0}
                 value={adultQty}
                 onChange={(event) => setAdultQty(Math.max(0, Number(event.target.value || 0)))}
-                className="h-10 w-24 rounded-lg border border-slate-300 bg-slate-50 px-3 text-center outline-none ring-blue-200 transition focus:ring-2"
+                className="guest-field-control w-24 text-center"
               />
               <button
                 type="button"
                 onClick={() => setAdultQty((value) => value + 1)}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-300 bg-white text-lg font-semibold text-slate-700"
+                className="guest-stepper-btn"
                 aria-label="Increase adult guests"
               >
                 +
@@ -434,13 +434,13 @@ export function ToursBookingClient({
             </div>
           </label>
 
-          <label className="grid gap-1 text-sm text-slate-700">
+          <label className="guest-form-label">
             Kids
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => setKidQty((value) => Math.max(0, value - 1))}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-300 bg-white text-lg font-semibold text-slate-700"
+                className="guest-stepper-btn"
                 aria-label="Decrease kid guests"
               >
                 -
@@ -450,12 +450,12 @@ export function ToursBookingClient({
                 min={0}
                 value={kidQty}
                 onChange={(event) => setKidQty(Math.max(0, Number(event.target.value || 0)))}
-                className="h-10 w-24 rounded-lg border border-slate-300 bg-slate-50 px-3 text-center outline-none ring-blue-200 transition focus:ring-2"
+                className="guest-field-control w-24 text-center"
               />
               <button
                 type="button"
                 onClick={() => setKidQty((value) => value + 1)}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-300 bg-white text-lg font-semibold text-slate-700"
+                className="guest-stepper-btn"
                 aria-label="Increase kid guests"
               >
                 +
@@ -476,7 +476,7 @@ export function ToursBookingClient({
         <GcashPaymentGuide className="mt-4" />
 
         <div className="mt-4 grid gap-4 md:grid-cols-2">
-          <label className="grid gap-1 text-sm text-slate-700">
+          <label className="guest-form-label">
             Pay Now Amount
             <input
               type="number"
@@ -484,17 +484,17 @@ export function ToursBookingClient({
               max={totalAmount || undefined}
               value={payNow}
               onChange={(event) => setPayNow(Math.max(0, Number(event.target.value || 0)))}
-              className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 outline-none ring-blue-200 transition focus:ring-2"
+              className="guest-field-control"
             />
           </label>
 
-          <label className="grid gap-1 text-sm text-slate-700">
+          <label className="guest-form-label">
             Reference Number (optional)
             <input
               type="text"
               value={referenceNo}
               onChange={(event) => setReferenceNo(event.target.value)}
-              className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 outline-none ring-blue-200 transition focus:ring-2"
+              className="guest-field-control"
             />
           </label>
         </div>
@@ -502,31 +502,29 @@ export function ToursBookingClient({
         <div className="mt-4 grid gap-2">
           <p className="text-sm font-semibold text-slate-900">Payment proof</p>
           <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setProofMode("file")}
-              className={`rounded-lg border px-3 py-1.5 text-sm font-semibold ${
-                proofMode === "file" ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 bg-white text-slate-700"
-              }`}
-            >
-              Upload file
-            </button>
-            <button
-              type="button"
-              onClick={() => setProofMode("url")}
-              className={`rounded-lg border px-3 py-1.5 text-sm font-semibold ${
-                proofMode === "url" ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 bg-white text-slate-700"
-              }`}
-            >
-              Proof URL
-            </button>
+              <button
+                type="button"
+                onClick={() => setProofMode("file")}
+                data-active={proofMode === "file"}
+                className="guest-toggle-pill"
+              >
+                Upload file
+              </button>
+              <button
+                type="button"
+                onClick={() => setProofMode("url")}
+                data-active={proofMode === "url"}
+                className="guest-toggle-pill"
+              >
+                Proof URL
+              </button>
           </div>
           {proofMode === "file" ? (
             <input
               type="file"
               accept="image/*,.pdf"
               onChange={(event) => setProofFile(event.target.files?.[0] ?? null)}
-              className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm"
+              className="guest-field-control guest-field-control-file text-sm"
             />
           ) : (
             <input
@@ -534,7 +532,7 @@ export function ToursBookingClient({
               value={proofUrl}
               onChange={(event) => setProofUrl(event.target.value)}
               placeholder="https://..."
-              className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 outline-none ring-blue-200 transition focus:ring-2"
+              className="guest-field-control"
             />
           )}
         </div>
@@ -543,7 +541,7 @@ export function ToursBookingClient({
           type="button"
           onClick={() => void submitTourBooking()}
           disabled={!canSubmitTour}
-          className="mt-6 w-full rounded-lg bg-[var(--color-cta)] px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+          className="guest-primary-cta mt-6 w-full"
         >
           {submitBusy ? "Creating..." : "Reserve Tour"}
         </button>
