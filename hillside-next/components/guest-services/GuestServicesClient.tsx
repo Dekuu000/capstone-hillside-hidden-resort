@@ -28,6 +28,7 @@ import { getApiErrorMessage } from "../../lib/apiError";
 import { useNetworkOnline } from "../../lib/hooks/useNetworkOnline";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
 import { EmptyState } from "../shared/EmptyState";
+import { InsetPanel } from "../shared/InsetPanel";
 import { ModalDialog } from "../shared/ModalDialog";
 import { Skeleton } from "../shared/Skeleton";
 import { SyncAlertBanner } from "../shared/SyncAlertBanner";
@@ -321,7 +322,7 @@ export function GuestServicesClient({ accessToken }: Props) {
 
           <div className="mt-3 grid gap-3">
             {services.map((service) => (
-              <div key={service.service_item_id} className="rounded-xl border border-[var(--color-border)] bg-white p-3">
+              <InsetPanel key={service.service_item_id} tone="surface">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="font-semibold text-[var(--color-text)]">{service.service_name}</p>
@@ -341,7 +342,7 @@ export function GuestServicesClient({ accessToken }: Props) {
                 >
                   Request Service
                 </button>
-              </div>
+              </InsetPanel>
             ))}
           </div>
         </article>
@@ -383,7 +384,7 @@ export function GuestServicesClient({ accessToken }: Props) {
           ) : null}
           <ul className="mt-3 space-y-2">
             {filteredRequests.map((item) => (
-              <li key={item.request_id} className="rounded-xl border border-[var(--color-border)] bg-slate-50 p-3">
+              <InsetPanel as="li" key={item.request_id}>
                 <p className="text-sm font-semibold text-[var(--color-text)]">
                   {item.service_item?.service_name || "Service request"}
                 </p>
@@ -401,7 +402,7 @@ export function GuestServicesClient({ accessToken }: Props) {
                   <Clock3 className="h-3.5 w-3.5" />
                   {new Date(item.requested_at).toLocaleString()}
                 </p>
-              </li>
+              </InsetPanel>
             ))}
           </ul>
         </article>
