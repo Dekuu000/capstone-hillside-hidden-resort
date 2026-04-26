@@ -27,6 +27,7 @@ import {
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
 import { loadLastIssuedQrToken, saveLastIssuedQrToken } from "../../lib/guestQrTokenCache";
+import { useNetworkOnline } from "../../lib/hooks/useNetworkOnline";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
 import { queuePaymentSubmissionWithFile } from "../../lib/offlineSync/paymentSubmission";
 import { loadBookingsSnapshot, saveBookingsSnapshot } from "../../lib/offlineSync/store";
@@ -211,7 +212,7 @@ export function MyBookingsClient({
   const [qrError, setQrError] = useState<string | null>(null);
   const [qrSecondsLeft, setQrSecondsLeft] = useState(0);
   const [qrFromCache, setQrFromCache] = useState(false);
-  const [networkOnline, setNetworkOnline] = useState(true);
+  const networkOnline = useNetworkOnline();
 
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [actionHasSyncCta, setActionHasSyncCta] = useState(false);
@@ -226,17 +227,6 @@ export function MyBookingsClient({
   const pushActionMessage = useCallback((message: string, withSyncCta = false) => {
     setActionMessage(message);
     setActionHasSyncCta(withSyncCta);
-  }, []);
-
-  useEffect(() => {
-    const sync = () => setNetworkOnline(window.navigator.onLine);
-    sync();
-    window.addEventListener("online", sync);
-    window.addEventListener("offline", sync);
-    return () => {
-      window.removeEventListener("online", sync);
-      window.removeEventListener("offline", sync);
-    };
   }, []);
 
   useEffect(() => {

@@ -25,6 +25,7 @@ import {
 } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
+import { useNetworkOnline } from "../../lib/hooks/useNetworkOnline";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
 import { EmptyState } from "../shared/EmptyState";
 import { Skeleton } from "../shared/Skeleton";
@@ -84,7 +85,7 @@ export function GuestServicesClient({ accessToken }: Props) {
   const [submitBusy, setSubmitBusy] = useState(false);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [actionHasSyncCta, setActionHasSyncCta] = useState(false);
-  const [networkOnline, setNetworkOnline] = useState(true);
+  const networkOnline = useNetworkOnline();
   const estimatedTotal = useMemo(
     () => (selectedService ? Number(selectedService.price || 0) * quantity : 0),
     [quantity, selectedService],
@@ -137,17 +138,6 @@ export function GuestServicesClient({ accessToken }: Props) {
   useEffect(() => {
     void loadServices(category);
   }, [category, loadServices]);
-
-  useEffect(() => {
-    const sync = () => setNetworkOnline(window.navigator.onLine);
-    sync();
-    window.addEventListener("online", sync);
-    window.addEventListener("offline", sync);
-    return () => {
-      window.removeEventListener("online", sync);
-      window.removeEventListener("offline", sync);
-    };
-  }, []);
 
   useEffect(() => {
     if (!accessToken) return;

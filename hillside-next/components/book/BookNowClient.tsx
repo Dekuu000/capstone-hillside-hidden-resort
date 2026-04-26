@@ -25,6 +25,7 @@ import {
 } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
+import { useNetworkOnline } from "../../lib/hooks/useNetworkOnline";
 import { getSupabaseBrowserClient } from "../../lib/supabase";
 import { FancyDatePicker } from "../shared/FancyDatePicker";
 import { ImageLightbox } from "../shared/ImageLightbox";
@@ -109,7 +110,7 @@ export function BookNowClient({
   const [galleryUnit, setGalleryUnit] = useState<AvailableUnit | null>(null);
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [networkOnline, setNetworkOnline] = useState(true);
+  const networkOnline = useNetworkOnline();
 
   const initialQueryKey = `${initialCheckInDate || tomorrow}|${initialCheckOutDate || defaultCheckout}|all`;
   const [skipInitialFetch, setSkipInitialFetch] = useState(Boolean(initialUnitsData && initialToken));
@@ -136,17 +137,6 @@ export function BookNowClient({
       authSub.subscription.unsubscribe();
     };
   }, [initialToken]);
-
-  useEffect(() => {
-    const sync = () => setNetworkOnline(window.navigator.onLine);
-    sync();
-    window.addEventListener("online", sync);
-    window.addEventListener("offline", sync);
-    return () => {
-      window.removeEventListener("online", sync);
-      window.removeEventListener("offline", sync);
-    };
-  }, []);
 
   useEffect(() => {
     if (!token) return;

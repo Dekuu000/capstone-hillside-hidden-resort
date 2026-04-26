@@ -8,6 +8,7 @@ import { qrTokenSchema } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
 import { loadLastIssuedQrToken, saveLastIssuedQrToken } from "../../lib/guestQrTokenCache";
+import { useNetworkOnline } from "../../lib/hooks/useNetworkOnline";
 import { compactQrTokenPayload } from "../../lib/qrPayload";
 import { StatusPill } from "../shared/StatusPill";
 import { useToast } from "../shared/ToastProvider";
@@ -20,24 +21,13 @@ type Props = {
 
 export function GuestOfflineQrCard({ accessToken, reservationId, reservationCode }: Props) {
   const { showToast } = useToast();
-  const [online, setOnline] = useState(true);
+  const online = useNetworkOnline();
   const [loading, setLoading] = useState(false);
   const [token, setToken] = useState<QrToken | null>(null);
   const [fromCache, setFromCache] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
   const attemptedOnlineIssueRef = useRef(false);
-
-  useEffect(() => {
-    const sync = () => setOnline(window.navigator.onLine);
-    sync();
-    window.addEventListener("online", sync);
-    window.addEventListener("offline", sync);
-    return () => {
-      window.removeEventListener("online", sync);
-      window.removeEventListener("offline", sync);
-    };
-  }, []);
 
   const issueToken = useCallback(async () => {
     if (!accessToken || !online) return;

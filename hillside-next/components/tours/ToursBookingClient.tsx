@@ -16,6 +16,7 @@ import {
 } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
+import { useNetworkOnline } from "../../lib/hooks/useNetworkOnline";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
 import { queuePaymentSubmissionWithFile } from "../../lib/offlineSync/paymentSubmission";
 import { getSupabaseBrowserClient } from "../../lib/supabase";
@@ -95,23 +96,12 @@ export function ToursBookingClient({
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [successHasSyncCta, setSuccessHasSyncCta] = useState(false);
   const [latestAiRecommendation, setLatestAiRecommendation] = useState<PricingRecommendation | null>(null);
-  const [networkOnline, setNetworkOnline] = useState(true);
+  const networkOnline = useNetworkOnline();
 
   const setSuccessNotice = (message: string | null, withSyncCta = false) => {
     setSuccessMessage(message);
     setSuccessHasSyncCta(withSyncCta);
   };
-
-  useEffect(() => {
-    const sync = () => setNetworkOnline(window.navigator.onLine);
-    sync();
-    window.addEventListener("online", sync);
-    window.addEventListener("offline", sync);
-    return () => {
-      window.removeEventListener("online", sync);
-      window.removeEventListener("offline", sync);
-    };
-  }, []);
 
   useEffect(() => {
     if (!token) return;
