@@ -27,6 +27,7 @@ import {
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
 import { formatPhpPeso as formatPeso } from "../../lib/formatCurrency";
+import { parseJwtSub } from "../../lib/jwt";
 import { loadLastIssuedQrToken, saveLastIssuedQrToken } from "../../lib/guestQrTokenCache";
 import { useNetworkOnline } from "../../lib/hooks/useNetworkOnline";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
@@ -143,20 +144,6 @@ function cancellationResultMessage(outcome: ReservationPolicyOutcome | null | un
     return "Booking cancelled. Refund flow was triggered by policy.";
   }
   return "Booking cancelled.";
-}
-
-function parseJwtSub(token: string | null): string | null {
-  if (!token) return null;
-  try {
-    const segment = token.split(".")[1];
-    if (!segment) return null;
-    const normalized = segment.replace(/-/g, "+").replace(/_/g, "/");
-    const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
-    const payload = JSON.parse(atob(padded)) as { sub?: string };
-    return payload.sub ?? null;
-  } catch {
-    return null;
-  }
 }
 
 export function MyBookingsClient({

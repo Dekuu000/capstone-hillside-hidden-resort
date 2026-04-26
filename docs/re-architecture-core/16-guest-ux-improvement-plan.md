@@ -353,3 +353,15 @@ Deliverables:
    - `npm --prefix hillside-next run lint` -> pass
    - `npm --prefix hillside-next run typecheck` -> pass
    - `npm run quality:gate` -> pass
+
+### G3 - Part 12 (JWT Subject Parser Consolidation)
+
+1. Added shared JWT subject parser utility:
+   - `hillside-next/lib/jwt.ts`
+2. Replaced duplicated guest-local token parsing helper in:
+   - `hillside-next/components/tours/ToursBookingClient.tsx`
+   - `hillside-next/components/my-bookings/MyBookingsClient.tsx`
+3. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+   - `npm run quality:gate` -> pass
