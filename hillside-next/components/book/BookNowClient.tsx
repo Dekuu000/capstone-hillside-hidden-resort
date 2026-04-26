@@ -26,6 +26,7 @@ import {
 import { apiFetch } from "../../lib/apiClient";
 import { getAiSource } from "../../lib/aiPricing";
 import { getApiErrorMessage } from "../../lib/apiError";
+import { addDaysToIsoDate, todayPlusLocalIsoDate } from "../../lib/dateIso";
 import { formatPhpPeso as toPeso } from "../../lib/formatCurrency";
 import { useNetworkOnline } from "../../lib/hooks/useNetworkOnline";
 import { getSupabaseBrowserClient } from "../../lib/supabase";
@@ -48,13 +49,6 @@ type BookNowClientProps = {
   initialUnitsData?: AvailableUnitsResponse | null;
 };
 
-function localIsoDate(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
 export function BookNowClient({
   initialToken = null,
   initialSessionEmail = null,
@@ -63,16 +57,8 @@ export function BookNowClient({
   initialUnitsData = null,
 }: BookNowClientProps) {
   const router = useRouter();
-  const tomorrow = useMemo(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 1);
-    return localIsoDate(d);
-  }, []);
-  const defaultCheckout = useMemo(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 3);
-    return localIsoDate(d);
-  }, []);
+  const tomorrow = useMemo(() => todayPlusLocalIsoDate(1), []);
+  const defaultCheckout = useMemo(() => todayPlusLocalIsoDate(3), []);
 
   const [token, setToken] = useState<string | null>(initialToken);
   const [sessionLoading, setSessionLoading] = useState(!initialToken);
@@ -403,9 +389,7 @@ export function BookNowClient({
                   setCheckInDate(nextValue);
                   setSelectedUnitIds([]);
                   if (checkOutDate <= nextValue) {
-                    const d = new Date(`${nextValue}T00:00:00`);
-                    d.setDate(d.getDate() + 1);
-                    setCheckOutDate(localIsoDate(d));
+                    setCheckOutDate(addDaysToIsoDate(nextValue, 1));
                   }
                 }}
               />
