@@ -289,3 +289,13 @@ Deliverables:
    - `hillside-next/components/shared/NetworkStatusBadge.tsx`
 3. Outcome:
    - reduced duplicated connectivity listener logic while keeping existing guest UX behavior unchanged.
+
+### G3 - Part 7 (Modal Shell Consolidation)
+
+1. Added shared modal wrapper primitive:
+   - `hillside-next/components/shared/ModalDialog.tsx`
+2. Replaced repeated modal shell/header/close scaffolding in:
+   - `hillside-next/components/my-bookings/MyBookingsClient.tsx`
+   - (details modal, payment-proof modal, QR modal, cancel modal)
+3. Outcome:
+   - fewer repeated modal structure branches with consistent dialog semantics in guest bookings flows.

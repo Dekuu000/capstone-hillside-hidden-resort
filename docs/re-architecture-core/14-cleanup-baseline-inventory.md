@@ -1297,3 +1297,15 @@ Remaining A4 blocker:
    - `npm --prefix hillside-next run lint` -> pass
    - `npm --prefix hillside-next run typecheck` -> pass
    - `npm run quality:gate` -> pass
+
+## Batch C4 Execution Update (Part 4 Complete - Modal Shell Reuse)
+
+1. Added shared modal shell component:
+   - `hillside-next/components/shared/ModalDialog.tsx`
+2. Replaced repeated modal wrapper/header/close markup in:
+   - `hillside-next/components/my-bookings/MyBookingsClient.tsx`
+   - (details, payment, QR, and cancel dialogs)
+3. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+   - `npm run quality:gate` -> pass

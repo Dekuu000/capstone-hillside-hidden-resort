@@ -36,6 +36,7 @@ import { compactQrTokenPayload } from "../../lib/qrPayload";
 import { AIPricingInsightCard } from "../ai/AIPricingInsightCard";
 import { ImageLightbox } from "../shared/ImageLightbox";
 import { GcashPaymentGuide } from "../shared/GcashPaymentGuide";
+import { ModalDialog } from "../shared/ModalDialog";
 import { SyncAlertBanner } from "../shared/SyncAlertBanner";
 import { UnitImageGallery } from "../shared/UnitImageGallery";
 import { normalizeUnitImageUrls, normalizeUnitThumbUrls } from "../../lib/unitMedia";
@@ -1035,31 +1036,17 @@ export function MyBookingsClient({
       ) : null}
 
       {(detailsLoading || details) && (
-        <div className="fixed inset-0 z-40 flex items-end justify-center bg-slate-900/50 p-0 md:items-center md:p-4" role="presentation">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="booking-details-title"
-            className="max-h-[92vh] w-full overflow-auto rounded-t-2xl border border-slate-200/70 bg-white p-4 md:max-w-2xl md:rounded-2xl"
-          >
-            <div className="mb-3 flex items-center justify-between gap-2">
-              <h3 id="booking-details-title" className="text-lg font-semibold text-slate-900">
-                {details?.reservation_code ?? "Loading..."}
-              </h3>
-              <button
-                type="button"
-                onClick={() => {
-                  setDetails(null);
-                  setDetailsAiRecommendation(null);
-                  setDetailsAiError(null);
-                  setDetailsAiLoading(false);
-                }}
-                aria-label="Close"
-                className="h-8 w-8 rounded-lg border border-slate-300 text-slate-600"
-              >
-                x
-              </button>
-            </div>
+        <ModalDialog
+          titleId="booking-details-title"
+          title={details?.reservation_code ?? "Loading..."}
+          maxWidthClass="md:max-w-2xl"
+          onClose={() => {
+            setDetails(null);
+            setDetailsAiRecommendation(null);
+            setDetailsAiError(null);
+            setDetailsAiLoading(false);
+          }}
+        >
             {detailsLoading ? <p className="text-sm text-slate-600" role="status">Loading details...</p> : null}
             {detailsError ? <p className="mb-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">{detailsError}</p> : null}
 
@@ -1116,29 +1103,16 @@ export function MyBookingsClient({
                 ) : null}
               </div>
             ) : null}
-          </div>
-        </div>
+        </ModalDialog>
       )}
 
       {submitFor ? (
-        <div className="fixed inset-0 z-40 flex items-end justify-center bg-slate-900/50 p-0 md:items-center md:p-4" role="presentation">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="payment-proof-title"
-            className="max-h-[92vh] w-full overflow-auto rounded-t-2xl border border-slate-200/70 bg-white p-4 md:max-w-xl md:rounded-2xl"
-          >
-            <div className="mb-3 flex items-center justify-between gap-2">
-              <h3 id="payment-proof-title" className="text-lg font-semibold text-slate-900">Submit payment proof</h3>
-              <button
-                type="button"
-                onClick={closeSubmitModal}
-                aria-label="Close"
-                className="h-8 w-8 rounded-lg border border-slate-300 text-slate-600"
-              >
-                x
-              </button>
-            </div>
+        <ModalDialog
+          titleId="payment-proof-title"
+          title="Submit payment proof"
+          maxWidthClass="md:max-w-xl"
+          onClose={closeSubmitModal}
+        >
             <p className="mb-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
               Next step after submit: payment status changes to <strong>For verification</strong> while admin reviews your proof.
             </p>
@@ -1241,35 +1215,22 @@ export function MyBookingsClient({
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+        </ModalDialog>
       ) : null}
 
       {qrFor ? (
-        <div className="fixed inset-0 z-40 flex items-end justify-center bg-slate-900/50 p-0 md:items-center md:p-4" role="presentation">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="checkin-qr-title"
-            className="max-h-[92vh] w-full overflow-auto rounded-t-2xl border border-slate-200/70 bg-white p-4 md:max-w-2xl md:rounded-2xl"
-          >
-            <div className="mb-3 flex items-center justify-between gap-2">
-              <h3 id="checkin-qr-title" className="text-lg font-semibold text-slate-900">Check-in QR Token</h3>
-              <button
-                type="button"
-                onClick={() => {
-                  setQrFor(null);
-                  setQrToken(null);
-                  setQrError(null);
-                  setQrSecondsLeft(0);
-                  setQrFromCache(false);
-                }}
-                aria-label="Close"
-                className="h-8 w-8 rounded-lg border border-slate-300 text-slate-600"
-              >
-                x
-              </button>
-            </div>
+        <ModalDialog
+          titleId="checkin-qr-title"
+          title="Check-in QR Token"
+          maxWidthClass="md:max-w-2xl"
+          onClose={() => {
+            setQrFor(null);
+            setQrToken(null);
+            setQrError(null);
+            setQrSecondsLeft(0);
+            setQrFromCache(false);
+          }}
+        >
 
             <p className="text-sm text-slate-600">
               Reservation: <strong>{qrFor.reservation_code}</strong>
@@ -1331,29 +1292,16 @@ export function MyBookingsClient({
                 Copy payload
               </button>
             </div>
-          </div>
-        </div>
+        </ModalDialog>
       ) : null}
 
       {cancelFor ? (
-        <div className="fixed inset-0 z-40 flex items-end justify-center bg-slate-900/50 p-0 md:items-center md:p-4" role="presentation">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="cancel-booking-title"
-            className="max-h-[92vh] w-full overflow-auto rounded-t-2xl border border-slate-200/70 bg-white p-4 md:max-w-md md:rounded-2xl"
-          >
-            <div className="mb-3 flex items-center justify-between gap-2">
-              <h3 id="cancel-booking-title" className="text-lg font-semibold text-slate-900">Cancel booking?</h3>
-              <button
-                type="button"
-                onClick={() => setCancelFor(null)}
-                aria-label="Close"
-                className="h-8 w-8 rounded-lg border border-slate-300 text-slate-600"
-              >
-                x
-              </button>
-            </div>
+        <ModalDialog
+          titleId="cancel-booking-title"
+          title="Cancel booking?"
+          maxWidthClass="md:max-w-md"
+          onClose={() => setCancelFor(null)}
+        >
             <p className="text-sm text-slate-600">This booking will be cancelled and removed from active flow.</p>
             <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
               {cancellationConsequenceText(cancelFor)}
@@ -1376,8 +1324,7 @@ export function MyBookingsClient({
                 {cancelBusy ? "Cancelling..." : "Cancel booking"}
               </button>
             </div>
-          </div>
-        </div>
+        </ModalDialog>
       ) : null}
       {detailGalleryOpen ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/55 p-0 md:items-center md:p-4" role="presentation">
