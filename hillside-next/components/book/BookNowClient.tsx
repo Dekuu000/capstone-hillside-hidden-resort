@@ -25,6 +25,7 @@ import {
 } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
+import { formatPhpPeso as toPeso } from "../../lib/formatCurrency";
 import { useNetworkOnline } from "../../lib/hooks/useNetworkOnline";
 import { getSupabaseBrowserClient } from "../../lib/supabase";
 import { FancyDatePicker } from "../shared/FancyDatePicker";
@@ -51,14 +52,6 @@ function localIsoDate(date: Date) {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
-}
-
-function toPeso(value: number) {
-  return new Intl.NumberFormat("en-PH", {
-    style: "currency",
-    currency: "PHP",
-    maximumFractionDigits: 0,
-  }).format(value);
 }
 
 function getAiSource(recommendation: PricingRecommendation | null) {

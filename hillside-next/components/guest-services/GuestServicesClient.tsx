@@ -25,6 +25,7 @@ import {
 } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
+import { formatPhpPeso as toPeso } from "../../lib/formatCurrency";
 import { useNetworkOnline } from "../../lib/hooks/useNetworkOnline";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
 import { EmptyState } from "../shared/EmptyState";
@@ -57,14 +58,6 @@ const STATUS_BADGE_CLASS: Record<string, string> = {
   done: "bg-emerald-100 text-emerald-800",
   cancelled: "bg-slate-200 text-slate-700",
 };
-
-function toPeso(value: number) {
-  return new Intl.NumberFormat("en-PH", {
-    style: "currency",
-    currency: "PHP",
-    maximumFractionDigits: 0,
-  }).format(value);
-}
 
 export function GuestServicesClient({ accessToken }: Props) {
   const { showToast } = useToast();

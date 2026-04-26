@@ -26,6 +26,7 @@ import {
 } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
+import { formatPhpPeso as formatPeso } from "../../lib/formatCurrency";
 import { loadLastIssuedQrToken, saveLastIssuedQrToken } from "../../lib/guestQrTokenCache";
 import { useNetworkOnline } from "../../lib/hooks/useNetworkOnline";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
@@ -71,15 +72,6 @@ const STATUS_BADGE_CLASS: Record<string, string> = {
   cancelled: "bg-red-100 text-red-800",
   no_show: "bg-red-100 text-red-800",
 };
-
-function formatPeso(value: number | null | undefined) {
-  const amount = Number(value ?? 0);
-  return new Intl.NumberFormat("en-PH", {
-    style: "currency",
-    currency: "PHP",
-    maximumFractionDigits: 0,
-  }).format(Number.isFinite(amount) ? amount : 0);
-}
 
 function formatDate(value?: string | null) {
   if (!value) return "-";
