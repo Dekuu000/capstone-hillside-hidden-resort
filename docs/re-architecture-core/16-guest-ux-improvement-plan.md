@@ -415,3 +415,16 @@ Deliverables:
    - `npm --prefix hillside-next run lint` -> pass
    - `npm --prefix hillside-next run typecheck` -> pass
    - `npm run quality:gate` -> pass
+
+### G6 - Part 2 (Form + CTA Visual Consistency)
+
+1. Added shared guest form/CTA utility classes in global styling:
+   - `hillside-next/app/globals.css`
+   - `guest-form-label`, `guest-field-control`, `guest-stepper-btn`, `guest-toggle-pill`, `guest-primary-cta`
+2. Applied consistent form control and primary CTA styling to:
+   - `hillside-next/components/book/BookNowClient.tsx`
+   - `hillside-next/components/tours/ToursBookingClient.tsx`
+3. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+   - `npm run quality:gate` -> pass

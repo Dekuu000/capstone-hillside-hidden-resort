@@ -403,7 +403,7 @@ export function BookNowClient({
                   setSelectedUnitIds([]);
                 }}
               />
-              <label className="grid gap-1 text-sm text-slate-700">
+              <label className="guest-form-label">
                 Room type
                 <select
                   value={unitTypeFilter}
@@ -411,7 +411,7 @@ export function BookNowClient({
                     setUnitTypeFilter(event.target.value as UnitTypeFilter);
                     setSelectedUnitIds([]);
                   }}
-                  className="h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-slate-50 px-3 text-[var(--color-text)] outline-none ring-[var(--color-secondary)]/20 transition focus:ring-2"
+                  className="guest-field-control"
                 >
                   <option value="all">All types</option>
                   <option value="room">Room</option>
@@ -436,7 +436,7 @@ export function BookNowClient({
                   min={1}
                   value={guestCount}
                   onChange={(event) => setGuestCount(Math.max(1, Number(event.target.value || 1)))}
-                  className="w-16 rounded-md border border-[var(--color-border)] bg-slate-50 px-2 py-1 text-right text-sm text-[var(--color-text)] outline-none ring-[var(--color-secondary)]/20 transition focus:ring-2"
+                  className="guest-field-control guest-field-control-sm w-16 text-right text-sm"
                 />
               </label>
               <p className="inline-flex items-center gap-2 rounded-[var(--radius-sm)] bg-slate-50 px-3 py-2 text-sm text-slate-700">
@@ -649,7 +649,7 @@ export function BookNowClient({
               type="button"
               onClick={() => void createReservation()}
               disabled={submitBusy || !canSubmitReservation}
-              className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-cta)] px-4 py-3 text-sm font-semibold text-white shadow-[var(--shadow-sm)] transition-colors duration-200 hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+              className="guest-primary-cta mt-4 w-full rounded-[var(--radius-md)] shadow-[var(--shadow-sm)]"
             >
               {submitBusy ? (
                 <>

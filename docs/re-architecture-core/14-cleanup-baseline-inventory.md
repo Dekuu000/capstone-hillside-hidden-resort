@@ -1423,3 +1423,15 @@ Remaining A4 blocker:
    - `npm --prefix hillside-next run lint` -> pass
    - `npm --prefix hillside-next run typecheck` -> pass
    - `npm run quality:gate` -> pass
+
+## Batch G6 Execution Update (Part 2 Complete - Form + CTA Consistency)
+
+1. Added shared guest form/CTA utility classes:
+   - `hillside-next/app/globals.css`
+2. Applied consistent control and CTA styling on high-traffic guest booking forms:
+   - `hillside-next/components/book/BookNowClient.tsx`
+   - `hillside-next/components/tours/ToursBookingClient.tsx`
+3. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+   - `npm run quality:gate` -> pass

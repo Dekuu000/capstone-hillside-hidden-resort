@@ -98,6 +98,111 @@ a:focus-visible {
   box-shadow: var(--shadow-sm);
 }
 
+.guest-form-label {
+  display: grid;
+  gap: 0.375rem;
+  font-size: 0.875rem;
+  color: color-mix(in srgb, var(--color-text) 88%, white);
+}
+
+.guest-field-control {
+  height: 2.75rem;
+  width: 100%;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: #f8fafc;
+  padding: 0 0.75rem;
+  color: var(--color-text);
+  outline: none;
+  transition: border-color 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
+}
+
+.guest-field-control:focus-visible {
+  border-color: color-mix(in srgb, var(--color-secondary) 48%, white);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-secondary) 18%, white);
+  background: var(--color-surface);
+}
+
+.guest-field-control:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.guest-field-control-sm {
+  height: 2rem;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+.guest-field-control-file {
+  height: auto;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.guest-stepper-btn {
+  display: inline-flex;
+  height: 2.75rem;
+  width: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--color-text) 86%, white);
+}
+
+.guest-stepper-btn:focus-visible {
+  border-color: color-mix(in srgb, var(--color-secondary) 45%, white);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-secondary) 18%, white);
+}
+
+.guest-toggle-pill {
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.guest-toggle-pill[data-active="true"] {
+  border-color: var(--color-text);
+  background: var(--color-text);
+  color: white;
+}
+
+.guest-toggle-pill[data-active="false"] {
+  background: var(--color-surface);
+  color: color-mix(in srgb, var(--color-text) 78%, white);
+}
+
+.guest-primary-cta {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-cta);
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: white;
+  transition: filter 120ms ease, opacity 120ms ease;
+}
+
+.guest-primary-cta:hover {
+  filter: brightness(0.96);
+}
+
+.guest-primary-cta:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .muted-text {
   color: var(--color-muted);
 }
