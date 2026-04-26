@@ -377,3 +377,15 @@ Deliverables:
    - `npm --prefix hillside-next run lint` -> pass
    - `npm --prefix hillside-next run typecheck` -> pass
    - `npm run quality:gate` -> pass
+
+### G3 - Part 14 (ISO Date Helper Consolidation)
+
+1. Added shared ISO-date utilities:
+   - `hillside-next/lib/dateIso.ts`
+2. Replaced duplicated guest-local date helpers in:
+   - `hillside-next/components/book/BookNowClient.tsx`
+   - `hillside-next/components/tours/ToursBookingClient.tsx`
+3. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+   - `npm run quality:gate` -> pass

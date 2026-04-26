@@ -17,6 +17,7 @@ import {
 import { apiFetch } from "../../lib/apiClient";
 import { getAiSource } from "../../lib/aiPricing";
 import { getApiErrorMessage } from "../../lib/apiError";
+import { todayPlusLocalIsoDate } from "../../lib/dateIso";
 import { formatPhpPeso as toPeso } from "../../lib/formatCurrency";
 import { useNetworkOnline } from "../../lib/hooks/useNetworkOnline";
 import { parseJwtSub } from "../../lib/jwt";
@@ -33,15 +34,6 @@ type ToursBookingClientProps = {
   initialServicesData?: ServiceListResponse | null;
 };
 
-function todayPlus(days: number) {
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
 export function ToursBookingClient({
   initialToken = null,
   initialSessionEmail = null,
@@ -50,13 +42,14 @@ export function ToursBookingClient({
   const router = useRouter();
   const token = initialToken;
   const sessionEmail = initialSessionEmail;
+  const minVisitDate = useMemo(() => todayPlusLocalIsoDate(1), []);
 
   const [services, setServices] = useState<ServiceItem[]>(initialServicesData?.items ?? []);
   const [servicesLoading, setServicesLoading] = useState(false);
   const [servicesError, setServicesError] = useState<string | null>(null);
 
   const [serviceId, setServiceId] = useState("");
-  const [visitDate, setVisitDate] = useState(todayPlus(1));
+  const [visitDate, setVisitDate] = useState(minVisitDate);
   const [adultQty, setAdultQty] = useState(1);
   const [kidQty, setKidQty] = useState(0);
   const [payNow, setPayNow] = useState(0);
@@ -403,7 +396,7 @@ export function ToursBookingClient({
           <FancyDatePicker
             label="Visit Date"
             value={visitDate}
-            min={todayPlus(1)}
+            min={minVisitDate}
             onChange={setVisitDate}
           />
 
