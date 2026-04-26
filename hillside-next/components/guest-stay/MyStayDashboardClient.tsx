@@ -1,13 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BedDouble, Clock3, QrCode, Sparkles, X } from "lucide-react";
+import { BedDouble, Clock3, QrCode, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { welcomeNotificationSchema } from "../../../packages/shared/src/schemas";
 import type { WelcomeNotification } from "../../../packages/shared/src/types";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
 import { useNetworkOnline } from "../../lib/hooks/useNetworkOnline";
+import { ModalDialog } from "../shared/ModalDialog";
 import { SyncAlertBanner } from "../shared/SyncAlertBanner";
 import { useToast } from "../shared/ToastProvider";
 import { GuestOfflineQrCard } from "./GuestOfflineQrCard";
@@ -196,31 +197,22 @@ export function MyStayDashboardClient({
       </section>
 
       {showQr ? (
-        <div className="fixed inset-0 z-40 flex items-end justify-center bg-slate-900/55 p-0 md:items-center md:p-4" role="presentation">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="my-stay-qr-title"
-            className="max-h-[92vh] w-full overflow-auto rounded-t-2xl border border-[var(--color-border)] bg-white p-4 md:max-w-3xl md:rounded-2xl"
-          >
-            <div className="mb-3 flex items-center justify-between">
-              <h3 id="my-stay-qr-title" className="text-lg font-semibold text-[var(--color-text)]">Check-in QR</h3>
-              <button
-                type="button"
-                onClick={() => setShowQr(false)}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-border)] text-[var(--color-muted)]"
-                aria-label="Close"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <GuestOfflineQrCard
-              accessToken={accessToken}
-              reservationId={reservationId}
-              reservationCode={reservationCode}
-            />
-          </div>
-        </div>
+        <ModalDialog
+          titleId="my-stay-qr-title"
+          title="Check-in QR"
+          onClose={() => setShowQr(false)}
+          maxWidthClass="md:max-w-3xl"
+          overlayClassName="bg-slate-900/55"
+          panelClassName="border-[var(--color-border)] bg-white"
+          closeLabel="Close check-in QR dialog"
+          closeButtonClassName="border-[var(--color-border)] text-[var(--color-muted)]"
+        >
+          <GuestOfflineQrCard
+            accessToken={accessToken}
+            reservationId={reservationId}
+            reservationCode={reservationCode}
+          />
+        </ModalDialog>
       ) : null}
     </>
   );

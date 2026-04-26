@@ -299,3 +299,17 @@ Deliverables:
    - (details modal, payment-proof modal, QR modal, cancel modal)
 3. Outcome:
    - fewer repeated modal structure branches with consistent dialog semantics in guest bookings flows.
+
+### G3 - Part 8 (Modal Shell Reuse Expansion)
+
+1. Extended shared modal shell reuse to:
+   - `hillside-next/components/book/BookNowClient.tsx` (unit gallery modal)
+   - `hillside-next/components/guest-services/GuestServicesClient.tsx` (service request modal)
+   - `hillside-next/components/guest-stay/MyStayDashboardClient.tsx` (check-in QR modal)
+2. Alignment improvements delivered:
+   - unified overlay/dialog semantics and close affordance via `ModalDialog`
+   - removed repeated wrapper/header/close button JSX branches in guest-critical flows
+3. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+   - `npm run quality:gate` -> pass

@@ -29,6 +29,7 @@ import { useNetworkOnline } from "../../lib/hooks/useNetworkOnline";
 import { getSupabaseBrowserClient } from "../../lib/supabase";
 import { FancyDatePicker } from "../shared/FancyDatePicker";
 import { ImageLightbox } from "../shared/ImageLightbox";
+import { ModalDialog } from "../shared/ModalDialog";
 import { SyncAlertBanner } from "../shared/SyncAlertBanner";
 import { UnitImageGallery } from "../shared/UnitImageGallery";
 import { normalizeUnitImageUrls, normalizeUnitThumbUrls } from "../../lib/unitMedia";
@@ -215,6 +216,11 @@ export function BookNowClient({
     () => normalizeUnitThumbUrls(galleryImages, galleryUnit?.image_thumb_urls ?? null),
     [galleryImages, galleryUnit],
   );
+  const closeGalleryModal = () => {
+    setGalleryUnit(null);
+    setLightboxOpen(false);
+    setGalleryIndex(0);
+  };
 
   const toggleUnit = (unitId: string) => {
     setSelectedUnitIds((prev) => (prev.includes(unitId) ? prev.filter((id) => id !== unitId) : [...prev, unitId]));
@@ -703,31 +709,18 @@ export function BookNowClient({
         </aside>
       </div>
       {galleryUnit ? (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/55 p-0 md:items-center md:p-4" role="presentation">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="book-unit-gallery-title"
-            className="max-h-[92vh] w-full overflow-y-auto rounded-t-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 md:max-w-3xl md:rounded-2xl md:p-5"
-          >
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <div>
-                <h3 id="book-unit-gallery-title" className="text-lg font-semibold text-[var(--color-text)]">{galleryUnit.name}</h3>
-                <p className="text-xs text-[var(--color-muted)]">Unit photos</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setGalleryUnit(null);
-                  setLightboxOpen(false);
-                  setGalleryIndex(0);
-                }}
-                className="inline-flex h-10 items-center justify-center rounded-lg border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)]"
-              >
-                Close
-              </button>
-            </div>
-
+        <ModalDialog
+          titleId="book-unit-gallery-title"
+          title={galleryUnit.name}
+          onClose={closeGalleryModal}
+          zIndexClass="z-50"
+          overlayClassName="bg-slate-950/55"
+          maxWidthClass="md:max-w-3xl"
+          panelClassName="border-[var(--color-border)] bg-[var(--color-surface)] md:p-5"
+          closeLabel="Close unit photo gallery"
+          closeButtonClassName="h-10 w-auto border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)]"
+        >
+          <p className="mb-3 text-xs text-[var(--color-muted)]">Unit photos</p>
             <UnitImageGallery
               images={galleryImages}
               thumbs={galleryThumbs}
@@ -740,8 +733,7 @@ export function BookNowClient({
               }}
               emptyText="No photos available yet for this unit."
             />
-          </div>
-        </div>
+        </ModalDialog>
       ) : null}
       <ImageLightbox
         open={lightboxOpen}
