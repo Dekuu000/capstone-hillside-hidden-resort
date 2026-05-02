@@ -551,3 +551,14 @@ Deliverables:
    - `npm --prefix hillside-next run lint` -> pass
    - `npm --prefix hillside-next run typecheck` -> pass
    - `npm run quality:gate` -> pass
+
+### G5 - Part 6 (Closure Draft + Blocker Capture)
+
+1. Added closure draft from current evidence state:
+   - `docs/re-architecture-core/evidence/guest-ux/g5-closure-summary-20260502-draft.md`
+2. Draft captures:
+   - automation preflight passed (`npm run test:guest:e2e`)
+   - all manual scenario rows still pending in `manual-run-20260425-2108.md`
+   - accessibility manual spot-check rows still pending
+3. Current decision:
+   - P4/G5 remains **not ready to close** until manual run sheet and evidence links are completed.

@@ -1559,3 +1559,15 @@ Remaining A4 blocker:
    - `npm --prefix hillside-next run lint` -> pass
    - `npm --prefix hillside-next run typecheck` -> pass
    - `npm run quality:gate` -> pass
+
+## Batch G7 Execution Update (Part 2 Complete - Guardrails Executed + Closure Draft)
+
+1. Executed the new guest UX automation suite:
+   - `npm run test:guest:e2e` -> pass (`7 passed`)
+2. Added closure decision draft:
+   - `docs/re-architecture-core/evidence/guest-ux/g5-closure-summary-20260502-draft.md`
+3. Current blocker capture:
+   - manual run file `manual-run-20260425-2108.md` remains pending
+   - accessibility manual spot-check rows remain pending
+4. Outcome:
+   - automation baseline is green, but formal G5/P4 closure is still blocked on manual evidence completion.
