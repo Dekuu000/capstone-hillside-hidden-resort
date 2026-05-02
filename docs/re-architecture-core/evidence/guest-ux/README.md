@@ -21,6 +21,9 @@ Purpose: store G5 manual-validation screenshots and notes for guest UX closure.
 1. `g5-11-booking-modal-a11y.png`
 2. `g5-12-services-modal-a11y.png`
 3. `g5-13-my-bookings-modal-a11y.png`
+4. `g6-01-guest-nav-pill-desktop-mobile.png`
+5. `g6-02-cta-hierarchy-my-bookings-and-sync.png`
+6. `g6-03-form-control-consistency-book-tours-services.png`
 
 ## Run Notes
 

@@ -31,6 +31,15 @@ Environment: local dev stack (`db:start`, `dev:api`, `dev:next`)
 | Status/error announcement roles are applied correctly | Pending |  |
 | Keyboard reachability for close + primary actions | Pending |  |
 
+## G6 Visual Regression Quick Check (Optional)
+
+| # | Area | Check | Result (Pass/Fail) | Evidence File | Notes |
+|---|---|---|---|---|---|
+| V1 | Guest nav | Desktop + mobile nav pills keep consistent active state and focus behavior | Pending |  |  |
+| V2 | CTA hierarchy | Primary/secondary/danger buttons are visually consistent across guest-critical routes | Pending |  |  |
+| V3 | Forms | Shared input/select/toggle/stepper styling remains consistent across booking/service flows | Pending |  |  |
+| V4 | Sync center | Status pills + conflict/discard actions remain clear on mobile | Pending |  |  |
+
 ## Follow-Ups
 
 1. Open issue links for failed rows:

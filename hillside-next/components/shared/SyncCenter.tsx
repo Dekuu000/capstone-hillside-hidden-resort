@@ -45,6 +45,13 @@ function formatDateTime(value: string | null | undefined) {
   return new Date(parsed).toLocaleString();
 }
 
+const syncSecondaryCtaClass =
+  "guest-secondary-cta guest-secondary-cta-sm rounded-full disabled:cursor-not-allowed disabled:opacity-60";
+const syncDangerCtaClass =
+  "guest-danger-cta guest-danger-cta-sm rounded-full disabled:cursor-not-allowed disabled:opacity-60";
+const syncWarnCtaClass =
+  "guest-secondary-cta guest-secondary-cta-sm rounded-full border-amber-300 bg-white text-amber-800 hover:border-amber-400 hover:bg-amber-50 hover:text-amber-900 disabled:cursor-not-allowed disabled:opacity-60";
+
 export function SyncCenter({ title, description, scope }: SyncCenterProps) {
   const sync = useSyncEngine();
   const { showToast } = useToast();
@@ -276,14 +283,14 @@ export function SyncCenter({ title, description, scope }: SyncCenterProps) {
             type="button"
             onClick={() => void handleRunNow()}
             disabled={!sync.enabled || busy}
-            className="inline-flex h-11 items-center gap-2 rounded-full border border-[var(--color-border)] px-4 text-sm font-semibold text-[var(--color-text)] transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            className="guest-secondary-cta rounded-full px-4"
           >
             <RefreshCcw className={`h-4 w-4 ${busy ? "animate-spin" : ""}`} />
             {busy ? "Syncing..." : "Run sync now"}
           </button>
         </div>
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-slate-50 p-3">
+          <div className="guest-surface-soft p-3">
             <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-muted)]">Status</p>
             <p className={`mt-1 text-base font-semibold ${primaryStatus.tone}`}>
               {sync.online ? <Wifi className="mr-1 inline-block h-4 w-4" /> : <WifiOff className="mr-1 inline-block h-4 w-4" />}
@@ -291,21 +298,21 @@ export function SyncCenter({ title, description, scope }: SyncCenterProps) {
             </p>
             <p className="mt-1 text-xs text-[var(--color-muted)]">Last sync: {formatDateTime(sync.lastSyncedAt)}</p>
           </div>
-          <div className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-slate-50 p-3">
+          <div className="guest-surface-soft p-3">
             <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-muted)]">Outbox</p>
             <p className="mt-1 text-xl font-semibold text-[var(--color-text)]">{sync.queued + sync.syncing + sync.failed}</p>
             <p className="mt-1 text-xs text-[var(--color-muted)]">
               queued {sync.queued} | syncing {sync.syncing} | failed {sync.failed}
             </p>
           </div>
-          <div className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-slate-50 p-3">
+          <div className="guest-surface-soft p-3">
             <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-muted)]">Upload Queue</p>
             <p className="mt-1 text-xl font-semibold text-[var(--color-text)]">{uploadCounts.queued + uploadCounts.uploaded + uploadCounts.failed}</p>
             <p className="mt-1 text-xs text-[var(--color-muted)]">
               queued {uploadCounts.queued} | uploaded {uploadCounts.uploaded} | failed {uploadCounts.failed}
             </p>
           </div>
-          <div className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-slate-50 p-3">
+          <div className="guest-surface-soft p-3">
             <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-muted)]">Conflicts</p>
             <p className="mt-1 text-xl font-semibold text-[var(--color-text)]">{sync.conflicts}</p>
             <p className="mt-1 text-xs text-[var(--color-muted)]">Server-wins conflicts requiring refresh.</p>
@@ -318,7 +325,7 @@ export function SyncCenter({ title, description, scope }: SyncCenterProps) {
           </div>
         ) : null}
         {!sync.online ? (
-          <div className="mt-3 rounded-[var(--radius-md)] border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          <div className="guest-surface-soft mt-3 border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
             Offline mode: your actions stay queued locally. Reconnect and tap <strong>Run sync now</strong> to send updates.
           </div>
         ) : null}
@@ -350,7 +357,7 @@ export function SyncCenter({ title, description, scope }: SyncCenterProps) {
                     <td className="px-4 py-3 font-medium text-[var(--color-text)]">{row.entity_type}</td>
                     <td className="px-4 py-3 text-[var(--color-muted)]">{row.action}</td>
                     <td className="px-4 py-3">
-                      <span className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs font-semibold text-[var(--color-text)]">
+                      <span className="guest-status-pill">
                         {row.status}
                       </span>
                       {row.last_error ? <p className="mt-1 text-xs text-red-600">{row.last_error}</p> : null}
@@ -363,7 +370,7 @@ export function SyncCenter({ title, description, scope }: SyncCenterProps) {
                           type="button"
                           onClick={() => void handleRetry(row.operation_id)}
                           disabled={row.status === "syncing" || actionBusy === `retry:${row.operation_id}`}
-                          className="rounded-full border border-[var(--color-border)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--color-text)] disabled:cursor-not-allowed disabled:opacity-60"
+                          className={syncSecondaryCtaClass}
                         >
                           Retry
                         </button>
@@ -371,7 +378,7 @@ export function SyncCenter({ title, description, scope }: SyncCenterProps) {
                           type="button"
                           onClick={() => void handleDiscardLocal(row.operation_id)}
                           disabled={actionBusy === `discard:${row.operation_id}`}
-                          className="rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                          className={syncDangerCtaClass}
                         >
                           Discard local
                         </button>
@@ -415,7 +422,7 @@ export function SyncCenter({ title, description, scope }: SyncCenterProps) {
                     </td>
                     <td className="px-4 py-3 text-[var(--color-muted)]">{row.entity_type}</td>
                     <td className="px-4 py-3">
-                      <span className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs font-semibold text-[var(--color-text)]">
+                      <span className="guest-status-pill">
                         {row.status}
                       </span>
                     </td>
@@ -425,7 +432,7 @@ export function SyncCenter({ title, description, scope }: SyncCenterProps) {
                         type="button"
                         onClick={() => void handleRetryUpload(row.upload_id)}
                         disabled={row.status !== "failed" || actionBusy === `upload-retry:${row.upload_id}`}
-                        className="rounded-full border border-[var(--color-border)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--color-text)] disabled:cursor-not-allowed disabled:opacity-60"
+                        className={syncSecondaryCtaClass}
                       >
                         Retry upload
                       </button>
@@ -449,7 +456,7 @@ export function SyncCenter({ title, description, scope }: SyncCenterProps) {
               type="button"
               onClick={() => void handleInjectFailedCheckin()}
               disabled={actionBusy === "harness:failed-checkin"}
-              className="rounded-full border border-[var(--color-border)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] disabled:opacity-60"
+              className={syncSecondaryCtaClass}
             >
               Queue invalid check-in + run sync
             </button>
@@ -457,7 +464,7 @@ export function SyncCenter({ title, description, scope }: SyncCenterProps) {
               type="button"
               onClick={() => void handleInjectConflict()}
               disabled={actionBusy === "harness:conflict"}
-              className="rounded-full border border-[var(--color-border)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] disabled:opacity-60"
+              className={syncSecondaryCtaClass}
             >
               Inject synthetic conflict
             </button>
@@ -465,7 +472,7 @@ export function SyncCenter({ title, description, scope }: SyncCenterProps) {
               type="button"
               onClick={() => void handleInjectFailedUpload()}
               disabled={actionBusy === "harness:failed-upload"}
-              className="rounded-full border border-[var(--color-border)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] disabled:opacity-60"
+              className={syncSecondaryCtaClass}
             >
               Inject failed upload
             </button>
@@ -493,7 +500,7 @@ export function SyncCenter({ title, description, scope }: SyncCenterProps) {
                     type="button"
                     onClick={() => void handleRetry(item.operation_id)}
                     disabled={actionBusy === `retry:${item.operation_id}`}
-                    className="rounded-full border border-amber-300 bg-white px-2.5 py-1 text-xs font-semibold text-amber-800 disabled:cursor-not-allowed disabled:opacity-60"
+                    className={syncWarnCtaClass}
                   >
                     Retry now
                   </button>
@@ -501,7 +508,7 @@ export function SyncCenter({ title, description, scope }: SyncCenterProps) {
                     type="button"
                     onClick={() => void handleDismissConflict(item.operation_id)}
                     disabled={actionBusy === `dismiss:${item.operation_id}`}
-                    className="rounded-full border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    className={syncSecondaryCtaClass}
                   >
                     Dismiss
                   </button>
@@ -509,7 +516,7 @@ export function SyncCenter({ title, description, scope }: SyncCenterProps) {
                     type="button"
                     onClick={() => void handleDiscardLocal(item.operation_id)}
                     disabled={actionBusy === `discard:${item.operation_id}`}
-                    className="rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    className={syncDangerCtaClass}
                   >
                     Discard local
                   </button>

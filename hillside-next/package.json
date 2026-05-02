@@ -9,7 +9,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:e2e:guest": "playwright test --config=playwright.guest.config.mjs",
+    "test:e2e:guest:headed": "playwright test --config=playwright.guest.config.mjs --headed"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.94.1",
@@ -22,6 +24,8 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.0",
+    "@playwright/test": "^1.55.0",
     "@tailwindcss/postcss": "^4.2.0",
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.2",

@@ -19,6 +19,8 @@ Provide a single manual validation script and evidence template for the guest UX
    - `/my-bookings`
    - `/guest/my-stay`
 4. Browser DevTools available for offline simulation.
+5. Optional preflight automation (recommended):
+   - `npm run test:guest:e2e`
 
 ## Evidence Folder Convention
 
@@ -67,6 +69,21 @@ Recommended filename pattern:
 1. Dialogs expose `role="dialog"` and `aria-modal="true"` in guest flows.
 2. Error and progress messages are announced using alert/status semantics.
 3. Keyboard navigation can reach close buttons and primary actions in modals.
+
+## Post-G6 Visual Regression Quick Check (Optional but Recommended)
+
+1. Verify guest navigation pills (desktop and mobile) show consistent active state and clear focus indication.
+2. Verify primary/secondary/danger CTA hierarchy is visually consistent across:
+   - `/my-bookings`
+   - `/guest/my-stay`
+   - `/guest/services`
+   - `/guest/sync`
+3. Verify form controls (inputs/selects/toggles/steppers) use the shared guest control language in:
+   - `/book`
+   - `/tours`
+   - `/my-bookings` payment modal
+   - `/guest/services` request modal
+4. Verify sync status pills and conflict/discard actions remain readable at mobile widths (320px+).
 
 ## Sign-Off Record
 
