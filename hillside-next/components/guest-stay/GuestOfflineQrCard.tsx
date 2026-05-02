@@ -116,7 +116,7 @@ export function GuestOfflineQrCard({ accessToken, reservationId, reservationCode
           No cached token yet. Connect online and tap <span className="font-semibold text-[var(--color-text)]">Refresh token</span> once.
         </div>
       ) : (
-        <div className="mt-3 rounded-xl border border-[var(--color-border)] bg-slate-50 p-4">
+        <div className="guest-surface-soft mt-3 p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-sm font-semibold text-[var(--color-text)]">Reservation {reservationCode}</p>
             <p className="inline-flex items-center gap-1 text-xs text-[var(--color-muted)]">
@@ -134,7 +134,7 @@ export function GuestOfflineQrCard({ accessToken, reservationId, reservationCode
           type="button"
           onClick={() => void issueToken()}
           disabled={!online || loading || !accessToken}
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)] disabled:opacity-50"
+          className="guest-secondary-cta min-h-10 px-3 text-sm"
         >
           <RefreshCcw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} aria-hidden="true" />
           {loading ? "Refreshing..." : online ? "Refresh token" : "Reconnect to refresh"}
@@ -143,7 +143,7 @@ export function GuestOfflineQrCard({ accessToken, reservationId, reservationCode
           type="button"
           onClick={() => void copyPayload()}
           disabled={!token}
-          className="inline-flex h-10 items-center justify-center rounded-xl bg-[var(--color-primary)] px-3 text-sm font-semibold text-white disabled:opacity-50"
+          className="guest-primary-cta min-h-10 px-3 text-sm"
         >
           Copy payload
         </button>

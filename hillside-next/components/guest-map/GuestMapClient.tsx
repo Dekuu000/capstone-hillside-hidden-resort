@@ -176,8 +176,8 @@ export function GuestMapClient() {
           />
           <span className="text-xs text-[var(--color-muted)] sm:ml-auto">Pins: {visibleAmenities.length}</span>
         </div>
-        {error ? <p className="mt-3 text-xs text-[var(--color-error)]">{error}</p> : null}
-        {cachedMeta ? <p className="mt-2 text-xs font-semibold text-amber-700">{cachedMeta}</p> : null}
+        {error ? <p className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-[var(--color-error)]">{error}</p> : null}
+        {cachedMeta ? <p className="guest-surface-soft mt-2 px-3 py-2 text-xs font-semibold text-amber-700">{cachedMeta}</p> : null}
       </section>
       {!networkOnline ? (
         <SyncAlertBanner
@@ -257,7 +257,7 @@ export function GuestMapClient() {
             <select
               value={originAmenityId || ""}
               onChange={(event) => setOriginAmenityId(event.target.value)}
-              className="mt-2 h-11 w-full rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-text)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-secondary)]/30"
+              className="guest-field-control mt-2"
             >
               {amenities.map((item) => (
                 <option key={item.id} value={item.id}>

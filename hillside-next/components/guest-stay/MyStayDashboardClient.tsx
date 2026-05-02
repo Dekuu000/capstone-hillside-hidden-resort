@@ -118,7 +118,7 @@ export function MyStayDashboardClient({
             <button
               type="button"
               onClick={() => setShowQr(true)}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 text-sm font-semibold text-white"
+              className="guest-primary-cta"
             >
               <QrCode className="h-4 w-4" />
               Open Check-in QR
@@ -172,7 +172,7 @@ export function MyStayDashboardClient({
                 type="button"
                 onClick={() => void dismissWelcome()}
                 disabled={dismissBusy}
-                className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--color-border)] px-3 text-xs font-semibold text-[var(--color-text)] disabled:cursor-not-allowed disabled:opacity-60"
+                className="guest-secondary-cta guest-secondary-cta-sm"
               >
                 {dismissBusy ? "Dismissing..." : "Dismiss"}
               </button>
@@ -189,7 +189,7 @@ export function MyStayDashboardClient({
             ) : null}
             <Link
               href="/tours"
-              className="mt-3 inline-flex h-10 items-center justify-center rounded-lg bg-[var(--color-primary)] px-4 text-sm font-semibold text-white"
+              className="guest-primary-cta mt-3"
             >
               Explore tours
             </Link>

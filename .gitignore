@@ -34,3 +34,5 @@ hillside-contracts/cache/
 hillside-contracts/.cache/
 hillside-contracts/typechain-types/
 hillside-next/.next/
+hillside-next/test-results/
+hillside-next/playwright-report/

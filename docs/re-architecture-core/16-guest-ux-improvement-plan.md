@@ -428,3 +428,126 @@ Deliverables:
    - `npm --prefix hillside-next run lint` -> pass
    - `npm --prefix hillside-next run typecheck` -> pass
    - `npm run quality:gate` -> pass
+
+### G6 - Part 3 (Guest Control Surface Consistency)
+
+1. Extended shared guest visual utilities for control surfaces:
+   - `hillside-next/app/globals.css`
+   - added `guest-secondary-cta`, `guest-secondary-cta-sm`, `guest-surface-soft`
+2. Applied the shared control/CTA/form language to guest high-traffic management flows:
+   - `hillside-next/components/my-bookings/MyBookingsClient.tsx`
+   - `hillside-next/components/guest-stay/MyStayDashboardClient.tsx`
+   - `hillside-next/components/guest-services/GuestServicesClient.tsx`
+3. UX alignment delivered:
+   - consistent primary/secondary action hierarchy across bookings, stay QR, and guest services
+   - consistent form field + stepper + toggle styling in payment and service-request dialogs
+   - consistent soft-surface messaging blocks for payment/service context hints
+4. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+   - `npm run quality:gate` -> pass
+
+### G6 - Part 4 (Map + QR + Sync Surface Consistency)
+
+1. Extended shared visual utility usage in additional guest-critical surfaces:
+   - `hillside-next/components/guest-map/GuestMapClient.tsx`
+   - `hillside-next/components/guest-stay/GuestOfflineQrCard.tsx`
+   - `hillside-next/components/shared/SyncCenter.tsx`
+2. UX consistency updates delivered:
+   - aligned map origin selector and cached/error feedback blocks with shared guest field/surface styles
+   - aligned guest check-in QR action buttons with shared primary/secondary CTA hierarchy
+   - aligned sync-center action buttons and summary cards with shared CTA/surface language
+3. Scope safety:
+   - no sync-engine, queueing, API, or policy behavior changes
+4. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+   - `npm run quality:gate` -> pass
+
+### G6 - Part 5 (Profile + Navigation Surface Consistency)
+
+1. Applied shared visual utility alignment to remaining guest shell/profile surfaces:
+   - `hillside-next/components/layout/GuestChrome.tsx`
+   - `hillside-next/components/guest-profile/GuestProfileClient.tsx`
+2. UX consistency updates delivered:
+   - aligned top-right guest menu trigger with shared secondary CTA treatment
+   - aligned profile-menu summary card and repeated menu-item row styling via shared utility classes
+   - aligned guest profile security cards with shared soft-surface treatment
+3. Scope safety:
+   - no auth/session, wallet-linking logic, API contract, or policy behavior changes
+4. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+   - `npm run quality:gate` -> pass
+
+### G6 - Part 6 (Destructive Action + Status Pill Consistency)
+
+1. Extended shared guest utility classes for final action/status polish:
+   - `hillside-next/app/globals.css`
+   - added `guest-danger-cta`, `guest-danger-cta-sm`, and `guest-status-pill`
+2. Applied these utilities to remaining guest-critical controls:
+   - `hillside-next/components/my-bookings/MyBookingsClient.tsx`
+   - `hillside-next/components/shared/SyncCenter.tsx`
+3. UX consistency updates delivered:
+   - aligned destructive actions (cancel/discard) to one consistent danger-button language
+   - aligned table/list status chips to one consistent status-pill visual treatment
+   - removed final ad-hoc button styling branches in bookings detail/gallery/cancel actions
+4. Scope safety:
+   - no booking logic, sync behavior, API contract, or policy changes
+5. Validation:
+   - `npm run test:guest:e2e` -> pass (`7 passed`)
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+   - `npm run quality:gate` -> pass
+
+### G6 - Part 7 (Guest Navigation Pill Consistency)
+
+1. Extended shared guest utility classes for nav controls:
+   - `hillside-next/app/globals.css`
+   - added `guest-nav-pill` and `guest-nav-pill-sm`
+2. Applied shared nav-pill treatment to guest chrome navigation:
+   - `hillside-next/components/layout/GuestChrome.tsx`
+3. UX consistency updates delivered:
+   - aligned desktop top-nav item shape/active state with shared guest visual language
+   - aligned mobile bottom-nav chips with the same active/inactive hierarchy and tap target feel
+4. Scope safety:
+   - no routing/auth/session/wallet logic changes
+5. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+   - `npm run quality:gate` -> pass
+
+### G6 - Part 8 (Closeout Readiness and A11y Handoff)
+
+1. Added guest-nav accessibility enhancement:
+   - `hillside-next/components/layout/GuestChrome.tsx`
+   - active nav links now set `aria-current="page"` for clearer screen-reader route context
+2. Prepared G6-to-G5 handoff evidence scaffolding:
+   - `docs/re-architecture-core/17-guest-ux-acceptance-checklist.md`
+   - `docs/re-architecture-core/evidence/guest-ux/manual-run-template.md`
+   - `docs/re-architecture-core/evidence/guest-ux/README.md`
+3. Handoff improvements delivered:
+   - optional visual-regression quick checks added for nav/CTA/form/sync surfaces
+   - optional G6 screenshot naming guidance added to evidence pack
+4. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+   - `npm run quality:gate` -> pass
+
+### G7 - Part 1 (Automation Guardrails Scaffold)
+
+1. Added Playwright + axe smoke-automation scaffold for guest UX:
+   - `hillside-next/playwright.guest.config.mjs`
+   - `hillside-next/tests/guest-e2e/guest-smoke.spec.mjs`
+   - `hillside-next/tests/guest-e2e/guest-a11y.spec.mjs`
+2. Added runnable scripts:
+   - `package.json` -> `test:guest:e2e`
+   - `hillside-next/package.json` -> `test:e2e:guest`, `test:e2e:guest:headed`
+3. Added automation runbook:
+   - `docs/re-architecture-core/18-guest-ux-automation-guardrails.md`
+4. Scope safety:
+   - no business logic, API contract, or policy behavior changes
+5. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+   - `npm run quality:gate` -> pass

@@ -766,7 +766,7 @@ export function MyBookingsClient({
                 value={searchInput ?? ""}
                 onChange={(event) => setSearchInput(event.target.value)}
                 placeholder="Search reservation code, unit, or date"
-                className="h-11 w-full rounded-lg border border-slate-300 bg-white pl-9 pr-10 text-sm text-slate-700 outline-none ring-blue-200 transition focus:ring-2"
+                className="guest-field-control pl-9 pr-10 text-sm"
               />
               {searchInput ? (
                 <button
@@ -788,7 +788,7 @@ export function MyBookingsClient({
           <p>{TAB_HINTS[tab]}</p>
           <Link
             href="/guest/sync"
-            className="inline-flex items-center rounded-full border border-slate-300 bg-white px-2.5 py-1 font-semibold text-slate-700 transition hover:border-blue-300 hover:text-blue-700"
+            className="guest-secondary-cta guest-secondary-cta-sm rounded-full"
           >
             Open Sync Center
           </Link>
@@ -835,13 +835,13 @@ export function MyBookingsClient({
           <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
             <Link
               href="/book"
-              className="inline-flex h-9 items-center rounded-lg border border-blue-700 bg-blue-700 px-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800"
+              className="guest-primary-cta min-h-9 px-3 text-sm"
             >
               Book a stay
             </Link>
             <Link
               href="/tours"
-              className="inline-flex h-9 items-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:border-blue-300 hover:text-blue-700"
+              className="guest-secondary-cta min-h-9 px-3 text-sm"
             >
               Browse tours
             </Link>
@@ -872,7 +872,7 @@ export function MyBookingsClient({
               {canCancel ? (
                 <button
                   type="button"
-                  className="absolute right-4 top-4 rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-200"
+                  className="guest-danger-cta guest-danger-cta-sm absolute right-4 top-4 rounded-full"
                   onClick={() => setCancelFor(booking)}
                 >
                   Cancel booking
@@ -932,7 +932,7 @@ export function MyBookingsClient({
                 <button
                   type="button"
                   onClick={() => void openDetails(booking.reservation_id)}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-blue-300 hover:text-blue-700"
+                  className="guest-secondary-cta min-h-10 px-3 text-sm"
                 >
                   View details
                 </button>
@@ -940,7 +940,7 @@ export function MyBookingsClient({
                 {booking.status === "pending_payment" ? (
                   <button
                     type="button"
-                    className="rounded-lg border border-blue-700 bg-blue-700 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800"
+                    className="guest-primary-cta min-h-10 px-3 text-sm"
                     onClick={() => {
                       setSubmitFor(booking);
                       const total = Number(booking.total_amount ?? 0);
@@ -970,7 +970,7 @@ export function MyBookingsClient({
                       setQrError(null);
                       setQrSecondsLeft(0);
                     }}
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-blue-300 hover:text-blue-700"
+                    className="guest-secondary-cta min-h-10 px-3 text-sm"
                   >
                     Show QR
                   </button>
@@ -987,7 +987,7 @@ export function MyBookingsClient({
           <button
             type="button"
             onClick={() => void fetchBookings(nextCursor, "append")}
-            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-blue-300 hover:text-blue-700 disabled:opacity-60"
+            className="guest-secondary-cta px-4 text-sm"
             disabled={loadingMore}
           >
             {loadingMore ? "Loading..." : "Load more"}
@@ -1035,7 +1035,7 @@ export function MyBookingsClient({
                             <button
                               type="button"
                               onClick={() => openUnitGallery(row.unit ?? null)}
-                              className="mt-2 inline-flex h-8 items-center rounded-md border border-[var(--color-border)] bg-white px-3 text-xs font-semibold text-[var(--color-text)]"
+                              className="guest-secondary-cta guest-secondary-cta-sm mt-2 rounded-md"
                             >
                               View photos
                             </button>
@@ -1077,7 +1077,7 @@ export function MyBookingsClient({
               Next step after submit: payment status changes to <strong>For verification</strong> while admin reviews your proof.
             </p>
             <form className="grid gap-3" onSubmit={submitPayment}>
-              <label className="grid gap-1 text-sm text-slate-700">
+              <label className="guest-form-label">
                 Amount
                 <input
                   type="number"
@@ -1085,10 +1085,10 @@ export function MyBookingsClient({
                   value={submitAmount ?? ""}
                   onChange={(event) => setSubmitAmount(event.target.value)}
                   required
-                  className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 outline-none ring-blue-200 transition focus:ring-2"
+                  className="guest-field-control"
                 />
               </label>
-              <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+              <p className="guest-surface-soft px-3 py-2 text-xs text-slate-600">
                 Minimum payment now:{" "}
                 <strong className="text-slate-800">
                   {formatPeso(
@@ -1099,14 +1099,14 @@ export function MyBookingsClient({
                   <span className="ml-1 text-slate-500">({submitFor.deposit_rule_applied})</span>
                 ) : null}
               </p>
-              <label className="grid gap-1 text-sm text-slate-700">
+              <label className="guest-form-label">
                 Reference number
                 <input
                   type="text"
                   value={submitReferenceNo ?? ""}
                   onChange={(event) => setSubmitReferenceNo(event.target.value)}
                   placeholder="Reference number (optional)"
-                  className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 outline-none ring-blue-200 transition focus:ring-2"
+                  className="guest-field-control"
                 />
               </label>
 
@@ -1118,22 +1118,16 @@ export function MyBookingsClient({
                   <button
                     type="button"
                     onClick={() => setSubmitProofMode("file")}
-                    className={`rounded-lg border px-3 py-1.5 text-sm font-semibold ${
-                      submitProofMode === "file"
-                        ? "border-slate-900 bg-slate-900 text-white"
-                        : "border-slate-300 bg-white text-slate-700"
-                    }`}
+                    className="guest-toggle-pill"
+                    data-active={submitProofMode === "file"}
                   >
                     Upload file
                   </button>
                   <button
                     type="button"
                     onClick={() => setSubmitProofMode("url")}
-                    className={`rounded-lg border px-3 py-1.5 text-sm font-semibold ${
-                      submitProofMode === "url"
-                        ? "border-slate-900 bg-slate-900 text-white"
-                        : "border-slate-300 bg-white text-slate-700"
-                    }`}
+                    className="guest-toggle-pill"
+                    data-active={submitProofMode === "url"}
                   >
                     Proof URL
                   </button>
@@ -1144,7 +1138,7 @@ export function MyBookingsClient({
                     type="file"
                     accept="image/*,.pdf"
                     onChange={(event) => setSubmitProofFile(event.target.files?.[0] ?? null)}
-                    className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm"
+                    className="guest-field-control guest-field-control-file text-sm"
                   />
                 ) : (
                   <input
@@ -1153,7 +1147,7 @@ export function MyBookingsClient({
                     onChange={(event) => setSubmitProofUrl(event.target.value)}
                     placeholder="https://..."
                     required={submitProofMode === "url"}
-                    className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 outline-none ring-blue-200 transition focus:ring-2"
+                    className="guest-field-control"
                   />
                 )}
               </div>
@@ -1162,13 +1156,13 @@ export function MyBookingsClient({
                 <button
                   type="button"
                   onClick={closeSubmitModal}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700"
+                  className="guest-secondary-cta min-h-10 px-3 text-sm"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-lg border border-blue-700 bg-blue-700 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800 disabled:opacity-60"
+                  className="guest-primary-cta min-h-10 px-3 text-sm"
                   disabled={submitBusy}
                 >
                   {submitBusy ? "Submitting..." : "Submit"}
@@ -1238,7 +1232,7 @@ export function MyBookingsClient({
               <button
                 type="button"
                 onClick={() => void issueCheckinQr(qrFor.reservation_id)}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700"
+                className="guest-secondary-cta min-h-10 px-3 text-sm"
                 disabled={qrBusy || !networkOnline}
               >
                 {networkOnline ? "Refresh now" : "Reconnect to refresh"}
@@ -1246,7 +1240,7 @@ export function MyBookingsClient({
               <button
                 type="button"
                 onClick={() => void copyQrPayload()}
-                className="rounded-lg border border-slate-900 bg-slate-900 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-60"
+                className="guest-primary-cta min-h-10 px-3 text-sm"
                 disabled={!qrToken}
               >
                 Copy payload
@@ -1271,13 +1265,13 @@ export function MyBookingsClient({
               <button
                 type="button"
                 onClick={() => setCancelFor(null)}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700"
+                className="guest-secondary-cta min-h-10 px-3 text-sm"
               >
                 Keep booking
               </button>
               <button
                 type="button"
-                className="rounded-lg border border-red-600 bg-red-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                className="guest-danger-cta min-h-10 px-3 text-sm"
                 onClick={() => void confirmCancel()}
                 disabled={cancelBusy}
               >
@@ -1302,7 +1296,7 @@ export function MyBookingsClient({
                   setDetailGalleryOpen(false);
                   setDetailLightboxOpen(false);
                 }}
-                className="inline-flex h-10 items-center rounded-lg border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)]"
+                className="guest-secondary-cta min-h-10 px-3 text-sm"
               >
                 Close
               </button>

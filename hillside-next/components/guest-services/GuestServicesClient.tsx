@@ -257,7 +257,7 @@ export function GuestServicesClient({ accessToken }: Props) {
           </p>
           <Link
             href="/guest/sync"
-            className="inline-flex h-8 items-center rounded-full border border-[var(--color-border)] bg-white px-3 text-xs font-semibold text-[var(--color-text)]"
+            className="guest-secondary-cta guest-secondary-cta-sm rounded-full"
           >
             Open Sync Center
           </Link>
@@ -297,7 +297,7 @@ export function GuestServicesClient({ accessToken }: Props) {
               <p>{servicesError}</p>
               <button
                 type="button"
-                className="mt-2 inline-flex h-8 items-center rounded-lg border border-red-200 bg-white px-3 text-xs font-semibold text-red-700"
+                className="guest-secondary-cta guest-secondary-cta-sm mt-2 border-red-200 text-red-700 hover:border-red-300 hover:text-red-700"
                 onClick={() => void loadServices(category)}
               >
                 Retry
@@ -332,7 +332,7 @@ export function GuestServicesClient({ accessToken }: Props) {
                 <button
                   type="button"
                   onClick={() => setSelectedService(service)}
-                  className="mt-3 inline-flex h-10 items-center justify-center rounded-lg bg-[var(--color-primary)] px-3 text-sm font-semibold text-white"
+                  className="guest-primary-cta mt-3"
                 >
                   Request Service
                 </button>
@@ -360,7 +360,7 @@ export function GuestServicesClient({ accessToken }: Props) {
               <p>{requestsError}</p>
               <button
                 type="button"
-                className="mt-2 inline-flex h-8 items-center rounded-lg border border-red-200 bg-white px-3 text-xs font-semibold text-red-700"
+                className="guest-secondary-cta guest-secondary-cta-sm mt-2 border-red-200 text-red-700 hover:border-red-300 hover:text-red-700"
                 onClick={() => void loadRequests()}
               >
                 Retry
@@ -412,17 +412,17 @@ export function GuestServicesClient({ accessToken }: Props) {
           closeButtonClassName="border-[var(--color-border)] text-[var(--color-text)]"
         >
             <p className="mt-1 text-sm text-[var(--color-muted)]">{toPeso(Number(selectedService.price || 0))} per item</p>
-            <p className="mt-2 rounded-lg border border-[var(--color-border)] bg-slate-50 px-3 py-2 text-xs text-[var(--color-muted)]">
+            <p className="guest-surface-soft mt-2 px-3 py-2 text-xs text-[var(--color-muted)]">
               After submit: front desk receives this request immediately when online. If offline, it will auto-sync later.
             </p>
             <form className="mt-3 grid gap-3" onSubmit={submitRequest}>
-              <label className="grid gap-1 text-sm text-[var(--color-text)]">
+              <label className="guest-form-label">
                 Quantity
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setQuantity((value) => Math.max(1, value - 1))}
-                    className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-[var(--color-border)] bg-white text-lg font-semibold text-[var(--color-text)]"
+                    className="guest-stepper-btn"
                     aria-label="Decrease quantity"
                   >
                     -
@@ -432,27 +432,27 @@ export function GuestServicesClient({ accessToken }: Props) {
                     min={1}
                     value={quantity}
                     onChange={(event) => setQuantity(Math.max(1, Number(event.target.value || 1)))}
-                    className="h-11 w-24 rounded-lg border border-[var(--color-border)] bg-slate-50 px-3 text-center"
+                    className="guest-field-control w-24 text-center"
                   />
                   <button
                     type="button"
                     onClick={() => setQuantity((value) => value + 1)}
-                    className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-[var(--color-border)] bg-white text-lg font-semibold text-[var(--color-text)]"
+                    className="guest-stepper-btn"
                     aria-label="Increase quantity"
                   >
                     +
                   </button>
                 </div>
               </label>
-              <p className="rounded-lg border border-[var(--color-border)] bg-slate-50 px-3 py-2 text-xs text-[var(--color-muted)]">
+              <p className="guest-surface-soft px-3 py-2 text-xs text-[var(--color-muted)]">
                 Estimated total: <strong className="text-[var(--color-text)]">{toPeso(estimatedTotal)}</strong>
               </p>
-              <label className="grid gap-1 text-sm text-[var(--color-text)]">
+              <label className="guest-form-label">
                 Attach reservation (optional)
                 <select
                   value={reservationId}
                   onChange={(event) => setReservationId(event.target.value)}
-                  className="h-11 rounded-lg border border-[var(--color-border)] bg-slate-50 px-3"
+                  className="guest-field-control"
                 >
                   <option value="">None</option>
                   {reservations.map((item) => (
@@ -462,37 +462,37 @@ export function GuestServicesClient({ accessToken }: Props) {
                   ))}
                 </select>
               </label>
-              <label className="grid gap-1 text-sm text-[var(--color-text)]">
+              <label className="guest-form-label">
                 Preferred time (optional)
                 <input
                   type="datetime-local"
                   value={preferredTime}
                   onChange={(event) => setPreferredTime(event.target.value)}
-                  className="h-11 rounded-lg border border-[var(--color-border)] bg-slate-50 px-3"
+                  className="guest-field-control"
                 />
                 <span className="text-xs text-[var(--color-muted)]">Leave blank if you want the next available slot.</span>
               </label>
-              <label className="grid gap-1 text-sm text-[var(--color-text)]">
+              <label className="guest-form-label">
                 Notes (optional)
                 <textarea
                   value={notes}
                   onChange={(event) => setNotes(event.target.value)}
                   rows={3}
-                  className="rounded-lg border border-[var(--color-border)] bg-slate-50 px-3 py-2"
+                  className="guest-field-control h-auto min-h-[88px] py-2"
                 />
               </label>
               <div className="mt-1 flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setSelectedService(null)}
-                  className="inline-flex h-10 items-center justify-center rounded-lg border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)]"
+                  className="guest-secondary-cta"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitBusy}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[var(--color-cta)] px-3 text-sm font-semibold text-white disabled:opacity-60"
+                  className="guest-primary-cta"
                 >
                   {submitBusy ? (
                     <>

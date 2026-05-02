@@ -205,7 +205,7 @@ export function GuestProfileClient({ accessToken, initialEmail = null }: GuestPr
         </h2>
         <p className="mt-1 text-sm text-[var(--color-muted)]">Update your login email and password.</p>
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
-          <article className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white p-4">
+          <article className="guest-surface-soft p-4">
             <h3 className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-text)]">
               <Mail className="h-4 w-4 text-[var(--color-secondary)]" />
               Email
@@ -219,7 +219,7 @@ export function GuestProfileClient({ accessToken, initialEmail = null }: GuestPr
             </div>
           </article>
 
-          <article className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white p-4">
+          <article className="guest-surface-soft p-4">
             <h3 className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-text)]">
               <KeyRound className="h-4 w-4 text-[var(--color-secondary)]" />
               Change password

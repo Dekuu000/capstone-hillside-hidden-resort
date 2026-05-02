@@ -25,6 +25,9 @@ const navItems = [
   { label: "My Bookings", href: "/my-bookings" },
 ];
 
+const guestMenuItemClass =
+  "inline-flex h-10 w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 text-sm font-medium text-[var(--color-text)] transition hover:bg-slate-50 disabled:opacity-60";
+
 export function GuestChrome({ children, initialName = null, initialEmail = null }: GuestChromeProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -213,9 +216,9 @@ export function GuestChrome({ children, initialName = null, initialEmail = null 
                 <Link
                   key={item.label}
                   href={item.href}
-                  className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                    active ? "bg-[var(--color-primary)] text-white" : "text-[var(--color-text)] hover:bg-slate-100"
-                  }`}
+                  className="guest-nav-pill text-sm"
+                  data-active={active}
+                  aria-current={active ? "page" : undefined}
                 >
                   {item.label}
                 </Link>
@@ -228,7 +231,7 @@ export function GuestChrome({ children, initialName = null, initialEmail = null 
               <button
                 type="button"
                 onClick={() => setMenuOpen((value) => !value)}
-                className="inline-flex h-10 items-center gap-2 rounded-full border border-[var(--color-border)] bg-white px-2.5 text-[var(--color-text)] transition hover:bg-slate-50"
+                className="guest-secondary-cta guest-secondary-cta-sm rounded-full px-2.5 text-[var(--color-text)]"
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
                 aria-label="Open guest profile menu"
@@ -243,14 +246,14 @@ export function GuestChrome({ children, initialName = null, initialEmail = null 
                   role="menu"
                   className="absolute right-0 z-40 mt-2 w-64 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white p-2 shadow-[var(--shadow-md)]"
                 >
-                  <div className="mb-1 rounded-[var(--radius-sm)] bg-slate-50 px-3 py-2">
+                  <div className="guest-surface-soft mb-1 px-3 py-2">
                     <p className="truncate text-sm font-semibold text-[var(--color-text)]">{name || "Guest"}</p>
                     <p className="truncate text-xs text-[var(--color-muted)]">{email || "guest"}</p>
                   </div>
                   <Link
                     href="/guest/profile"
                     role="menuitem"
-                    className="inline-flex h-10 w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 text-sm font-medium text-[var(--color-text)] transition hover:bg-slate-50"
+                    className={guestMenuItemClass}
                   >
                     <UserRound className="h-4 w-4 text-[var(--color-muted)]" />
                     Profile settings
@@ -258,7 +261,7 @@ export function GuestChrome({ children, initialName = null, initialEmail = null 
                   <Link
                     href="/guest/my-stay"
                     role="menuitem"
-                    className="inline-flex h-10 w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 text-sm font-medium text-[var(--color-text)] transition hover:bg-slate-50"
+                    className={guestMenuItemClass}
                   >
                     <BedDouble className="h-4 w-4 text-[var(--color-muted)]" />
                     My stay
@@ -266,7 +269,7 @@ export function GuestChrome({ children, initialName = null, initialEmail = null 
                   <Link
                     href="/guest/sync"
                     role="menuitem"
-                    className="inline-flex h-10 w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 text-sm font-medium text-[var(--color-text)] transition hover:bg-slate-50"
+                    className={guestMenuItemClass}
                   >
                     <RefreshCcw className="h-4 w-4 text-[var(--color-muted)]" />
                     Sync center
@@ -285,7 +288,7 @@ export function GuestChrome({ children, initialName = null, initialEmail = null 
                         role="menuitem"
                         disabled={walletBusy}
                         onClick={() => void disconnectWallet()}
-                        className="inline-flex h-10 w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 text-sm font-medium text-[var(--color-text)] transition hover:bg-slate-50 disabled:opacity-60"
+                        className={guestMenuItemClass}
                       >
                         <Unplug className="h-4 w-4 text-[var(--color-muted)]" />
                         {walletBusy ? "Disconnecting..." : "Disconnect wallet"}
@@ -296,7 +299,7 @@ export function GuestChrome({ children, initialName = null, initialEmail = null 
                         role="menuitem"
                         disabled={walletBusy}
                         onClick={() => void connectWallet()}
-                        className="inline-flex h-10 w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 text-sm font-medium text-[var(--color-text)] transition hover:bg-slate-50 disabled:opacity-60"
+                        className={guestMenuItemClass}
                       >
                         <Plug className="h-4 w-4 text-[var(--color-muted)]" />
                         {walletBusy ? "Connecting..." : "Connect wallet"}
@@ -307,7 +310,7 @@ export function GuestChrome({ children, initialName = null, initialEmail = null 
                     type="button"
                     role="menuitem"
                     onClick={handleSignOut}
-                    className="inline-flex h-10 w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 text-sm font-medium text-[var(--color-text)] transition hover:bg-slate-50"
+                    className={guestMenuItemClass}
                   >
                     <LogOut className="h-4 w-4 text-[var(--color-muted)]" />
                     Sign out
@@ -331,9 +334,9 @@ export function GuestChrome({ children, initialName = null, initialEmail = null 
               <Link
                 key={item.label}
                 href={item.href}
-                className={`inline-flex h-10 min-w-fit items-center rounded-full px-3 text-xs font-semibold whitespace-nowrap ${
-                  active ? "text-[var(--color-primary)]" : "text-[var(--color-muted)]"
-                }`}
+                className="guest-nav-pill guest-nav-pill-sm min-w-fit whitespace-nowrap"
+                data-active={active}
+                aria-current={active ? "page" : undefined}
               >
                 {item.label}
               </Link>

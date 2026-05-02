@@ -24,6 +24,7 @@
     "lint": "npm --prefix hillside-next run lint && node scripts/run-api-python.mjs -m ruff check hillside-api/app hillside-api/tests",
     "typecheck": "npm --workspace hillside-next run typecheck && npm --workspace @hillside/shared run typecheck",
     "test:api": "node scripts/run-api-python.mjs -m pytest hillside-api/tests -q",
+    "test:guest:e2e": "npm --prefix hillside-next run test:e2e:guest",
     "test:contracts": "npm --prefix hillside-contracts run test",
     "test": "npm run test:api && npm run test:contracts",
     "quality:gate": "npm run lint && npm run typecheck && npm run test:api && npm run db:validate"
