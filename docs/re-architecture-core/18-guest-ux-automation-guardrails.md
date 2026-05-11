@@ -1,6 +1,6 @@
 # Guest UX Automation Guardrails
 
-Last updated: 2026-05-02  
+Last updated: 2026-05-11  
 Status: Scaffolded (ready to run after dependency install)
 
 ## Goal
@@ -18,6 +18,7 @@ Add lightweight automated checks so guest UX quality is not dependent on manual 
 1. `hillside-next/playwright.guest.config.mjs`
 2. `hillside-next/tests/guest-e2e/guest-smoke.spec.mjs`
 3. `hillside-next/tests/guest-e2e/guest-a11y.spec.mjs`
+4. `hillside-next/tests/guest-e2e/guest-modal-a11y.spec.mjs`
 
 ## Added Scripts
 
@@ -64,13 +65,22 @@ $env:GUEST_E2E_BASE_URL="http://127.0.0.1:3000"
 npm run test:guest:e2e
 ```
 
-## Latest Run (2026-05-02)
+Optional guest credentials for modal keyboard guardrail:
+
+```powershell
+$env:GUEST_E2E_EMAIL="admin@example.com"
+$env:GUEST_E2E_PASSWORD="password"
+npm run test:guest:e2e
+```
+
+## Latest Run (2026-05-11)
 
 1. Command: `npm run test:guest:e2e`
-2. Result: pass (`7 passed`)
+2. Result: pass (`9 passed`, `1 skipped` when optional auth credentials are not provided or no available unit cards are returned by current seed data)
 3. Coverage now includes:
    - guest route smoke checks (`/book`, `/tours`, `/guest/map`, `/my-bookings`, `/guest/sync`)
-   - guest accessibility smoke checks (axe on `/book`, `/tours`)
+   - guest accessibility smoke checks (axe on `/book`, `/tours`, `/guest/services`, `/guest/map`)
+   - modal keyboard/semantics guardrail (dialog semantics, focus trap, escape close, focus return)
 
 ## Notes
 

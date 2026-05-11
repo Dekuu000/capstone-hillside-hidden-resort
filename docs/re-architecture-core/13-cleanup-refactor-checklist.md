@@ -83,11 +83,29 @@ Baseline evidence:
 - [x] Batch C2 (part 8): expand shared client-side API error normalizer adoption across guest bookings list/details/payment/cancel/QR flows.
 - [x] Batch C2 (part 9): expand shared client-side API error normalizer adoption across auth entrypoints and shared unit-photo upload utility.
 - [x] Batch C2 (part 10): remove remaining ad-hoc `instanceof Error` fallback branches in check-in and booking edge handlers using shared/normalized error text flow.
+- [x] Batch C2 (part 11): adopt `safeGetSession` in `SessionAndApiStatus` to avoid direct auth session-read failures and keep status widget behavior consistent with hardened auth clients.
+- [x] Batch C2 (part 12): centralize auth session-cookie POST/DELETE helpers and remove repeated `/api/auth/session` fetch blocks from login/register and admin/guest logout flows.
+- [x] Batch C2 (part 13): centralize repeated user display/profile-name fallback logic in shared `userProfile` helper and reuse in login + guest/admin shells.
 - [x] Batch C3 (part 1): move admin AI center forecast/concierge/apply response contracts into `packages/shared` and remove local duplicate Zod/type definitions.
 - [x] Batch C3 (part 2): move QR public-key response contract into `packages/shared` and remove admin check-in inline response typing.
 - [x] Batch C3 (part 3): move API health response contract into `packages/shared` and replace local status widget typing with shared schema/type parsing.
 - [x] Batch C3 (part 4): move guest map amenity pack contract into `packages/shared` and remove local amenity-pin type/normalization duplication.
+- [x] Batch C3 (part 5): move guest pass verification response contract into `packages/shared` and remove guest-stay page local schema duplication.
 - [x] Batch C4 (part 1): standardize admin check-in/escrow loading placeholders to shared `Skeleton` component for consistent loading-state primitives.
+- [x] Batch C4 (part 13): add shared chain-explorer helper utilities and replace duplicated tx/token-link + hash formatting logic in guest stay and admin escrow/audit screens.
+- [x] Batch C4 (part 14): expand shared date-display helper usage across admin escrow/reconciliation/audit and sync-center views, removing repeated local date-format helpers.
+- [x] Batch C4 (part 15): centralize explorer-base tx URL/hash normalization and remove remaining admin blockchain/dashboard duplicate hash/date helpers.
+- [x] Batch C4 (part 16): remove remaining date-format helper duplication in admin reservations/payments/dashboard + AI insight surfaces by reusing shared `dateDisplay` and explorer helpers.
+- [x] Batch C4 (part 17): migrate admin check-in timezone-aware inline timestamps to shared `dateDisplay` formatting options to remove the last route-local date/time formatter duplication in check-in flows.
+- [x] Batch C4 (part 18): expand shared `dateDisplay` adoption to admin services, AI center freshness labels, escrow timestamp summaries, and reports header refresh stamp.
+- [x] Batch C4 (part 19): add shared `formatDateOnly(...)` helper and replace remaining repeated date-only formatter blocks across admin reservations/check-in/reports/resource-heatmap surfaces.
+- [x] Batch C4 (part 20): align guest my-bookings date rendering with shared `formatDateOnly(...)` helper to remove the last guest-local ISO date display formatter duplication.
+- [x] Batch C4 (part 21): eliminate remaining local PHP currency formatter duplication by reusing shared `formatCurrency` helper across guest stay and admin services/walk-in/reservations/payments/check-in/AI/dashboard/reports surfaces.
+- [x] Batch C4 (part 22): replace duplicated local “today/tomorrow ISO date” builders in admin walk-in and reports flows with shared `dateIso` helpers.
+- [x] Batch C4 (part 23): consolidate duplicated reservation-source/payment-state and proof-path normalization helpers into shared utility modules for admin reservations/payments flows.
+- [x] Batch C4 (part 24): add shared date-display presets (`formatDateWithYear`, `formatDateWithWeekday`) and remove remaining local wrapper functions in admin reservations/check-in and guest bookings views.
+- [x] Batch C4 (part 25): centralize reservation status badge metadata into shared helper and remove duplicated status-class maps/functions across admin reservations/payments and guest bookings views.
+- [x] Batch C4 (part 26): keep guest booking gallery trigger available when unit cards exist (even without image seed) so modal-accessibility guardrails validate dialog semantics against real booking cards.
 
 ### D) Database and Migration Hygiene
 
@@ -120,6 +138,8 @@ Baseline evidence:
 - [x] Batch E4 (part 1): add a consolidated `quality:gate` command to run lint/typecheck/API tests/migration validation together and verify it passes.
 - [x] Batch E4 (part 2): make API Python runner scripts cross-platform (`.venv` autodetect + `python` fallback) so quality gates are reusable on Linux CI and Windows dev.
 - [x] Batch E5 (part 1): refresh `docs/re-architecture-core/perf-report.md` with the latest cleanup quality-gate snapshot (`lint`, `typecheck`, `test:api`, `db:validate`).
+- [x] Batch E6 (part 1): harden guest Playwright guardrails for auth-gated routes and optional modal keyboard checks (credential-aware skip + stable auth-gate assertions).
+- [x] Batch E6 (part 2): stabilize guest modal guardrail login flow (hydration-safe credential input + explicit timeout budget) and clarify skip reason when no available unit cards are seeded.
 
 ### F) Documentation Alignment
 
@@ -129,6 +149,8 @@ Baseline evidence:
 - [ ] Attach final acceptance evidence links (CI run, smoke output, key screenshots).
 - [x] Batch F1 (part 1): align policy rollout runbook with split migration sequence and `db:validate` preflight.
 - [x] Batch F2 (part 1): sync cleanup status docs (`10-next-gap-closure-plan`, `13-cleanup-refactor-checklist`, `14-cleanup-baseline-inventory`) with current completed batches and remaining acceptance evidence.
+- [x] Batch F3 (part 1): align guest acceptance and automation docs with current G8 state (`9 passed`, `1 skipped` optional modal auth guardrail) and manual matrix completion evidence.
+- [x] Batch F4 (part 1): refresh root `README.md` run commands for current workflow (`db:start`, `test:guest:e2e`, `quality:gate`, optional guest E2E credentials).
 
 ## Definition of Done
 

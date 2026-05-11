@@ -28,7 +28,7 @@ import { getApiErrorMessage } from "../../lib/apiError";
 import { addDaysToIsoDate, todayPlusLocalIsoDate } from "../../lib/dateIso";
 import { formatPhpPeso as toPeso } from "../../lib/formatCurrency";
 import { useNetworkOnline } from "../../lib/hooks/useNetworkOnline";
-import { getSupabaseBrowserClient } from "../../lib/supabase";
+import { getSupabaseBrowserClient, safeGetSession } from "../../lib/supabase";
 import { PageHeader } from "../layout/PageHeader";
 import { FancyDatePicker } from "../shared/FancyDatePicker";
 import { ImageLightbox } from "../shared/ImageLightbox";
@@ -94,10 +94,10 @@ export function BookNowClient({
     }
     let mounted = true;
     const supabase = getSupabaseBrowserClient();
-    supabase.auth.getSession().then(({ data }) => {
+    void safeGetSession().then(({ session }) => {
       if (!mounted) return;
-      setToken(data.session?.access_token ?? null);
-      setSessionEmail(data.session?.user.email ?? null);
+      setToken(session?.access_token ?? null);
+      setSessionEmail(session?.user.email ?? null);
       setSessionLoading(false);
     });
     const { data: authSub } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -338,23 +338,25 @@ export function BookNowClient({
         }
       />
 
-      {!networkOnline ? (
-        <SyncAlertBanner
-          className="mb-4"
-          message="You are offline. New bookings will be saved locally and synced when internet returns."
-          showSyncCta
-        />
-      ) : null}
-      {successMessage ? (
-        <SyncAlertBanner
-          className="mb-4"
-          message={successMessage}
-          tone={successHasSyncCta ? "warning" : "success"}
-          showSyncCta={successHasSyncCta}
-          role="status"
-        />
-      ) : null}
-      {submitError ? <p className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{submitError}</p> : null}
+      <div className="mb-4 min-h-[3.25rem]">
+        {submitError ? (
+          <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{submitError}</p>
+        ) : null}
+        {!submitError && successMessage ? (
+          <SyncAlertBanner
+            message={successMessage}
+            tone={successHasSyncCta ? "warning" : "success"}
+            showSyncCta={successHasSyncCta}
+            role="status"
+          />
+        ) : null}
+        {!submitError && !successMessage && !networkOnline ? (
+          <SyncAlertBanner
+            message="You are offline. New bookings will be saved locally and synced when internet returns."
+            showSyncCta
+          />
+        ) : null}
+      </div>
       {latestAiRecommendation ? (
         <div className="mb-5 rounded-[var(--radius-md)] border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900 shadow-[var(--shadow-sm)]">
           <p className="font-semibold">
@@ -451,7 +453,10 @@ export function BookNowClient({
             ) : null}
           </article>
 
-          <article className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-sm)]">
+          <article
+            className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-sm)]"
+            aria-busy={unitsLoading}
+          >
             <div className="mb-4 flex items-center justify-between">
               <h2 className="inline-flex items-center gap-2 text-lg font-semibold text-[var(--color-text)]">
                 <Moon className="h-5 w-5 text-[var(--color-secondary)]" />
@@ -489,92 +494,91 @@ export function BookNowClient({
                 </button>
               </div>
             ) : null}
-            {unitsLoading ? (
-              <div className="mb-2 grid gap-3 md:grid-cols-2">
-                {Array.from({ length: 4 }).map((_, idx) => (
-                  <div key={`loading-unit-${idx}`} className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white p-4">
-                    <div className="skeleton h-36 w-full rounded-[var(--radius-sm)]" />
-                    <div className="mt-3 skeleton h-5 w-40" />
-                    <div className="mt-2 skeleton h-4 w-28" />
-                    <div className="mt-3 skeleton h-4 w-full" />
-                  </div>
-                ))}
-              </div>
-            ) : null}
-            {!unitsLoading && units.length === 0 ? (
-              <div className="rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-slate-50 p-4 text-sm text-[var(--color-muted)]">
-                <p className="font-medium text-[var(--color-text)]">No units available for selected dates.</p>
-                <p className="mt-1">Try adjusting your check-in and check-out dates to see more options.</p>
-              </div>
-            ) : null}
-
-            <div className="grid gap-4 md:grid-cols-2">
-              {units.map((unit) => {
-                const selected = selectedUnitIds.includes(unit.unit_id);
-                const normalizedImages = normalizeUnitImageUrls(unit.image_urls, unit.image_url);
-                const normalizedThumbs = normalizeUnitThumbUrls(normalizedImages, unit.image_thumb_urls ?? null);
-                const previewImage = normalizedThumbs[0] || normalizedImages[0] || "";
-                return (
-                  <article
-                    key={unit.unit_id}
-                    onClick={() => toggleUnit(unit.unit_id)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        toggleUnit(unit.unit_id);
-                      }
-                    }}
-                    role="button"
-                    tabIndex={0}
-                    className={`w-full overflow-hidden rounded-[var(--radius-md)] border-2 text-left transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] ${
-                      selected
-                        ? "border-[var(--color-primary)] bg-blue-50/70"
-                        : "border-[var(--color-border)] bg-white hover:border-slate-300"
-                    }`}
-                  >
-                    {previewImage ? (
-                      <Image
-                        src={previewImage}
-                        alt={unit.name}
-                        width={640}
-                        height={256}
-                        sizes="(min-width: 1024px) 40vw, 100vw"
-                        className="h-44 w-full object-cover"
-                      />
-                    ) : null}
-                    <div className="p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <h3 className="font-semibold text-slate-900">{unit.name}</h3>
-                          <p className="text-sm text-slate-500 capitalize">
-                            {unit.type} • Up to {unit.capacity} guests
-                          </p>
-                          <p className="text-xs text-slate-500">
-                            {unit.room_number ? `Room ${unit.room_number}` : unit.unit_code || "No unit code"}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold text-[var(--color-text)]">{toPeso(Number(unit.base_price || 0))}</p>
-                          <p className="text-xs text-slate-500">per night</p>
-                        </div>
-                      </div>
-                      {unit.description ? <p className="mt-2 text-sm text-slate-600">{unit.description}</p> : null}
-                      {unit.amenities?.length ? (
-                        <div className="mt-2 flex flex-wrap gap-1">
-                          {unit.amenities.slice(0, 5).map((amenity) => (
-                            <span
-                              key={amenity}
-                              className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600"
-                            >
-                              {amenity}
-                            </span>
-                          ))}
-                        </div>
+            <div className="min-h-[22rem]">
+              {unitsLoading ? (
+                <div className="mb-2 grid gap-3 md:grid-cols-2">
+                  {Array.from({ length: 4 }).map((_, idx) => (
+                    <div key={`loading-unit-${idx}`} className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white p-4">
+                      <div className="skeleton h-36 w-full rounded-[var(--radius-sm)]" />
+                      <div className="mt-3 skeleton h-5 w-40" />
+                      <div className="mt-2 skeleton h-4 w-28" />
+                      <div className="mt-3 skeleton h-4 w-full" />
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+              {!unitsLoading && units.length === 0 ? (
+                <div className="rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-slate-50 p-4 text-sm text-[var(--color-muted)]">
+                  <p className="font-medium text-[var(--color-text)]">No units available for selected dates.</p>
+                  <p className="mt-1">Try adjusting your check-in and check-out dates to see more options.</p>
+                </div>
+              ) : null}
+              <div className="grid gap-4 md:grid-cols-2">
+                {units.map((unit) => {
+                  const selected = selectedUnitIds.includes(unit.unit_id);
+                  const normalizedImages = normalizeUnitImageUrls(unit.image_urls, unit.image_url);
+                  const normalizedThumbs = normalizeUnitThumbUrls(normalizedImages, unit.image_thumb_urls ?? null);
+                  const previewImage = normalizedThumbs[0] || normalizedImages[0] || "";
+                  return (
+                    <article
+                      key={unit.unit_id}
+                      onClick={() => toggleUnit(unit.unit_id)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          toggleUnit(unit.unit_id);
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      className={`w-full overflow-hidden rounded-[var(--radius-md)] border-2 text-left transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] ${
+                        selected
+                          ? "border-[var(--color-primary)] bg-blue-50/70"
+                          : "border-[var(--color-border)] bg-white hover:border-slate-300"
+                      }`}
+                    >
+                      {previewImage ? (
+                        <Image
+                          src={previewImage}
+                          alt={unit.name}
+                          width={640}
+                          height={256}
+                          sizes="(min-width: 1024px) 40vw, 100vw"
+                          className="h-44 w-full object-cover"
+                        />
                       ) : null}
-                      <div className="mt-3 flex items-center justify-between gap-2">
-                        <span className="text-xs text-slate-500">{selected ? "Selected (tap to remove)" : "Tap to select"}</span>
-                        <div className="flex items-center gap-2">
-                          {normalizedImages.length > 0 ? (
+                      <div className="p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <h3 className="font-semibold text-slate-900">{unit.name}</h3>
+                            <p className="text-sm text-slate-500 capitalize">
+                              {unit.type} • Up to {unit.capacity} guests
+                            </p>
+                            <p className="text-xs text-slate-500">
+                              {unit.room_number ? `Room ${unit.room_number}` : unit.unit_code || "No unit code"}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold text-[var(--color-text)]">{toPeso(Number(unit.base_price || 0))}</p>
+                            <p className="text-xs text-slate-500">per night</p>
+                          </div>
+                        </div>
+                        {unit.description ? <p className="mt-2 text-sm text-slate-600">{unit.description}</p> : null}
+                        {unit.amenities?.length ? (
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {unit.amenities.slice(0, 5).map((amenity) => (
+                              <span
+                                key={amenity}
+                                className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600"
+                              >
+                                {amenity}
+                              </span>
+                            ))}
+                          </div>
+                        ) : null}
+                        <div className="mt-3 flex items-center justify-between gap-2">
+                          <span className="text-xs text-slate-500">{selected ? "Selected (tap to remove)" : "Tap to select"}</span>
+                          <div className="flex items-center gap-2">
                             <button
                               type="button"
                               onClick={(event) => {
@@ -586,14 +590,14 @@ export function BookNowClient({
                             >
                               View photos
                             </button>
-                          ) : null}
-                          {selected ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : null}
+                            {selected ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : null}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </article>
-                );
-              })}
+                    </article>
+                  );
+                })}
+              </div>
             </div>
           </article>
         </div>

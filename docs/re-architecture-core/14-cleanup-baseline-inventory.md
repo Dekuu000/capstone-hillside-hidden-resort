@@ -1571,3 +1571,337 @@ Remaining A4 blocker:
    - accessibility manual spot-check rows remain pending
 4. Outcome:
    - automation baseline is green, but formal G5/P4 closure is still blocked on manual evidence completion.
+
+## Batch E6 Execution Update (Part 1 Complete - Guest Guardrail Stability Hardening)
+
+1. Hardened guest Playwright accessibility guardrails for mixed local auth states:
+   - `hillside-next/tests/guest-e2e/guest-a11y.spec.mjs`
+   - auth-gated route assertions now accept either page content or login-gate resolution for `/guest/services`.
+2. Added credential-aware optional modal keyboard/semantics guardrail:
+   - `hillside-next/tests/guest-e2e/guest-modal-a11y.spec.mjs`
+   - supports optional env vars:
+     - `GUEST_E2E_EMAIL`
+     - `GUEST_E2E_PASSWORD`
+   - gracefully skips when auth cannot be established in local seed/session state.
+3. Updated guardrail runbook:
+   - `docs/re-architecture-core/18-guest-ux-automation-guardrails.md`
+4. Validation:
+   - `npm run test:guest:e2e` -> pass (`9 passed`, `1 skipped`)
+   - `npm run quality:gate` -> pass
+
+## Batch F3 Execution Update (Part 1 Complete - Guest UX Docs Alignment)
+
+1. Updated status/acceptance docs to match current evidence state:
+   - `docs/re-architecture-core/10-next-gap-closure-plan.md`
+   - `docs/re-architecture-core/17-guest-ux-acceptance-checklist.md`
+   - `docs/re-architecture-core/evidence/guest-ux/manual-run-20260425-2108.md`
+2. Captured current automation reality in docs:
+   - `test:guest:e2e` baseline is green with optional modal-auth guardrail skip (`9 passed`, `1 skipped`).
+3. Updated cleanup checklist tracking:
+   - `docs/re-architecture-core/13-cleanup-refactor-checklist.md` (`Batch F3` marked complete).
+
+## Batch F4 Execution Update (Part 1 Complete - Root Runbook Refresh)
+
+1. Updated root developer runbook in:
+   - `README.md`
+2. Alignment updates captured:
+   - added current quality workflow commands (`test:guest:e2e`, `quality:gate`)
+   - added local stack quickstart (`db:start`, `dev:api`, `dev:next`)
+   - added migration-validation commands (`db:reset`, `db:validate`)
+   - added optional Playwright guest-auth environment variable usage for modal guardrail coverage
+3. Updated checklist tracking:
+   - `docs/re-architecture-core/13-cleanup-refactor-checklist.md` (`Batch F4` marked complete).
+
+## Batch C3 Execution Update (Part 5 Complete - Guest Pass Contract Consolidation)
+
+1. Added shared guest pass verification contract in:
+   - `packages/shared/src/schemas.ts` (`guestPassVerificationResponseSchema`)
+   - `packages/shared/src/types.ts` (`GuestPassVerificationResponse`)
+2. Removed local duplicate schema definition from guest stay page:
+   - `hillside-next/app/guest/my-stay/page.tsx`
+   - now consumes shared schema/type via `fetchServerApiData` parsing.
+3. Validation:
+   - `npm run quality:gate` -> pass
+
+## Batch C2 Execution Update (Part 11 Complete - Session Status Auth Hardening)
+
+1. Updated session-status widget auth read path:
+   - `hillside-next/components/SessionAndApiStatus.tsx`
+2. Cleanup details:
+   - replaced direct `supabase.auth.getSession()` call flow with shared `safeGetSession()` helper
+   - aligned error normalization behavior with existing guest/admin auth hardening work
+3. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+
+## Batch C4 Execution Update (Part 13 Complete - Chain Explorer Helper Reuse)
+
+1. Added shared chain explorer helper utilities:
+   - `hillside-next/lib/chainExplorer.ts`
+   - includes shared tx/token explorer URL builders and short hash formatter.
+2. Replaced duplicated local explorer/hash helpers in:
+   - `hillside-next/app/guest/my-stay/page.tsx`
+   - `hillside-next/components/admin-escrow/AdminEscrowTableClient.tsx`
+   - `hillside-next/app/admin/audit/page.tsx`
+3. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+
+## Batch C2 Execution Update (Part 12 Complete - Auth Session Cookie Helper Reuse)
+
+1. Added shared auth session-cookie helper module:
+   - `hillside-next/lib/authSessionCookie.ts`
+   - `setServerSessionCookie(...)`
+   - `clearServerSessionCookie()`
+2. Replaced repeated `/api/auth/session` fetch blocks in:
+   - `hillside-next/app/login/page.tsx`
+   - `hillside-next/app/register/page.tsx`
+   - `hillside-next/components/layout/GuestChrome.tsx`
+   - `hillside-next/components/layout/AdminChrome.tsx`
+3. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+
+## Batch C4 Execution Update (Part 14 Complete - Date Display Helper Reuse Expansion)
+
+1. Extended shared date display utility:
+   - `hillside-next/lib/dateDisplay.ts`
+   - added `formatDateTime(...)` with optional locale/format options while preserving existing `formatLocalDateTime` usage.
+2. Replaced repeated local date-format helper blocks in:
+   - `hillside-next/components/admin-escrow/AdminEscrowTableClient.tsx`
+   - `hillside-next/components/admin-blockchain/EscrowReconciliationPanel.tsx`
+   - `hillside-next/app/admin/audit/page.tsx`
+   - `hillside-next/components/shared/SyncCenter.tsx`
+3. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+
+## Batch C2 Execution Update (Part 13 Complete - User Profile Helper Reuse)
+
+1. Added shared user-profile helper module:
+   - `hillside-next/lib/userProfile.ts`
+   - helpers:
+     - `resolveUserDisplayName(...)`
+     - `resolveUserProfileName(...)`
+2. Replaced repeated user metadata/email fallback logic in:
+   - `hillside-next/components/layout/GuestChrome.tsx`
+   - `hillside-next/components/layout/AdminChrome.tsx`
+   - `hillside-next/app/login/page.tsx` (profile row upsert display name)
+3. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+
+## Batch C4 Execution Update (Part 15 Complete - Explorer/Hash Helper Reuse Expansion)
+
+1. Extended shared chain explorer utilities:
+   - `hillside-next/lib/chainExplorer.ts`
+   - added:
+     - `normalizeTxHash(...)`
+     - `buildTxExplorerUrlFromBase(...)`
+2. Removed remaining duplicated tx-hash/date helper blocks from admin blockchain/dashboard surfaces:
+   - `hillside-next/components/admin-blockchain/ContractStatusPanel.tsx`
+   - `hillside-next/components/admin-dashboard/LedgerExplorerPanel.tsx`
+   - `hillside-next/components/admin-blockchain/AuditLogsPanel.tsx`
+3. Reuse outcomes:
+   - consistent tx hash normalization for explorer links using shared helper
+   - consistent tx short-hash rendering using shared `shortHash(...)`
+   - consistent date formatting via shared `formatDateTime(...)`
+4. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+
+## Batch C4 Execution Update (Part 16 Complete - Date Display Reuse Expansion)
+
+1. Removed remaining repeated date-time formatting helpers in admin reservations/payments and dashboard/AI insight surfaces by reusing shared utilities:
+   - `hillside-next/components/admin-payments/AdminPaymentsClient.tsx`
+   - `hillside-next/components/admin-reservations/AdminReservationsClient.tsx`
+   - `hillside-next/components/admin-reservations/ReservationDetailDrawer.tsx`
+   - `hillside-next/components/admin-dashboard/RoomInventorySyncPanel.tsx`
+   - `hillside-next/components/admin-dashboard/ResortSnapshotPanel.tsx`
+   - `hillside-next/components/ai/AIPricingInsightCard.tsx`
+2. Expanded shared explorer helper reuse in reservation details:
+   - replaced local chain explorer base-url builder with shared `buildTxExplorerUrl(...)`.
+3. Reuse outcomes:
+   - consistent date fallback handling via shared `formatDateTime(...)`/`formatCachedAt(...)`
+   - reduced local helper duplication across high-traffic admin review screens
+4. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+
+## Batch C4 Execution Update (Part 17 Complete - Check-in Date/Time Helper Reuse)
+
+1. Replaced remaining admin check-in route-local date/time formatter helpers with shared `dateDisplay` usage:
+   - `hillside-next/components/admin-checkin/AdminCheckinClient.tsx`
+2. Refactor details:
+   - removed local `formatDateTimeInline(...)` and `formatTimeInline(...)`
+   - reused shared `formatDateTime(...)` with explicit Manila timezone format options for:
+     - offline pack freshness labels
+     - queue item timestamps
+     - token-expiry fallback display
+3. Behavior safety:
+   - preserved existing locale/timezone output intent (`en-US`, `Asia/Manila`) while reducing duplication.
+4. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+
+## Batch C4 Execution Update (Part 18 Complete - Date Display Adoption Expansion)
+
+1. Expanded shared date formatting usage in remaining admin surfaces:
+   - `hillside-next/components/shared/DataFreshnessBadge.tsx`
+   - `hillside-next/components/admin-services/AdminServicesClient.tsx`
+   - `hillside-next/components/admin-ai/AdminAiCenterClient.tsx`
+   - `hillside-next/app/admin/escrow/page.tsx`
+   - `hillside-next/app/admin/reports/page.tsx`
+2. Reuse outcomes:
+   - consistent sync/freshness time labels via `formatDateTime(...)`
+   - reduced repeated direct `Date(...).toLocaleString()/toLocaleTimeString()` calls
+   - preserved existing UI behavior while standardizing fallback formatting path
+3. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+
+## Batch C4 Execution Update (Part 19 Complete - Date-Only Helper Reuse)
+
+1. Extended shared date utility surface:
+   - `hillside-next/lib/dateDisplay.ts`
+   - added `formatDateOnly(...)` with safe ISO-date local parsing behavior.
+2. Replaced remaining date-only formatter duplication in:
+   - `hillside-next/components/admin-reservations/AdminReservationsClient.tsx`
+   - `hillside-next/components/admin-reservations/ReservationDetailDrawer.tsx`
+   - `hillside-next/components/admin-checkin/AdminCheckinClient.tsx`
+   - `hillside-next/components/admin-dashboard/ResourceHeatmapPanel.tsx`
+   - `hillside-next/app/admin/reports/page.tsx`
+3. Reuse outcomes:
+   - consistent date-only fallback behavior and locale formatting
+   - fewer route-local date helper functions across admin reporting and operations surfaces
+4. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+
+## Batch C4 Execution Update (Part 20 Complete - Guest Date Helper Alignment)
+
+1. Extended guest-side date-only rendering reuse:
+   - `hillside-next/components/my-bookings/MyBookingsClient.tsx`
+2. Refactor details:
+   - replaced local `formatDate(...)` ISO date parsing/format block with shared `formatDateOnly(...)` usage.
+3. Reuse outcomes:
+   - consistent guest booking date display path with shared date utility behavior
+   - removed remaining guest-local duplicated date-only formatter logic
+4. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+
+## Batch C4 Execution Update (Part 21 Complete - Currency Helper Reuse Expansion)
+
+1. Removed remaining local PHP currency formatter helper duplication and reused shared `formatCurrency` utility:
+   - `hillside-next/app/guest/my-stay/page.tsx`
+   - `hillside-next/app/admin/reports/page.tsx`
+   - `hillside-next/components/admin-services/AdminServicesClient.tsx`
+   - `hillside-next/components/admin-walkin-tour/AdminWalkInTourClient.tsx`
+   - `hillside-next/components/admin-walkin-stay/AdminWalkInStayClient.tsx`
+   - `hillside-next/components/admin-reservations/AdminReservationsClient.tsx`
+   - `hillside-next/components/admin-reservations/ReservationDetailDrawer.tsx`
+   - `hillside-next/components/admin-dashboard/ResortSnapshotPanel.tsx`
+   - `hillside-next/components/admin-units/AdminUnitsClient.tsx`
+   - `hillside-next/components/admin-checkin/AdminCheckinClient.tsx`
+   - `hillside-next/components/admin-payments/AdminPaymentsClient.tsx`
+   - `hillside-next/components/admin-ai/AdminAiCenterClient.tsx`
+   - `hillside-next/components/ai/AIPricingInsightCard.tsx`
+2. Reuse outcomes:
+   - single-source PHP amount formatting behavior via `formatPhpPeso(...)`
+   - reduced repeated `Intl.NumberFormat("en-PH", ...)` boilerplate in admin and guest surfaces
+3. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+
+## Batch C4 Execution Update (Part 22 Complete - ISO Date Helper Reuse Expansion)
+
+1. Replaced duplicated local "today/tomorrow ISO date" builders with shared `dateIso` helpers:
+   - `hillside-next/components/admin-walkin-tour/AdminWalkInTourClient.tsx`
+   - `hillside-next/components/admin-walkin-stay/AdminWalkInStayClient.tsx`
+   - `hillside-next/app/admin/reports/page.tsx`
+2. Reuse outcomes:
+   - standardized local ISO-date defaults via `todayPlusLocalIsoDate(...)`
+   - removed repeated per-file date math/format boilerplate
+3. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+
+## Batch C4 Execution Update (Part 23 Complete - Reservation/Proof Helper Consolidation)
+
+1. Added shared frontend utility modules:
+   - `hillside-next/lib/reservationView.ts`
+     - `getReservationSource(...)`
+     - `getReservationPaymentState(...)`
+   - `hillside-next/lib/paymentProof.ts`
+     - `normalizePaymentProofPath(...)`
+2. Replaced duplicated helper logic in:
+   - `hillside-next/components/admin-reservations/AdminReservationsClient.tsx`
+   - `hillside-next/components/admin-reservations/ReservationDetailDrawer.tsx`
+   - `hillside-next/components/admin-payments/AdminPaymentsClient.tsx`
+3. Reuse outcomes:
+   - single-source reservation source + payment-state derivation for admin reservation views
+   - single-source payment-proof path normalization for signed URL access
+4. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+
+## Batch C4 Execution Update (Part 24 Complete - Date Display Preset Reuse)
+
+1. Extended shared date-display helpers:
+   - `hillside-next/lib/dateDisplay.ts`
+   - added:
+     - `formatDateWithYear(...)`
+     - `formatDateWithWeekday(...)`
+2. Removed remaining local date wrapper functions and switched to shared presets in:
+   - `hillside-next/components/admin-reservations/AdminReservationsClient.tsx`
+   - `hillside-next/components/admin-reservations/ReservationDetailDrawer.tsx`
+   - `hillside-next/components/admin-checkin/AdminCheckinClient.tsx`
+   - `hillside-next/components/my-bookings/MyBookingsClient.tsx`
+3. Reuse outcomes:
+   - consistent date-only display formatting across guest/admin reservation views
+   - reduced repeated `formatDate(...)` local helper boilerplate
+4. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+
+## Batch C4 Execution Update (Part 25 Complete - Reservation Status Helper Reuse)
+
+1. Added shared reservation-status metadata helper:
+   - `hillside-next/lib/reservationStatus.ts`
+2. Removed duplicate status-label/class maps and local status helper functions in:
+   - `hillside-next/components/admin-payments/AdminPaymentsClient.tsx`
+   - `hillside-next/components/admin-reservations/AdminReservationsClient.tsx`
+   - `hillside-next/components/admin-reservations/ReservationDetailDrawer.tsx`
+   - `hillside-next/components/my-bookings/MyBookingsClient.tsx`
+3. Reuse outcomes:
+   - consistent reservation status labels/badge classes across admin and guest surfaces
+   - reduced duplicated status styling logic in high-traffic booking/payment views
+4. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+
+## Batch C4 Execution Update (Part 26 Complete - Guest Gallery Trigger Stability)
+
+1. Kept guest booking gallery action available for seeded unit cards regardless of image presence:
+   - `hillside-next/components/book/BookNowClient.tsx`
+2. Behavior impact:
+   - unit cards still open the same gallery modal
+   - when no media is available, modal shows existing empty-state copy instead of hiding the trigger
+3. Reuse outcomes:
+   - removes test/data coupling to image seed for modal semantics checks when units are available
+   - keeps guest interaction affordance consistent per unit card
+4. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+
+## Batch E6 Execution Update (Part 2 Complete - Modal Guardrail Stability)
+
+1. Hardened modal a11y guardrail login mechanics:
+   - `hillside-next/tests/guest-e2e/guest-modal-a11y.spec.mjs`
+2. Test-stability updates:
+   - hydration-safe credential entry checks (`pressSequentially` + `toHaveValue`)
+   - explicit modal-test timeout budget for auth + modal flow (`90_000ms`)
+   - clarified skip reason text to indicate missing available unit seed instead of missing image seed
+3. Validation:
+   - `npm run test:guest:e2e` -> pass (`9 passed`, `1 skipped` when no available unit cards are returned by current seed data)
