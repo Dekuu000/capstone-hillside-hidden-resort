@@ -1,6 +1,6 @@
 # Next Gap Closure Plan (Post-Defense)
 
-Last updated: 2026-04-25
+Last updated: 2026-05-09
 Context: Core guide-compliance scope (A-D) remains complete. This plan now reflects actual implementation status, closes the P2 design requirement, and locks the post-phase cleanup track.
 
 ## Prioritized Workstream
@@ -15,7 +15,7 @@ Context: Core guide-compliance scope (A-D) remains complete. This plan now refle
 | P1 | Dashboard module completion (resource heatmap) | Cleaning/staff heatmap panel in admin | 1.5-2 days | Completed (2026-04-18) | Heatmap panel rendered from reservation/check-in density context |
 | P2 | Security & privacy roadmap (ZKP) | Design RFC only (not implementation) | 0.5-1 day | Completed (2026-04-18) | Approved design note with constraints, threat model, phased rollout |
 | P3 | Post-phase code cleanup + refactor | Cleaner, easier-to-maintain and scalable codebase | 2-4 days | In progress | Cleanup checklist executed with green lint/tests and documented removals |
-| P4 | Guest UI/UX optimization | Improve guest journey clarity, mobile usability, and offline confidence | 1-2 days | In progress (2026-04-25) | Guest UX plan executed with evidence-backed improvements across booking/stay/map/services |
+| P4 | Guest UI/UX optimization | Improve guest journey clarity, mobile usability, and offline confidence | 1-2 days | In progress (2026-05-09) | Guest UX plan executed with evidence-backed improvements across booking/stay/map/services + guardrail automation |
 
 ## Execution Order
 
@@ -97,8 +97,7 @@ This phase is intentionally scheduled after completion of P0-P2.
 ## Immediate Next Step
 
 1. Continue Phase 4 cleanup/refactor using `docs/re-architecture-core/13-cleanup-refactor-checklist.md` with incremental commits.
-2. Complete remaining acceptance evidence:
-   - manual smoke output bundle (reservation/payment/QR/blockchain/AI/sync)
-   - CI evidence link/log for `quality:gate` parity
-3. Start guest UX optimization track using `docs/re-architecture-core/16-guest-ux-improvement-plan.md` (G1 audit backlog first).
-4. Close remaining operational/documentation drift discovered during cleanup.
+2. Complete Documentation Alignment batch items in Phase 4 (runbooks/status docs/evidence links).
+3. Keep `quality:gate` + `test:guest:e2e` as recurring acceptance checks for each cleanup slice.
+4. Finish remaining cleanup hotspots in checklist workstreams B/C/F using small, test-backed batches.
+5. Close remaining optional guest modal auth guardrail skip by providing stable test credentials and at least one available seeded unit card in local dev.
