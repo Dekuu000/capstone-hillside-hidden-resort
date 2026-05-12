@@ -73,10 +73,10 @@ $env:GUEST_E2E_PASSWORD="password"
 npm run test:guest:e2e
 ```
 
-## Latest Run (2026-05-11)
+## Latest Run (2026-05-12)
 
 1. Command: `npm run test:guest:e2e`
-2. Result: pass (`9 passed`, `1 skipped` when optional auth credentials are not provided or no available unit cards are returned by current seed data)
+2. Result: pass (`10 passed` with guest credentials set; without credentials modal guardrail remains optional and can skip)
 3. Coverage now includes:
    - guest route smoke checks (`/book`, `/tours`, `/guest/map`, `/my-bookings`, `/guest/sync`)
    - guest accessibility smoke checks (axe on `/book`, `/tours`, `/guest/services`, `/guest/map`)

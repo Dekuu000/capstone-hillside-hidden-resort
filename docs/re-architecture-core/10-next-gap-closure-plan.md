@@ -100,4 +100,4 @@ This phase is intentionally scheduled after completion of P0-P2.
 2. Complete Documentation Alignment batch items in Phase 4 (runbooks/status docs/evidence links).
 3. Keep `quality:gate` + `test:guest:e2e` as recurring acceptance checks for each cleanup slice.
 4. Finish remaining cleanup hotspots in checklist workstreams B/C/F using small, test-backed batches.
-5. Close remaining optional guest modal auth guardrail skip by providing stable test credentials and at least one available seeded unit card in local dev.
+5. Keep guest modal guardrail coverage stable by retaining documented `GUEST_E2E_EMAIL` / `GUEST_E2E_PASSWORD` preflight in local test runs.

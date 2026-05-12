@@ -1919,3 +1919,19 @@ Remaining A4 blocker:
    - reduced flaky branching differences between smoke and accessibility suites.
 4. Validation:
    - `npm run test:guest:e2e` -> pass (`9 passed`, `1 skipped` when optional modal guardrail dataset/credentials preconditions are not both satisfied)
+
+## Batch E6 Execution Update (Part 4 Complete - Guest Guardrail Closure Refresh)
+
+1. Refreshed guest closure docs with latest automation baseline:
+   - `docs/re-architecture-core/evidence/guest-ux/manual-run-20260425-2108.md`
+   - `docs/re-architecture-core/evidence/guest-ux/g5-closure-summary-20260507.md`
+   - `docs/re-architecture-core/17-guest-ux-acceptance-checklist.md`
+   - `docs/re-architecture-core/16-guest-ux-improvement-plan.md`
+   - `docs/re-architecture-core/18-guest-ux-automation-guardrails.md`
+2. Documentation outcomes:
+   - aligned preflight evidence to latest run (`10 passed` with guest credentials)
+   - marked G5 closure summary as complete and reflected no remaining blockers
+   - recorded latest G8 stabilization status and shared helper adoption context
+3. Validation:
+   - `npm run test:guest:e2e` -> pass (`10 passed`) on 2026-05-12 with guest credentials set
+   - `npm run quality:gate` -> pass on 2026-05-12

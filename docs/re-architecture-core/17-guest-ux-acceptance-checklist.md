@@ -1,8 +1,8 @@
 # Guest UX Acceptance Checklist
 
-Last updated: 2026-04-25  
+Last updated: 2026-05-09  
 Owner: Guest UX track (G5)  
-Status: Ready for manual run
+Status: Scenario matrix complete; accessibility guardrails stabilized
 
 ## Purpose
 
@@ -89,14 +89,14 @@ Recommended filename pattern:
 
 | Area | Result | Notes |
 |---|---|---|
-| Booking (`/book`) | Pending | |
-| Tours (`/tours`) | Pending | |
-| My Bookings (`/my-bookings`) | Pending | |
-| My Stay (`/guest/my-stay`) | Pending | |
-| Map (`/guest/map`) | Pending | |
-| Services (`/guest/services`) | Pending | |
-| Profile (`/guest/profile`) | Pending | |
-| Sync (`/guest/sync`) | Pending | |
+| Booking (`/book`) | Pass | See `docs/re-architecture-core/evidence/guest-ux/manual-run-20260425-2108.md` |
+| Tours (`/tours`) | Pass | See `docs/re-architecture-core/evidence/guest-ux/manual-run-20260425-2108.md` |
+| My Bookings (`/my-bookings`) | Pass | See `docs/re-architecture-core/evidence/guest-ux/manual-run-20260425-2108.md` |
+| My Stay (`/guest/my-stay`) | Pass | See `docs/re-architecture-core/evidence/guest-ux/manual-run-20260425-2108.md` |
+| Map (`/guest/map`) | Pass | See `docs/re-architecture-core/evidence/guest-ux/manual-run-20260425-2108.md` |
+| Services (`/guest/services`) | Pass | See `docs/re-architecture-core/evidence/guest-ux/manual-run-20260425-2108.md` |
+| Profile (`/guest/profile`) | Pass | See `docs/re-architecture-core/evidence/guest-ux/manual-run-20260425-2108.md` |
+| Sync (`/guest/sync`) | Pass | See `docs/re-architecture-core/evidence/guest-ux/manual-run-20260425-2108.md` |
 
 ## Closure Criteria
 
@@ -108,3 +108,8 @@ Recommended filename pattern:
 5. Summary linked back into:
    - `docs/re-architecture-core/16-guest-ux-improvement-plan.md`
    - `docs/re-architecture-core/14-cleanup-baseline-inventory.md`
+
+Current note (2026-05-12):
+
+1. Scenario matrix is complete and all 14 rows are pass.
+2. Automation guardrails are green (`npm run test:guest:e2e`: `10 passed` with guest credentials set).
