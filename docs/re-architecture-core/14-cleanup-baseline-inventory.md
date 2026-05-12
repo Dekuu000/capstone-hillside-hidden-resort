@@ -1905,3 +1905,17 @@ Remaining A4 blocker:
    - clarified skip reason text to indicate missing available unit seed instead of missing image seed
 3. Validation:
    - `npm run test:guest:e2e` -> pass (`9 passed`, `1 skipped` when no available unit cards are returned by current seed data)
+
+## Batch E6 Execution Update (Part 3 Complete - Guest Route Resolution Helper Reuse)
+
+1. Added shared guest E2E route-resolution helper:
+   - `hillside-next/tests/guest-e2e/routeResolution.mjs`
+   - helper: `resolveGuestRouteState(...)` (polls for content-vs-login gate resolution).
+2. Removed duplicated route-resolution polling logic by reusing the helper in:
+   - `hillside-next/tests/guest-e2e/guest-a11y.spec.mjs`
+   - `hillside-next/tests/guest-e2e/guest-smoke.spec.mjs`
+3. Stability outcomes:
+   - unified auth-gate detection behavior across `/guest/services`, `/my-bookings`, and `/guest/sync`
+   - reduced flaky branching differences between smoke and accessibility suites.
+4. Validation:
+   - `npm run test:guest:e2e` -> pass (`9 passed`, `1 skipped` when optional modal guardrail dataset/credentials preconditions are not both satisfied)

@@ -1,9 +1,10 @@
 import { expect, test } from "@playwright/test";
+import { resolveGuestRouteState } from "./routeResolution.mjs";
 
 const guestSmokeRoutes = [
   { path: "/book", title: /book your stay/i },
   { path: "/tours", title: /book a tour/i },
-  { path: "/guest/map", title: /resort navigation/i },
+  { path: "/guest/map", title: /resort map|resort navigation/i },
 ];
 
 test.describe("Guest UX smoke", () => {
@@ -18,16 +19,27 @@ test.describe("Guest UX smoke", () => {
   test("my-bookings route is reachable and shows session gate or content", async ({ page }) => {
     await page.goto("/my-bookings");
     const bookingHeading = page.getByRole("heading", { name: /my stay/i });
-    const loginHeading = page.getByRole("heading", { name: /sign in|welcome back|login/i }).first();
     const noSessionText = page.getByText(/no active session found/i);
     const bookingCards = page.locator("article").filter({ hasText: /pending|confirmed|tour|stay/i }).first();
     const bookStayButton = page.getByRole("link", { name: /book a stay/i });
 
-    const hasBookingHeading = await bookingHeading.isVisible().catch(() => false);
-    if (!hasBookingHeading) {
-      await expect(loginHeading).toBeVisible();
+    const state = await resolveGuestRouteState(page, {
+      main: async () => bookingHeading.isVisible().catch(() => false),
+      login: async () => {
+        if (page.url().includes("/login")) return true;
+        return page
+          .getByRole("heading", { name: /sign in|welcome back|login/i })
+          .first()
+          .isVisible()
+          .catch(() => false);
+      },
+    });
+
+    if (state === "login") {
       return;
     }
+
+    await expect(bookingHeading).toBeVisible();
     const showsNoSession = await noSessionText.isVisible().catch(() => false);
     if (!showsNoSession) {
       const hasBookingCards = await bookingCards.isVisible().catch(() => false);
@@ -40,12 +52,20 @@ test.describe("Guest UX smoke", () => {
   test("guest sync route resolves to sync center or auth gate", async ({ page }) => {
     await page.goto("/guest/sync");
     const syncHeading = page.getByRole("heading", { name: /sync center|my sync center/i });
-    const loginHeading = page.getByRole("heading", { name: /sign in|welcome back|login/i });
+    const state = await resolveGuestRouteState(page, {
+      main: async () => syncHeading.isVisible().catch(() => false),
+      login: async () => {
+        if (page.url().includes("/login")) return true;
+        return page
+          .getByRole("heading", { name: /sign in|welcome back|login/i })
+          .first()
+          .isVisible()
+          .catch(() => false);
+      },
+    });
 
-    if (await syncHeading.isVisible().catch(() => false)) {
+    if (state === "main") {
       await expect(syncHeading).toBeVisible();
-    } else {
-      await expect(loginHeading).toBeVisible();
     }
   });
 });

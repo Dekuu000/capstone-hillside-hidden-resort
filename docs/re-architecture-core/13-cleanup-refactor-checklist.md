@@ -140,6 +140,7 @@ Baseline evidence:
 - [x] Batch E5 (part 1): refresh `docs/re-architecture-core/perf-report.md` with the latest cleanup quality-gate snapshot (`lint`, `typecheck`, `test:api`, `db:validate`).
 - [x] Batch E6 (part 1): harden guest Playwright guardrails for auth-gated routes and optional modal keyboard checks (credential-aware skip + stable auth-gate assertions).
 - [x] Batch E6 (part 2): stabilize guest modal guardrail login flow (hydration-safe credential input + explicit timeout budget) and clarify skip reason when no available unit cards are seeded.
+- [x] Batch E6 (part 3): centralize guest route auth-gate resolution polling helper across smoke/a11y suites to reduce flaky duplicated checks in `/guest/services`, `/my-bookings`, and `/guest/sync` coverage.
 
 ### F) Documentation Alignment
 
