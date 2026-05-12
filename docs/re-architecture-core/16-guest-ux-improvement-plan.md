@@ -1,7 +1,7 @@
 # Guest UX Improvement Plan
 
-Last updated: 2026-04-25  
-Status: In progress  
+Last updated: 2026-05-12  
+Status: In progress (G5 closed; G8 active)  
 Scope: Next.js guest experience refinement only (no business-rule changes)
 
 ## Objective
@@ -562,3 +562,108 @@ Deliverables:
    - accessibility manual spot-check rows still pending
 3. Current decision:
    - P4/G5 remains **not ready to close** until manual run sheet and evidence links are completed.
+
+### G5 - Part 7 (Manual Matrix Complete, Closure Summary Updated)
+
+1. Completed all 14 manual scenario rows with evidence:
+   - `docs/re-architecture-core/evidence/guest-ux/manual-run-20260425-2108.md`
+2. Published updated closure summary:
+   - `docs/re-architecture-core/evidence/guest-ux/g5-closure-summary-20260507.md`
+3. Current decision:
+   - Scenario matrix is complete (`14/14` pass).
+   - Final P4 closure is pending only the three accessibility spot-check confirmations.
+
+### G8 - Next Improvement Track (Kickoff)
+
+1. Improvement focus after G5:
+   - strengthen accessibility guardrails
+   - reduce guest-perceived loading latency
+   - harden offline trust signals with measurable checks
+2. Batch G8.1 (Accessibility automation):
+   - add automated assertions for dialog semantics and keyboard reachability on guest modals
+   - capture baseline in `npm run test:guest:e2e` output
+3. Batch G8.2 (Perceived-performance polish):
+   - audit guest route loading skeleton coverage + empty-state timing copy
+   - remove remaining abrupt layout shifts in key guest pages (`/book`, `/my-bookings`, `/guest/services`)
+4. Batch G8.3 (Offline confidence telemetry):
+   - add lightweight instrumentation counters/logging hooks for queued-vs-synced guest actions
+   - use evidence to tune sync guidance copy where confusion remains
+
+### G8 - Part 1 (Accessibility Automation Expanded)
+
+1. Expanded guest accessibility smoke coverage in:
+   - `hillside-next/tests/guest-e2e/guest-a11y.spec.mjs`
+   - added `/guest/services` and `/guest/map` to axe route coverage
+2. Stabilized test selectors and auth-gate behavior checks in:
+   - `hillside-next/tests/guest-e2e/guest-smoke.spec.mjs`
+   - `hillside-next/tests/guest-e2e/guest-a11y.spec.mjs`
+3. Applied accessibility fixes found by automation:
+   - `hillside-next/components/shared/Tabs.tsx` (remove invalid tab ARIA linkage)
+   - `hillside-next/components/guest-map/GuestMapClient.tsx` (select labeling + contrast adjustment)
+   - `hillside-next/app/login/page.tsx` (link contrast improvements)
+4. Validation:
+   - `npm run test:guest:e2e` -> pass (`9 passed`) on 2026-05-09
+   - `npm run quality:gate` -> pass on 2026-05-09
+
+### G8 - Part 2 (Perceived-Performance Polish Started)
+
+1. Reduced abrupt layout shifts on guest-critical routes by reserving feedback/alert space:
+   - `hillside-next/components/book/BookNowClient.tsx`
+   - `hillside-next/components/my-bookings/MyBookingsClient.tsx`
+   - `hillside-next/components/guest-services/GuestServicesClient.tsx`
+2. UX updates delivered:
+   - stable top-of-content feedback rails with minimum height
+   - prioritized alert rendering (error > action success/queued > offline hint) to avoid stacked jump transitions
+   - stabilized card/list transition areas with fixed minimum content heights in booking, bookings list, and guest services panels
+3. Validation:
+   - `npm --prefix hillside-next run lint` -> pass
+   - `npm --prefix hillside-next run typecheck` -> pass
+   - `npm run test:guest:e2e` -> pass (`9 passed`) on 2026-05-09
+   - `npm run quality:gate` -> pass on 2026-05-09
+
+### G8 - Part 3 (Offline Confidence Telemetry)
+
+1. Added persistent offline replay telemetry counters in IndexedDB:
+   - `hillside-next/lib/offlineSync/store.ts`
+   - counters tracked: `queued_actions`, `synced_actions`, `failed_actions`, `last_event_at`
+2. Wired telemetry updates into sync lifecycle:
+   - `hillside-next/lib/offlineSync/engine.ts`
+   - queued action increments on enqueue
+   - synced and failed counters increment on replay outcomes
+3. Surfaced non-PII telemetry summary in Sync Center:
+   - `hillside-next/components/shared/SyncCenter.tsx`
+   - added success-rate snapshot and queued/synced/failed ratio card
+4. Validation:
+   - `npm --prefix hillside-next run lint` -> pass on 2026-05-09
+   - `npm --prefix hillside-next run typecheck` -> pass on 2026-05-09
+   - `npm run test:guest:e2e` -> pass (`9 passed`) on 2026-05-09
+   - `npm run quality:gate` -> pass on 2026-05-09
+
+### G8 - Part 4 (Modal Keyboard Guardrail Automation)
+
+1. Added dedicated modal accessibility guardrail test:
+   - `hillside-next/tests/guest-e2e/guest-modal-a11y.spec.mjs`
+2. Coverage delivered:
+   - dialog semantics (`role="dialog"`, `aria-modal="true"`)
+   - keyboard containment (`Tab`/`Shift+Tab` stay inside modal)
+   - `Escape` close and focus return to the original trigger
+3. Hardened shared modal primitive behavior:
+   - `hillside-next/components/shared/ModalDialog.tsx`
+   - added focus trap, escape-to-close, and focus restore on close
+4. Validation:
+   - `npm run test:guest:e2e` -> pass (`9 passed`, `1 skipped` modal guardrail when no gallery trigger exists) on 2026-05-09
+   - `npm --prefix hillside-next run lint` -> pass on 2026-05-09
+   - `npm --prefix hillside-next run typecheck` -> pass on 2026-05-09
+   - `npm run quality:gate` -> pass on 2026-05-09
+
+### G5/G8 - Part 8 (Closure + Guardrail Stability Refresh)
+
+1. Closed G5 acceptance evidence set:
+   - `docs/re-architecture-core/evidence/guest-ux/manual-run-20260425-2108.md`
+   - `docs/re-architecture-core/evidence/guest-ux/g5-closure-summary-20260507.md`
+2. Stabilized route-resolution checks used by guest smoke/a11y suites:
+   - added shared helper `hillside-next/tests/guest-e2e/routeResolution.mjs`
+   - adopted in `guest-smoke.spec.mjs` and `guest-a11y.spec.mjs`
+3. Validation refresh:
+   - `npm run test:guest:e2e` -> pass (`10 passed`) on 2026-05-12 with guest credentials set
+   - `npm run quality:gate` -> pass on 2026-05-12

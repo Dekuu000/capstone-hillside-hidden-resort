@@ -141,6 +141,7 @@ Baseline evidence:
 - [x] Batch E6 (part 1): harden guest Playwright guardrails for auth-gated routes and optional modal keyboard checks (credential-aware skip + stable auth-gate assertions).
 - [x] Batch E6 (part 2): stabilize guest modal guardrail login flow (hydration-safe credential input + explicit timeout budget) and clarify skip reason when no available unit cards are seeded.
 - [x] Batch E6 (part 3): centralize guest route auth-gate resolution polling helper across smoke/a11y suites to reduce flaky duplicated checks in `/guest/services`, `/my-bookings`, and `/guest/sync` coverage.
+- [x] Batch E6 (part 4): validate full guest guardrail suite at `10 passed` with credentials configured and roll closure status into guest UX acceptance docs.
 
 ### F) Documentation Alignment
 
