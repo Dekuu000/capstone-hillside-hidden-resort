@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { resolveGuestRouteState } from "./routeResolution.mjs";
 
 const a11yRoutes = [
   { path: "/book", allowAuthGate: false },
@@ -16,26 +17,17 @@ test.describe("Guest UX accessibility smoke", () => {
       await page.waitForLoadState("domcontentloaded");
       const main = page.locator("main");
       if (route.allowAuthGate) {
-        let resolvedState = "pending";
-        await expect
-          .poll(async () => {
-            if (await main.isVisible().catch(() => false)) {
-              resolvedState = "main";
-              return resolvedState;
-            }
-            if (page.url().includes("/login")) {
-              resolvedState = "login";
-              return resolvedState;
-            }
-            const loginHeadingVisible = await page
+        const resolvedState = await resolveGuestRouteState(page, {
+          main: async () => main.isVisible().catch(() => false),
+          login: async () => {
+            if (page.url().includes("/login")) return true;
+            return page
               .getByRole("heading", { name: /sign in|welcome back|login/i })
               .first()
               .isVisible()
               .catch(() => false);
-            resolvedState = loginHeadingVisible ? "login" : "pending";
-            return resolvedState;
-          }, { timeout: 20_000 })
-          .toMatch(/^(main|login)$/);
+          },
+        });
         if (resolvedState === "login") {
           return;
         }

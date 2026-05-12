@@ -1,6 +1,6 @@
 # Guest UX Automation Guardrails
 
-Last updated: 2026-05-11  
+Last updated: 2026-05-12  
 Status: Scaffolded (ready to run after dependency install)
 
 ## Goal
@@ -81,6 +81,8 @@ npm run test:guest:e2e
    - guest route smoke checks (`/book`, `/tours`, `/guest/map`, `/my-bookings`, `/guest/sync`)
    - guest accessibility smoke checks (axe on `/book`, `/tours`, `/guest/services`, `/guest/map`)
    - modal keyboard/semantics guardrail (dialog semantics, focus trap, escape close, focus return)
+4. Stability note (2026-05-12):
+   - guest smoke and guest a11y auth-gate polling now share a single helper (`tests/guest-e2e/routeResolution.mjs`) to reduce route-resolution flake divergence.
 
 ## Notes
 
