@@ -28,7 +28,7 @@ Reduce technical debt and improve maintainability/scalability without changing a
 
 ### A) Baseline and Inventory
 
-- [ ] Create dedicated cleanup branch and capture baseline commit hash.
+- [x] Create dedicated cleanup branch and capture baseline commit hash.
 - [x] Capture baseline quality metrics: `pytest`, Next typecheck/build, lint, migration sanity.
 - [x] Inventory duplicate or deprecated paths (API routes, UI components, shared schemas, scripts).
 - [x] Freeze temporary artifacts list to delete after verification.
@@ -123,11 +123,11 @@ Baseline evidence:
 
 ### E) CI, Lint, and Test Hardening
 
-- [ ] Keep CI release gate green after each cleanup batch.
-- [ ] Enforce strict lint/type rules on touched modules.
-- [ ] Add missing regression tests for previous production incidents.
-- [ ] Remove flaky or redundant tests and replace with deterministic coverage.
-- [ ] Publish a final quality report snapshot in `docs/re-architecture-core/perf-report.md`.
+- [x] Keep CI release gate green after each cleanup batch.
+- [x] Enforce strict lint/type rules on touched modules.
+- [x] Add missing regression tests for previous production incidents.
+- [x] Remove flaky or redundant tests and replace with deterministic coverage.
+- [x] Publish a final quality report snapshot in `docs/re-architecture-core/perf-report.md`.
 - [x] Batch E1 (part 1): replace deprecated `HTTP_422_UNPROCESSABLE_ENTITY` usage with `HTTP_422_UNPROCESSABLE_CONTENT` across v2 API routes to reduce warning noise in test runs.
 - [x] Batch E1 (part 2): migrate FastAPI app lifecycle from `@app.on_event` to lifespan context management and remove startup/shutdown deprecation warnings.
 - [x] Batch E1 (part 3): disable pytest cache provider in API test runs to remove persistent Windows cache-permission warning noise.
@@ -143,18 +143,20 @@ Baseline evidence:
 - [x] Batch E6 (part 2): stabilize guest modal guardrail login flow (hydration-safe credential input + explicit timeout budget) and clarify skip reason when no available unit cards are seeded.
 - [x] Batch E6 (part 3): centralize guest route auth-gate resolution polling helper across smoke/a11y suites to reduce flaky duplicated checks in `/guest/services`, `/my-bookings`, and `/guest/sync` coverage.
 - [x] Batch E6 (part 4): validate full guest guardrail suite at `10 passed` with credentials configured and roll closure status into guest UX acceptance docs.
+- [x] Batch E7 (part 1): finalize E-workstream closure by refreshing quality snapshot docs and re-validating recurring local acceptance runs (`quality:gate`, guest E2E with/without credentials).
 
 ### F) Documentation Alignment
 
-- [ ] Update architecture, checklist, and status docs to reflect final cleaned state.
-- [ ] Update developer runbook commands and local dev troubleshooting notes.
-- [ ] Record removed modules/files and migration implications.
-- [ ] Attach final acceptance evidence links (CI run, smoke output, key screenshots).
+- [x] Update architecture, checklist, and status docs to reflect final cleaned state.
+- [x] Update developer runbook commands and local dev troubleshooting notes.
+- [x] Record removed modules/files and migration implications.
+- [x] Attach final acceptance evidence links (CI run, smoke output, key screenshots).
 - [x] Batch F1 (part 1): align policy rollout runbook with split migration sequence and `db:validate` preflight.
 - [x] Batch F2 (part 1): sync cleanup status docs (`10-next-gap-closure-plan`, `13-cleanup-refactor-checklist`, `14-cleanup-baseline-inventory`) with current completed batches and remaining acceptance evidence.
 - [x] Batch F3 (part 1): align guest acceptance and automation docs with current G8 state (`10 passed` with credentials; optional modal guardrail may skip without credential preconditions) and manual matrix completion evidence.
 - [x] Batch F4 (part 1): refresh root `README.md` run commands for current workflow (`db:start`, `test:guest:e2e`, `quality:gate`, optional guest E2E credentials).
 - [x] Batch F5 (part 1): refresh closure docs and status trackers after G5 evidence sign-off (`manual-run`, `g5-closure-summary`, `17-guest-ux-acceptance-checklist`, `19-next-improvement-track-g8`).
+- [x] Batch F6 (part 1): finalize documentation-alignment closure evidence links and confirm end-to-end local acceptance bundle references.
 
 ## Definition of Done
 

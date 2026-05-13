@@ -1,6 +1,6 @@
 # Next Gap Closure Plan (Post-Defense)
 
-Last updated: 2026-05-09
+Last updated: 2026-05-14
 Context: Core guide-compliance scope (A-D) remains complete. This plan now reflects actual implementation status, closes the P2 design requirement, and locks the post-phase cleanup track.
 
 ## Prioritized Workstream
@@ -97,7 +97,7 @@ This phase is intentionally scheduled after completion of P0-P2.
 ## Immediate Next Step
 
 1. Continue Phase 4 cleanup/refactor using `docs/re-architecture-core/13-cleanup-refactor-checklist.md` with incremental commits.
-2. Complete Documentation Alignment batch items in Phase 4 (runbooks/status docs/evidence links).
+2. Documentation Alignment and quality snapshot refresh are complete through Batch F6/E7; maintain them as rolling updates for each new batch.
 3. Keep `quality:gate` + `test:guest:e2e` as recurring acceptance checks for each cleanup slice.
-4. Finish remaining cleanup hotspots in checklist workstreams B/C/F using small, test-backed batches.
+4. Finish remaining cleanup hotspots in checklist workstreams B/C using small, test-backed batches.
 5. Keep guest modal guardrail coverage stable by retaining documented `GUEST_E2E_EMAIL` / `GUEST_E2E_PASSWORD` preflight in local test runs.
