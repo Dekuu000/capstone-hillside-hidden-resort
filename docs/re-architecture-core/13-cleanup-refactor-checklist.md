@@ -1,6 +1,6 @@
 # Cleanup & Refactor Checklist (Post-Phase)
 
-Last updated: 2026-04-25  
+Last updated: 2026-05-14  
 Status: In progress  
 Execution gate: Start only after P0-P2 closure (decision-locked)
 
@@ -138,6 +138,7 @@ Baseline evidence:
 - [x] Batch E4 (part 1): add a consolidated `quality:gate` command to run lint/typecheck/API tests/migration validation together and verify it passes.
 - [x] Batch E4 (part 2): make API Python runner scripts cross-platform (`.venv` autodetect + `python` fallback) so quality gates are reusable on Linux CI and Windows dev.
 - [x] Batch E5 (part 1): refresh `docs/re-architecture-core/perf-report.md` with the latest cleanup quality-gate snapshot (`lint`, `typecheck`, `test:api`, `db:validate`).
+- [x] Batch E5 (part 2): refresh `docs/re-architecture-core/perf-report.md` with latest post-guest-closure quality-gate snapshot (`checked_files: 71`, `95 passed`) and companion guest E2E status note.
 - [x] Batch E6 (part 1): harden guest Playwright guardrails for auth-gated routes and optional modal keyboard checks (credential-aware skip + stable auth-gate assertions).
 - [x] Batch E6 (part 2): stabilize guest modal guardrail login flow (hydration-safe credential input + explicit timeout budget) and clarify skip reason when no available unit cards are seeded.
 - [x] Batch E6 (part 3): centralize guest route auth-gate resolution polling helper across smoke/a11y suites to reduce flaky duplicated checks in `/guest/services`, `/my-bookings`, and `/guest/sync` coverage.
@@ -151,8 +152,9 @@ Baseline evidence:
 - [ ] Attach final acceptance evidence links (CI run, smoke output, key screenshots).
 - [x] Batch F1 (part 1): align policy rollout runbook with split migration sequence and `db:validate` preflight.
 - [x] Batch F2 (part 1): sync cleanup status docs (`10-next-gap-closure-plan`, `13-cleanup-refactor-checklist`, `14-cleanup-baseline-inventory`) with current completed batches and remaining acceptance evidence.
-- [x] Batch F3 (part 1): align guest acceptance and automation docs with current G8 state (`9 passed`, `1 skipped` optional modal auth guardrail) and manual matrix completion evidence.
+- [x] Batch F3 (part 1): align guest acceptance and automation docs with current G8 state (`10 passed` with credentials; optional modal guardrail may skip without credential preconditions) and manual matrix completion evidence.
 - [x] Batch F4 (part 1): refresh root `README.md` run commands for current workflow (`db:start`, `test:guest:e2e`, `quality:gate`, optional guest E2E credentials).
+- [x] Batch F5 (part 1): refresh closure docs and status trackers after G5 evidence sign-off (`manual-run`, `g5-closure-summary`, `17-guest-ux-acceptance-checklist`, `19-next-improvement-track-g8`).
 
 ## Definition of Done
 

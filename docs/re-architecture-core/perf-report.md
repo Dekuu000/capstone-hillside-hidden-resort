@@ -1,6 +1,6 @@
 # Cleanup Quality Report
 
-Last updated: 2026-04-25
+Last updated: 2026-05-14
 Scope: Post-phase cleanup/refactor validation snapshot (Checklist E/F)
 
 ## Quality Gate Snapshot
@@ -11,7 +11,7 @@ Command:
 npm run quality:gate
 ```
 
-Result: `PASS` (run date: 2026-04-25)
+Result: `PASS` (run date: 2026-05-14)
 
 Included checks:
 
@@ -31,8 +31,21 @@ Observed output summary:
 3. API tests:
    - `pytest hillside-api/tests -q`: pass (`95 passed`)
 4. DB validation:
-   - `db:sanity`: pass (`ok: true`, `checked_files: 70`)
+   - `db:sanity`: pass (`ok: true`, `checked_files: 71`)
    - `db:hygiene`: pass (`ok: true`, `invalid_filenames: []`, `duplicate_groups: []`, waivers empty)
+
+## Companion Guest Guardrail Snapshot
+
+Command:
+
+```bash
+npm run test:guest:e2e
+```
+
+Result summary:
+
+1. With guest credentials (`GUEST_E2E_EMAIL`, `GUEST_E2E_PASSWORD`) configured: pass (`10 passed`)
+2. Without credentials configured: pass (`9 passed`, `1 skipped` optional modal keyboard guardrail)
 
 ## Performance Baseline Reference
 

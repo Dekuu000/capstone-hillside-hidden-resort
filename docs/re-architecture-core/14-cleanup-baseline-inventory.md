@@ -1935,3 +1935,15 @@ Remaining A4 blocker:
 3. Validation:
    - `npm run test:guest:e2e` -> pass (`10 passed`) on 2026-05-12 with guest credentials set
    - `npm run quality:gate` -> pass on 2026-05-12
+
+## Batch E5 Execution Update (Part 2 Complete - Quality Snapshot Refresh)
+
+1. Refreshed cleanup quality snapshot documentation:
+   - `docs/re-architecture-core/perf-report.md`
+2. Report updates captured:
+   - latest `quality:gate` pass baseline on 2026-05-14
+   - migration sanity summary aligned to `checked_files: 71`
+   - companion guest E2E guardrail snapshot recorded for both credentialed and non-credentialed runs
+3. Validation:
+   - `npm run quality:gate` -> pass on 2026-05-14
+   - `npm run test:guest:e2e` -> pass (`9 passed`, `1 skipped`) on 2026-05-14 without guest credentials
