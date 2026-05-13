@@ -1,18 +1,6 @@
 import { BedDouble, Sparkles, Wrench, AlertTriangle } from "lucide-react";
 import type { UnitItem } from "../../../packages/shared/src/types";
-
-function formatAsOf(value: string | null) {
-  if (!value) return "Unavailable";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Unavailable";
-  return date.toLocaleString("en-PH", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
+import { formatDateTime } from "../../lib/dateDisplay";
 
 function countOperational(units: UnitItem[], status: "cleaned" | "occupied" | "maintenance" | "dirty") {
   return units.filter((unit) => (unit.operational_status || "cleaned") === status).length;
@@ -44,7 +32,19 @@ export function RoomInventorySyncPanel({ units }: { units: UnitItem[] }) {
     <section className="surface p-4 sm:p-5">
       <div className="flex items-center justify-between gap-2">
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-muted)]">Room Inventory Sync</p>
-        <p className="text-[11px] font-semibold text-[var(--color-muted)] whitespace-nowrap">{formatAsOf(latestUpdate)}</p>
+        <p className="text-[11px] font-semibold text-[var(--color-muted)] whitespace-nowrap">
+          {formatDateTime(latestUpdate, {
+            locale: "en-PH",
+            formatOptions: {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+              hour: "numeric",
+              minute: "2-digit",
+            },
+            fallback: "Unavailable",
+          })}
+        </p>
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3">

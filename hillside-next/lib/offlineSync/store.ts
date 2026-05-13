@@ -10,7 +10,7 @@ import type {
 import { decryptJson, encryptJson } from "./crypto";
 
 const DB_NAME = "hillside-offline-sync-v1";
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 const STORES = {
   entities: "entities",
@@ -18,6 +18,7 @@ const STORES = {
   uploadQueue: "upload_queue",
   uploadBlobs: "upload_blobs",
   syncState: "sync_state",
+  telemetry: "telemetry",
   conflicts: "conflicts",
   snapshots: "snapshots",
 } as const;
@@ -84,6 +85,19 @@ type SyncStateRecord = {
   last_synced_at: string | null;
   last_error: string | null;
 };
+
+export type SyncTelemetry = {
+  queued_actions: number;
+  synced_actions: number;
+  failed_actions: number;
+  last_event_at: string | null;
+};
+
+type TelemetryRecord = SyncTelemetry & {
+  id: "global";
+};
+
+const TELEMETRY_KEY: TelemetryRecord["id"] = "global";
 
 export type ConflictRecord = {
   operation_id: string;
@@ -156,6 +170,9 @@ function openDb(): Promise<IDBDatabase> {
       if (!db.objectStoreNames.contains(STORES.syncState)) {
         db.createObjectStore(STORES.syncState, { keyPath: "scope" });
       }
+      if (!db.objectStoreNames.contains(STORES.telemetry)) {
+        db.createObjectStore(STORES.telemetry, { keyPath: "id" });
+      }
       if (!db.objectStoreNames.contains(STORES.conflicts)) {
         const store = db.createObjectStore(STORES.conflicts, { keyPath: "operation_id" });
         store.createIndex("by_created_at", "created_at", { unique: false });
@@ -192,8 +209,18 @@ export async function queueOfflineOperation(operation: OfflineOperation): Promis
     next_retry_at: null,
     updated_at: nowIso,
   };
-  const tx = db.transaction(STORES.outbox, "readwrite");
+  const tx = db.transaction([STORES.outbox, STORES.telemetry], "readwrite");
   tx.objectStore(STORES.outbox).put(record);
+  const telemetryStore = tx.objectStore(STORES.telemetry);
+  const existing =
+    (await requestToPromise<TelemetryRecord | undefined>(telemetryStore.get(TELEMETRY_KEY))) || undefined;
+  telemetryStore.put({
+    id: TELEMETRY_KEY,
+    queued_actions: (existing?.queued_actions ?? 0) + 1,
+    synced_actions: existing?.synced_actions ?? 0,
+    failed_actions: existing?.failed_actions ?? 0,
+    last_event_at: nowIso,
+  });
   await txDone(tx);
 }
 
@@ -415,6 +442,49 @@ export async function listOutboxSummary(): Promise<{
     },
     { queued: 0, syncing: 0, failed: 0, applied: 0 } as Record<OutboxStatus, number>,
   );
+}
+
+export async function getSyncTelemetry(): Promise<SyncTelemetry> {
+  if (!isBrowser()) {
+    return { queued_actions: 0, synced_actions: 0, failed_actions: 0, last_event_at: null };
+  }
+  const db = await openDb();
+  const tx = db.transaction(STORES.telemetry, "readonly");
+  const row =
+    (await requestToPromise<TelemetryRecord | undefined>(
+      tx.objectStore(STORES.telemetry).get(TELEMETRY_KEY),
+    )) || undefined;
+  await txDone(tx);
+  return {
+    queued_actions: row?.queued_actions ?? 0,
+    synced_actions: row?.synced_actions ?? 0,
+    failed_actions: row?.failed_actions ?? 0,
+    last_event_at: row?.last_event_at ?? null,
+  };
+}
+
+export async function incrementSyncTelemetry(patch: {
+  queued_actions?: number;
+  synced_actions?: number;
+  failed_actions?: number;
+}): Promise<void> {
+  if (!isBrowser()) return;
+  const db = await openDb();
+  const tx = db.transaction(STORES.telemetry, "readwrite");
+  const store = tx.objectStore(STORES.telemetry);
+  const row = (await requestToPromise<TelemetryRecord | undefined>(store.get(TELEMETRY_KEY))) || undefined;
+  const hasDelta =
+    (patch.queued_actions ?? 0) !== 0 ||
+    (patch.synced_actions ?? 0) !== 0 ||
+    (patch.failed_actions ?? 0) !== 0;
+  store.put({
+    id: TELEMETRY_KEY,
+    queued_actions: Math.max(0, (row?.queued_actions ?? 0) + (patch.queued_actions ?? 0)),
+    synced_actions: Math.max(0, (row?.synced_actions ?? 0) + (patch.synced_actions ?? 0)),
+    failed_actions: Math.max(0, (row?.failed_actions ?? 0) + (patch.failed_actions ?? 0)),
+    last_event_at: hasDelta ? new Date().toISOString() : (row?.last_event_at ?? null),
+  });
+  await txDone(tx);
 }
 
 export async function listOutboxRecords(limit = 100): Promise<OutboxRecord[]> {

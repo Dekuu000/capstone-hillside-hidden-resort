@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { ExternalLink } from "lucide-react";
 import type { EscrowReconciliationItem } from "../../../packages/shared/src/types";
+import { buildTxExplorerUrl, shortHash } from "../../lib/chainExplorer";
+import { formatDateTime } from "../../lib/dateDisplay";
 import { DetailDrawer } from "../shared/DetailDrawer";
 
 function resultClass(value: EscrowReconciliationItem["result"]) {
@@ -10,31 +12,6 @@ function resultClass(value: EscrowReconciliationItem["result"]) {
   if (value === "mismatch") return "bg-amber-100 text-amber-800";
   if (value === "missing_onchain") return "bg-rose-100 text-rose-700";
   return "bg-slate-200 text-slate-700";
-}
-
-function explorerUrl(chainKey: string | null | undefined, txHash: string | null | undefined) {
-  if (!txHash) return null;
-  if ((chainKey || "").toLowerCase() === "amoy") return `https://amoy.polygonscan.com/tx/${txHash}`;
-  return `https://sepolia.etherscan.io/tx/${txHash}`;
-}
-
-function shortTxHash(value: string, head = 10, tail = 9) {
-  if (value.length <= head + tail + 3) return value;
-  return `${value.slice(0, head)}...${value.slice(-tail)}`;
-}
-
-function formatDateTime(value?: string | null) {
-  if (!value) return "-";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "-";
-  return date.toLocaleString("en-PH", {
-    month: "numeric",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    second: "2-digit",
-  });
 }
 
 export function AdminEscrowTableClient({
@@ -116,7 +93,7 @@ export function AdminEscrowTableClient({
               </thead>
               <tbody>
                 {filtered.map((item) => {
-                  const lockHref = explorerUrl(item.chain_key, item.chain_tx_hash);
+                  const lockHref = buildTxExplorerUrl(item.chain_key, item.chain_tx_hash);
                   return (
                     <tr
                       key={item.reservation_id}
@@ -144,7 +121,7 @@ export function AdminEscrowTableClient({
                               aria-label={item.chain_tx_hash}
                             >
                               <span className="rounded border border-amber-300 bg-amber-100 px-1.5 py-0.5 font-mono text-xs text-blue-800">
-                                {shortTxHash(item.chain_tx_hash)}
+                                {shortHash(item.chain_tx_hash, 10, 9)}
                               </span>
                               <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
                               <span className="pointer-events-none absolute bottom-full left-0 z-20 mb-1.5 hidden rounded-md bg-[#1e2b3f] px-2 py-1 font-mono text-[11px] text-slate-100 shadow-lg group-hover:block group-focus-visible:block">
@@ -161,10 +138,30 @@ export function AdminEscrowTableClient({
                         -
                       </td>
                       <td className="px-4 py-3 text-xs text-[var(--color-muted)]">
-                        {formatDateTime(item.reservation_updated_at)}
+                        {formatDateTime(item.reservation_updated_at, {
+                          locale: "en-PH",
+                          formatOptions: {
+                            month: "numeric",
+                            day: "numeric",
+                            year: "numeric",
+                            hour: "numeric",
+                            minute: "2-digit",
+                            second: "2-digit",
+                          },
+                        })}
                       </td>
                       <td className="px-4 py-3 text-xs text-[var(--color-muted)]">
-                        {formatDateTime(lastReconciledAt)}
+                        {formatDateTime(lastReconciledAt, {
+                          locale: "en-PH",
+                          formatOptions: {
+                            month: "numeric",
+                            day: "numeric",
+                            year: "numeric",
+                            hour: "numeric",
+                            minute: "2-digit",
+                            second: "2-digit",
+                          },
+                        })}
                       </td>
                     </tr>
                   );

@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { getSupabaseBrowserClient } from "../../lib/supabase";
+import { clearServerSessionCookie } from "../../lib/authSessionCookie";
+import { getSupabaseBrowserClient, safeGetSession } from "../../lib/supabase";
+import { resolveUserDisplayName } from "../../lib/userProfile";
 
 type AdminChromeProps = {
   children: ReactNode;
@@ -52,16 +54,11 @@ export function AdminChrome({ children, initialName = null, initialEmail = null 
     let mounted = true;
     const supabase = getSupabaseBrowserClient();
 
-    supabase.auth.getSession().then(({ data }) => {
+    void safeGetSession().then(({ session }) => {
       if (!mounted) return;
-      const user = data.session?.user;
+      const user = session?.user;
       if (!user) return;
-
-      const displayName =
-        (typeof user.user_metadata?.name === "string" && user.user_metadata.name.trim()) ||
-        user.email ||
-        "Admin";
-      setName(displayName);
+      setName(resolveUserDisplayName(user, "Admin"));
       setEmail(user.email ?? "");
     });
 
@@ -75,7 +72,7 @@ export function AdminChrome({ children, initialName = null, initialEmail = null 
   const handleSignOut = async () => {
     const supabase = getSupabaseBrowserClient();
     await supabase.auth.signOut();
-    await fetch("/api/auth/session", { method: "DELETE" }).catch(() => null);
+    await clearServerSessionCookie().catch(() => null);
     router.replace("/login");
   };
 

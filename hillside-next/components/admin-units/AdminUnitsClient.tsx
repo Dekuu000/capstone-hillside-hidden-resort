@@ -12,6 +12,7 @@ import {
 } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
+import { formatPhpPeso as formatPeso } from "../../lib/formatCurrency";
 import { ImageLightbox } from "../shared/ImageLightbox";
 import { UnitImageGallery } from "../shared/UnitImageGallery";
 import { UnitPhotoUploader } from "../shared/UnitPhotoUploader";
@@ -36,14 +37,6 @@ type AdminUnitsClientProps = {
 const PAGE_SIZE = 12;
 
 type UnitOperationalStatus = "cleaned" | "occupied" | "maintenance" | "dirty";
-
-function formatPeso(value: number) {
-  return new Intl.NumberFormat("en-PH", {
-    style: "currency",
-    currency: "PHP",
-    maximumFractionDigits: 0,
-  }).format(value || 0);
-}
 
 function formatOperationalStatus(status: string | null | undefined) {
   switch ((status || "").toLowerCase()) {

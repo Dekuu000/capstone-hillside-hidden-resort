@@ -88,6 +88,19 @@ export type QrPublicKeyResponse = {
   public_key: string;
 };
 
+export type GuestPassVerificationResponse = {
+  reservation_id: string;
+  minted: boolean;
+  chain_key?: string | null;
+  contract_address?: string | null;
+  token_id?: number | null;
+  tx_hash?: string | null;
+  reservation_hash?: string | null;
+  owner?: string | null;
+  onchain_valid: boolean;
+  verify_error?: string | null;
+};
+
 export type PricingRecommendation = {
   reservation_id: string;
   pricing_adjustment: number;

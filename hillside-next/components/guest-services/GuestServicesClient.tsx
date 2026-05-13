@@ -263,20 +263,22 @@ export function GuestServicesClient({ accessToken }: Props) {
           </Link>
         </div>
       </section>
-      {!networkOnline ? (
-        <SyncAlertBanner message="You are offline. Service requests will be queued and synced automatically when internet returns." />
-      ) : null}
-      {actionMessage ? (
-        <SyncAlertBanner
-          message={actionMessage}
-          tone={actionHasSyncCta ? "warning" : "success"}
-          showSyncCta={actionHasSyncCta}
-          role="status"
-        />
-      ) : null}
+      <div className="min-h-[3.25rem]">
+        {actionMessage ? (
+          <SyncAlertBanner
+            message={actionMessage}
+            tone={actionHasSyncCta ? "warning" : "success"}
+            showSyncCta={actionHasSyncCta}
+            role="status"
+          />
+        ) : null}
+        {!actionMessage && !networkOnline ? (
+          <SyncAlertBanner message="You are offline. Service requests will be queued and synced automatically when internet returns." />
+        ) : null}
+      </div>
 
       <section className="grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
-        <article className="surface p-4">
+        <article className="surface p-4" aria-busy={servicesLoading}>
           <h2 className="inline-flex items-center gap-2 text-base font-semibold text-[var(--color-text)]">
             {category === "room_service" ? (
               <UtensilsCrossed className="h-4 w-4 text-[var(--color-secondary)]" />
@@ -314,34 +316,36 @@ export function GuestServicesClient({ accessToken }: Props) {
             </div>
           ) : null}
 
-          <div className="mt-3 grid gap-3">
-            {services.map((service) => (
-              <InsetPanel key={service.service_item_id} tone="surface">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-semibold text-[var(--color-text)]">{service.service_name}</p>
-                    <p className="mt-1 text-sm text-[var(--color-muted)]">
-                      {service.description || "No description provided."}
-                    </p>
+          <div className="mt-3 min-h-[20rem]">
+            <div className="grid gap-3">
+              {services.map((service) => (
+                <InsetPanel key={service.service_item_id} tone="surface">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-[var(--color-text)]">{service.service_name}</p>
+                      <p className="mt-1 text-sm text-[var(--color-muted)]">
+                        {service.description || "No description provided."}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-semibold text-[var(--color-text)]">{toPeso(Number(service.price || 0))}</p>
+                      <p className="text-xs text-[var(--color-muted)]">ETA {service.eta_minutes ?? "-"} mins</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-semibold text-[var(--color-text)]">{toPeso(Number(service.price || 0))}</p>
-                    <p className="text-xs text-[var(--color-muted)]">ETA {service.eta_minutes ?? "-"} mins</p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSelectedService(service)}
-                  className="guest-primary-cta mt-3"
-                >
-                  Request Service
-                </button>
-              </InsetPanel>
-            ))}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedService(service)}
+                    className="guest-primary-cta mt-3"
+                  >
+                    Request Service
+                  </button>
+                </InsetPanel>
+              ))}
+            </div>
           </div>
         </article>
 
-        <article className="surface p-4">
+        <article className="surface p-4" aria-busy={requestsLoading}>
           <h2 className="inline-flex items-center gap-2 text-base font-semibold text-[var(--color-text)]">
             <ClipboardList className="h-4 w-4 text-[var(--color-secondary)]" />
             Request Timeline
@@ -376,29 +380,31 @@ export function GuestServicesClient({ accessToken }: Props) {
               />
             </div>
           ) : null}
-          <ul className="mt-3 space-y-2">
-            {filteredRequests.map((item) => (
-              <InsetPanel as="li" key={item.request_id}>
-                <p className="text-sm font-semibold text-[var(--color-text)]">
-                  {item.service_item?.service_name || "Service request"}
-                </p>
-                <p className="mt-1 text-xs text-[var(--color-muted)]">
-                  <span
-                    className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                      STATUS_BADGE_CLASS[item.status] || STATUS_BADGE_CLASS.cancelled
-                    }`}
-                  >
-                    {STATUS_LABEL[item.status] || item.status}
-                  </span>{" "}
-                  | Qty {item.quantity}
-                </p>
-                <p className="mt-1 inline-flex items-center gap-1 text-xs text-[var(--color-muted)]">
-                  <Clock3 className="h-3.5 w-3.5" />
-                  {formatLocalDateTime(item.requested_at)}
-                </p>
-              </InsetPanel>
-            ))}
-          </ul>
+          <div className="mt-3 min-h-[20rem]">
+            <ul className="space-y-2">
+              {filteredRequests.map((item) => (
+                <InsetPanel as="li" key={item.request_id}>
+                  <p className="text-sm font-semibold text-[var(--color-text)]">
+                    {item.service_item?.service_name || "Service request"}
+                  </p>
+                  <p className="mt-1 text-xs text-[var(--color-muted)]">
+                    <span
+                      className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                        STATUS_BADGE_CLASS[item.status] || STATUS_BADGE_CLASS.cancelled
+                      }`}
+                    >
+                      {STATUS_LABEL[item.status] || item.status}
+                    </span>{" "}
+                    | Qty {item.quantity}
+                  </p>
+                  <p className="mt-1 inline-flex items-center gap-1 text-xs text-[var(--color-muted)]">
+                    <Clock3 className="h-3.5 w-3.5" />
+                    {formatLocalDateTime(item.requested_at)}
+                  </p>
+                </InsetPanel>
+              ))}
+            </ul>
+          </div>
         </article>
       </section>
 

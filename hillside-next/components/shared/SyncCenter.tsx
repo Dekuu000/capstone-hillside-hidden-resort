@@ -5,10 +5,12 @@ import { RefreshCcw, TriangleAlert, Wifi, WifiOff } from "lucide-react";
 import { useSyncEngine } from "./SyncEngineProvider";
 import { useToast } from "./ToastProvider";
 import { env } from "../../lib/env";
+import { formatDateTime } from "../../lib/dateDisplay";
 import { enqueueOfflineOperation } from "../../lib/offlineSync/engine";
 import {
   addConflict,
   discardOperation,
+  getSyncTelemetry,
   getUploadBlob,
   listConflicts,
   listOutboxRecords,
@@ -18,6 +20,7 @@ import {
   retryOutboxOperation,
   updateUploadQueueItem,
   type ConflictRecord,
+  type SyncTelemetry,
 } from "../../lib/offlineSync/store";
 import type { UploadQueueItem } from "../../../packages/shared/src/types";
 
@@ -38,13 +41,6 @@ type OutboxView = {
   last_error?: string | null;
 };
 
-function formatDateTime(value: string | null | undefined) {
-  if (!value) return "--";
-  const parsed = Date.parse(value);
-  if (Number.isNaN(parsed)) return value;
-  return new Date(parsed).toLocaleString();
-}
-
 const syncSecondaryCtaClass =
   "guest-secondary-cta guest-secondary-cta-sm rounded-full disabled:cursor-not-allowed disabled:opacity-60";
 const syncDangerCtaClass =
@@ -62,12 +58,19 @@ export function SyncCenter({ title, description, scope }: SyncCenterProps) {
   const [conflicts, setConflicts] = useState<ConflictRecord[]>([]);
   const [uploadRows, setUploadRows] = useState<UploadQueueItem[]>([]);
   const [uploadCounts, setUploadCounts] = useState({ queued: 0, uploaded: 0, committed: 0, failed: 0 });
+  const [telemetry, setTelemetry] = useState<SyncTelemetry>({
+    queued_actions: 0,
+    synced_actions: 0,
+    failed_actions: 0,
+    last_event_at: null,
+  });
 
   const refreshDetails = async () => {
-    const [outbox, conflictRows, uploads] = await Promise.all([
+    const [outbox, conflictRows, uploads, telemetrySnapshot] = await Promise.all([
       listOutboxRecords(100),
       listConflicts(20),
       listUploadQueue(),
+      getSyncTelemetry(),
     ]);
     setOutboxRows(
       outbox.map((row) => ({
@@ -105,6 +108,7 @@ export function SyncCenter({ title, description, scope }: SyncCenterProps) {
         return rank(a.status) - rank(b.status);
       }),
     );
+    setTelemetry(telemetrySnapshot);
   };
 
   useEffect(() => {
@@ -117,6 +121,12 @@ export function SyncCenter({ title, description, scope }: SyncCenterProps) {
     if (sync.queued > 0 || sync.syncing > 0) return { label: "Syncing", tone: "text-sky-700" };
     return { label: "Healthy", tone: "text-emerald-700" };
   }, [sync.conflicts, sync.failed, sync.online, sync.queued, sync.syncing]);
+
+  const telemetrySuccessRate = useMemo(() => {
+    const attempted = telemetry.synced_actions + telemetry.failed_actions;
+    if (attempted <= 0) return "--";
+    return `${Math.round((telemetry.synced_actions / attempted) * 100)}%`;
+  }, [telemetry.failed_actions, telemetry.synced_actions]);
 
   const handleRunNow = async () => {
     setBusy(true);
@@ -289,7 +299,7 @@ export function SyncCenter({ title, description, scope }: SyncCenterProps) {
             {busy ? "Syncing..." : "Run sync now"}
           </button>
         </div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <div className="guest-surface-soft p-3">
             <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-muted)]">Status</p>
             <p className={`mt-1 text-base font-semibold ${primaryStatus.tone}`}>
@@ -316,6 +326,14 @@ export function SyncCenter({ title, description, scope }: SyncCenterProps) {
             <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-muted)]">Conflicts</p>
             <p className="mt-1 text-xl font-semibold text-[var(--color-text)]">{sync.conflicts}</p>
             <p className="mt-1 text-xs text-[var(--color-muted)]">Server-wins conflicts requiring refresh.</p>
+          </div>
+          <div className="guest-surface-soft p-3">
+            <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-muted)]">Replay telemetry</p>
+            <p className="mt-1 text-xl font-semibold text-[var(--color-text)]">{telemetrySuccessRate}</p>
+            <p className="mt-1 text-xs text-[var(--color-muted)]">
+              queued {telemetry.queued_actions} | synced {telemetry.synced_actions} | failed {telemetry.failed_actions}
+            </p>
+            <p className="mt-1 text-xs text-[var(--color-muted)]">Last event: {formatDateTime(telemetry.last_event_at)}</p>
           </div>
         </div>
         {sync.lastError ? (

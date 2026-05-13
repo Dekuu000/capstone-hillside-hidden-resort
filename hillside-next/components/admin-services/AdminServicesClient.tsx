@@ -18,6 +18,8 @@ import {
 } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
+import { formatDateTime } from "../../lib/dateDisplay";
+import { formatPhpPeso as toPeso } from "../../lib/formatCurrency";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
 import { DetailDrawer } from "../shared/DetailDrawer";
 import { EmptyState } from "../shared/EmptyState";
@@ -43,14 +45,6 @@ const STATUS_STYLE: Record<string, string> = {
   done: "bg-emerald-100 text-emerald-800",
   cancelled: "bg-rose-100 text-rose-800",
 };
-
-function toPeso(value: number) {
-  return new Intl.NumberFormat("en-PH", {
-    style: "currency",
-    currency: "PHP",
-    maximumFractionDigits: 0,
-  }).format(value);
-}
 
 export function AdminServicesClient({ accessToken }: Props) {
   const { showToast } = useToast();
@@ -286,10 +280,10 @@ export function AdminServicesClient({ accessToken }: Props) {
               <p><strong>Reservation:</strong> {activeRow.reservation?.reservation_code || "-"}</p>
               <p><strong>Quantity:</strong> {activeRow.quantity}</p>
               <p><strong>Price:</strong> {toPeso(Number(activeRow.service_item?.price || 0))}</p>
-              <p><strong>Requested:</strong> {new Date(activeRow.requested_at).toLocaleString()}</p>
+              <p><strong>Requested:</strong> {formatDateTime(activeRow.requested_at)}</p>
               <p>
                 <strong>Preferred time:</strong>{" "}
-                {activeRow.preferred_time ? new Date(activeRow.preferred_time).toLocaleString() : "-"}
+                {activeRow.preferred_time ? formatDateTime(activeRow.preferred_time) : "-"}
               </p>
             </section>
             {activeRow.notes ? (

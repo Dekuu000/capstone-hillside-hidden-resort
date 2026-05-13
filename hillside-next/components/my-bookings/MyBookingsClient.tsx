@@ -26,7 +26,7 @@ import {
 } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
-import { formatCachedAt, formatLocalDateTime } from "../../lib/dateDisplay";
+import { formatCachedAt, formatDateWithWeekday, formatLocalDateTime } from "../../lib/dateDisplay";
 import { formatPhpPeso as formatPeso } from "../../lib/formatCurrency";
 import { parseJwtSub } from "../../lib/jwt";
 import { loadLastIssuedQrToken, saveLastIssuedQrToken } from "../../lib/guestQrTokenCache";
@@ -34,6 +34,7 @@ import { useNetworkOnline } from "../../lib/hooks/useNetworkOnline";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
 import { queuePaymentSubmissionWithFile } from "../../lib/offlineSync/paymentSubmission";
 import { loadBookingsSnapshot, saveBookingsSnapshot } from "../../lib/offlineSync/store";
+import { getReservationStatusMeta } from "../../lib/reservationStatus";
 import { getSupabaseBrowserClient } from "../../lib/supabase";
 import { compactQrTokenPayload } from "../../lib/qrPayload";
 import { AIPricingInsightCard } from "../ai/AIPricingInsightCard";
@@ -64,27 +65,6 @@ const TAB_HINTS: Record<TabKey, string> = {
   completed: "Finished reservations for your records.",
   cancelled: "Cancelled reservations and policy outcomes.",
 };
-
-const STATUS_BADGE_CLASS: Record<string, string> = {
-  pending_payment: "bg-yellow-100 text-yellow-800",
-  for_verification: "bg-blue-100 text-blue-800",
-  confirmed: "bg-emerald-100 text-emerald-800",
-  checked_in: "bg-indigo-100 text-indigo-800",
-  checked_out: "bg-slate-200 text-slate-700",
-  cancelled: "bg-red-100 text-red-800",
-  no_show: "bg-red-100 text-red-800",
-};
-
-function formatDate(value?: string | null) {
-  if (!value) return "-";
-  const date = new Date(`${value}T00:00:00`);
-  return date.toLocaleDateString(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
 
 function toTitleCase(value: string) {
   return value.replace(/\b\w/g, (char) => char.toUpperCase());
@@ -726,7 +706,7 @@ export function MyBookingsClient({
             <p className="font-semibold text-slate-900">Stay snapshot</p>
             <div className="mt-1.5 grid gap-1.5 sm:mt-2">
               <p>
-                Next stay date: <span className="font-semibold text-slate-900">{formatDate(summary.nextDate)}</span>
+                Next stay date: <span className="font-semibold text-slate-900">{formatDateWithWeekday(summary.nextDate)}</span>
               </p>
               <p>
                 Outstanding balance: <span className="font-semibold text-slate-900">{formatPeso(summary.outstanding)}</span>
@@ -795,67 +775,69 @@ export function MyBookingsClient({
         </div>
       </div>
 
-      {actionMessage ? (
-        <SyncAlertBanner
-          className="mb-3"
-          message={actionMessage}
-          tone={actionHasSyncCta ? "warning" : "success"}
-          showSyncCta={actionHasSyncCta}
-          role="status"
-        />
-      ) : null}
-      {cachedViewMeta ? (
-        <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-semibold text-amber-800">
-          {cachedViewMeta}
-        </p>
-      ) : null}
-      {error ? (
-        <p className="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">{error}</p>
-      ) : null}
-      {loading ? (
-        <div className="grid gap-3">
-          {Array.from({ length: 3 }).map((_, idx) => (
-            <div key={`booking-skeleton-${idx}`} className="rounded-2xl border border-slate-200/70 bg-white p-5 shadow-sm">
-              <div className="skeleton h-6 w-48" />
-              <div className="mt-2 skeleton h-4 w-64" />
-              <div className="mt-4 grid gap-2 sm:grid-cols-3">
-                <div className="skeleton h-8" />
-                <div className="skeleton h-8" />
-                <div className="skeleton h-8" />
+      <div className="mb-3 min-h-[3.25rem]">
+        {error ? (
+          <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">{error}</p>
+        ) : null}
+        {!error && actionMessage ? (
+          <SyncAlertBanner
+            message={actionMessage}
+            tone={actionHasSyncCta ? "warning" : "success"}
+            showSyncCta={actionHasSyncCta}
+            role="status"
+          />
+        ) : null}
+        {!error && !actionMessage && cachedViewMeta ? (
+          <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-semibold text-amber-800">
+            {cachedViewMeta}
+          </p>
+        ) : null}
+      </div>
+      <div className="min-h-[22rem]" aria-busy={loading}>
+        {loading ? (
+          <div className="grid gap-3">
+            {Array.from({ length: 3 }).map((_, idx) => (
+              <div key={`booking-skeleton-${idx}`} className="rounded-2xl border border-slate-200/70 bg-white p-5 shadow-sm">
+                <div className="skeleton h-6 w-48" />
+                <div className="mt-2 skeleton h-4 w-64" />
+                <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                  <div className="skeleton h-8" />
+                  <div className="skeleton h-8" />
+                  <div className="skeleton h-8" />
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      ) : null}
-
-      {!loading && items.length === 0 ? (
-        <div className="rounded-2xl border border-slate-200/70 bg-white p-6 text-center shadow-sm">
-          <p className="text-sm font-semibold text-slate-900">No bookings found for this tab.</p>
-          <p className="mt-2 text-sm text-slate-600">Try switching tabs, adjusting your search, or create a new reservation.</p>
-          <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-            <Link
-              href="/book"
-              className="guest-primary-cta min-h-9 px-3 text-sm"
-            >
-              Book a stay
-            </Link>
-            <Link
-              href="/tours"
-              className="guest-secondary-cta min-h-9 px-3 text-sm"
-            >
-              Browse tours
-            </Link>
+            ))}
           </div>
-        </div>
-      ) : null}
+        ) : null}
 
-      <div className="grid gap-4">
-        {items.map((booking) => {
+        {!loading && items.length === 0 ? (
+          <div className="rounded-2xl border border-slate-200/70 bg-white p-6 text-center shadow-sm">
+            <p className="text-sm font-semibold text-slate-900">No bookings found for this tab.</p>
+            <p className="mt-2 text-sm text-slate-600">Try switching tabs, adjusting your search, or create a new reservation.</p>
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+              <Link
+                href="/book"
+                className="guest-primary-cta min-h-9 px-3 text-sm"
+              >
+                Book a stay
+              </Link>
+              <Link
+                href="/tours"
+                className="guest-secondary-cta min-h-9 px-3 text-sm"
+              >
+                Browse tours
+              </Link>
+            </div>
+          </div>
+        ) : null}
+
+        <div className="grid gap-4">
+          {items.map((booking) => {
           const paid = Number(booking.amount_paid_verified ?? 0);
           const total = Number(booking.total_amount ?? 0);
           const remaining = Math.max(0, total - paid);
           const paymentMeta = getPaymentStateMeta(total, paid);
-          const statusClass = STATUS_BADGE_CLASS[booking.status] ?? STATUS_BADGE_CLASS.checked_out;
+          const statusMeta = getReservationStatusMeta(booking.status);
           const isTour = (booking.service_bookings?.length ?? 0) > 0;
           const bookingLabel = isTour ? "Tour" : "Stay";
           const bookingTarget = isTour
@@ -885,7 +867,7 @@ export function MyBookingsClient({
                   <p className="text-xs text-slate-500">Booked on {formatLocalDateTime(booking.created_at)}</p>
                   <div className="mt-2 flex flex-wrap items-center gap-2">
                     <span
-                      className={`inline-flex max-w-fit items-center rounded-full px-2 py-1 text-[10px] font-semibold tracking-wide sm:px-2.5 sm:text-[11px] ${statusClass}`}
+                      className={`inline-flex max-w-fit items-center rounded-full px-2 py-1 text-[10px] font-semibold tracking-wide sm:px-2.5 sm:text-[11px] ${statusMeta.className}`}
                     >
                       {reservationStatusLabel}
                     </span>
@@ -905,7 +887,7 @@ export function MyBookingsClient({
                 <div>
                   <span className="block text-xs text-slate-500">{isTour ? "Visit date" : "Stay dates"}</span>
                   <p className="text-sm font-medium text-slate-800">
-                    {isTour ? formatDate(visitDate) : `${formatDate(booking.check_in_date)} to ${formatDate(booking.check_out_date)}`}
+                    {isTour ? formatDateWithWeekday(visitDate) : `${formatDateWithWeekday(booking.check_in_date)} to ${formatDateWithWeekday(booking.check_out_date)}`}
                   </p>
                 </div>
                 <div>
@@ -979,7 +961,8 @@ export function MyBookingsClient({
               </div>
             </article>
           );
-        })}
+          })}
+        </div>
       </div>
 
       {canLoadMore ? (
@@ -1054,7 +1037,7 @@ export function MyBookingsClient({
                       <div key={row.service_booking_id} className="mb-2 rounded-lg border border-slate-200 p-3">
                         <div>
                           <strong>{row.service?.service_name ?? "Tour service"}</strong>
-                          <p className="text-xs text-slate-500">Date: {formatDate(row.visit_date)}</p>
+                          <p className="text-xs text-slate-500">Date: {formatDateWithWeekday(row.visit_date)}</p>
                         </div>
                         <p className="mt-2 text-sm font-semibold text-slate-800">{formatPeso(row.total_amount)}</p>
                       </div>

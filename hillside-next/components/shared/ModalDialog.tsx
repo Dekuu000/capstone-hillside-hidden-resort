@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { X } from "lucide-react";
 import { cn } from "../../lib/cn";
 
@@ -29,6 +29,71 @@ export function ModalDialog({
   closeLabel = "Close",
   closeButtonClassName,
 }: ModalDialogProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const activeBeforeOpen = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const dialogEl = dialogRef.current;
+
+    const focusableSelector = [
+      "a[href]",
+      "button:not([disabled])",
+      "input:not([disabled])",
+      "select:not([disabled])",
+      "textarea:not([disabled])",
+      "[tabindex]:not([tabindex='-1'])",
+    ].join(",");
+
+    const focusFirst = () => {
+      if (!dialogEl) return;
+      const firstFocusable = dialogEl.querySelector<HTMLElement>(focusableSelector);
+      (firstFocusable ?? dialogEl).focus();
+    };
+
+    focusFirst();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!dialogEl) return;
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key !== "Tab") return;
+
+      const focusableElements = Array.from(dialogEl.querySelectorAll<HTMLElement>(focusableSelector)).filter(
+        (el) => !el.hasAttribute("disabled") && el.getAttribute("aria-hidden") !== "true",
+      );
+
+      if (focusableElements.length === 0) {
+        event.preventDefault();
+        dialogEl.focus();
+        return;
+      }
+
+      const first = focusableElements[0];
+      const last = focusableElements[focusableElements.length - 1];
+      const current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+      if (event.shiftKey && current === first) {
+        event.preventDefault();
+        last.focus();
+        return;
+      }
+      if (!event.shiftKey && current === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    dialogEl?.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      dialogEl?.removeEventListener("keydown", handleKeyDown);
+      activeBeforeOpen?.focus();
+    };
+  }, [onClose]);
+
   return (
     <div
       className={cn(
@@ -39,9 +104,11 @@ export function ModalDialog({
       role="presentation"
     >
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
+        tabIndex={-1}
         className={cn(
           "max-h-[92vh] w-full overflow-auto rounded-t-2xl border border-slate-200/70 bg-white p-4 md:rounded-2xl",
           maxWidthClass,

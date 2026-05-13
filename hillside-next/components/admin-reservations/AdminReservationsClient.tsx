@@ -18,6 +18,11 @@ import {
 } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
+import { formatCachedAt, formatDateTime, formatDateWithYear } from "../../lib/dateDisplay";
+import { formatPhpPeso as formatPeso } from "../../lib/formatCurrency";
+import { normalizePaymentProofPath } from "../../lib/paymentProof";
+import { getReservationStatusMeta } from "../../lib/reservationStatus";
+import { getReservationPaymentState, getReservationSource } from "../../lib/reservationView";
 import { getSupabaseBrowserClient } from "../../lib/supabase";
 import { ReservationDetailDrawer } from "./ReservationDetailDrawer";
 import { DataFreshnessBadge } from "../shared/DataFreshnessBadge";
@@ -45,53 +50,6 @@ const QUICK_FILTERS: Array<{ id: ReservationQuickFilter; label: string }> = [
 type PaymentStatusFilter = "all" | "unpaid" | "partial" | "settled";
 type StatQuickFilter = "none" | "today_arrivals" | "pending_payment" | "walk_ins_today" | "ready_for_checkin";
 
-const STATUS_BADGE_CLASS: Partial<Record<ReservationStatus, string>> = {
-  pending_payment: "bg-yellow-100 text-yellow-800",
-  for_verification: "bg-blue-100 text-blue-800",
-  confirmed: "bg-emerald-100 text-emerald-800",
-  checked_in: "bg-indigo-100 text-indigo-800",
-  checked_out: "bg-slate-200 text-slate-700",
-  cancelled: "bg-red-100 text-red-800",
-  no_show: "bg-red-100 text-red-800",
-};
-
-function formatDate(value?: string | null) {
-  if (!value) return "-";
-  return new Date(`${value}T00:00:00`).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-function formatDateTime(value?: string | null) {
-  if (!value) return "-";
-  return new Date(value).toLocaleString();
-}
-
-function formatCachedAt(value?: string | null) {
-  if (!value) return "-";
-  return new Date(value).toLocaleString();
-}
-
-function formatPeso(value: number | null | undefined) {
-  const amount = Number(value ?? 0);
-  return new Intl.NumberFormat("en-PH", {
-    style: "currency",
-    currency: "PHP",
-    maximumFractionDigits: 0,
-  }).format(Number.isFinite(amount) ? amount : 0);
-}
-
-function getPaymentState(reservation: ReservationItem): "unpaid" | "partial" | "settled" {
-  const total = Number(reservation.total_amount ?? 0);
-  const paid = Number(reservation.amount_paid_verified ?? 0);
-  const balance = Number(reservation.balance_due ?? Math.max(total - paid, 0));
-  if (balance <= 0 && total > 0) return "settled";
-  if (paid > 0 && balance > 0) return "partial";
-  return "unpaid";
-}
-
 function getPaymentStateMeta(state: "unpaid" | "partial" | "settled") {
   if (state === "settled") {
     return { label: "Paid in Full", className: "bg-emerald-100 text-emerald-800" };
@@ -102,18 +60,9 @@ function getPaymentStateMeta(state: "unpaid" | "partial" | "settled") {
   return { label: "Unpaid", className: "bg-slate-200 text-slate-700" };
 }
 
-function getReservationSource(reservation: ReservationItem): "online" | "walk_in" {
-  if (reservation.reservation_source === "online" || reservation.reservation_source === "walk_in") {
-    return reservation.reservation_source;
-  }
-  const notes = String(reservation.notes || "").toLowerCase();
-  const fromWalkInNotes = notes.includes("walk-in") || notes.includes("walk in");
-  return fromWalkInNotes ? "walk_in" : "online";
-}
-
 function matchesPaymentFilter(reservation: ReservationItem, filter: PaymentStatusFilter) {
   if (filter === "all") return true;
-  const state = getPaymentState(reservation);
+  const state = getReservationPaymentState(reservation);
   if (filter === "unpaid") return state === "unpaid";
   if (filter === "partial") return state === "partial";
   return state === "settled";
@@ -134,7 +83,7 @@ function matchesStatQuickFilter(
     return (
       reservation.status === "pending_payment"
       || reservation.status === "for_verification"
-      || getPaymentState(reservation) !== "settled"
+      || getReservationPaymentState(reservation) !== "settled"
     );
   }
   if (statFilter === "walk_ins_today") {
@@ -143,18 +92,8 @@ function matchesStatQuickFilter(
   return (
     reservation.check_in_date === today
     && ["confirmed", "for_verification", "pending_payment"].includes(reservation.status)
-    && getPaymentState(reservation) === "settled"
+    && getReservationPaymentState(reservation) === "settled"
   );
-}
-
-function normalizeProofPath(raw: string) {
-  const trimmed = raw.trim();
-  if (!trimmed) return "";
-  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed;
-  if (trimmed.includes("/payment-proofs/")) {
-    return trimmed.split("/payment-proofs/")[1] ?? trimmed;
-  }
-  return trimmed;
 }
 
 export function AdminReservationsClient({
@@ -395,7 +334,7 @@ export function AdminReservationsClient({
       const pendingPaymentCount = rows.filter((item) =>
         item.status === "pending_payment"
         || item.status === "for_verification"
-        || getPaymentState(item) !== "settled",
+        || getReservationPaymentState(item) !== "settled",
       ).length;
       const walkInsToday = rows.filter((item) => {
         const createdDate = item.created_at ? item.created_at.slice(0, 10) : "";
@@ -403,7 +342,7 @@ export function AdminReservationsClient({
       }).length;
       const readyForCheckIn = todayRows.filter((item) => {
         if (!["confirmed", "for_verification", "pending_payment"].includes(item.status)) return false;
-        return getPaymentState(item) === "settled";
+        return getReservationPaymentState(item) === "settled";
       }).length;
       setQuickStats({
         todayArrivals: todayRows.length,
@@ -522,7 +461,7 @@ export function AdminReservationsClient({
       window.open(raw, "_blank", "noopener,noreferrer");
       return;
     }
-    const normalizedPath = normalizeProofPath(raw);
+    const normalizedPath = normalizePaymentProofPath(raw);
     if (!normalizedPath) return;
     setProofBusy((prev) => ({ ...prev, [payment.payment_id]: true }));
     try {
@@ -865,21 +804,24 @@ export function AdminReservationsClient({
                     </td>
                   <td className="px-4 py-3">
                     <p className="text-sm text-slate-700">
-                      {formatDate(reservation.check_in_date)} to {formatDate(reservation.check_out_date)}
+                      {formatDateWithYear(reservation.check_in_date)} to {formatDateWithYear(reservation.check_out_date)}
                     </p>
                   </td>
                     <td className="px-4 py-3">
-                      <span
-                        className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide ${
-                          STATUS_BADGE_CLASS[reservation.status] ?? "bg-slate-200 text-slate-700"
-                        }`}
-                    >
-                      {reservation.status.replace(/_/g, " ").toUpperCase()}
-                      </span>
+                      {(() => {
+                        const statusMeta = getReservationStatusMeta(reservation.status);
+                        return (
+                          <span
+                            className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide ${statusMeta.className}`}
+                          >
+                            {statusMeta.label.toUpperCase()}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="px-4 py-3">
                       {(() => {
-                        const paymentMeta = getPaymentStateMeta(getPaymentState(reservation));
+                        const paymentMeta = getPaymentStateMeta(getReservationPaymentState(reservation));
                         return (
                           <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${paymentMeta.className}`}>
                             {paymentMeta.label}

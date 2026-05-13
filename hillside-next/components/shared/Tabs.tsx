@@ -48,9 +48,8 @@ export function Tabs({
 
   return (
     <div
-      role="tablist"
+      role="group"
       aria-label={ariaLabel}
-      aria-orientation="horizontal"
       onKeyDown={onKeyDown}
       className={cn(
         "rounded-2xl border border-[var(--color-border)] bg-slate-50 p-1",
@@ -66,10 +65,8 @@ export function Tabs({
           <button
             key={item.id}
             type="button"
-            role="tab"
-            aria-selected={active}
-            aria-controls={`tab-panel-${item.id}`}
-            tabIndex={active ? 0 : -1}
+            aria-pressed={active}
+            tabIndex={0}
             onClick={() => onChange(item.id)}
             className={cn(
               "inline-flex h-11 min-w-0 items-center justify-center gap-2 rounded-xl px-2.5 text-xs font-semibold transition sm:px-3 sm:text-sm",

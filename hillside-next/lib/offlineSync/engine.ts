@@ -9,6 +9,7 @@ import {
   deleteUploadBlob,
   getUploadBlob,
   getSyncState,
+  incrementSyncTelemetry,
   listReadyOutbox,
   listUploadQueue,
   markOutboxApplied,
@@ -109,14 +110,21 @@ async function pushOutbox(accessToken: string, scope: SyncScope): Promise<void> 
     for (const row of actionable) {
       await markOutboxFailed(row.operation_id, message, row.retry_count + 1, MAX_RETRY_DELAY_MS);
     }
+    if (actionable.length > 0) {
+      await incrementSyncTelemetry({ failed_actions: actionable.length });
+    }
     throw error;
   }
+
+  let syncedCount = 0;
+  let failedCount = 0;
 
   for (const result of pushResult.results) {
     const current = actionable.find((row) => row.operation_id === result.operation_id);
     const retryCount = current?.retry_count ?? 0;
     if (result.status === "applied" || result.status === "noop") {
       await markOutboxApplied(result.operation_id);
+      syncedCount += 1;
       continue;
     }
     if (result.status === "conflict") {
@@ -137,6 +145,11 @@ async function pushOutbox(accessToken: string, scope: SyncScope): Promise<void> 
       retryCount + 1,
       MAX_RETRY_DELAY_MS,
     );
+    failedCount += 1;
+  }
+
+  if (syncedCount > 0 || failedCount > 0) {
+    await incrementSyncTelemetry({ synced_actions: syncedCount, failed_actions: failedCount });
   }
   emitSyncEvent();
 }

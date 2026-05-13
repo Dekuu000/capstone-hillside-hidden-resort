@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { apiHealthResponseSchema } from "../../packages/shared/src/schemas";
 import type { ApiHealthResponse } from "../../packages/shared/src/types";
 import { getApiErrorMessage } from "../lib/apiError";
-import { getSupabaseBrowserClient } from "../lib/supabase";
+import { getSupabaseBrowserClient, safeGetSession } from "../lib/supabase";
 import { env } from "../lib/env";
 
 type SessionState = {
@@ -32,16 +32,14 @@ export function SessionAndApiStatus() {
   useEffect(() => {
     let mounted = true;
     try {
-      const client = getSupabaseBrowserClient();
-      client.auth
-        .getSession()
-        .then(({ data, error }) => {
+      getSupabaseBrowserClient();
+      safeGetSession()
+        .then(({ session, error }) => {
           if (!mounted) return;
           if (error) {
-            setSessionState((prev) => ({ ...prev, error: error.message }));
+            setSessionState((prev) => ({ ...prev, error: getApiErrorMessage(error, "Failed to read session.") }));
             return;
           }
-          const session = data.session;
           setSessionState({
             hasSession: !!session,
             userId: session?.user.id ?? null,

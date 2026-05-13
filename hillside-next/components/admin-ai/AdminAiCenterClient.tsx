@@ -28,6 +28,8 @@ import type {
 } from "../../../packages/shared/src/types";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
+import { formatDateTime } from "../../lib/dateDisplay";
+import { formatPhpPeso as formatPeso } from "../../lib/formatCurrency";
 import { AIPricingInsightCard } from "../ai/AIPricingInsightCard";
 import { PageHeader } from "../layout/PageHeader";
 import { Badge } from "../shared/Badge";
@@ -61,14 +63,6 @@ type ChecklistItem = {
 
 function toPercent(value: number) {
   return `${Math.round(value * 100)}%`;
-}
-
-function formatPeso(value: number) {
-  return new Intl.NumberFormat("en-PH", {
-    style: "currency",
-    currency: "PHP",
-    maximumFractionDigits: 0,
-  }).format(value || 0);
 }
 
 function buildPolylinePoints(data: Array<{ occupancy: number }>) {
@@ -331,7 +325,7 @@ export function AdminAiCenterClient({ token }: AdminAiCenterClientProps) {
         token,
         pricingApplyResponseSchema,
       );
-      setPricingActionMessage(`Recommendation logged at ${new Date(response.applied_at).toLocaleString()}.`);
+      setPricingActionMessage(`Recommendation logged at ${formatDateTime(response.applied_at)}.`);
       setPricingAppliedAt(response.applied_at);
       showToast({
         type: "success",
@@ -416,7 +410,13 @@ export function AdminAiCenterClient({ token }: AdminAiCenterClientProps) {
         statusSlot={
           <>
             <Badge
-              label={lastUpdated ? `Last updated ${new Date(lastUpdated).toLocaleTimeString()}` : "No updates yet"}
+              label={
+                lastUpdated
+                  ? `Last updated ${formatDateTime(lastUpdated, {
+                      formatOptions: { hour: "numeric", minute: "2-digit" },
+                    })}`
+                  : "No updates yet"
+              }
               variant="neutral"
             />
             <Badge label={pricingHealth.label} variant={pricingHealth.variant} />
@@ -608,7 +608,7 @@ export function AdminAiCenterClient({ token }: AdminAiCenterClientProps) {
                   ) : null}
                 </div>
                 <p className="mt-1 text-xs text-[var(--color-muted)]">
-                  Last forecast run: {new Date(forecast.generated_at).toLocaleString()}
+                  Last forecast run: {formatDateTime(forecast.generated_at)}
                 </p>
                 <div className="mt-3 overflow-x-auto rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-slate-50 p-3">
                   <svg viewBox="0 0 640 180" className="h-48 w-full min-w-[500px]" role="img" aria-label="Occupancy forecast line chart">

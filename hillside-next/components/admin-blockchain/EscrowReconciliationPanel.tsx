@@ -2,6 +2,7 @@
 
 import { RefreshCw } from "lucide-react";
 import type { ChainKey, EscrowReconciliationResponse } from "../../../packages/shared/src/types";
+import { formatDateTime } from "../../lib/dateDisplay";
 import { AdminEscrowTableClient } from "../admin-escrow/AdminEscrowTableClient";
 import { Button } from "../shared/Button";
 import { StatCard } from "../shared/StatCard";
@@ -16,18 +17,6 @@ type Props = {
   onRefresh: () => void;
   onPageChange: (offset: number) => void;
 };
-
-function formatDateTime(value?: string | null) {
-  if (!value) return "--";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "--";
-  return date.toLocaleString("en-PH", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
 
 export function EscrowReconciliationPanel({
   data,
@@ -93,7 +82,20 @@ export function EscrowReconciliationPanel({
       ) : null}
 
       <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-        <StatCard label="Total" value={String(data?.summary.total ?? 0)} hint={`As of ${formatDateTime(data?.last_reconciled_at)}`} tone="neutral" />
+        <StatCard
+          label="Total"
+          value={String(data?.summary.total ?? 0)}
+          hint={`As of ${formatDateTime(data?.last_reconciled_at, {
+            locale: "en-PH",
+            formatOptions: {
+              month: "short",
+              day: "numeric",
+              hour: "numeric",
+              minute: "2-digit",
+            },
+          })}`}
+          tone="neutral"
+        />
         <StatCard label="Mismatch" value={String(data?.summary.mismatch ?? 0)} hint="Needs review" tone={(data?.summary.mismatch ?? 0) > 0 ? "warn" : "neutral"} />
         <StatCard
           label="Missing On-chain"

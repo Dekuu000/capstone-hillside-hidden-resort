@@ -5,24 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { getApiErrorMessage } from "../../lib/apiError";
-import { getSupabaseBrowserClient } from "../../lib/supabase";
+import { setServerSessionCookie } from "../../lib/authSessionCookie";
+import { getSupabaseBrowserClient, safeGetSession } from "../../lib/supabase";
+import { resolveUserProfileName } from "../../lib/userProfile";
 import { Button } from "../../components/shared/Button";
 import { Toast } from "../../components/shared/Toast";
 import { AuthShell } from "../../components/layout/AuthShell";
 import { GoogleIcon } from "../../components/branding/GoogleIcon";
-
-async function syncServerSessionCookie(accessToken: string, emailValue?: string | null) {
-  const response = await fetch("/api/auth/session", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "same-origin",
-    cache: "no-store",
-    body: JSON.stringify({ accessToken, email: emailValue ?? null }),
-  });
-  if (!response.ok) {
-    throw new Error("Unable to initialize server session cookie.");
-  }
-}
 
 function AuthInput({
   label,
@@ -98,7 +87,8 @@ export default function LoginPage() {
     } | null,
   ) => {
     const supabase = getSupabaseBrowserClient();
-    const user = signedInUser ?? (await supabase.auth.getSession()).data.session?.user;
+    const { session } = await safeGetSession();
+    const user = signedInUser ?? session?.user;
     if (!user) return "/login";
 
     const safePath = requestedPath && requestedPath.startsWith("/") ? requestedPath : "";
@@ -121,13 +111,13 @@ export default function LoginPage() {
 
   const ensureUserProfileRow = async () => {
     const supabase = getSupabaseBrowserClient();
-    const { data: sessionData } = await supabase.auth.getSession();
-    const user = sessionData.session?.user;
+    const { session } = await safeGetSession();
+    const user = session?.user;
     if (!user) return;
 
     const metadataRole = user.user_metadata?.role;
     const insertRole = typeof metadataRole === "string" && metadataRole.toLowerCase() === "admin" ? "admin" : "guest";
-    const nameValue = (typeof user.user_metadata?.name === "string" && user.user_metadata.name.trim()) || user.email?.split("@")[0] || "Guest User";
+    const nameValue = resolveUserProfileName(user, "Guest User");
     const phoneValue = typeof user.user_metadata?.phone === "string" ? user.user_metadata.phone : null;
 
     const { error: insertError } = await (supabase as any).from("users").upsert(
@@ -158,10 +148,10 @@ export default function LoginPage() {
     let mounted = true;
     try {
       const supabase = getSupabaseBrowserClient();
-      supabase.auth.getSession().then(({ data }) => {
+      safeGetSession().then(({ session }) => {
         if (!mounted) return;
-        if (data.session?.access_token) {
-          void syncServerSessionCookie(data.session.access_token, data.session.user?.email ?? null)
+        if (session?.access_token) {
+          void setServerSessionCookie(session.access_token, session.user?.email ?? null)
             .catch(() => null)
             .then(() => resolveNextPath(nextPath))
             .then((target) => {
@@ -201,7 +191,7 @@ export default function LoginPage() {
       }
 
       if (data.session?.access_token) {
-        await syncServerSessionCookie(data.session.access_token, data.user?.email ?? null);
+        await setServerSessionCookie(data.session.access_token, data.user?.email ?? null);
       }
 
       void ensureUserProfileRow().catch(() => null);
@@ -245,7 +235,7 @@ export default function LoginPage() {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold text-[var(--color-text)]">Password</span>
-            <Link href="/auth/forgot-password" className="text-sm font-semibold text-[var(--color-secondary)] hover:underline">
+            <Link href="/auth/forgot-password" className="text-sm font-semibold text-[var(--color-primary)] hover:underline">
               Forgot Password?
             </Link>
           </div>
@@ -305,7 +295,7 @@ export default function LoginPage() {
 
       <div className="mt-8 text-center text-sm text-[var(--color-muted)]">
         Don&apos;t have an account?{" "}
-        <Link href="/auth/sign-up" className="font-semibold text-[var(--color-secondary)] hover:underline">
+        <Link href="/auth/sign-up" className="font-semibold text-[var(--color-primary)] hover:underline">
           Sign Up
         </Link>
       </div>

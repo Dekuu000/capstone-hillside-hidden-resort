@@ -60,6 +60,19 @@ export const qrPublicKeyResponseSchema = z.object({
   public_key: z.string().min(1),
 });
 
+export const guestPassVerificationResponseSchema = z.object({
+  reservation_id: z.string().min(1),
+  minted: z.boolean(),
+  chain_key: z.string().optional().nullable(),
+  contract_address: z.string().optional().nullable(),
+  token_id: z.number().int().optional().nullable(),
+  tx_hash: z.string().optional().nullable(),
+  reservation_hash: z.string().optional().nullable(),
+  owner: z.string().optional().nullable(),
+  onchain_valid: z.boolean().default(false),
+  verify_error: z.string().optional().nullable(),
+});
+
 export const pricingRecommendationSchema = z.object({
   reservation_id: z.string().min(1),
   pricing_adjustment: z.number(),
