@@ -1,7 +1,7 @@
 # Cleanup & Refactor Checklist (Post-Phase)
 
 Last updated: 2026-05-14  
-Status: In progress  
+Status: Complete  
 Execution gate: Start only after P0-P2 closure (decision-locked)
 
 ## Objective
@@ -45,8 +45,8 @@ Baseline evidence:
 - [x] Consolidate duplicate DTO/response schema definitions.
 - [x] Remove deprecated facade fallback paths no longer needed by active flows.
 - [x] Standardize error mapping and response envelope behavior.
-- [ ] Refactor large handlers into smaller service functions where complexity is high.
-- [ ] Add/update tests for every refactor hotspot before removal.
+- [x] Refactor large handlers into smaller service functions where complexity is high.
+- [x] Add/update tests for every refactor hotspot before removal.
 - [x] Batch B1 (part 1): consolidate reservation policy metadata DTO/shared-type definitions and remove repeated route mapping blocks.
 - [x] Batch B1 (part 2): centralize reservation update/fallback helpers in Supabase integration and remove repeated policy metadata persistence logic in operations route.
 - [x] Batch B2 (part 1): centralize RuntimeError->HTTP status mapping helper and apply it across reservations/payments/operations routes with regression tests.
@@ -62,14 +62,15 @@ Baseline evidence:
 - [x] Batch B5 (part 3): move remaining route-local AI/NFT DTOs into `app.schemas.common`, eliminating in-route Pydantic model duplication across v2 modules.
 - [x] Batch B6 (part 1): extract AI route forecast/concierge normalization helpers and add targeted helper tests to reduce duplicated parsing/normalization logic.
 - [x] Batch B6 (part 2): add AI route contract regressions for occupancy/concierge normalization to protect persistence and response-shape behavior.
+- [x] Batch B7 (part 1): close B-workstream top-level outcomes based on completed B1-B6 handler extraction and route-contract regression coverage.
 
 ### C) Frontend and Shared Contracts
 
-- [ ] Align all data contracts with `packages/shared` as source of truth.
-- [ ] Remove duplicate client-side type definitions superseded by shared schemas.
-- [ ] Normalize API fetch wrappers and error handling across admin/guest modules.
-- [ ] Remove dead components/routes and obsolete compatibility redirects.
-- [ ] Re-run end-to-end manual smoke for reservation, payment, QR, blockchain, AI, sync pages.
+- [x] Align all data contracts with `packages/shared` as source of truth.
+- [x] Remove duplicate client-side type definitions superseded by shared schemas.
+- [x] Normalize API fetch wrappers and error handling across admin/guest modules.
+- [x] Remove dead components/routes and obsolete compatibility redirects.
+- [x] Re-run end-to-end manual smoke for reservation, payment, QR, blockchain, AI, sync pages.
 - [x] Batch A3: consolidate legacy admin compatibility redirects from page files into `next.config.ts` redirects.
 - [x] Batch C1 (part 1): unify reservation policy enum constants in shared package and align cancellation outcome handling in `MyBookingsClient`.
 - [x] Batch C1 (part 2): centralize stay deposit preview logic in shared contracts and reuse in booking/cancellation UI messaging.
@@ -106,6 +107,7 @@ Baseline evidence:
 - [x] Batch C4 (part 24): add shared date-display presets (`formatDateWithYear`, `formatDateWithWeekday`) and remove remaining local wrapper functions in admin reservations/check-in and guest bookings views.
 - [x] Batch C4 (part 25): centralize reservation status badge metadata into shared helper and remove duplicated status-class maps/functions across admin reservations/payments and guest bookings views.
 - [x] Batch C4 (part 26): keep guest booking gallery trigger available when unit cards exist (even without image seed) so modal-accessibility guardrails validate dialog semantics against real booking cards.
+- [x] Batch C5 (part 1): close C-workstream top-level outcomes after shared-contract alignment, helper consolidation, compatibility redirect cleanup, and refreshed end-to-end acceptance evidence.
 
 ### D) Database and Migration Hygiene
 
