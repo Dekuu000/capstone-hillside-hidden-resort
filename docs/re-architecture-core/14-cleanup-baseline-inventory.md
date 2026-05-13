@@ -1975,3 +1975,13 @@ Remaining A4 blocker:
    - local quality gate acceptance outputs
    - guest smoke/a11y/modal guardrail outputs
    - screenshot-backed manual guest scenario matrix (`14/14` rows)
+
+## Batch B7 / C5 Execution Update (Top-Level Workstream Closure)
+
+1. Closed remaining top-level B-workstream outcomes based on completed B1-B6 batches:
+   - handler extraction, shared service helpers, and route-level regression coverage are in place.
+2. Closed remaining top-level C-workstream outcomes based on completed C1-C4 and guest acceptance runs:
+   - shared-contract alignment, frontend helper consolidation, and compatibility redirect cleanup are complete.
+3. Final closure validation references:
+   - `npm run quality:gate` -> pass (2026-05-14)
+   - `npm run test:guest:e2e` -> pass (`10 passed` with credentials; `9 passed`, `1 skipped` without optional modal guardrail preconditions)
