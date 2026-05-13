@@ -1,26 +1,9 @@
 import Link from "next/link";
 import { Activity, BrainCircuit, Coins, Hotel } from "lucide-react";
 import type { ResortSnapshotResponse } from "../../../packages/shared/src/types";
+import { formatDateTime } from "../../lib/dateDisplay";
+import { formatPhpPeso as formatPeso } from "../../lib/formatCurrency";
 import { StatusPill } from "../shared/StatusPill";
-
-function formatPeso(amount: number) {
-  return new Intl.NumberFormat("en-PH", {
-    style: "currency",
-    currency: "PHP",
-    maximumFractionDigits: 0,
-  }).format(Number.isFinite(amount) ? amount : 0);
-}
-
-function formatAsOf(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Unavailable";
-  return date.toLocaleString("en-PH", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
 
 function toDemandPath(points: Array<{ occupancy_pct: number }>, width = 520, height = 120) {
   if (points.length === 0) return "";
@@ -53,7 +36,21 @@ export function ResortSnapshotPanel({
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-muted)]">Resort Snapshot</p>
           <h2 className="mt-2 text-xl font-bold text-[var(--color-text)]">Current occupancy, revenue, and demand</h2>
-          <p className="mt-1 text-sm text-[var(--color-muted)]">As of {snapshot ? formatAsOf(snapshot.as_of) : "Unavailable"}</p>
+          <p className="mt-1 text-sm text-[var(--color-muted)]">
+            As of{" "}
+            {snapshot
+              ? formatDateTime(snapshot.as_of, {
+                  locale: "en-PH",
+                  formatOptions: {
+                    month: "short",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                  },
+                  fallback: "Unavailable",
+                })
+              : "Unavailable"}
+          </p>
         </div>
         <StatusPill label={aiLabel} tone={aiTone} />
       </div>

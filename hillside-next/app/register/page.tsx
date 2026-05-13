@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Lock, Mail, UserRound } from "lucide-react";
 import { getApiErrorMessage } from "../../lib/apiError";
+import { clearServerSessionCookie } from "../../lib/authSessionCookie";
 import { getSupabaseBrowserClient } from "../../lib/supabase";
 import { Button } from "../../components/shared/Button";
 import { Toast } from "../../components/shared/Toast";
@@ -132,7 +133,7 @@ export default function RegisterPage() {
 
       if (signUpData.session?.access_token) {
         await supabase.auth.signOut();
-        await fetch("/api/auth/session", { method: "DELETE" });
+        await clearServerSessionCookie();
       }
 
       setSuccess("Account created. Check your email for verification, then sign in.");

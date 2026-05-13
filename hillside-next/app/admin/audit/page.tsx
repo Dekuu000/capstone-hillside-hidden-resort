@@ -3,6 +3,8 @@ import { ExternalLink, RotateCcw, Search, SlidersHorizontal } from "lucide-react
 import type { AuditLogsResponse } from "../../../../packages/shared/src/types";
 import { auditLogsResponseSchema } from "../../../../packages/shared/src/schemas";
 import { Badge, statusToBadgeVariant } from "../../../components/shared/Badge";
+import { buildTxExplorerUrl } from "../../../lib/chainExplorer";
+import { formatDateTime } from "../../../lib/dateDisplay";
 import { getServerAccessToken } from "../../../lib/serverAuth";
 import { fetchServerApiData } from "../../../lib/serverApi";
 
@@ -21,15 +23,6 @@ function parsePage(raw: string | undefined): number {
   const page = Number(raw || "1");
   if (!Number.isFinite(page)) return 1;
   return Math.max(1, Math.floor(page));
-}
-
-function formatDateTime(value: string) {
-  return new Date(value).toLocaleString();
-}
-
-function toExplorerUrl(txHash: string) {
-  if (!txHash) return null;
-  return `https://sepolia.etherscan.io/tx/${txHash}`;
 }
 
 function buildQuery(params: {
@@ -242,7 +235,7 @@ export default async function AdminAuditPage({
                     <td className="px-4 py-3 font-mono text-xs break-all">
                       {log.blockchain_tx_hash ? (
                         <a
-                          href={toExplorerUrl(log.blockchain_tx_hash) || "#"}
+                          href={buildTxExplorerUrl(null, log.blockchain_tx_hash) || "#"}
                           target="_blank"
                           rel="noreferrer"
                           className="inline-flex items-center gap-1 text-[var(--color-secondary)] underline"

@@ -254,7 +254,11 @@ export function GuestMapClient() {
           <section className="surface p-4">
             <h3 className="text-base font-semibold text-[var(--color-text)]">You are here</h3>
             <p className="mt-1 text-xs text-[var(--color-muted)]">Manual selector only (GPS-free MVP).</p>
+            <label htmlFor="map-origin-select" className="sr-only">
+              Select map origin
+            </label>
             <select
+              id="map-origin-select"
               value={originAmenityId || ""}
               onChange={(event) => setOriginAmenityId(event.target.value)}
               className="guest-field-control mt-2"
@@ -275,7 +279,7 @@ export function GuestMapClient() {
             <ul className="mt-3 space-y-2">
               {directionSteps.map((step, index) => (
                 <InsetPanel as="li" key={step} className="text-sm text-[var(--color-text)]">
-                  <span className="mr-1 font-semibold text-[var(--color-secondary)]">{index + 1}.</span>
+                  <span className="mr-1 font-semibold text-[var(--color-text)]">{index + 1}.</span>
                   {step}
                 </InsetPanel>
               ))}

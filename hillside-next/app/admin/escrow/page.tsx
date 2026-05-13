@@ -5,6 +5,7 @@ import {
 import type { EscrowReconciliationResponse } from "../../../../packages/shared/src/types";
 import { getServerAccessToken } from "../../../lib/serverAuth";
 import { fetchServerApiData } from "../../../lib/serverApi";
+import { formatDateTime } from "../../../lib/dateDisplay";
 import { AdminEscrowTableClient } from "../../../components/admin-escrow/AdminEscrowTableClient";
 
 const PAGE_SIZE = 10;
@@ -78,7 +79,7 @@ export default async function AdminEscrowPage({
             </p>
           ) : data.last_reconciled_at ? (
             <p className="mb-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-              Last reconciled at: {new Date(data.last_reconciled_at).toLocaleString()}
+              Last reconciled at: {formatDateTime(data.last_reconciled_at)}
             </p>
           ) : null}
 

@@ -4,17 +4,10 @@ import Link from "next/link";
 import { CircleAlert, Sparkles, Timer, TrendingUp } from "lucide-react";
 import type { ReactNode } from "react";
 import type { PricingRecommendation } from "../../../packages/shared/src/types";
+import { formatDateTime } from "../../lib/dateDisplay";
+import { formatPhpPeso as formatPeso } from "../../lib/formatCurrency";
 import { Badge } from "../shared/Badge";
 import { Skeleton } from "../shared/Skeleton";
-
-function formatPeso(value: number | null | undefined) {
-  const amount = Number(value ?? 0);
-  return new Intl.NumberFormat("en-PH", {
-    style: "currency",
-    currency: "PHP",
-    maximumFractionDigits: 0,
-  }).format(Number.isFinite(amount) ? amount : 0);
-}
 
 function getSource(recommendation: PricingRecommendation | null) {
   if (!recommendation) return "live";
@@ -207,7 +200,7 @@ export function AIPricingInsightCard({
           </p>
           {metrics.generatedAt ? (
             <p className="sm:col-span-3 text-xs text-[var(--color-muted)]">
-              Updated {new Date(metrics.generatedAt).toLocaleString()}
+              Updated {formatDateTime(metrics.generatedAt, { fallback: "Unavailable" })}
             </p>
           ) : null}
         </div>

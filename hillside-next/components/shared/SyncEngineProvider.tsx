@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { env } from "../../lib/env";
-import { getSupabaseBrowserClient } from "../../lib/supabase";
+import { getSupabaseBrowserClient, safeGetSession } from "../../lib/supabase";
 import { onSyncEvent, runSyncCycle, startSyncLoop } from "../../lib/offlineSync/engine";
 import { getSyncState, listConflicts, listOutboxSummary, type SyncScope } from "../../lib/offlineSync/store";
 
@@ -38,17 +38,31 @@ const SyncEngineContext = createContext<SyncRuntimeState>(defaultState);
 export function SyncEngineProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [snapshot, setSnapshot] = useState<SyncRuntimeState>(defaultState);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
 
   const scope: SyncScope = useMemo(
     () => (pathname?.startsWith("/admin") ? "admin" : "me"),
     [pathname],
   );
 
-  const getAccessToken = useCallback(async (): Promise<string | null> => {
+  useEffect(() => {
+    let mounted = true;
     const supabase = getSupabaseBrowserClient();
-    const { data } = await supabase.auth.getSession();
-    return data.session?.access_token ?? null;
+    void safeGetSession().then(({ session }) => {
+      if (!mounted) return;
+      setAccessToken(session?.access_token ?? null);
+    });
+    const { data: authSub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return;
+      setAccessToken(session?.access_token ?? null);
+    });
+    return () => {
+      mounted = false;
+      authSub.subscription.unsubscribe();
+    };
   }, []);
+
+  const getAccessToken = useCallback(async (): Promise<string | null> => accessToken, [accessToken]);
 
   const refreshState = useCallback(async () => {
     if (typeof window === "undefined") return;

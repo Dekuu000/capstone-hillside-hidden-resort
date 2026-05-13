@@ -22,6 +22,37 @@ npm run dev:contracts
 npm run lint
 npm run typecheck
 npm run test
+npm run test:guest:e2e
+npm run quality:gate
+```
+
+## Local stack quickstart (current)
+
+```bash
+npm run db:start
+npm run dev:api
+npm run dev:next
+```
+
+Optional DB reset when validating migrations:
+
+```bash
+npm run db:reset
+npm run db:validate
+```
+
+Guest UX automation (Playwright):
+
+```bash
+npm run test:guest:e2e
+```
+
+Optional modal-auth guardrail credentials:
+
+```powershell
+$env:GUEST_E2E_EMAIL="your-user@example.com"
+$env:GUEST_E2E_PASSWORD="your-password"
+npm run test:guest:e2e
 ```
 
 ## Migration strategy

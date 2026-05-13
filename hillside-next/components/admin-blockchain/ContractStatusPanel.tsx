@@ -3,51 +3,11 @@
 import Link from "next/link";
 import { ExternalLink, RefreshCw } from "lucide-react";
 import type { ChainKey, ContractStatusResponse } from "../../../packages/shared/src/types";
+import { buildTxExplorerUrlFromBase, normalizeTxHash, shortHash } from "../../lib/chainExplorer";
+import { formatDateTime } from "../../lib/dateDisplay";
 import { Badge, statusToBadgeVariant } from "../shared/Badge";
 import { Button } from "../shared/Button";
 import { StatCard } from "../shared/StatCard";
-
-function formatDateTime(value?: string | null) {
-  if (!value) return "--";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "--";
-  return date.toLocaleString("en-PH", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
-
-function shortHash(hash: string) {
-  if (!hash) return "--";
-  if (hash.length <= 14) return hash;
-  return `${hash.slice(0, 8)}...${hash.slice(-6)}`;
-}
-
-function normalizeTxHash(value: string | null | undefined) {
-  const raw = String(value || "").trim();
-  if (!raw) return "";
-  const exact = raw.match(/^0x[a-fA-F0-9]{64}$/);
-  if (exact) return exact[0];
-  const embedded = raw.match(/0x[a-fA-F0-9]{64}/);
-  return embedded?.[0] ?? raw;
-}
-
-function buildExplorerTxHref(explorerBaseUrl: string, txHash: string | null | undefined) {
-  const normalizedHash = normalizeTxHash(txHash);
-  if (!normalizedHash) return null;
-  const base = String(explorerBaseUrl || "").trim().replace(/\/+$/, "");
-  if (!base) return null;
-  const txIndex = base.indexOf("/tx/");
-  if (txIndex >= 0) {
-    return `${base.slice(0, txIndex)}/tx/${normalizedHash}`;
-  }
-  if (base.endsWith("/tx")) {
-    return `${base}/${normalizedHash}`;
-  }
-  return `${base}/tx/${normalizedHash}`;
-}
 
 type Props = {
   data: ContractStatusResponse | null;
@@ -86,9 +46,27 @@ export function ContractStatusPanel({
       : "Unavailable";
   const gasHint =
     gas?.source === "cached"
-      ? `Cached snapshot - ${formatDateTime(gas.last_updated_at)}`
+      ? `Cached snapshot - ${formatDateTime(gas.last_updated_at, {
+          locale: "en-PH",
+          formatOptions: {
+            month: "short",
+            day: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+          },
+          fallback: "--",
+        })}`
       : gas?.source === "live"
-        ? `Live RPC - ${formatDateTime(gas.last_updated_at)}`
+        ? `Live RPC - ${formatDateTime(gas.last_updated_at, {
+            locale: "en-PH",
+            formatOptions: {
+              month: "short",
+              day: "numeric",
+              hour: "numeric",
+              minute: "2-digit",
+            },
+            fallback: "--",
+          })}`
         : gas?.note || "RPC unavailable";
 
   const rowsCount = data?.recent_successful_txs.length ?? 0;
@@ -187,7 +165,19 @@ export function ContractStatusPanel({
         <div className="flex flex-col gap-2 border-b border-[var(--color-border)] bg-slate-50 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-semibold text-[var(--color-text)]">Recent successful escrow transactions</p>
-            <p className="text-xs text-[var(--color-muted)]">As of {formatDateTime(data?.as_of)}</p>
+            <p className="text-xs text-[var(--color-muted)]">
+              As of{" "}
+              {formatDateTime(data?.as_of, {
+                locale: "en-PH",
+                formatOptions: {
+                  month: "short",
+                  day: "numeric",
+                  hour: "numeric",
+                  minute: "2-digit",
+                },
+                fallback: "--",
+              })}
+            </p>
           </div>
           <Link
             href="/admin/blockchain?tab=reconciliation"
@@ -220,7 +210,7 @@ export function ContractStatusPanel({
                 <tbody>
                 {data.recent_successful_txs.map((row) => {
                     const normalizedHash = normalizeTxHash(row.chain_tx_hash);
-                    const explorerHref = buildExplorerTxHref(data.explorer_base_url, row.chain_tx_hash);
+                    const explorerHref = buildTxExplorerUrlFromBase(data.explorer_base_url, row.chain_tx_hash);
                     return (
                       <tr key={`${row.reservation_id}-${row.chain_tx_hash}`} className="border-t border-[var(--color-border)]">
                         <td className="px-3 py-2 font-semibold text-[var(--color-text)]">{row.reservation_code}</td>
@@ -238,7 +228,7 @@ export function ContractStatusPanel({
                                 aria-label={normalizedHash || row.chain_tx_hash}
                               >
                                 <span className="rounded border border-amber-300 bg-amber-100 px-1.5 py-0.5 font-mono text-xs text-blue-800">
-                                  {shortHash(normalizedHash)}
+                                  {shortHash(normalizedHash, 8, 6)}
                                 </span>
                                 <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
                                 <span className="pointer-events-none absolute bottom-full left-0 z-20 mb-1.5 hidden rounded-md bg-[#1e2b3f] px-2 py-1 font-mono text-[11px] text-slate-100 shadow-lg group-hover:block group-focus-visible:block">
@@ -247,10 +237,21 @@ export function ContractStatusPanel({
                               </a>
                             </span>
                           ) : (
-                            shortHash(normalizedHash || row.chain_tx_hash)
+                            shortHash(normalizedHash || row.chain_tx_hash || "--", 8, 6)
                           )}
                         </td>
-                        <td className="px-3 py-2 text-xs text-[var(--color-muted)]">{formatDateTime(row.updated_at)}</td>
+                        <td className="px-3 py-2 text-xs text-[var(--color-muted)]">
+                          {formatDateTime(row.updated_at, {
+                            locale: "en-PH",
+                            formatOptions: {
+                              month: "short",
+                              day: "numeric",
+                              hour: "numeric",
+                              minute: "2-digit",
+                            },
+                            fallback: "--",
+                          })}
+                        </td>
                       </tr>
                     );
                   })}

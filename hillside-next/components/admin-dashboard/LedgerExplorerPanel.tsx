@@ -1,44 +1,9 @@
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import type { ContractStatusResponse } from "../../../packages/shared/src/types";
+import { buildTxExplorerUrlFromBase, normalizeTxHash, shortHash } from "../../lib/chainExplorer";
+import { formatDateTime } from "../../lib/dateDisplay";
 import { Badge, statusToBadgeVariant } from "../shared/Badge";
-
-function shortHash(value: string) {
-  if (!value) return "--";
-  if (value.length <= 22) return value;
-  return `${value.slice(0, 10)}...${value.slice(-8)}`;
-}
-
-function formatDateTime(value?: string | null) {
-  if (!value) return "--";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "--";
-  return date.toLocaleString("en-PH", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
-
-function normalizeTxHash(value: string | null | undefined) {
-  const raw = String(value || "").trim();
-  const exact = raw.match(/^0x[a-fA-F0-9]{64}$/);
-  if (exact) return exact[0];
-  const embedded = raw.match(/0x[a-fA-F0-9]{64}/);
-  return embedded?.[0] ?? raw;
-}
-
-function buildExplorerTxHref(explorerBaseUrl: string, txHash: string | null | undefined) {
-  const normalizedHash = normalizeTxHash(txHash);
-  if (!normalizedHash) return null;
-  const base = String(explorerBaseUrl || "").trim().replace(/\/+$/, "");
-  if (!base) return null;
-  const txIndex = base.indexOf("/tx/");
-  if (txIndex >= 0) return `${base.slice(0, txIndex)}/tx/${normalizedHash}`;
-  if (base.endsWith("/tx")) return `${base}/${normalizedHash}`;
-  return `${base}/tx/${normalizedHash}`;
-}
 
 export function LedgerExplorerPanel({
   contractStatus,
@@ -92,7 +57,7 @@ export function LedgerExplorerPanel({
               </thead>
               <tbody>
                 {items.slice(0, 6).map((row) => {
-                  const explorerHref = buildExplorerTxHref(contractStatus?.explorer_base_url || "", row.chain_tx_hash);
+                  const explorerHref = buildTxExplorerUrlFromBase(contractStatus?.explorer_base_url, row.chain_tx_hash);
                   const normalizedHash = normalizeTxHash(row.chain_tx_hash);
                   return (
                     <tr key={`${row.reservation_id}-${row.chain_tx_hash}`} className="border-t border-[var(--color-border)]">
@@ -111,7 +76,7 @@ export function LedgerExplorerPanel({
                               aria-label={normalizedHash || row.chain_tx_hash}
                             >
                               <span className="rounded border border-amber-300 bg-amber-100 px-1.5 py-0.5 font-mono text-xs text-blue-800">
-                                {shortHash(normalizedHash)}
+                                {shortHash(normalizedHash || row.chain_tx_hash || "--")}
                               </span>
                               <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
                               <span className="pointer-events-none absolute bottom-full left-0 z-20 mb-1.5 hidden rounded-md bg-[#1e2b3f] px-2 py-1 font-mono text-[11px] text-slate-100 shadow-lg group-hover:block group-focus-visible:block">
@@ -120,10 +85,21 @@ export function LedgerExplorerPanel({
                             </a>
                           </span>
                         ) : (
-                          shortHash(normalizedHash || row.chain_tx_hash)
+                          shortHash(normalizedHash || row.chain_tx_hash || "--")
                         )}
                       </td>
-                      <td className="px-3 py-2 text-xs text-[var(--color-muted)]">{formatDateTime(row.updated_at)}</td>
+                      <td className="px-3 py-2 text-xs text-[var(--color-muted)]">
+                        {formatDateTime(row.updated_at, {
+                          locale: "en-PH",
+                          formatOptions: {
+                            month: "short",
+                            day: "numeric",
+                            hour: "numeric",
+                            minute: "2-digit",
+                          },
+                          fallback: "--",
+                        })}
+                      </td>
                     </tr>
                   );
                 })}

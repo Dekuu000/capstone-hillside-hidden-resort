@@ -8,7 +8,9 @@ import { myProfileResponseSchema } from "../../../packages/shared/src/schemas";
 import type { MyProfileResponse } from "../../../packages/shared/src/types";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
-import { getSupabaseBrowserClient } from "../../lib/supabase";
+import { clearServerSessionCookie } from "../../lib/authSessionCookie";
+import { getSupabaseBrowserClient, safeGetSession } from "../../lib/supabase";
+import { resolveUserDisplayName } from "../../lib/userProfile";
 import { useToast } from "../shared/ToastProvider";
 
 type GuestChromeProps = {
@@ -43,17 +45,13 @@ export function GuestChrome({ children, initialName = null, initialEmail = null 
   useEffect(() => {
     let mounted = true;
     const supabase = getSupabaseBrowserClient();
-    supabase.auth.getSession().then(({ data }) => {
+    void safeGetSession().then(({ session }) => {
       if (!mounted) return;
-      setAccessToken(data.session?.access_token ?? null);
-      const user = data.session?.user;
+      setAccessToken(session?.access_token ?? null);
+      const user = session?.user;
       if (!user) return;
       if (!initialName) {
-        const displayName =
-          (typeof user.user_metadata?.name === "string" && user.user_metadata.name.trim()) ||
-          user.email ||
-          "Guest";
-        setName(displayName);
+        setName(resolveUserDisplayName(user, "Guest"));
       }
       if (!initialEmail) {
         setEmail(user.email ?? "");
@@ -65,11 +63,7 @@ export function GuestChrome({ children, initialName = null, initialEmail = null 
       const user = session?.user;
       if (!user) return;
       if (!initialName) {
-        const displayName =
-          (typeof user.user_metadata?.name === "string" && user.user_metadata.name.trim()) ||
-          user.email ||
-          "Guest";
-        setName(displayName);
+        setName(resolveUserDisplayName(user, "Guest"));
       }
       if (!initialEmail) {
         setEmail(user.email ?? "");
@@ -114,7 +108,7 @@ export function GuestChrome({ children, initialName = null, initialEmail = null 
   const handleSignOut = async () => {
     const supabase = getSupabaseBrowserClient();
     await supabase.auth.signOut();
-    await fetch("/api/auth/session", { method: "DELETE" }).catch(() => null);
+    await clearServerSessionCookie().catch(() => null);
     router.replace("/login");
   };
 

@@ -4,6 +4,11 @@ import Link from "next/link";
 import { AlertCircle, ChevronDown, ExternalLink, ShieldCheck, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { AdminPaymentItem, ReservationListItem } from "../../../packages/shared/src/types";
+import { buildTxExplorerUrl } from "../../lib/chainExplorer";
+import { formatDateTime, formatDateWithYear } from "../../lib/dateDisplay";
+import { formatPhpPeso as formatPeso } from "../../lib/formatCurrency";
+import { getReservationStatusMeta } from "../../lib/reservationStatus";
+import { getReservationPaymentState, getReservationSource, type ReservationPaymentState } from "../../lib/reservationView";
 
 type ReservationDetailDrawerProps = {
   open: boolean;
@@ -31,71 +36,10 @@ type ReadinessState =
 
 type PrimaryActionType = "record_payment" | "check_in" | "check_out" | "view_history" | "none";
 
-function formatDate(value?: string | null) {
-  if (!value) return "-";
-  return new Date(`${value}T00:00:00`).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-function formatDateTime(value?: string | null) {
-  if (!value) return "-";
-  return new Date(value).toLocaleString();
-}
-
-function formatPeso(value: number | null | undefined) {
-  const amount = Number(value ?? 0);
-  return new Intl.NumberFormat("en-PH", {
-    style: "currency",
-    currency: "PHP",
-    maximumFractionDigits: 0,
-  }).format(Number.isFinite(amount) ? amount : 0);
-}
-
-function getReservationSource(reservation: ReservationListItem): "online" | "walk_in" {
-  if (reservation.reservation_source === "online" || reservation.reservation_source === "walk_in") {
-    return reservation.reservation_source;
-  }
-  const notes = String(reservation.notes || "").toLowerCase();
-  return notes.includes("walk-in") || notes.includes("walk in") ? "walk_in" : "online";
-}
-
-function getPaymentState(reservation: ReservationListItem): "unpaid" | "partial" | "settled" {
-  const total = Number(reservation.total_amount ?? 0);
-  const paid = Number(reservation.amount_paid_verified ?? 0);
-  const balance = Number(reservation.balance_due ?? Math.max(total - paid, 0));
-  if (balance <= 0 && total > 0) return "settled";
-  if (paid > 0 && balance > 0) return "partial";
-  return "unpaid";
-}
-
-function getPaymentStateMeta(state: "unpaid" | "partial" | "settled") {
+function getPaymentStateMeta(state: ReservationPaymentState) {
   if (state === "settled") return { label: "Paid", className: "bg-emerald-100 text-emerald-800" };
   if (state === "partial") return { label: "Partial", className: "bg-amber-100 text-amber-800" };
   return { label: "Unpaid", className: "bg-slate-200 text-slate-700" };
-}
-
-function getReservationStatusMeta(status: string) {
-  const map: Record<string, string> = {
-    pending_payment: "bg-yellow-100 text-yellow-800",
-    for_verification: "bg-blue-100 text-blue-800",
-    confirmed: "bg-emerald-100 text-emerald-800",
-    checked_in: "bg-indigo-100 text-indigo-800",
-    checked_out: "bg-slate-200 text-slate-700",
-    cancelled: "bg-red-100 text-red-800",
-    no_show: "bg-red-100 text-red-800",
-  };
-  return {
-    label: status.replaceAll("_", " "),
-    className: map[status] ?? "bg-slate-200 text-slate-700",
-  };
-}
-
-function getExplorerBase(chainKey: string | null | undefined) {
-  if (chainKey === "amoy") return "https://amoy.polygonscan.com/tx/";
-  return "https://sepolia.etherscan.io/tx/";
 }
 
 function readinessMeta(state: ReadinessState) {
@@ -159,7 +103,7 @@ export function ReservationDetailDrawer({
     : reservation?.check_in_date ?? null;
   const todayKey = new Date().toISOString().slice(0, 10);
   const isSameDay = Boolean(arrivalDate && arrivalDate === todayKey);
-  const paymentState = reservation ? getPaymentState(reservation) : "unpaid";
+  const paymentState = reservation ? getReservationPaymentState(reservation) : "unpaid";
   const paymentMeta = getPaymentStateMeta(paymentState);
   const reservationStatusMeta = getReservationStatusMeta(reservation?.status ?? "pending_payment");
   const isOfflineQueued = String(reservation?.notes || "").toLowerCase().includes("offline queue");
@@ -191,7 +135,7 @@ export function ReservationDetailDrawer({
     : "/admin/payments";
   const paymentListUrl = reservation ? `/admin/payments?search=${encodeURIComponent(reservation.reservation_code)}` : "/admin/payments";
   const txHash = reservation?.chain_tx_hash ?? null;
-  const txUrl = txHash ? `${getExplorerBase(reservation?.chain_key)}${txHash}` : null;
+  const txUrl = buildTxExplorerUrl(reservation?.chain_key, txHash);
   const checkInActionHref = paymentState === "settled" ? checkInUrl : `${checkInUrl}&override=1`;
   const checkInActionLabel = paymentState === "settled" ? "Check-in" : "Check-in (Override)";
   const remainingBalance = Number(reservation?.balance_due ?? 0);
@@ -322,7 +266,7 @@ export function ReservationDetailDrawer({
                     <p><span className="text-slate-500">Guest:</span> {reservation.guest?.name || "-"}</p>
                     <p><span className="text-slate-500">Contact:</span> {reservation.guest?.phone || reservation.guest?.email || "-"}</p>
                     <p><span className="text-slate-500">{isTour ? "Tour" : "Unit"}:</span> {isTour ? (reservation.service_bookings?.map((item) => item.service?.service_name || "Tour").join(", ") || "-") : (reservation.units?.map((item) => item.unit?.name || "Unit").join(", ") || "-")}</p>
-                    <p><span className="text-slate-500">{isTour ? "Visit date:" : "Stay dates:"}</span> {isTour ? formatDate(arrivalDate) : `${formatDate(reservation.check_in_date)} to ${formatDate(reservation.check_out_date)}`}</p>
+                    <p><span className="text-slate-500">{isTour ? "Visit date:" : "Stay dates:"}</span> {isTour ? formatDateWithYear(arrivalDate) : `${formatDateWithYear(reservation.check_in_date)} to ${formatDateWithYear(reservation.check_out_date)}`}</p>
                     <p><span className="text-slate-500">Pax:</span> {reservation.guest_count ?? "-"}</p>
                     <p><span className="text-slate-500">Created at:</span> {formatDateTime(reservation.created_at)}</p>
                     <p><span className="text-slate-500">Booking source:</span> {source === "walk_in" ? "Walk-in front desk" : "Online guest portal"}</p>

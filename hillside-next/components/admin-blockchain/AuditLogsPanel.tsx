@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { ExternalLink, RotateCcw, Search } from "lucide-react";
 import type { AuditLogItem, AuditLogsResponse } from "../../../packages/shared/src/types";
+import { buildTxExplorerUrl, shortHash } from "../../lib/chainExplorer";
+import { formatDateTime } from "../../lib/dateDisplay";
 import { Badge, statusToBadgeVariant } from "../shared/Badge";
 import { Button } from "../shared/Button";
 import { DetailDrawer } from "../shared/DetailDrawer";
@@ -17,21 +19,12 @@ export type AuditFilterState = {
   entityType: "reservation";
 };
 
-function formatDateTime(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString("en-PH", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
-
-function toExplorerUrl(hash?: string | null) {
-  if (!hash) return null;
-  return `https://sepolia.etherscan.io/tx/${hash}`;
-}
+const auditDateFormatOptions: Intl.DateTimeFormatOptions = {
+  month: "short",
+  day: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+};
 
 function shortValue(value?: string | null, size = 12) {
   if (!value) return "--";
@@ -207,7 +200,13 @@ export function AuditLogsPanel({
                       }
                     }}
                   >
-                    <td className="sticky left-0 z-[1] bg-white px-3 py-2 text-xs text-[var(--color-muted)]">{formatDateTime(log.timestamp)}</td>
+                    <td className="sticky left-0 z-[1] bg-white px-3 py-2 text-xs text-[var(--color-muted)]">
+                      {formatDateTime(log.timestamp, {
+                        locale: "en-PH",
+                        formatOptions: auditDateFormatOptions,
+                        fallback: log.timestamp,
+                      })}
+                    </td>
                     <td className="px-3 py-2 text-xs text-[var(--color-text)]">
                       {log.performed_by?.name || log.performed_by?.email || shortValue(log.performed_by_user_id, 10)}
                     </td>
@@ -217,13 +216,13 @@ export function AuditLogsPanel({
                     <td className="px-3 py-2 font-mono text-xs text-[var(--color-text)]">
                       {log.blockchain_tx_hash ? (
                         <a
-                          href={toExplorerUrl(log.blockchain_tx_hash) || "#"}
+                          href={buildTxExplorerUrl("sepolia", log.blockchain_tx_hash) || "#"}
                           target="_blank"
                           rel="noreferrer"
                           className="inline-flex items-center gap-1 underline"
                           onClick={(event) => event.stopPropagation()}
                         >
-                          {shortValue(log.blockchain_tx_hash, 18)}
+                          {shortHash(log.blockchain_tx_hash, 10, 8)}
                           <ExternalLink className="h-3.5 w-3.5" />
                         </a>
                       ) : (
@@ -275,7 +274,14 @@ export function AuditLogsPanel({
         {selectedLog ? (
           <div className="space-y-3 text-sm">
             <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Timestamp" value={formatDateTime(selectedLog.timestamp)} />
+              <Field
+                label="Timestamp"
+                value={formatDateTime(selectedLog.timestamp, {
+                  locale: "en-PH",
+                  formatOptions: auditDateFormatOptions,
+                  fallback: selectedLog.timestamp,
+                })}
+              />
               <Field label="Actor" value={selectedLog.performed_by?.name || selectedLog.performed_by?.email || selectedLog.performed_by_user_id || "--"} />
               <Field label="Entity type" value={selectedLog.entity_type} />
               <Field label="Entity id" value={selectedLog.entity_id} mono />

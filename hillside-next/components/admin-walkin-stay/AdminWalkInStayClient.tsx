@@ -7,6 +7,8 @@ import type { AvailableUnitsResponse, ReservationCreateResponse, ReservationList
 import { availableUnitsResponseSchema, reservationCreateResponseSchema, reservationListItemSchema } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
+import { todayPlusLocalIsoDate } from "../../lib/dateIso";
+import { formatPhpPeso as toPeso } from "../../lib/formatCurrency";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
 import { FancyDatePicker } from "../shared/FancyDatePicker";
 import { useToast } from "../shared/ToastProvider";
@@ -16,37 +18,12 @@ type AdminWalkInStayClientProps = {
   embedded?: boolean;
 };
 
-function getTodayIso() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function getTomorrowIso() {
-  const now = new Date();
-  now.setDate(now.getDate() + 1);
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function toPeso(value: number) {
-  return new Intl.NumberFormat("en-PH", {
-    style: "currency",
-    currency: "PHP",
-    maximumFractionDigits: 0,
-  }).format(value || 0);
-}
-
 export function AdminWalkInStayClient({ initialToken = null, embedded = false }: AdminWalkInStayClientProps) {
   const { showToast } = useToast();
   const token = initialToken;
 
-  const [checkInDate, setCheckInDate] = useState(getTodayIso());
-  const [checkOutDate, setCheckOutDate] = useState(getTomorrowIso());
+  const [checkInDate, setCheckInDate] = useState(todayPlusLocalIsoDate(0));
+  const [checkOutDate, setCheckOutDate] = useState(todayPlusLocalIsoDate(1));
   const [guestName, setGuestName] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
   const [notes, setNotes] = useState("");
@@ -175,7 +152,7 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
         checkInDate,
         checkOutDate,
         unitNames: selectedUnits.map((unit) => unit.name),
-        sameDay: checkInDate === getTodayIso(),
+        sameDay: checkInDate === todayPlusLocalIsoDate(0),
         estimatedTotal,
       };
       const response = await syncAwareMutation<typeof payload, ReservationCreateResponse>(
@@ -269,9 +246,9 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
       ? "partial"
       : "unpaid";
   const createdCheckInDate = createdSummary?.checkInDate ?? createdReservation?.check_in_date ?? "";
-  const isSameDayStay = Boolean(createdSummary?.sameDay || (createdCheckInDate && createdCheckInDate === getTodayIso()));
+  const isSameDayStay = Boolean(createdSummary?.sameDay || (createdCheckInDate && createdCheckInDate === todayPlusLocalIsoDate(0)));
   const canCheckInNow = createdPaymentState === "paid"
-    && createdCheckInDate === getTodayIso()
+    && createdCheckInDate === todayPlusLocalIsoDate(0)
     && !["checked_in", "checked_out", "cancelled", "no_show"].includes(String(createdReservation?.status || ""));
 
   if (!token) {
@@ -436,20 +413,20 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
           </div>
 
           <div className="mb-4 grid gap-3 sm:grid-cols-2">
-            <FancyDatePicker label="Check-in" value={checkInDate} onChange={setCheckInDate} min={getTodayIso()} />
+            <FancyDatePicker label="Check-in" value={checkInDate} onChange={setCheckInDate} min={todayPlusLocalIsoDate(0)} />
             <FancyDatePicker
               label="Check-out"
               value={checkOutDate}
               onChange={setCheckOutDate}
-              min={checkInDate || getTodayIso()}
+              min={checkInDate || todayPlusLocalIsoDate(0)}
             />
           </div>
           <div className="mb-4 flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() => {
-                setCheckInDate(getTodayIso());
-                setCheckOutDate(getTomorrowIso());
+                setCheckInDate(todayPlusLocalIsoDate(0));
+                setCheckOutDate(todayPlusLocalIsoDate(1));
               }}
               className="inline-flex h-8 items-center rounded-full border border-[var(--color-border)] bg-white px-3 text-xs font-semibold text-[var(--color-text)]"
             >

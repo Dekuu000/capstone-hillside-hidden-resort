@@ -1,8 +1,8 @@
-$ErrorActionPreference = "Stop"
-
 param(
   [switch]$WithAi
 )
+
+$ErrorActionPreference = "Stop"
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 

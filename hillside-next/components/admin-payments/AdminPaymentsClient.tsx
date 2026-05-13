@@ -21,6 +21,10 @@ import {
 } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
+import { formatCachedAt, formatDateTime } from "../../lib/dateDisplay";
+import { formatPhpPeso as formatPeso } from "../../lib/formatCurrency";
+import { normalizePaymentProofPath } from "../../lib/paymentProof";
+import { getReservationStatusMeta } from "../../lib/reservationStatus";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
 import { loadPaymentsSnapshot, savePaymentsSnapshot } from "../../lib/offlineSync/store";
 import { getSupabaseBrowserClient } from "../../lib/supabase";
@@ -55,41 +59,7 @@ const WORKFLOW_FILTERS: Array<{ id: PaymentWorkflowFilter; label: string }> = [
   { id: "rejected", label: "Rejected" },
 ];
 
-const RESERVATION_STATUS_META: Partial<Record<ReservationStatus, { label: string; className: string }>> = {
-  pending_payment: { label: "Pending Payment", className: "bg-yellow-100 text-yellow-800" },
-  for_verification: { label: "For Verification", className: "bg-orange-100 text-orange-800" },
-  confirmed: { label: "Confirmed", className: "bg-green-100 text-green-800" },
-  checked_in: { label: "Checked In", className: "bg-indigo-100 text-indigo-800" },
-  checked_out: { label: "Checked Out", className: "bg-slate-200 text-slate-700" },
-  cancelled: { label: "Cancelled", className: "bg-red-100 text-red-800" },
-  no_show: { label: "No Show", className: "bg-red-100 text-red-800" },
-};
-
 const CANCELLED_STATUSES = new Set<ReservationStatus>(["cancelled", "no_show"]);
-
-function formatPeso(value: number | null | undefined) {
-  const amount = Number(value ?? 0);
-  return new Intl.NumberFormat("en-PH", {
-    style: "currency",
-    currency: "PHP",
-    maximumFractionDigits: 0,
-  }).format(Number.isFinite(amount) ? amount : 0);
-}
-
-function formatDateTime(value?: string | null) {
-  if (!value) return "-";
-  return new Date(value).toLocaleString();
-}
-
-function formatCachedAt(value?: string | null) {
-  if (!value) return "-";
-  return new Date(value).toLocaleString();
-}
-
-function statusMeta(status?: ReservationStatus | null) {
-  if (!status) return { label: "Unknown", className: "bg-slate-100 text-slate-700" };
-  return RESERVATION_STATUS_META[status] ?? { label: status.replace("_", " "), className: "bg-slate-100 text-slate-700" };
-}
 
 function policyOutcomeMeta(outcome?: string | null) {
   const value = String(outcome || "").toLowerCase();
@@ -106,16 +76,6 @@ function policyRuleLabel(rule?: string | null) {
   if (value === "tour_fixed_500_or_full_if_below_500") return "Tour: PHP 500 (or full if below)";
   if (value === "admin_override") return "Admin override";
   return value.replaceAll("_", " ");
-}
-
-function normalizeProofPath(raw: string) {
-  const trimmed = raw.trim();
-  if (!trimmed) return "";
-  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed;
-  if (trimmed.includes("/payment-proofs/")) {
-    return trimmed.split("/payment-proofs/")[1] ?? trimmed;
-  }
-  return trimmed;
 }
 
 function looksLikeReservationCode(value: string) {
@@ -531,7 +491,7 @@ export function AdminPaymentsClient({
       return;
     }
 
-    const normalizedPath = normalizeProofPath(raw);
+    const normalizedPath = normalizePaymentProofPath(raw);
     if (!normalizedPath) return;
 
     setProofBusy((prev) => ({ ...prev, [payment.payment_id]: true }));
@@ -1196,7 +1156,7 @@ export function AdminPaymentsClient({
                   const reservationStatus = payment.reservation?.status ?? null;
                   const isCancelledReservation = reservationStatus ? CANCELLED_STATUSES.has(reservationStatus) : false;
                   const hasEvidence = Boolean(payment.proof_url || payment.reference_no);
-                  const resMeta = statusMeta(reservationStatus);
+                  const resMeta = getReservationStatusMeta(reservationStatus, "payments");
                   const outcomeMeta = policyOutcomeMeta(payment.reservation?.policy_outcome);
                   return (
                     <tr key={payment.payment_id} className="border-t border-slate-100 hover:bg-slate-50/80">

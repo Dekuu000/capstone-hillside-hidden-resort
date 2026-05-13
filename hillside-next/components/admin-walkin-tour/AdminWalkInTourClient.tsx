@@ -16,6 +16,8 @@ import {
 } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
+import { todayPlusLocalIsoDate } from "../../lib/dateIso";
+import { formatPhpPeso as toPeso } from "../../lib/formatCurrency";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
 import { FancyDatePicker } from "../shared/FancyDatePicker";
 import { useToast } from "../shared/ToastProvider";
@@ -25,22 +27,6 @@ type AdminWalkInTourClientProps = {
   initialServicesData?: ServiceListResponse | null;
   embedded?: boolean;
 };
-
-function toPeso(value: number) {
-  return new Intl.NumberFormat("en-PH", {
-    style: "currency",
-    currency: "PHP",
-    maximumFractionDigits: 0,
-  }).format(value || 0);
-}
-
-function todayIso() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
 
 function getAiSource(recommendation: PricingRecommendation | null) {
   if (!recommendation) return null;
@@ -62,7 +48,7 @@ export function AdminWalkInTourClient({
   const [servicesError, setServicesError] = useState<string | null>(null);
 
   const [serviceId, setServiceId] = useState("");
-  const [visitDate, setVisitDate] = useState(todayIso());
+  const [visitDate, setVisitDate] = useState(todayPlusLocalIsoDate(0));
   const [adultQty, setAdultQty] = useState(1);
   const [kidQty, setKidQty] = useState(0);
   const [guestName, setGuestName] = useState("");
@@ -273,7 +259,7 @@ export function AdminWalkInTourClient({
             {servicesError ? <span className="text-xs text-red-600">{servicesError}</span> : null}
           </label>
 
-          <FancyDatePicker label="Visit Date" value={visitDate} onChange={setVisitDate} min={todayIso()} />
+          <FancyDatePicker label="Visit Date" value={visitDate} onChange={setVisitDate} min={todayPlusLocalIsoDate(0)} />
 
           <label className="grid gap-1 text-sm text-slate-700">
             Adults
@@ -330,7 +316,7 @@ export function AdminWalkInTourClient({
         <div className="mt-3 flex flex-wrap gap-2">
           <button
             type="button"
-            onClick={() => setVisitDate(todayIso())}
+            onClick={() => setVisitDate(todayPlusLocalIsoDate(0))}
             className="inline-flex h-8 items-center rounded-full border border-[var(--color-border)] bg-white px-3 text-xs font-semibold text-[var(--color-text)]"
           >
             Same-day tour

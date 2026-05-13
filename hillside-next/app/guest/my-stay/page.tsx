@@ -1,53 +1,20 @@
 import { ExternalLink, KeyRound, ShieldCheck } from "lucide-react";
 import { redirect } from "next/navigation";
-import { z } from "zod";
-import { stayDashboardResponseSchema } from "../../../../packages/shared/src/schemas";
-import type { ReservationListItem, StayDashboardResponse } from "../../../../packages/shared/src/types";
+import { guestPassVerificationResponseSchema, stayDashboardResponseSchema } from "../../../../packages/shared/src/schemas";
+import type {
+  GuestPassVerificationResponse,
+  ReservationListItem,
+  StayDashboardResponse,
+} from "../../../../packages/shared/src/types";
 import { MyStayDashboardClient } from "../../../components/guest-stay/MyStayDashboardClient";
 import { GuestShell } from "../../../components/layout/GuestShell";
 import { PageHeader } from "../../../components/layout/PageHeader";
 import { Badge } from "../../../components/shared/Badge";
 import { NetworkStatusBadge } from "../../../components/shared/NetworkStatusBadge";
+import { buildTokenExplorerUrl, buildTxExplorerUrl, shortHash } from "../../../lib/chainExplorer";
+import { formatPhpPeso as toPeso } from "../../../lib/formatCurrency";
 import { fetchServerApiData } from "../../../lib/serverApi";
 import { getServerAccessToken, getServerEmailHint } from "../../../lib/serverAuth";
-
-const guestPassSchema = z.object({
-  minted: z.boolean(),
-  chain_key: z.string().nullable().optional(),
-  contract_address: z.string().nullable().optional(),
-  token_id: z.number().nullable().optional(),
-  tx_hash: z.string().nullable().optional(),
-});
-
-function shortHash(value: string) {
-  if (value.length <= 20) return value;
-  return `${value.slice(0, 10)}...${value.slice(-8)}`;
-}
-
-function explorerTxUrl(chainKey: string | null | undefined, txHash: string | null | undefined) {
-  if (!txHash) return null;
-  const normalized = txHash.startsWith("0x") ? txHash : `0x${txHash}`;
-  if (chainKey === "amoy") return `https://amoy.polygonscan.com/tx/${normalized}`;
-  return `https://sepolia.etherscan.io/tx/${normalized}`;
-}
-
-function explorerTokenUrl(
-  chainKey: string | null | undefined,
-  contractAddress: string | null | undefined,
-  tokenId: number | null | undefined,
-) {
-  if (!contractAddress || tokenId == null) return null;
-  if (chainKey === "amoy") return `https://amoy.polygonscan.com/token/${contractAddress}?a=${tokenId}`;
-  return `https://sepolia.etherscan.io/token/${contractAddress}?a=${tokenId}`;
-}
-
-function toPeso(value: number) {
-  return new Intl.NumberFormat("en-PH", {
-    style: "currency",
-    currency: "PHP",
-    maximumFractionDigits: 0,
-  }).format(value);
-}
 
 function roomFallbackDisplay(stay: ReservationListItem) {
   const units = stay.units ?? [];
@@ -74,11 +41,11 @@ async function fetchStayDashboard(accessToken: string): Promise<StayDashboardRes
 async function fetchGuestPass(
   accessToken: string,
   reservationId: string,
-): Promise<z.infer<typeof guestPassSchema> | null> {
+): Promise<GuestPassVerificationResponse | null> {
   return fetchServerApiData({
     accessToken,
     path: `/v2/nft/guest-pass/${reservationId}`,
-    schema: guestPassSchema,
+    schema: guestPassVerificationResponseSchema,
     revalidate: 0,
   });
 }
@@ -168,7 +135,7 @@ export default async function GuestMyStayPage() {
                   Token ID:{" "}
                   {guestPass?.token_id != null && guestPass.contract_address ? (
                     <a
-                      href={explorerTokenUrl(guestPass?.chain_key, guestPass.contract_address, guestPass.token_id) || "#"}
+                      href={buildTokenExplorerUrl(guestPass?.chain_key, guestPass.contract_address, guestPass.token_id) || "#"}
                       target="_blank"
                       rel="noreferrer"
                       className="inline-flex items-center gap-1 rounded border border-amber-300 bg-amber-100 px-1.5 py-0.5 font-mono text-xs text-blue-800"
@@ -186,7 +153,7 @@ export default async function GuestMyStayPage() {
                   {guestPass?.tx_hash ? (
                     <span className="relative inline-flex items-center">
                       <a
-                        href={explorerTxUrl(guestPass?.chain_key, guestPass.tx_hash) || "#"}
+                        href={buildTxExplorerUrl(guestPass?.chain_key, guestPass.tx_hash) || "#"}
                         target="_blank"
                         rel="noreferrer"
                         className="group inline-flex items-center gap-1 text-[var(--color-secondary)]"

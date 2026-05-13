@@ -32,6 +32,8 @@ import {
 } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
+import { formatDateTime, formatDateWithYear } from "../../lib/dateDisplay";
+import { formatPhpPeso as formatPeso } from "../../lib/formatCurrency";
 import { clearEncryptedQueue, loadEncryptedQueue, saveEncryptedQueue } from "../../lib/secureOfflineQueue";
 import { loadTodayArrivalsCache, saveTodayArrivalsCache, type CachedArrival } from "../../lib/checkinOfflineCache";
 import {
@@ -263,45 +265,24 @@ function evaluateOfflineArrival(cached: CachedArrival): { allowed: boolean; reas
   return { allowed: true };
 }
 
-function formatDate(value?: string | null) {
-  if (!value) return "-";
-  return new Date(`${value}T00:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
-}
-
 const CHECKIN_DISPLAY_LOCALE = "en-US";
 const CHECKIN_DISPLAY_TIMEZONE = "Asia/Manila";
+const CHECKIN_DATE_TIME_FORMAT_OPTIONS: Intl.DateTimeFormatOptions = {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+  hour12: true,
+  timeZone: CHECKIN_DISPLAY_TIMEZONE,
+};
 
-function formatDateTimeInline(value?: string | null) {
-  if (!value) return "-";
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return "-";
-  return new Intl.DateTimeFormat(CHECKIN_DISPLAY_LOCALE, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-    timeZone: CHECKIN_DISPLAY_TIMEZONE,
-  }).format(parsed);
-}
-
-function formatTimeInline(value?: string | null) {
-  if (!value) return "-";
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return "-";
-  return new Intl.DateTimeFormat(CHECKIN_DISPLAY_LOCALE, {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-    timeZone: CHECKIN_DISPLAY_TIMEZONE,
-  }).format(parsed);
-}
-
-function formatPeso(value: number | null | undefined) {
-  const amount = Number(value ?? 0);
-  return new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP", maximumFractionDigits: 0 }).format(Number.isFinite(amount) ? amount : 0);
-}
+const CHECKIN_TIME_FORMAT_OPTIONS: Intl.DateTimeFormatOptions = {
+  hour: "numeric",
+  minute: "2-digit",
+  hour12: true,
+  timeZone: CHECKIN_DISPLAY_TIMEZONE,
+};
 
 function findScrollableParent(element: HTMLElement | null): HTMLElement | null {
   let parent = element?.parentElement ?? null;
@@ -1477,7 +1458,13 @@ export function AdminCheckinClient({
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">Offline check-in data</p>
               <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap sm:overflow-visible">
                 <p className="shrink-0 text-xs text-[var(--color-muted)]">
-                  Last refresh: <span className="font-semibold text-[var(--color-text)]">{formatTimeInline(cacheUpdatedAt)}</span>
+                  Last refresh:{" "}
+                  <span className="font-semibold text-[var(--color-text)]">
+                    {formatDateTime(cacheUpdatedAt, {
+                      locale: CHECKIN_DISPLAY_LOCALE,
+                      formatOptions: CHECKIN_TIME_FORMAT_OPTIONS,
+                    })}
+                  </span>
                 </p>
                 <button
                   type="button"
@@ -1514,10 +1501,22 @@ export function AdminCheckinClient({
                 tone={!hasCache ? "warn" : cacheExpired ? "error" : "success"}
               />
               <p>
-                Generated: <span className="font-semibold text-[var(--color-text)]">{formatDateTimeInline(cacheGeneratedAt)}</span>
+                Generated:{" "}
+                <span className="font-semibold text-[var(--color-text)]">
+                  {formatDateTime(cacheGeneratedAt, {
+                    locale: CHECKIN_DISPLAY_LOCALE,
+                    formatOptions: CHECKIN_DATE_TIME_FORMAT_OPTIONS,
+                  })}
+                </span>
               </p>
               <p>
-                Valid until: <span className="font-semibold text-[var(--color-text)]">{formatDateTimeInline(cacheValidUntil)}</span>
+                Valid until:{" "}
+                <span className="font-semibold text-[var(--color-text)]">
+                  {formatDateTime(cacheValidUntil, {
+                    locale: CHECKIN_DISPLAY_LOCALE,
+                    formatOptions: CHECKIN_DATE_TIME_FORMAT_OPTIONS,
+                  })}
+                </span>
               </p>
             </div>
             {!networkOnline && !hasCache ? (
@@ -1652,7 +1651,13 @@ export function AdminCheckinClient({
                 </div>
                 <p className="mt-1 text-xs text-[var(--color-muted)]">Offline actions are queued and will sync when online.</p>
                 <p className="mt-1 text-xs text-[var(--color-muted)]">
-                  Cached arrivals: {arrivalsCache.length} {cacheUpdatedAt ? `- updated ${new Date(cacheUpdatedAt).toLocaleTimeString()}` : ""}
+                  Cached arrivals: {arrivalsCache.length}{" "}
+                  {cacheUpdatedAt
+                    ? `- updated ${formatDateTime(cacheUpdatedAt, {
+                        locale: CHECKIN_DISPLAY_LOCALE,
+                        formatOptions: CHECKIN_TIME_FORMAT_OPTIONS,
+                      })}`
+                    : ""}
                 </p>
                 <div className="mt-3 flex items-center gap-2 rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-[var(--color-text)]">
                   <CloudOff className="h-4 w-4 text-[var(--color-muted)]" />
@@ -1671,7 +1676,11 @@ export function AdminCheckinClient({
                           />
                         </div>
                         <p className="text-[11px] text-[var(--color-muted)]">
-                          {item.actionType.toUpperCase()} | {item.localVerdict} | {new Date(item.queuedAt).toLocaleTimeString()}
+                          {item.actionType.toUpperCase()} | {item.localVerdict} |{" "}
+                          {formatDateTime(item.queuedAt, {
+                            locale: CHECKIN_DISPLAY_LOCALE,
+                            formatOptions: CHECKIN_TIME_FORMAT_OPTIONS,
+                          })}
                         </p>
                         {item.tokenJti ? <p className="text-[11px] text-[var(--color-muted)]">token_jti: {item.tokenJti.slice(0, 8)}...</p> : null}
                         {item.syncMessage ? <p className="text-[11px] text-[var(--color-muted)]">{item.syncMessage}</p> : null}
@@ -1767,7 +1776,10 @@ export function AdminCheckinClient({
               <p className="mt-1">
                 {tokenSecondsLeft != null
                   ? `Expires in ${tokenSecondsLeft}s`
-                  : `Expires ${new Date(tokenExpiry).toLocaleString()}`}
+                  : `Expires ${formatDateTime(tokenExpiry, {
+                      locale: CHECKIN_DISPLAY_LOCALE,
+                      formatOptions: CHECKIN_DATE_TIME_FORMAT_OPTIONS,
+                    })}`}
               </p>
             </section>
           ) : null}
@@ -1777,7 +1789,7 @@ export function AdminCheckinClient({
             {!result ? <p className="mt-2 rounded-xl border border-dashed border-[var(--color-border)] bg-slate-50 p-3 text-sm text-[var(--color-muted)]">No validated reservation yet.</p> : (
               <div className="mt-3 space-y-3">
                 <div className="grid gap-2 sm:grid-cols-2"><div className="rounded-xl border border-[var(--color-border)] bg-slate-50 p-3"><p className="text-xs text-[var(--color-muted)]">Reservation</p><p className="font-semibold">{result.reservation_code}</p></div><div className="rounded-xl border border-[var(--color-border)] bg-slate-50 p-3"><p className="text-xs text-[var(--color-muted)]">Reservation status</p><p className="font-semibold">{resultStatusLabel}</p></div></div>
-                <div className="rounded-xl border border-[var(--color-border)] bg-slate-50 p-3"><p className="text-xs text-[var(--color-muted)]">Stay dates</p>{detailLoading ? <div className="mt-1 space-y-1"><Skeleton className="h-4 w-36" /><Skeleton className="h-4 w-28" /></div> : <p className="font-semibold">{formatDate(detail?.check_in_date)} - {formatDate(detail?.check_out_date)}</p>}</div>
+                <div className="rounded-xl border border-[var(--color-border)] bg-slate-50 p-3"><p className="text-xs text-[var(--color-muted)]">Stay dates</p>{detailLoading ? <div className="mt-1 space-y-1"><Skeleton className="h-4 w-36" /><Skeleton className="h-4 w-28" /></div> : <p className="font-semibold">{formatDateWithYear(detail?.check_in_date)} - {formatDateWithYear(detail?.check_out_date)}</p>}</div>
                 <div
                   className={`rounded-xl border p-3 ${
                     flowStatus.tone === "success"

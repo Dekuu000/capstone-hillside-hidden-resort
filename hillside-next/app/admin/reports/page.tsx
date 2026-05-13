@@ -1,40 +1,30 @@
 import type { ReportsOverviewResponse } from "../../../../packages/shared/src/types";
 import { reportsOverviewResponseSchema } from "../../../../packages/shared/src/schemas";
 import { ReportsDateRangeForm } from "../../../components/admin-reports/ReportsDateRangeForm";
+import { todayPlusLocalIsoDate } from "../../../lib/dateIso";
+import { formatDateOnly, formatDateTime } from "../../../lib/dateDisplay";
+import { formatPhpPeso as formatPeso } from "../../../lib/formatCurrency";
 import { getServerAccessToken } from "../../../lib/serverAuth";
 import { fetchServerApiData } from "../../../lib/serverApi";
-
-function toLocalIsoDate(dayOffset: number) {
-  const d = new Date();
-  d.setDate(d.getDate() + dayOffset);
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function formatPeso(value: number) {
-  return new Intl.NumberFormat("en-PH", {
-    style: "currency",
-    currency: "PHP",
-    maximumFractionDigits: 0,
-  }).format(value || 0);
-}
 
 function formatPercent(value: number) {
   return `${Math.round((value || 0) * 100)}%`;
 }
 
 function formatDisplayDate(value: string) {
-  const parsed = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(parsed.getTime())) return value;
-  return parsed.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return formatDateOnly(value, {
+    locale: "en-US",
+    fallback: value,
+    formatOptions: { month: "short", day: "numeric", year: "numeric" },
+  });
 }
 
 function formatDisplayMonth(value: string) {
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return value;
-  return parsed.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  return formatDateOnly(value, {
+    locale: "en-US",
+    fallback: value,
+    formatOptions: { month: "long", year: "numeric" },
+  });
 }
 
 async function fetchOverview(
@@ -75,8 +65,8 @@ export default async function AdminReportsPage({
   }
 
   const resolved = (await searchParams) ?? {};
-  const fromDate = (Array.isArray(resolved.from) ? resolved.from[0] : resolved.from) || toLocalIsoDate(-7);
-  const toDate = (Array.isArray(resolved.to) ? resolved.to[0] : resolved.to) || toLocalIsoDate(0);
+  const fromDate = (Array.isArray(resolved.from) ? resolved.from[0] : resolved.from) || todayPlusLocalIsoDate(-7);
+  const toDate = (Array.isArray(resolved.to) ? resolved.to[0] : resolved.to) || todayPlusLocalIsoDate(0);
   const overview = await fetchOverview(accessToken, fromDate, toDate);
 
   return (
@@ -93,7 +83,9 @@ export default async function AdminReportsPage({
             <p className="mt-1">
               {formatDisplayDate(fromDate)} to {formatDisplayDate(toDate)}
             </p>
-            <p className="mt-1 text-[11px] text-slate-500">Last updated: {new Date().toLocaleTimeString()}</p>
+            <p className="mt-1 text-[11px] text-slate-500">
+              Last updated: {formatDateTime(new Date().toISOString(), { formatOptions: { hour: "numeric", minute: "2-digit" } })}
+            </p>
           </div>
         </div>
       </header>

@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ComponentType } from "react";
 import { Sparkles, UtensilsCrossed, UserRound } from "lucide-react";
 import type { ResortSnapshotResponse } from "../../../packages/shared/src/types";
+import { formatDateOnly } from "../../lib/dateDisplay";
 
 type Team = {
   key: "housekeeping" | "kitchen" | "front_desk";
@@ -17,9 +18,11 @@ const TEAMS: Team[] = [
 ];
 
 function formatShortDate(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString("en-PH", { month: "short", day: "numeric" });
+  return formatDateOnly(value, {
+    locale: "en-PH",
+    fallback: value,
+    formatOptions: { month: "short", day: "numeric" },
+  });
 }
 
 function toneForValue(value: number) {
