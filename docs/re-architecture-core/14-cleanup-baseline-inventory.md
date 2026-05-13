@@ -1947,3 +1947,31 @@ Remaining A4 blocker:
 3. Validation:
    - `npm run quality:gate` -> pass on 2026-05-14
    - `npm run test:guest:e2e` -> pass (`9 passed`, `1 skipped`) on 2026-05-14 without guest credentials
+
+## Batch E7 Execution Update (Part 1 Complete - E Workstream Closure Refresh)
+
+1. Revalidated recurring local acceptance commands for the cleanup baseline:
+   - `npm run quality:gate`
+   - `npm run test:guest:e2e` (without credentials)
+   - `npm run test:guest:e2e` (with `GUEST_E2E_EMAIL`/`GUEST_E2E_PASSWORD`)
+2. Observed results:
+   - quality gate pass (`lint`, `typecheck`, `95 API tests`, `db:sanity`, `db:hygiene`)
+   - guest E2E pass (`9 passed`, `1 skipped`) when credential precondition is absent
+   - guest E2E pass (`10 passed`) when credential precondition is provided
+3. Outcome:
+   - E-workstream closure evidence is now aligned with documented optional modal-guardrail preconditions.
+
+## Batch F6 Execution Update (Part 1 Complete - Documentation Alignment Closure Evidence)
+
+1. Finalized acceptance evidence linkage across cleanup docs:
+   - quality snapshots: `docs/re-architecture-core/perf-report.md`
+   - guest manual matrix + closure summary:
+     - `docs/re-architecture-core/evidence/guest-ux/manual-run-20260425-2108.md`
+     - `docs/re-architecture-core/evidence/guest-ux/g5-closure-summary-20260507.md`
+   - automation/runbook status:
+     - `docs/re-architecture-core/18-guest-ux-automation-guardrails.md`
+     - `README.md`
+2. Evidence bundle now captures:
+   - local quality gate acceptance outputs
+   - guest smoke/a11y/modal guardrail outputs
+   - screenshot-backed manual guest scenario matrix (`14/14` rows)
