@@ -186,7 +186,11 @@ export default function LoginPage() {
         password,
       });
       if (signInError) {
-        setError(signInError.message);
+        setError(
+          getApiErrorMessage(signInError, "Login failed.", {
+            network: "Cannot reach authentication service. Ensure local Supabase is running, then retry.",
+          }),
+        );
         return;
       }
 
@@ -198,7 +202,11 @@ export default function LoginPage() {
       const target = await resolveNextPath(nextPath, data.user);
       navigateAfterAuth(target);
     } catch (unknownError) {
-      setError(getApiErrorMessage(unknownError, "Login failed."));
+      setError(
+        getApiErrorMessage(unknownError, "Login failed.", {
+          network: "Cannot reach authentication service. Ensure local Supabase is running, then retry.",
+        }),
+      );
     } finally {
       setBusy(false);
     }

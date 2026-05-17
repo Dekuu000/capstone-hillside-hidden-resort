@@ -1,8 +1,8 @@
 # G8 Next Improvement Track
 
-Last updated: 2026-05-12  
-Status: In progress  
-Depends on: G5 scenario matrix complete (done), accessibility spot-check closure pending
+Last updated: 2026-05-17  
+Status: Completed (baseline closed)  
+Depends on: G5 scenario matrix + accessibility spot-check closure (done)
 
 ## Goal
 
@@ -104,3 +104,12 @@ Execution update (2026-05-09):
 
 1. Keep behavior/business rules unchanged.
 2. Keep data privacy boundary unchanged (no PII in telemetry).
+
+## Closure Summary
+
+1. G8.1 / G8.2 / G8.3 all complete and validated.
+2. Guest UX baseline is now documented with:
+   - manual matrix evidence (`14/14` pass)
+   - automation guardrail outcomes (`10 passed` with credentials)
+   - green quality gate snapshot
+3. Next improvements should continue under a new post-G8 track to avoid mixing closure records with future enhancements.

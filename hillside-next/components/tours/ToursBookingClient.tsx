@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type {
   PaymentSubmissionResponse,
@@ -286,9 +287,24 @@ export function ToursBookingClient({
           title="Book a Tour"
           subtitle="Reserve a guided experience and secure your slot."
         />
-        <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
-          Please sign in first to reserve a tour.
-        </p>
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <p className="font-semibold">Sign in required to reserve a tour.</p>
+          <p className="mt-1">Sign in so we can attach your booking, payment proof, and itinerary updates to your account.</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Link
+              href="/login?next=/tours"
+              className="inline-flex h-10 items-center justify-center rounded-[var(--radius-sm)] bg-slate-900 px-4 text-sm font-semibold text-white"
+            >
+              Sign in and continue
+            </Link>
+            <Link
+              href="/book"
+              className="inline-flex h-10 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-white px-4 text-sm font-semibold text-[var(--color-text)]"
+            >
+              Book a stay instead
+            </Link>
+          </div>
+        </div>
       </section>
     );
   }
@@ -394,6 +410,39 @@ export function ToursBookingClient({
                 >
                   Retry
                 </button>
+              </span>
+            ) : null}
+            {!servicesLoading && !servicesError && services.length === 0 ? (
+              <span className="mt-1 inline-flex flex-col gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-slate-50 p-3 text-xs text-[var(--color-muted)]">
+                <span className="font-semibold text-[var(--color-text)]">No active tours are available right now.</span>
+                <span>Try again in a moment or continue with a room booking.</span>
+                <span className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setServicesLoading(true);
+                      setServicesError(null);
+                      void apiFetch<ServiceListResponse>(
+                        "/v2/catalog/services",
+                        { method: "GET" },
+                        token,
+                        serviceListResponseSchema,
+                      )
+                        .then((data) => setServices(data.items ?? []))
+                        .catch((error) => setServicesError(getApiErrorMessage(error, "Failed to load active tours.")))
+                        .finally(() => setServicesLoading(false));
+                    }}
+                    className="inline-flex h-7 items-center rounded-md border border-[var(--color-border)] bg-white px-2.5 font-semibold text-[var(--color-text)]"
+                  >
+                    Retry services
+                  </button>
+                  <Link
+                    href="/book"
+                    className="inline-flex h-7 items-center rounded-md border border-[var(--color-border)] bg-white px-2.5 font-semibold text-[var(--color-text)]"
+                  >
+                    Go to stay booking
+                  </Link>
+                </span>
               </span>
             ) : null}
           </label>

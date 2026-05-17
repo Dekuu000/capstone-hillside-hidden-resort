@@ -1,6 +1,6 @@
 # Next Gap Closure Plan (Post-Defense)
 
-Last updated: 2026-05-14
+Last updated: 2026-05-17
 Context: Core guide-compliance scope (A-D) remains complete. This plan now reflects actual implementation status, closes the P2 design requirement, and locks the post-phase cleanup track.
 
 ## Prioritized Workstream
@@ -15,7 +15,7 @@ Context: Core guide-compliance scope (A-D) remains complete. This plan now refle
 | P1 | Dashboard module completion (resource heatmap) | Cleaning/staff heatmap panel in admin | 1.5-2 days | Completed (2026-04-18) | Heatmap panel rendered from reservation/check-in density context |
 | P2 | Security & privacy roadmap (ZKP) | Design RFC only (not implementation) | 0.5-1 day | Completed (2026-04-18) | Approved design note with constraints, threat model, phased rollout |
 | P3 | Post-phase code cleanup + refactor | Cleaner, easier-to-maintain and scalable codebase | 2-4 days | Completed (2026-05-14) | Cleanup checklist executed with green lint/tests and documented removals |
-| P4 | Guest UI/UX optimization | Improve guest journey clarity, mobile usability, and offline confidence | 1-2 days | In progress (2026-05-09) | Guest UX plan executed with evidence-backed improvements across booking/stay/map/services + guardrail automation |
+| P4 | Guest UI/UX optimization | Improve guest journey clarity, mobile usability, and offline confidence | 1-2 days | Completed (2026-05-17) | Guest UX plan executed with evidence-backed improvements across booking/stay/map/services + guardrail automation |
 
 ## Execution Order
 
@@ -98,4 +98,4 @@ This phase is intentionally scheduled after completion of P0-P2.
 
 1. Keep `quality:gate` + `test:guest:e2e` as recurring release-acceptance checks for ongoing feature work.
 2. Keep guest modal guardrail coverage stable by retaining documented `GUEST_E2E_EMAIL` / `GUEST_E2E_PASSWORD` preflight in local test runs.
-3. Continue G8 improvement-track iterations with evidence-linked updates in `docs/re-architecture-core/19-next-improvement-track-g8.md`.
+3. Post-G9 improvement planning should start in a new track document (`G10`) while preserving G9 as a closed baseline record.
