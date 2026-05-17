@@ -1,7 +1,7 @@
 # Guest UX Improvement Plan
 
-Last updated: 2026-05-12  
-Status: In progress (G5 closed; G8 active)  
+Last updated: 2026-05-17  
+Status: Complete (G5 closure complete; G8 baseline complete; G9 follow-on complete)  
 Scope: Next.js guest experience refinement only (no business-rule changes)
 
 ## Objective
@@ -667,3 +667,28 @@ Deliverables:
 3. Validation refresh:
    - `npm run test:guest:e2e` -> pass (`10 passed`) on 2026-05-12 with guest credentials set
    - `npm run quality:gate` -> pass on 2026-05-12
+
+### G8 - Part 9 (Track Closure)
+
+1. Closure status:
+   - G8.1 accessibility automation: complete
+   - G8.2 perceived-performance polish: complete
+   - G8.3 offline confidence telemetry: complete
+2. Acceptance snapshot:
+   - manual matrix evidence: `14/14` pass (`manual-run-20260425-2108.md`)
+   - guest guardrails: pass (`10 passed` with credentials, optional modal guardrail skip only when credential preconditions are not provided)
+   - quality gate: pass (`quality:gate`)
+3. Decision:
+   - P4 Guest UX optimization is closed for the current release baseline.
+
+### G9 - Follow-On Track Closure
+
+1. Follow-on execution status:
+   - G9.1 auth/session resilience: complete
+   - G9.2 booking-funnel clarity: complete
+   - G9.3 guardrail coverage expansion: complete
+2. Verification snapshot (2026-05-17):
+   - `npm run test:guest:e2e` -> `9 passed`, `2 skipped`, `11 total`
+   - skipped tests are optional credential/data-precondition guardrails (expected behavior)
+3. Record reference:
+   - `docs/re-architecture-core/20-next-improvement-track-g9.md`

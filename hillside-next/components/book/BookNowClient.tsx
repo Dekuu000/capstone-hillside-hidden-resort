@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -307,9 +308,24 @@ export function BookNowClient({
           title="Book Your Stay"
           subtitle="Choose dates and reserve your stay."
         />
-        <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
-          Please sign in first to create a booking.
-        </p>
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <p className="font-semibold">Sign in required to continue.</p>
+          <p className="mt-1">Please sign in to check availability, save selections, and confirm booking.</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Link
+              href="/login?next=/book"
+              className="inline-flex h-10 items-center justify-center rounded-[var(--radius-sm)] bg-slate-900 px-4 text-sm font-semibold text-white"
+            >
+              Sign in and continue
+            </Link>
+            <Link
+              href="/tours"
+              className="inline-flex h-10 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-white px-4 text-sm font-semibold text-[var(--color-text)]"
+            >
+              Explore tours first
+            </Link>
+          </div>
+        </div>
       </section>
     );
   }
@@ -509,8 +525,42 @@ export function BookNowClient({
               ) : null}
               {!unitsLoading && units.length === 0 ? (
                 <div className="rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-slate-50 p-4 text-sm text-[var(--color-muted)]">
-                  <p className="font-medium text-[var(--color-text)]">No units available for selected dates.</p>
-                  <p className="mt-1">Try adjusting your check-in and check-out dates to see more options.</p>
+                  <p className="font-medium text-[var(--color-text)]">No units matched your current selection.</p>
+                  <p className="mt-1">
+                    {networkOnline
+                      ? "Try a different date range or room type to see more options."
+                      : "You appear to be offline. Reconnect to refresh live availability."}
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUnitTypeFilter("all");
+                        setSelectedUnitIds([]);
+                      }}
+                      className="inline-flex h-9 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-white px-3 text-xs font-semibold text-[var(--color-text)]"
+                    >
+                      Reset room type filter
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const nextCheckIn = addDaysToIsoDate(checkInDate, 1);
+                        setCheckInDate(nextCheckIn);
+                        setCheckOutDate(addDaysToIsoDate(nextCheckIn, Math.max(1, nights || 2)));
+                        setSelectedUnitIds([]);
+                      }}
+                      className="inline-flex h-9 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-white px-3 text-xs font-semibold text-[var(--color-text)]"
+                    >
+                      Shift dates +1 day
+                    </button>
+                    <Link
+                      href="/tours"
+                      className="inline-flex h-9 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-white px-3 text-xs font-semibold text-[var(--color-text)]"
+                    >
+                      View tour options
+                    </Link>
+                  </div>
                 </div>
               ) : null}
               <div className="grid gap-4 md:grid-cols-2">

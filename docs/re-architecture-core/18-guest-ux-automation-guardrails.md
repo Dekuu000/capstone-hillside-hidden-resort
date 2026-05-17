@@ -1,6 +1,6 @@
 # Guest UX Automation Guardrails
 
-Last updated: 2026-05-12  
+Last updated: 2026-05-17  
 Status: Scaffolded (ready to run after dependency install)
 
 ## Goal
@@ -19,6 +19,8 @@ Add lightweight automated checks so guest UX quality is not dependent on manual 
 2. `hillside-next/tests/guest-e2e/guest-smoke.spec.mjs`
 3. `hillside-next/tests/guest-e2e/guest-a11y.spec.mjs`
 4. `hillside-next/tests/guest-e2e/guest-modal-a11y.spec.mjs`
+5. `hillside-next/tests/guest-e2e/guest-book-auth-flow.spec.mjs`
+6. `hillside-next/tests/guest-e2e/guestAuthFlow.mjs`
 
 ## Added Scripts
 
@@ -73,15 +75,21 @@ $env:GUEST_E2E_PASSWORD="password"
 npm run test:guest:e2e
 ```
 
-## Latest Run (2026-05-12)
+The same credentials also enable authenticated booking-path guardrails (non-destructive).
+
+## Latest Run (2026-05-17)
 
 1. Command: `npm run test:guest:e2e`
-2. Result: pass (`10 passed` with guest credentials set; without credentials modal guardrail remains optional and can skip)
-3. Coverage now includes:
+2. Result: pass baseline (`9 passed`, `2 skipped`, `11 total`)
+3. Skip behavior:
+   - skipped tests are expected when credential/data preconditions are unavailable (authenticated booking guardrail + modal guardrail)
+   - this keeps the suite CI-friendly while still enforcing non-optional route + accessibility smoke coverage
+4. Coverage now includes:
    - guest route smoke checks (`/book`, `/tours`, `/guest/map`, `/my-bookings`, `/guest/sync`)
    - guest accessibility smoke checks (axe on `/book`, `/tours`, `/guest/services`, `/guest/map`)
    - modal keyboard/semantics guardrail (dialog semantics, focus trap, escape close, focus return)
-4. Stability note (2026-05-12):
+   - authenticated booking action guardrail (select unit + confirm CTA enabled without posting reservation)
+5. Stability note (2026-05-17):
    - guest smoke and guest a11y auth-gate polling now share a single helper (`tests/guest-e2e/routeResolution.mjs`) to reduce route-resolution flake divergence.
 
 ## Notes

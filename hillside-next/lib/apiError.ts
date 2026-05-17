@@ -71,7 +71,12 @@ export function getApiErrorMessage(
     return overrides?.offline ?? message;
   }
 
-  if (message.toLowerCase().includes("network request failed")) {
+  const lowered = message.toLowerCase();
+  if (
+    lowered.includes("network request failed") ||
+    lowered.includes("failed to fetch") ||
+    lowered.includes("cannot reach auth service")
+  ) {
     return overrides?.network ?? "Network error. Please check your internet connection and retry.";
   }
 
