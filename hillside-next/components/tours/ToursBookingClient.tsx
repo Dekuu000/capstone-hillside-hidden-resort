@@ -25,10 +25,13 @@ import { parseJwtSub } from "../../lib/jwt";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
 import { queuePaymentSubmissionWithFile } from "../../lib/offlineSync/paymentSubmission";
 import { getSupabaseBrowserClient } from "../../lib/supabase";
-import { PageHeader } from "../layout/PageHeader";
 import { FancyDatePicker } from "../shared/FancyDatePicker";
 import { GcashPaymentGuide } from "../shared/GcashPaymentGuide";
 import { SyncAlertBanner } from "../shared/SyncAlertBanner";
+import { GuestHero } from "../guest/GuestHero";
+import { GuestPageShell } from "../guest/GuestPageShell";
+import { GuestSectionCard } from "../guest/GuestSectionCard";
+import { PaymentVerificationInfo } from "../guest/PaymentVerificationInfo";
 
 type ToursBookingClientProps = {
   initialToken?: string | null;
@@ -280,9 +283,8 @@ export function ToursBookingClient({
 
   if (!token) {
     return (
-      <section className="mx-auto w-full max-w-4xl">
-        <PageHeader
-          variant="hero"
+      <GuestPageShell className="max-w-4xl">
+        <GuestHero
           eyebrow="Experiences"
           title="Book a Tour"
           subtitle="Reserve a guided experience and secure your slot."
@@ -305,15 +307,13 @@ export function ToursBookingClient({
             </Link>
           </div>
         </div>
-      </section>
+      </GuestPageShell>
     );
   }
 
   return (
-    <section className="mx-auto w-full max-w-4xl">
-      <PageHeader
-        variant="hero"
-        className="mb-6"
+    <GuestPageShell className="max-w-4xl">
+      <GuestHero
         eyebrow="Experiences"
         title="Book a Tour"
         subtitle={
@@ -367,7 +367,7 @@ export function ToursBookingClient({
         </div>
       ) : null}
 
-      <div className="rounded-2xl border border-slate-200/70 bg-white p-6 shadow-sm">
+      <GuestSectionCard className="rounded-2xl border-slate-200/70 p-6">
         <div className="grid gap-4 md:grid-cols-2">
           <label className="guest-form-label">
             Select Tour
@@ -513,6 +513,13 @@ export function ToursBookingClient({
           </label>
         </div>
 
+        {!selectedService ? (
+          <div data-testid="tour-empty-state" className="mt-4 rounded-2xl border border-dashed border-[var(--color-border)] bg-slate-50 p-4 text-sm text-[var(--color-muted)]">
+            <p className="font-semibold text-[var(--color-text)]">Select a tour to continue.</p>
+            <p className="mt-1">Choose your preferred tour first. Payment details will appear after selection.</p>
+          </div>
+        ) : null}
+
         <div className="mt-4 rounded-2xl border border-slate-200/70 bg-slate-50 p-4">
           <p className="text-sm text-slate-600">
             Total: <strong className="text-slate-900">{toPeso(totalAmount)}</strong>
@@ -522,8 +529,9 @@ export function ToursBookingClient({
           </p>
         </div>
 
-        <GcashPaymentGuide className="mt-4" />
+        {selectedService ? <GcashPaymentGuide className="mt-4" /> : null}
 
+        {selectedService ? (
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <label className="guest-form-label">
             Pay Now Amount
@@ -547,7 +555,9 @@ export function ToursBookingClient({
             />
           </label>
         </div>
+        ) : null}
 
+        {selectedService ? (
         <div className="mt-4 grid gap-2">
           <p className="text-sm font-semibold text-slate-900">Payment proof</p>
           <div className="flex gap-2">
@@ -585,6 +595,13 @@ export function ToursBookingClient({
             />
           )}
         </div>
+        ) : null}
+
+        {selectedService ? (
+          <div className="mt-4">
+            <PaymentVerificationInfo />
+          </div>
+        ) : null}
 
         <button
           type="button"
@@ -597,8 +614,8 @@ export function ToursBookingClient({
         {submitBlockerMessage ? (
           <p className="mt-2 text-center text-xs font-medium text-slate-600">{submitBlockerMessage}</p>
         ) : null}
-      </div>
-    </section>
+      </GuestSectionCard>
+    </GuestPageShell>
   );
 }
 

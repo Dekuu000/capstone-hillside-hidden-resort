@@ -38,6 +38,7 @@ import { getReservationStatusMeta } from "../../lib/reservationStatus";
 import { getSupabaseBrowserClient } from "../../lib/supabase";
 import { compactQrTokenPayload } from "../../lib/qrPayload";
 import { AIPricingInsightCard } from "../ai/AIPricingInsightCard";
+import { GuestEmptyState } from "../guest/GuestEmptyState";
 import { ImageLightbox } from "../shared/ImageLightbox";
 import { GcashPaymentGuide } from "../shared/GcashPaymentGuide";
 import { ModalDialog } from "../shared/ModalDialog";
@@ -811,24 +812,10 @@ export function MyBookingsClient({
         ) : null}
 
         {!loading && items.length === 0 ? (
-          <div className="rounded-2xl border border-slate-200/70 bg-white p-6 text-center shadow-sm">
-            <p className="text-sm font-semibold text-slate-900">No bookings found for this tab.</p>
-            <p className="mt-2 text-sm text-slate-600">Try switching tabs, adjusting your search, or create a new reservation.</p>
-            <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-              <Link
-                href="/book"
-                className="guest-primary-cta min-h-9 px-3 text-sm"
-              >
-                Book a stay
-              </Link>
-              <Link
-                href="/tours"
-                className="guest-secondary-cta min-h-9 px-3 text-sm"
-              >
-                Browse tours
-              </Link>
-            </div>
-          </div>
+          <GuestEmptyState
+            title="No bookings found for this tab."
+            message="Try switching tabs, adjusting your search, or create a new reservation."
+          />
         ) : null}
 
         <div className="grid gap-4">

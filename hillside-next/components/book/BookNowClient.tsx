@@ -30,7 +30,6 @@ import { addDaysToIsoDate, todayPlusLocalIsoDate } from "../../lib/dateIso";
 import { formatPhpPeso as toPeso } from "../../lib/formatCurrency";
 import { useNetworkOnline } from "../../lib/hooks/useNetworkOnline";
 import { getSupabaseBrowserClient, safeGetSession } from "../../lib/supabase";
-import { PageHeader } from "../layout/PageHeader";
 import { FancyDatePicker } from "../shared/FancyDatePicker";
 import { ImageLightbox } from "../shared/ImageLightbox";
 import { ModalDialog } from "../shared/ModalDialog";
@@ -38,6 +37,11 @@ import { SyncAlertBanner } from "../shared/SyncAlertBanner";
 import { UnitImageGallery } from "../shared/UnitImageGallery";
 import { normalizeUnitImageUrls, normalizeUnitThumbUrls } from "../../lib/unitMedia";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
+import { BookingStepper } from "../guest/BookingStepper";
+import { GuestHero } from "../guest/GuestHero";
+import { GuestPageShell } from "../guest/GuestPageShell";
+import { GuestSectionCard } from "../guest/GuestSectionCard";
+import { PaymentVerificationInfo } from "../guest/PaymentVerificationInfo";
 
 type AvailableUnit = AvailableUnitsResponse["items"][number];
 type UnitTypeFilter = "all" | "room" | "cottage" | "amenity";
@@ -181,6 +185,12 @@ export function BookNowClient({
     return null;
   }, [guestCount, hasCapacityGap, nights, selectedCapacity, selectedUnitIds.length]);
   const canSubmitReservation = submitBlockerMessage === null;
+  const bookingStep = useMemo(() => {
+    if (!checkInDate || !checkOutDate || nights <= 0) return 1;
+    if (selectedUnitIds.length === 0) return 2;
+    if (!canSubmitReservation) return 3;
+    return 4;
+  }, [canSubmitReservation, checkInDate, checkOutDate, nights, selectedUnitIds.length]);
   const galleryImages = useMemo(
     () => normalizeUnitImageUrls(galleryUnit?.image_urls, galleryUnit?.image_url),
     [galleryUnit],
@@ -268,7 +278,7 @@ export function BookNowClient({
 
   if (sessionLoading) {
     return (
-      <section className="mx-auto w-full max-w-7xl px-1">
+      <GuestPageShell className="px-1">
         <div className="mb-6 grid gap-4 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-sm)]">
           <div className="skeleton h-5 w-36" />
           <div className="skeleton h-10 w-72" />
@@ -295,15 +305,14 @@ export function BookNowClient({
             </div>
           </div>
         </div>
-      </section>
+      </GuestPageShell>
     );
   }
 
   if (!token) {
     return (
-      <section className="mx-auto w-full max-w-6xl">
-        <PageHeader
-          variant="hero"
+      <GuestPageShell>
+        <GuestHero
           eyebrow="Guest Booking"
           title="Book Your Stay"
           subtitle="Choose dates and reserve your stay."
@@ -326,15 +335,13 @@ export function BookNowClient({
             </Link>
           </div>
         </div>
-      </section>
+      </GuestPageShell>
     );
   }
 
   return (
-    <section className="mx-auto w-full max-w-7xl px-1">
-      <PageHeader
-        variant="hero"
-        className="mb-8"
+    <GuestPageShell className="px-1">
+      <GuestHero
         eyebrow="Guest Booking"
         title={<span className="md:text-4xl">Book Your Stay</span>}
         subtitle={
@@ -344,8 +351,8 @@ export function BookNowClient({
         }
         rightSlot={
           <div className="grid gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white/90 px-4 py-3 text-xs text-[var(--color-muted)]">
-            <p className="font-semibold text-[var(--color-text)]">Secure 3-step flow</p>
-            <p>Select dates • pick units • confirm booking</p>
+            <p className="font-semibold text-[var(--color-text)]">Secure booking flow</p>
+            <p>Select dates • pick units • review payment • confirm booking</p>
             <p className="inline-flex items-center gap-1.5 text-[var(--color-primary)]">
               <ShieldCheck className="h-3.5 w-3.5" />
               Payment verification is required before check-in.
@@ -353,6 +360,10 @@ export function BookNowClient({
           </div>
         }
       />
+
+      <div className="mb-4">
+        <BookingStepper currentStep={bookingStep} />
+      </div>
 
       <div className="mb-4 min-h-[3.25rem]">
         {submitError ? (
@@ -391,7 +402,7 @@ export function BookNowClient({
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1fr]">
         <div className="space-y-6">
-          <article className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-sm)]">
+          <GuestSectionCard className="p-6">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="inline-flex items-center gap-2 text-lg font-semibold text-[var(--color-text)]">
                 <CalendarDays className="h-5 w-5 text-[var(--color-secondary)]" />
@@ -467,10 +478,10 @@ export function BookNowClient({
                 Selected units can host up to <strong>{selectedCapacity}</strong> guest(s). Increase capacity or reduce guest count.
               </p>
             ) : null}
-          </article>
+          </GuestSectionCard>
 
-          <article
-            className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-sm)]"
+          <GuestSectionCard
+            className="p-6"
             aria-busy={unitsLoading}
           >
             <div className="mb-4 flex items-center justify-between">
@@ -571,6 +582,7 @@ export function BookNowClient({
                   const previewImage = normalizedThumbs[0] || normalizedImages[0] || "";
                   return (
                     <article
+                      data-testid="unit-card"
                       key={unit.unit_id}
                       onClick={() => toggleUnit(unit.unit_id)}
                       onKeyDown={(event) => {
@@ -640,7 +652,15 @@ export function BookNowClient({
                             >
                               View photos
                             </button>
-                            {selected ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : null}
+                            {selected ? (
+                              <span
+                                data-testid="selected-unit-badge"
+                                className="inline-flex items-center gap-1 rounded-full border border-teal-200 bg-teal-50 px-2 py-1 text-[11px] font-semibold text-teal-700"
+                              >
+                                <CheckCircle2 className="h-3.5 w-3.5" />
+                                Selected
+                              </span>
+                            ) : null}
                           </div>
                         </div>
                       </div>
@@ -649,11 +669,11 @@ export function BookNowClient({
                 })}
               </div>
             </div>
-          </article>
+          </GuestSectionCard>
         </div>
 
         <aside className="lg:col-span-1">
-          <div className="sticky top-24 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-md)]">
+          <div data-testid="booking-summary" className="sticky top-24 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-md)]">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="inline-flex items-center gap-2 text-lg font-semibold text-[var(--color-text)]">
                 <ShieldCheck className="h-5 w-5 text-[var(--color-secondary)]" />
@@ -720,7 +740,7 @@ export function BookNowClient({
               </p>
             ) : null}
             {submitBlockerMessage && !hasCapacityGap ? (
-              <p className="mt-2 text-center text-xs font-medium text-slate-600">{submitBlockerMessage}</p>
+              <p data-testid="booking-cta-reason" className="mt-2 text-center text-xs font-medium text-slate-600">{submitBlockerMessage}</p>
             ) : null}
 
             <p className="mt-3 text-center text-xs text-slate-500">
@@ -730,8 +750,30 @@ export function BookNowClient({
               Minimum online payment now:{" "}
               <strong className="text-[var(--color-text)]">{toPeso(minimumPayNow)}</strong> (20% of total, clamped to PHP 500–1000).
             </p>
+            <div className="mt-3">
+              <PaymentVerificationInfo />
+            </div>
           </div>
         </aside>
+      </div>
+      <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 px-3 md:hidden">
+        <div
+          data-testid="booking-summary"
+          className="mx-auto flex max-w-2xl items-center justify-between rounded-2xl border border-[var(--color-border)] bg-white px-3 py-2 shadow-[var(--shadow-md)]"
+        >
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-muted)]">Booking summary</p>
+            <p className="text-sm font-bold text-[var(--color-text)]">{toPeso(total)}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void createReservation()}
+            disabled={submitBusy || !canSubmitReservation}
+            className="guest-primary-cta min-h-11 px-4 text-sm"
+          >
+            {submitBusy ? "Creating..." : "Confirm"}
+          </button>
+        </div>
       </div>
       {galleryUnit ? (
         <ModalDialog
@@ -767,7 +809,7 @@ export function BookNowClient({
         initialIndex={galleryIndex}
         onClose={() => setLightboxOpen(false)}
       />
-    </section>
+    </GuestPageShell>
   );
 }
 

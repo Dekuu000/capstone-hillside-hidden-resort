@@ -11,6 +11,7 @@ import { GuestShell } from "../../../components/layout/GuestShell";
 import { PageHeader } from "../../../components/layout/PageHeader";
 import { Badge } from "../../../components/shared/Badge";
 import { NetworkStatusBadge } from "../../../components/shared/NetworkStatusBadge";
+import { GuestEmptyState } from "../../../components/guest/GuestEmptyState";
 import { buildTokenExplorerUrl, buildTxExplorerUrl, shortHash } from "../../../lib/chainExplorer";
 import { formatPhpPeso as toPeso } from "../../../lib/formatCurrency";
 import { fetchServerApiData } from "../../../lib/serverApi";
@@ -73,11 +74,10 @@ export default async function GuestMyStayPage() {
         )}
       />
       {!stay ? (
-        <section className="surface p-5">
-          <p className="text-sm text-[var(--color-muted)]">
-            No active stay yet. Your check-in dashboard appears once a reservation becomes active.
-          </p>
-        </section>
+        <GuestEmptyState
+          title="No active stay yet"
+          message="Your check-in dashboard appears once a reservation becomes active."
+        />
       ) : (
         <div className="space-y-4">
           <MyStayDashboardClient

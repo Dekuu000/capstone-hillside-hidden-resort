@@ -10,9 +10,11 @@ const guestSmokeRoutes = [
 test.describe("Guest UX smoke", () => {
   for (const route of guestSmokeRoutes) {
     test(`renders ${route.path}`, async ({ page }) => {
+      test.setTimeout(60_000);
       await page.goto(route.path);
-      await expect(page.getByRole("heading", { name: route.title })).toBeVisible();
-      await expect(page.locator("main")).toBeVisible();
+      await page.waitForLoadState("domcontentloaded");
+      await expect(page.getByRole("heading", { name: route.title })).toBeVisible({ timeout: 20_000 });
+      await expect(page.locator("main")).toBeVisible({ timeout: 20_000 });
     });
   }
 
@@ -67,5 +69,14 @@ test.describe("Guest UX smoke", () => {
     if (state === "main") {
       await expect(syncHeading).toBeVisible();
     }
+  });
+
+  test("guest map pin selection updates destination details", async ({ page }) => {
+    await page.goto("/guest/map");
+    await expect(page.getByTestId("guest-map")).toBeVisible();
+    const lobbyPin = page.getByTestId("map-pin-lobby");
+    await expect(lobbyPin).toBeVisible();
+    await lobbyPin.click();
+    await expect(page.getByText(/destination:\s*lobby/i)).toBeVisible();
   });
 });

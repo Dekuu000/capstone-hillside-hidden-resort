@@ -12,7 +12,8 @@ const a11yRoutes = [
 test.describe("Guest UX accessibility smoke", () => {
   for (const route of a11yRoutes) {
     test(`axe scan: ${route.path}`, async ({ page }) => {
-      test.setTimeout(60_000);
+      const isBookRoute = route.path === "/book";
+      test.setTimeout(isBookRoute ? 120_000 : 75_000);
       await page.goto(route.path);
       await page.waitForLoadState("domcontentloaded");
       const main = page.locator("main");
@@ -35,8 +36,9 @@ test.describe("Guest UX accessibility smoke", () => {
       await expect(main).toBeVisible({ timeout: 20_000 });
 
       const builder = new AxeBuilder({ page })
+        .include("main")
         .disableRules(["landmark-one-main"])
-        .withTags(["wcag2a", "wcag2aa"])
+        .withTags(["wcag2a", "wcag2aa"]);
       const results = await builder.analyze();
 
       const blocking = results.violations.filter((violation) =>

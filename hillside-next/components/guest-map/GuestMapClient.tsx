@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Compass, MapPinned, Route } from "lucide-react";
+import { Compass } from "lucide-react";
 import { guestMapAmenityPackSchema } from "../../../packages/shared/src/schemas";
 import type { GuestMapAmenityPin } from "../../../packages/shared/src/types";
 import { formatCachedAt } from "../../lib/dateDisplay";
@@ -13,18 +13,15 @@ import { StatusPill } from "../shared/StatusPill";
 import { SyncAlertBanner } from "../shared/SyncAlertBanner";
 import { Tabs } from "../shared/Tabs";
 import { loadMapSnapshot, saveMapSnapshot } from "../../lib/offlineSync/store";
+import { guestMapLocations } from "../../data/guestMapLocations";
+import { MapDirectionsPanel } from "../guest/map/MapDirectionsPanel";
+import { ResortMapCanvas } from "../guest/map/ResortMapCanvas";
 
 const MAP_IMAGE_URL = "/images/resort-map.svg";
 const AMENITY_DATA_URL = "/data/guest-map-amenities.json";
 const MAP_CACHE_NAME = "guest-map-v2";
 
-const FALLBACK_AMENITIES: GuestMapAmenityPin[] = [
-  { id: "lobby", name: "Lobby", description: "Front desk and guest assistance.", x: 18, y: 18, kind: "facility" },
-  { id: "pool", name: "Main Pool", description: "Infinity pool and lounge area.", x: 58, y: 24, kind: "facility" },
-  { id: "cottages", name: "Cottage Zone", description: "Family cottages and grilling area.", x: 38, y: 54, kind: "facility" },
-  { id: "tour", name: "Tour Meet Point", description: "Day/night tour assembly point.", x: 70, y: 62, kind: "trail" },
-  { id: "hall", name: "Function Hall", description: "Events and private bookings.", x: 22, y: 74, kind: "facility" },
-];
+const FALLBACK_AMENITIES: GuestMapAmenityPin[] = guestMapLocations;
 
 async function loadAmenityPack(): Promise<GuestMapAmenityPin[]> {
   const fallback = FALLBACK_AMENITIES;
@@ -175,6 +172,14 @@ export function GuestMapClient() {
             inactiveClassName="border border-[var(--color-border)] bg-white text-[var(--color-muted)] hover:bg-slate-50"
           />
           <span className="text-xs text-[var(--color-muted)] sm:ml-auto">Pins: {visibleAmenities.length}</span>
+          <a
+            href="https://maps.google.com/?q=Hillside+Hidden+Resort"
+            target="_blank"
+            rel="noreferrer"
+            className="guest-secondary-cta guest-secondary-cta-sm"
+          >
+            Open in Google Maps
+          </a>
         </div>
         {error ? <p className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-[var(--color-error)]">{error}</p> : null}
         {cachedMeta ? <p className="guest-surface-soft mt-2 px-3 py-2 text-xs font-semibold text-amber-700">{cachedMeta}</p> : null}
@@ -186,37 +191,12 @@ export function GuestMapClient() {
         />
       ) : null}
 
-      <section className="surface overflow-hidden p-3">
-        <div className="relative overflow-hidden rounded-xl border border-[var(--color-border)]">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={MAP_IMAGE_URL}
-            alt="Hillside resort static map with amenity pins"
-            className="h-auto w-full"
-            loading="eager"
-          />
-          {visibleAmenities.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => setActiveAmenityId(item.id)}
-              className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-full border px-2 py-1 text-[10px] font-semibold ${
-                item.id === activeAmenityId
-                  ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
-                  : item.kind === "trail"
-                    ? "border-amber-200 bg-amber-50 text-[var(--color-text)]"
-                    : "border-white/90 bg-white/90 text-[var(--color-text)]"
-              }`}
-              style={{ left: `${item.x}%`, top: `${item.y}%` }}
-            >
-              <span className="inline-flex items-center gap-1">
-                <MapPinned className="h-3 w-3" aria-hidden="true" />
-                {item.name}
-              </span>
-            </button>
-          ))}
-        </div>
-      </section>
+      <ResortMapCanvas
+        mapImageUrl={MAP_IMAGE_URL}
+        pins={visibleAmenities}
+        selectedPinId={activeAmenityId}
+        onSelectPin={setActiveAmenityId}
+      />
 
       <section className="grid gap-3 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="surface p-4">
@@ -271,43 +251,10 @@ export function GuestMapClient() {
             </select>
           </section>
 
-          <section className="surface p-4">
-            <h3 className="text-base font-semibold text-[var(--color-text)]">Step Directions</h3>
-            <p className="mt-1 text-xs text-[var(--color-muted)]">
-              Route from selected origin to {activeAmenity?.name || "destination"}.
-            </p>
-            <ul className="mt-3 space-y-2">
-              {directionSteps.map((step, index) => (
-                <InsetPanel as="li" key={step} className="text-sm text-[var(--color-text)]">
-                  <span className="mr-1 font-semibold text-[var(--color-text)]">{index + 1}.</span>
-                  {step}
-                </InsetPanel>
-              ))}
-            </ul>
-            {activeAmenity ? (
-              <InsetPanel tone="surface" className="mt-3">
-                <p className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--color-text)]">
-                  <Route className="h-4 w-4 text-[var(--color-secondary)]" aria-hidden="true" />
-                  Destination: {activeAmenity.name}
-                </p>
-                <p className="mt-1 text-xs text-[var(--color-muted)]">{activeAmenity.description}</p>
-                <div className="mt-2 flex flex-wrap gap-3 text-xs text-[var(--color-muted)]">
-                  <span className="inline-flex items-center gap-1">
-                    <span className="h-2.5 w-2.5 rounded-full bg-amber-300" />
-                    Trail
-                  </span>
-                  <span className="inline-flex items-center gap-1">
-                    <span className="h-2.5 w-2.5 rounded-full bg-slate-300" />
-                    Facility
-                  </span>
-                  <span className="inline-flex items-center gap-1">
-                    <span className="h-2.5 w-2.5 rounded-full bg-[var(--color-primary)]" />
-                    Selected
-                  </span>
-                </div>
-              </InsetPanel>
-            ) : null}
-          </section>
+          <MapDirectionsPanel
+            destination={activeAmenity}
+            steps={directionSteps}
+          />
         </div>
       </section>
     </div>

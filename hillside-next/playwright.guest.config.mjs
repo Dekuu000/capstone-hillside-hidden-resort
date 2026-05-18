@@ -5,6 +5,7 @@ const baseURL = process.env.GUEST_E2E_BASE_URL || "http://127.0.0.1:3000";
 export default defineConfig({
   testDir: "./tests/guest-e2e",
   timeout: 30_000,
+  workers: process.env.CI ? 2 : 1,
   expect: {
     timeout: 10_000,
   },
@@ -25,4 +26,3 @@ export default defineConfig({
     },
   ],
 });
-
