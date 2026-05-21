@@ -59,7 +59,7 @@ export function ImageLightbox({
 
   return (
     <div
-      className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/90 p-3"
+      className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/90 p-3"
       role="dialog"
       aria-modal="true"
       aria-label="Image viewer"

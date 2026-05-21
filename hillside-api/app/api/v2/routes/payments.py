@@ -1,19 +1,26 @@
 import logging
+from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
 from app.api.v2.routes._http_errors import raise_http_from_runtime_error
 
 from app.core.auth import AuthContext, ensure_reservation_access, require_admin, require_authenticated
+from app.core.config import settings
 from app.integrations.supabase_client import (
+    expire_pending_payment_hold_for_reservation,
+    get_payment_by_reference_no,
     get_reservation_by_id,
     list_admin_payments,
     list_payments_by_reservation,
     record_on_site_payment as record_on_site_payment_rpc,
     reject_payment as reject_payment_rpc,
+    reject_payment_service_role,
     submit_payment_proof as submit_payment_proof_rpc,
+    update_reservation_policy_metadata,
     update_payment_intent_amount as update_payment_intent_amount_rpc,
     verify_payment as verify_payment_rpc,
+    verify_payment_service_role,
 )
 from app.schemas.common import (
     AdminPaymentsResponse,
@@ -31,9 +38,71 @@ from app.services.idempotency import (
     load_cached_response_payload,
     store_operation_receipt_safely,
 )
+from app.services.payment_policy import payment_satisfies_minimum
+from app.services.payment_webhooks import (
+    parse_payment_webhook_payload,
+    verify_webhook_signature,
+)
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+WEBHOOK_ROUTE_KEY = "payments.webhooks.provider"
+WEBHOOK_SYSTEM_USER_ID = "system-webhook"
+
+
+def _parse_created_at_utc(value: object) -> datetime | None:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    if text.endswith("Z"):
+        text = f"{text[:-1]}+00:00"
+    try:
+        created_at = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if created_at.tzinfo is None:
+        created_at = created_at.replace(tzinfo=timezone.utc)
+    return created_at.astimezone(timezone.utc)
+
+
+def _pending_payment_hold_cutoff_utc() -> datetime:
+    hold_minutes = max(5, int(settings.reservation_pending_payment_hold_minutes or 120))
+    return datetime.now(timezone.utc) - timedelta(minutes=hold_minutes)
+
+
+def _should_expire_pending_payment_hold(reservation: dict) -> bool:
+    status_text = str(reservation.get("status") or "").lower()
+    if status_text != "pending_payment":
+        return False
+    amount_paid = float(reservation.get("amount_paid_verified") or 0)
+    if amount_paid > 0:
+        return False
+    created_at = _parse_created_at_utc(reservation.get("created_at"))
+    if created_at is None:
+        return False
+    return created_at < _pending_payment_hold_cutoff_utc()
+
+
+def _enforce_payment_window_or_raise(*, reservation: dict, reservation_id: str) -> None:
+    if not _should_expire_pending_payment_hold(reservation):
+        return
+    try:
+        expired = expire_pending_payment_hold_for_reservation(
+            reservation_id=reservation_id,
+            older_than_utc=_pending_payment_hold_cutoff_utc(),
+        )
+    except RuntimeError as exc:
+        raise_http_from_runtime_error(exc, default_status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        return
+
+    if expired:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "This payment window has expired because the minimum deposit was not submitted in time. "
+                "Please create a new reservation."
+            ),
+        )
 
 
 @router.get("/reservations/{reservation_id}")
@@ -141,12 +210,30 @@ def submit_payment(
     if not reservation:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation not found")
     ensure_reservation_access(auth, reservation)
+    _enforce_payment_window_or_raise(
+        reservation=reservation,
+        reservation_id=payload.reservation_id,
+    )
 
     reservation_status = str(reservation.get("status") or "").lower()
     if reservation_status in {"cancelled", "no_show", "checked_out"}:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Payment submission is not allowed for this reservation status.",
+        )
+
+    # Front-load minimum payment validation for clearer guest-facing errors.
+    # The RPC layer enforces these rules too; this keeps API feedback explicit.
+    deposit_required = float(reservation.get("deposit_required") or 0)
+    expected_pay_now = float(reservation.get("expected_pay_now") or 0)
+    minimum_required = expected_pay_now if expected_pay_now > 0 else deposit_required
+    if minimum_required > 0 and payload.amount < minimum_required:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                f"Minimum payment for this reservation is {minimum_required:.2f}. "
+                "Pay at least the minimum deposit before continuing."
+            ),
         )
 
     try:
@@ -168,10 +255,23 @@ def submit_payment(
         payment_id = str(result[0])
     else:
         payment_id = "submitted"
+    try:
+        refreshed = get_reservation_by_id(payload.reservation_id)
+    except RuntimeError:
+        refreshed = None
+    refreshed_status = str((refreshed or reservation).get("status") or "").strip().lower()
+    next_status = "for_verification" if refreshed_status in {"", "pending_payment"} else refreshed_status
+    total_paid_verified = float((refreshed or reservation).get("amount_paid_verified") or 0)
+    if minimum_required > 0 and payment_satisfies_minimum(
+        amount_paid_verified=total_paid_verified,
+        minimum_required=minimum_required,
+    ):
+        next_status = "confirmed" if next_status in {"pending_payment", "for_verification"} else next_status
+
     response = PaymentSubmissionResponse(
         payment_id=payment_id,
         status="pending",
-        reservation_status="for_verification",
+        reservation_status=next_status,
     )
     store_operation_receipt_safely(
         operation_id=operation_id,
@@ -200,6 +300,10 @@ def update_payment_intent(
     if not reservation:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation not found")
     ensure_reservation_access(auth, reservation)
+    _enforce_payment_window_or_raise(
+        reservation=reservation,
+        reservation_id=payload.reservation_id,
+    )
 
     reservation_status = str(reservation.get("status") or "").lower()
     if reservation_status not in {"pending_payment", "for_verification"}:
@@ -266,6 +370,10 @@ def record_on_site_payment(
 
     if not reservation:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation not found")
+    _enforce_payment_window_or_raise(
+        reservation=reservation,
+        reservation_id=payload.reservation_id,
+    )
 
     reservation_status = str(reservation.get("status") or "").lower()
     if reservation_status in {"cancelled", "no_show", "checked_out"}:
@@ -359,3 +467,115 @@ def reject_payment(
         "status": "rejected",
         "reason": reason,
     }
+
+
+@router.post("/webhooks/provider")
+async def process_payment_webhook(
+    request: Request,
+):
+    payment_mode = str(settings.payment_mode or "proof_only").strip().lower()
+    if payment_mode != "gateway":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Payment gateway webhooks are disabled in proof-only mode.",
+        )
+    try:
+        payload = await request.json()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid webhook payload.") from exc
+    if not isinstance(payload, dict):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Webhook payload must be an object.")
+
+    normalized = parse_payment_webhook_payload(payload, request=request)
+    verify_webhook_signature(request=request, provider=normalized.provider)
+
+    provider = normalized.provider
+    event_id = normalized.event_id
+    event_type = normalized.event_type
+    if not event_id or not event_type:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="event_id and event_type are required.",
+        )
+
+    operation_id = build_idempotency_operation_id(
+        route_key=WEBHOOK_ROUTE_KEY,
+        user_id=WEBHOOK_SYSTEM_USER_ID,
+        idempotency_key=event_id,
+    )
+    cached_payload = load_cached_response_payload(
+        operation_id=operation_id,
+        user_id=WEBHOOK_SYSTEM_USER_ID,
+        idempotency_key=event_id,
+        logger=logger,
+        warning_label="Payment webhook",
+    )
+    if cached_payload:
+        return {
+            "ok": True,
+            "provider": provider,
+            "event_id": event_id,
+            "event_type": event_type,
+            "deduped": True,
+            "dedupe_result": "deduped",
+            **cached_payload,
+        }
+
+    payment_id = str(normalized.payment_id or "").strip()
+    reservation_id = str(normalized.reservation_id or "").strip()
+    reference_no = str(normalized.reference_no or "").strip()
+    reason = str(normalized.reason or "Webhook rejection").strip()
+    processed = "ignored"
+
+    if not payment_id and reference_no:
+        try:
+            payment_by_ref = get_payment_by_reference_no(reference_no=reference_no)
+        except RuntimeError as exc:
+            raise_http_from_runtime_error(exc, default_status=status.HTTP_503_SERVICE_UNAVAILABLE)
+            return
+        if payment_by_ref:
+            payment_id = str(payment_by_ref.get("payment_id") or "").strip()
+            reservation_id = reservation_id or str(payment_by_ref.get("reservation_id") or "").strip()
+
+    try:
+        if event_type in {"payment.succeeded", "payment.verified"} and payment_id:
+            verify_payment_service_role(payment_id, approved=True)
+            processed = "payment_verified"
+        elif event_type in {"payment.failed", "payment.rejected"} and payment_id:
+            reject_payment_service_role(payment_id, reason=reason)
+            processed = "payment_rejected"
+        elif event_type in {"refund.succeeded", "refund.completed"} and reservation_id:
+            reservation_row = get_reservation_by_id(reservation_id) or {}
+            update_reservation_policy_metadata(
+                reservation_id=reservation_id,
+                deposit_policy_version=str(reservation_row.get("deposit_policy_version") or "") or None,
+                deposit_rule_applied=str(reservation_row.get("deposit_rule_applied") or "") or None,
+                cancellation_actor=str(reservation_row.get("cancellation_actor") or "") or None,
+                policy_outcome="refunded",
+            )
+            processed = "refund_recorded"
+    except RuntimeError as exc:
+        raise_http_from_runtime_error(exc, default_status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+    response_payload = {
+        "processed": processed,
+        "provider": provider,
+        "event_id": event_id,
+        "event_type": event_type,
+        "payment_id": payment_id or None,
+        "reservation_id": reservation_id or None,
+        "reference_no": reference_no or None,
+        "dedupe_result": "processed",
+    }
+    store_operation_receipt_safely(
+        operation_id=operation_id,
+        idempotency_key=event_id,
+        user_id=WEBHOOK_SYSTEM_USER_ID,
+        entity_type="payment_webhook",
+        entity_id=payment_id or reservation_id or event_id,
+        action=WEBHOOK_ROUTE_KEY,
+        response_payload=response_payload,
+        logger=logger,
+        warning_label="Payment webhook",
+    )
+    return {"ok": True, **response_payload}

@@ -1,4 +1,3 @@
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 const ACCESS_TOKEN_COOKIE = "hs_at";
@@ -29,10 +28,11 @@ export async function POST(request: Request) {
   }
 
   const maxAge = getTokenMaxAge(accessToken);
-  const jar = await cookies();
   const secure = process.env.NODE_ENV === "production";
+  const email = (body?.email || "").trim();
 
-  jar.set(ACCESS_TOKEN_COOKIE, accessToken, {
+  const response = NextResponse.json({ ok: true });
+  response.cookies.set(ACCESS_TOKEN_COOKIE, accessToken, {
     httpOnly: true,
     secure,
     sameSite: "lax",
@@ -40,9 +40,8 @@ export async function POST(request: Request) {
     maxAge,
   });
 
-  const email = (body?.email || "").trim();
   if (email) {
-    jar.set(EMAIL_COOKIE, email, {
+    response.cookies.set(EMAIL_COOKIE, email, {
       httpOnly: true,
       secure,
       sameSite: "lax",
@@ -50,16 +49,15 @@ export async function POST(request: Request) {
       maxAge,
     });
   } else {
-    jar.delete(EMAIL_COOKIE);
+    response.cookies.delete(EMAIL_COOKIE);
   }
 
-  return NextResponse.json({ ok: true });
+  return response;
 }
 
 export async function DELETE() {
-  const jar = await cookies();
-  jar.delete(ACCESS_TOKEN_COOKIE);
-  jar.delete(EMAIL_COOKIE);
-  return NextResponse.json({ ok: true });
+  const response = NextResponse.json({ ok: true });
+  response.cookies.delete(ACCESS_TOKEN_COOKIE);
+  response.cookies.delete(EMAIL_COOKIE);
+  return response;
 }
-

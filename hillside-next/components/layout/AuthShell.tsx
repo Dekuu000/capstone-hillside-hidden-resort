@@ -1,11 +1,11 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Globe } from "lucide-react";
 import { HillsideLogo } from "../branding/HillsideLogo";
 
 type AuthShellProps = {
   showSidePanel?: boolean;
   showSideHighlight?: boolean;
+  fullScreen?: boolean;
   sideTitle: string;
   sideSubtitle: string;
   sideDescription: string;
@@ -14,6 +14,9 @@ type AuthShellProps = {
   sideQuote?: string;
   sideCaption?: string;
   mobileBrandLine?: string;
+  mobileProofBottomGap?: boolean;
+  mobileTightContentTop?: boolean;
+  mobileLiftContent?: boolean;
   formIntro: string;
   formTitle: string;
   formSubtitle: string;
@@ -23,6 +26,7 @@ type AuthShellProps = {
 export function AuthShell({
   showSidePanel = true,
   showSideHighlight = true,
+  fullScreen = false,
   sideTitle,
   sideSubtitle,
   sideDescription,
@@ -31,6 +35,9 @@ export function AuthShell({
   sideQuote,
   sideCaption,
   mobileBrandLine,
+  mobileProofBottomGap = false,
+  mobileTightContentTop = false,
+  mobileLiftContent = false,
   formIntro,
   formTitle,
   formSubtitle,
@@ -41,16 +48,32 @@ export function AuthShell({
     "https://images.unsplash.com/photo-1573843981267-be1999ff37cd?auto=format&fit=crop&w=1400&q=80";
 
   return (
-    <main className="min-h-screen bg-[#e8edf3] px-4 py-6 sm:px-6 lg:px-8">
+    <main
+      className={
+        fullScreen
+          ? "min-h-dvh w-screen overflow-x-hidden bg-[#e8edf3]"
+          : "min-h-screen bg-[#e8edf3] px-4 py-6 sm:px-6 lg:px-8"
+      }
+    >
       <div
-        className={`mx-auto w-full overflow-hidden rounded-[26px] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-lg)] ${
-          showSidePanel ? "grid max-w-[1340px] lg:min-h-[840px] lg:grid-cols-[0.46fr_0.54fr]" : "max-w-xl"
+        className={`mx-auto w-full overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-lg)] ${
+          fullScreen
+            ? showSidePanel
+              ? "grid min-h-dvh w-screen max-w-none rounded-none lg:grid-cols-[0.46fr_0.54fr]"
+              : "min-h-dvh w-screen max-w-none rounded-none"
+            : showSidePanel
+              ? "grid max-w-[1340px] rounded-[26px] lg:min-h-[840px] lg:grid-cols-[0.46fr_0.54fr]"
+              : "max-w-xl rounded-[26px]"
         }`}
       >
         {showSidePanel ? (
-          <div className="border-b border-white/20 bg-[var(--color-primary)] px-5 py-4 text-white lg:hidden">
-            <HillsideLogo light compact />
-            <p className="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-white/75">{mobileBrandLine || sideTitle}</p>
+          <div className="flex h-[118px] flex-col justify-between border-b border-white/20 bg-[var(--color-primary)] px-5 py-3 text-white lg:hidden">
+            <HillsideLogo
+              light
+              compact
+              className="[&_p:last-child]:text-left [&_p:last-child]:tracking-[0.3em]"
+            />
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/75">{mobileBrandLine || sideTitle}</p>
           </div>
         ) : null}
 
@@ -113,25 +136,22 @@ export function AuthShell({
           </aside>
         ) : null}
 
-        <section className={showSidePanel ? "flex min-h-full flex-col bg-[#f9fbfe]" : "p-6 sm:p-8 md:p-10"}>
-          {showSidePanel ? (
-            <div className="flex items-center justify-end px-6 pt-6 sm:px-10">
-              <button
-                type="button"
-                className="inline-flex h-10 items-center gap-2 rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm font-medium text-[var(--color-text)]"
-              >
-                <Globe className="h-4 w-4" />
-                EN
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="m6 9 6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-            </div>
-          ) : null}
-
-          <div className={showSidePanel ? "mx-auto my-auto w-full max-w-[520px] px-6 py-8 sm:px-10" : ""}>
-            <div className={showSidePanel ? "rounded-2xl border border-[var(--color-border)] bg-white p-6 shadow-[var(--shadow-md)] sm:p-8" : ""}>
-              <div className="mb-6">
+        <section className={showSidePanel ? "flex min-h-full flex-col justify-between bg-[var(--color-surface)]" : "p-6 sm:p-8 md:p-10"}>
+          <div
+            className={
+              showSidePanel
+                ? `mx-auto w-full max-w-[520px] flex-1 px-0 py-0 sm:px-8 sm:py-8 lg:flex lg:items-center lg:px-10 lg:py-0 ${mobileLiftContent ? "-mt-10 sm:mt-0" : ""}`
+                : ""
+            }
+          >
+            <div
+              className={
+                showSidePanel
+                  ? `rounded-none border-0 bg-white ${mobileTightContentTop ? "px-6 pb-6 pt-0" : "p-6"} shadow-none sm:rounded-2xl sm:border sm:border-[var(--color-border)] sm:p-8 sm:shadow-[var(--shadow-md)]`
+                  : ""
+              }
+            >
+              <div className={mobileTightContentTop ? "mb-5" : "mb-6"}>
                 <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)]">{formIntro}</p>
                 <h2 className="mt-2 text-4xl leading-tight text-[var(--color-text)]">{formTitle}</h2>
                 <p className="mt-2 text-base text-[var(--color-muted)]">{formSubtitle}</p>
@@ -143,17 +163,18 @@ export function AuthShell({
                   <p className="mt-1 text-emerald-700">{sideProof}</p>
                 </div>
               ) : null}
+              {mobileProofBottomGap ? <div className="h-10 sm:hidden" aria-hidden="true" /> : null}
             </div>
           </div>
 
           {showSidePanel ? (
-            <div className="border-t border-[var(--color-border)] px-6 py-4 text-center text-xs text-[var(--color-muted)] sm:px-10">
+            <div className="flex h-9 items-center justify-center border-t border-[var(--color-border)] px-2 text-center text-[10px] leading-none whitespace-nowrap text-[var(--color-muted)] sm:h-auto sm:px-10 sm:py-4 sm:text-xs sm:leading-normal sm:whitespace-normal">
               <span>&copy; 2026 Hillside Hidden Resort</span>
-              <span className="mx-2">·</span>
+              <span className="mx-1.5">·</span>
               <Link href="/privacy" className="hover:text-[var(--color-primary)] hover:underline">
                 Privacy Policy
               </Link>
-              <span className="mx-2">·</span>
+              <span className="mx-1.5">·</span>
               <Link href="/terms" className="hover:text-[var(--color-primary)] hover:underline">
                 Terms of Service
               </Link>

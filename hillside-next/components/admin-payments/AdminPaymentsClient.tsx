@@ -86,6 +86,13 @@ function looksLikeUuid(value: string) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value.trim());
 }
 
+function shortHash(value: string | null | undefined) {
+  const text = String(value || "").trim();
+  if (!text) return "-";
+  if (text.length <= 18) return text;
+  return `${text.slice(0, 10)}...${text.slice(-6)}`;
+}
+
 function getPaymentSource(payment: AdminPaymentItem): "online" | "walk_in" {
   const reservationSource = payment.reservation?.reservation_source;
   if (reservationSource === "online" || reservationSource === "walk_in") {
@@ -1163,6 +1170,25 @@ export function AdminPaymentsClient({
                       <td className="px-4 py-3">
                         <p className="font-mono font-semibold text-slate-900">{payment.reservation?.reservation_code ?? "-"}</p>
                         <p className="text-xs text-slate-500">{formatDateTime(payment.created_at)}</p>
+                        {payment.webhook_audit ? (
+                          <div className="mt-1.5 rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] leading-4 text-slate-600">
+                            <p>
+                              <span className="font-semibold text-slate-700">Webhook:</span>{" "}
+                              {payment.webhook_audit.event_type || "-"} · {payment.webhook_audit.dedupe_result || "-"}
+                            </p>
+                            <p>
+                              <span className="font-semibold text-slate-700">Link:</span>{" "}
+                              {shortHash(payment.webhook_audit.linked_payment_id || payment.payment_id)} /{" "}
+                              {shortHash(payment.webhook_audit.linked_reservation_id || payment.reservation_id)}
+                            </p>
+                            {payment.webhook_audit.chain_proof_reference ? (
+                              <p>
+                                <span className="font-semibold text-slate-700">Chain proof:</span>{" "}
+                                {shortHash(payment.webhook_audit.chain_proof_reference)}
+                              </p>
+                            ) : null}
+                          </div>
+                        ) : null}
                       </td>
                       <td className="px-4 py-3">
                         {(() => {
@@ -1292,8 +1318,8 @@ export function AdminPaymentsClient({
       ) : null}
 
       {rejectTarget ? (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-0 md:items-center md:p-4">
-          <div className="w-full rounded-t-2xl border border-slate-200/70 bg-white p-4 md:max-w-xl md:rounded-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-3 md:p-4">
+          <div className="w-full rounded-2xl border border-slate-200/70 bg-white p-4 md:max-w-xl">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-slate-900">Reject payment submission</h3>
               <button

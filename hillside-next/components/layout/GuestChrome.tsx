@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BedDouble, ChevronDown, LogOut, Plug, RefreshCcw, Unplug, UserRound, Wallet } from "lucide-react";
+import { BedDouble, Bell, CalendarDays, ChevronDown, LogOut, MapPin, Mountain, Plug, RefreshCcw, Unplug, UserRound, Wallet } from "lucide-react";
 import { myProfileResponseSchema } from "../../../packages/shared/src/schemas";
 import type { MyProfileResponse } from "../../../packages/shared/src/types";
 import { apiFetch } from "../../lib/apiClient";
@@ -12,6 +12,8 @@ import { clearServerSessionCookie } from "../../lib/authSessionCookie";
 import { getSupabaseBrowserClient, safeGetSession } from "../../lib/supabase";
 import { resolveUserDisplayName } from "../../lib/userProfile";
 import { useToast } from "../shared/ToastProvider";
+import { HillsideLogo } from "../branding/HillsideLogo";
+import { GuestBottomNav } from "../guest/GuestBottomNav";
 
 type GuestChromeProps = {
   children: ReactNode;
@@ -20,11 +22,11 @@ type GuestChromeProps = {
 };
 
 const navItems = [
-  { label: "Book Now", href: "/book" },
-  { label: "Tours", href: "/tours" },
-  { label: "Map", href: "/guest/map" },
-  { label: "Services", href: "/guest/services" },
-  { label: "My Bookings", href: "/my-bookings" },
+  { label: "Book Now", href: "/book", icon: CalendarDays },
+  { label: "Tours", href: "/tours", icon: Mountain },
+  { label: "Map", href: "/guest/map", icon: MapPin },
+  { label: "Services", href: "/guest/services", icon: Bell },
+  { label: "My Bookings", href: "/my-bookings", icon: BedDouble },
 ];
 
 const guestMenuItemClass =
@@ -186,8 +188,15 @@ export function GuestChrome({ children, initialName = null, initialEmail = null 
       if (menuRef.current.contains(event.target as Node)) return;
       setMenuOpen(false);
     };
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenuOpen(false);
+    };
     window.addEventListener("mousedown", onPointerDown);
-    return () => window.removeEventListener("mousedown", onPointerDown);
+    window.addEventListener("keydown", onEscape);
+    return () => {
+      window.removeEventListener("mousedown", onPointerDown);
+      window.removeEventListener("keydown", onEscape);
+    };
   }, []);
 
   useEffect(() => {
@@ -196,24 +205,29 @@ export function GuestChrome({ children, initialName = null, initialEmail = null 
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--color-background)]">
-      <header className="sticky top-0 z-30 border-b border-[var(--color-border)] bg-white/95 backdrop-blur">
-        <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+      <header data-testid="guest-header" className="sticky top-0 z-40 border-b border-slate-200/70 bg-white/95 backdrop-blur">
+        <div className="mx-auto flex h-[70px] w-full max-w-[430px] items-center justify-between px-4 md:h-20 md:max-w-[1440px] md:px-6 lg:px-8">
           <Link href="/book" className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--color-primary)] text-sm font-bold text-white">H</div>
-            <span className="hidden text-lg font-bold text-[var(--color-text)] sm:inline">Hillside Resort</span>
+            <HillsideLogo compact className="[&_svg]:h-9 [&_svg]:w-9 min-[390px]:[&_svg]:h-10 min-[390px]:[&_svg]:w-10 [&_p:first-of-type]:text-[1.2rem] [&_p:first-of-type]:font-semibold min-[390px]:[&_p:first-of-type]:text-[1.3rem] [&_p:last-child]:text-[0.62rem] [&_p:last-child]:tracking-[0.30em] md:[&_svg]:h-11 md:[&_svg]:w-11 md:[&_p:first-of-type]:text-[1.6rem] md:[&_p:last-child]:text-[0.68rem]" />
           </Link>
 
-          <nav className="hidden items-center gap-2 md:flex">
+          <nav className="hidden items-center gap-2 lg:flex">
             {navItems.map((item) => {
               const active = isActive(item.href);
+              const Icon = item.icon;
               return (
                 <Link
                   key={item.label}
                   href={item.href}
-                  className="guest-nav-pill text-sm"
+                  className={`inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm font-semibold transition ${
+                    active
+                      ? "bg-[var(--color-primary)] text-white shadow-sm"
+                      : "text-slate-600 hover:bg-slate-100 hover:text-[var(--color-primary)]"
+                  }`}
                   data-active={active}
                   aria-current={active ? "page" : undefined}
                 >
+                  <Icon className="h-4 w-4" />
                   {item.label}
                 </Link>
               );
@@ -225,7 +239,7 @@ export function GuestChrome({ children, initialName = null, initialEmail = null 
               <button
                 type="button"
                 onClick={() => setMenuOpen((value) => !value)}
-                className="guest-secondary-cta guest-secondary-cta-sm rounded-full px-2.5 text-[var(--color-text)]"
+                className="inline-flex h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-3 text-[var(--color-text)] shadow-sm transition hover:bg-slate-50"
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
                 aria-label="Open guest profile menu"
@@ -316,28 +330,11 @@ export function GuestChrome({ children, initialName = null, initialEmail = null 
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-7xl overflow-x-hidden px-4 pb-[calc(8rem+env(safe-area-inset-bottom))] pt-6 sm:px-6 lg:px-8 md:pb-8">
+      <main className="mx-auto flex w-full max-w-[430px] flex-col gap-5 overflow-x-hidden px-4 pb-40 pt-5 md:max-w-[1280px] md:gap-6 md:px-6 md:pb-8 md:pt-6 lg:px-8">
         {children}
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-[var(--color-border)] bg-white md:hidden">
-        <div className="no-scrollbar flex h-16 items-center gap-2 overflow-x-auto px-3">
-          {navItems.map((item) => {
-            const active = isActive(item.href);
-            return (
-              <Link
-                key={item.label}
-                href={item.href}
-                className="guest-nav-pill guest-nav-pill-sm min-w-fit whitespace-nowrap"
-                data-active={active}
-                aria-current={active ? "page" : undefined}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
+      <GuestBottomNav items={navItems} isActive={isActive} />
     </div>
   );
 }

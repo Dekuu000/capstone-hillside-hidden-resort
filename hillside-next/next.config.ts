@@ -90,6 +90,7 @@ const securityHeaders = [
       `img-src 'self' data: blob: https: ${supabaseOrigin} ${isDev ? "http://127.0.0.1:55321 http://localhost:55321" : ""}`,
       `connect-src ${connectSrc}`,
       "font-src 'self' data:",
+      "frame-src 'self' https://www.google.com https://maps.google.com",
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",

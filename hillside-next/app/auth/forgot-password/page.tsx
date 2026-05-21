@@ -38,11 +38,14 @@ export default function ForgotPasswordPage() {
 
   return (
     <AuthShell
-      showSidePanel={false}
-      sideTitle="Need account recovery?"
-      sideSubtitle="Hidden Resort"
-      sideDescription="Reset your password securely and return to operations in minutes."
-      sideProof="Only registered staff and guests can request access recovery."
+      fullScreen
+      mobileProofBottomGap
+      mobileTightContentTop
+      mobileLiftContent
+      sideTitle="Reset Access"
+      sideSubtitle=""
+      sideDescription="Recover your account securely and get back to managing your stay."
+      sideProof="Only verified account holders can request a password reset."
       mobileBrandLine="Account Recovery"
       formIntro="Password recovery"
       formTitle="Reset your password"
@@ -69,7 +72,7 @@ export default function ForgotPasswordPage() {
 
       <div className="mt-6 text-center text-sm text-[var(--color-muted)]">
         Remembered your password?{" "}
-        <Link href="/auth/sign-in" className="font-semibold text-[var(--color-primary)] hover:underline">
+        <Link href="/auth/sign-in" className="font-semibold text-[var(--color-secondary)] hover:underline">
           Back to sign in
         </Link>
       </div>

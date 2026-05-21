@@ -726,8 +726,8 @@ export function AdminUnitsClient({
       </div>
 
       {(editingUnitId || unitDetailLoading) && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/55 p-0 md:items-center md:p-4">
-          <div className="max-h-[92vh] w-full overflow-y-auto rounded-t-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 md:max-w-2xl md:rounded-2xl md:p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/55 p-3 md:p-4">
+          <div className="max-h-[92vh] w-full overflow-y-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 md:max-w-2xl md:p-6">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-xl font-semibold text-[var(--color-text)]">Unit details</h3>
               <button

@@ -118,6 +118,10 @@ def test_cancel_reservation_contract(monkeypatch) -> None:
     assert payload["ok"] is True
     assert payload["reservation_id"] == "res-1"
     assert payload["status"] == "cancelled"
+    assert payload["paid_amount"] == 0
+    assert payload["minimum_deposit"] == 0
+    assert payload["refundable_amount"] == 0
+    assert payload["non_refundable_amount"] == 0
     assert called["reservation_id"] == "res-1"
 
 
@@ -276,6 +280,37 @@ def test_cancel_reservation_guest_forfeits_and_skips_refund(monkeypatch) -> None
     assert payload["policy_outcome"] == "forfeited"
 
 
+def test_cancel_reservation_guest_response_includes_refundable_math(monkeypatch) -> None:
+    monkeypatch.setattr("app.core.auth.verify_access_token", _mock_guest_auth)
+    monkeypatch.setattr(
+        "app.api.v2.routes.reservations.get_reservation_by_id",
+        lambda _: {
+            "reservation_id": "res-1",
+            "guest_user_id": "guest-user",
+            "status": "confirmed",
+            "amount_paid_verified": 3000,
+            "deposit_required": 1000,
+            "escrow_state": "none",
+            "deposit_rule_applied": "room_cottage_20pct_clamp_500_1000",
+        },
+    )
+    monkeypatch.setattr("app.api.v2.routes.reservations.cancel_reservation_rpc", lambda **_: None)
+    monkeypatch.setattr("app.api.v2.routes.reservations.update_reservation_policy_metadata", lambda **_: None)
+
+    response = client.post(
+        "/v2/reservations/res-1/cancel",
+        headers={"Authorization": "Bearer guest-token"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["cancellation_actor"] == "guest"
+    assert payload["policy_outcome"] == "forfeited"
+    assert payload["paid_amount"] == 3000
+    assert payload["minimum_deposit"] == 1000
+    assert payload["non_refundable_amount"] == 1000
+    assert payload["refundable_amount"] == 2000
+
+
 def test_create_tour_reservation_blocks_guest_same_day(monkeypatch) -> None:
     today = date.today().isoformat()
     monkeypatch.setattr("app.core.auth.verify_access_token", _mock_guest_auth)
@@ -361,6 +396,16 @@ def test_create_tour_reservation_allows_admin_walk_in_same_day(monkeypatch) -> N
 
 def test_create_reservation_contract_without_shadow(monkeypatch) -> None:
     monkeypatch.setattr("app.core.auth.verify_access_token", _mock_guest_auth)
+    released: dict = {}
+
+    def _fake_release_expired_holds(**kwargs):
+        released.update(kwargs)
+        return 1
+
+    monkeypatch.setattr(
+        "app.api.v2.routes.reservations.release_expired_pending_payment_holds",
+        _fake_release_expired_holds,
+    )
     monkeypatch.setattr(
         "app.api.v2.routes.reservations.get_available_units_rpc",
         lambda **_: [{"unit_id": "unit-1", "base_price": 1500}],
@@ -392,6 +437,8 @@ def test_create_reservation_contract_without_shadow(monkeypatch) -> None:
     assert payload["escrow_ref"] is None
     assert payload["deposit_policy_version"] == "v1_2026_04"
     assert payload["deposit_rule_applied"] == "room_cottage_20pct_clamp_500_1000"
+    assert "older_than_utc" in released
+    assert released["limit"] > 0
 
 
 def test_create_reservation_contract_with_shadow(monkeypatch) -> None:

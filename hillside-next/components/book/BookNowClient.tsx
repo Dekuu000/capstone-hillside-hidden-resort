@@ -5,11 +5,13 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  BedDouble,
   CalendarDays,
   CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  CircleCheckBig,
   Loader2,
-  Moon,
-  Search,
   ShieldCheck,
   Users,
 } from "lucide-react";
@@ -46,6 +48,13 @@ import { PaymentVerificationInfo } from "../guest/PaymentVerificationInfo";
 type AvailableUnit = AvailableUnitsResponse["items"][number];
 type UnitTypeFilter = "all" | "room" | "cottage" | "amenity";
 
+const UNIT_TYPE_LABEL: Record<UnitTypeFilter, string> = {
+  all: "units",
+  room: "rooms",
+  cottage: "cottages",
+  amenity: "amenities",
+};
+
 type BookNowClientProps = {
   initialToken?: string | null;
   initialSessionEmail?: string | null;
@@ -73,6 +82,7 @@ export function BookNowClient({
   const [checkOutDate, setCheckOutDate] = useState(initialCheckOutDate || defaultCheckout);
   const [unitTypeFilter, setUnitTypeFilter] = useState<UnitTypeFilter>("all");
   const [guestCount, setGuestCount] = useState(1);
+  const [guestCountInput, setGuestCountInput] = useState("1");
 
   const [units, setUnits] = useState<AvailableUnit[]>(initialUnitsData?.items ?? []);
   const [unitsLoading, setUnitsLoading] = useState(false);
@@ -81,6 +91,7 @@ export function BookNowClient({
 
   const [submitBusy, setSubmitBusy] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [unitAvailabilityAlert, setUnitAvailabilityAlert] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [successHasSyncCta, setSuccessHasSyncCta] = useState(false);
   const [latestAiRecommendation, setLatestAiRecommendation] = useState<PricingRecommendation | null>(null);
@@ -88,7 +99,14 @@ export function BookNowClient({
   const [galleryUnit, setGalleryUnit] = useState<AvailableUnit | null>(null);
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const networkOnline = useNetworkOnline();
+
+  const applyGuestCount = (next: number) => {
+    const safe = Math.max(1, next);
+    setGuestCount(safe);
+    setGuestCountInput(String(safe));
+  };
 
   const initialQueryKey = `${initialCheckInDate || tomorrow}|${initialCheckOutDate || defaultCheckout}|all`;
   const [skipInitialFetch, setSkipInitialFetch] = useState(Boolean(initialUnitsData && initialToken));
@@ -191,6 +209,8 @@ export function BookNowClient({
     if (!canSubmitReservation) return 3;
     return 4;
   }, [canSubmitReservation, checkInDate, checkOutDate, nights, selectedUnitIds.length]);
+  const [mobileStep, setMobileStep] = useState(1);
+
   const galleryImages = useMemo(
     () => normalizeUnitImageUrls(galleryUnit?.image_urls, galleryUnit?.image_url),
     [galleryUnit],
@@ -206,6 +226,9 @@ export function BookNowClient({
   };
 
   const toggleUnit = (unitId: string) => {
+    if (unitAvailabilityAlert) {
+      setUnitAvailabilityAlert(null);
+    }
     setSelectedUnitIds((prev) => (prev.includes(unitId) ? prev.filter((id) => id !== unitId) : [...prev, unitId]));
   };
 
@@ -229,6 +252,7 @@ export function BookNowClient({
     }
     setSubmitBusy(true);
     setSubmitError(null);
+    setUnitAvailabilityAlert(null);
     setSuccessMessage(null);
     setSuccessHasSyncCta(false);
     setLatestAiRecommendation(null);
@@ -261,8 +285,12 @@ export function BookNowClient({
         setSuccessMessage(`Reservation ${outcome.data.reservation_code} created.`);
         setSuccessHasSyncCta(false);
         setLatestAiRecommendation(outcome.data.ai_recommendation ?? null);
+        const createdReservationId = String(outcome.data.reservation_id || "").trim();
+        const redirectUrl = createdReservationId
+          ? `/my-bookings?tab=pending_payment&focus=${encodeURIComponent(createdReservationId)}&pay=1`
+          : "/my-bookings?tab=pending_payment";
         window.setTimeout(() => {
-          router.push("/my-bookings");
+          router.push(redirectUrl);
         }, 900);
       } else {
         setSuccessMessage("Reservation saved offline. It will sync automatically when connection is restored.");
@@ -270,22 +298,46 @@ export function BookNowClient({
         setLatestAiRecommendation(null);
       }
     } catch (unknownError) {
-      setSubmitError(getApiErrorMessage(unknownError, "Failed to create reservation."));
+      const errorMessage = getApiErrorMessage(unknownError, "Failed to create reservation.");
+      if (/(unavailable|not available|fully booked|already booked)/i.test(errorMessage)) {
+        setUnitAvailabilityAlert(
+          "One or more selected units are no longer available for your dates. Please choose another available unit.",
+        );
+        setSubmitError(null);
+        setMobileStep(2);
+        setRefreshNonce((value) => value + 1);
+      } else {
+        setSubmitError(errorMessage);
+      }
     } finally {
       setSubmitBusy(false);
     }
   };
 
+  const openConfirmDialog = () => {
+    if (!canSubmitReservation) {
+      setSubmitError(submitBlockerMessage || "Complete the booking details before confirming.");
+      if (selectedUnitIds.length === 0) {
+        setMobileStep(2);
+      } else if (hasCapacityGap || nights <= 0 || guestCount <= 0) {
+        setMobileStep(1);
+      }
+      return;
+    }
+    setSubmitError(null);
+    setConfirmDialogOpen(true);
+  };
+
   if (sessionLoading) {
     return (
-      <GuestPageShell className="px-1">
-        <div className="mb-6 grid gap-4 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-sm)]">
+      <GuestPageShell className="max-w-[1280px] px-0">
+        <div className="mb-5 grid gap-4 rounded-[2rem] border border-slate-200/80 bg-[var(--color-surface)] p-5 shadow-sm md:p-6">
           <div className="skeleton h-5 w-36" />
           <div className="skeleton h-10 w-72" />
           <div className="skeleton h-4 w-60" />
         </div>
-        <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-          <div className="surface p-6">
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-6">
+          <div className="surface rounded-[2rem] border-slate-200/80 p-5 md:p-6">
             <div className="skeleton h-6 w-48" />
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <div className="skeleton h-14" />
@@ -296,7 +348,7 @@ export function BookNowClient({
               <div className="skeleton h-56" />
             </div>
           </div>
-          <div className="surface p-6">
+          <div className="surface rounded-[2rem] border-slate-200/80 p-5 md:p-6">
             <div className="skeleton h-6 w-40" />
             <div className="mt-4 space-y-3">
               <div className="skeleton h-14" />
@@ -311,25 +363,39 @@ export function BookNowClient({
 
   if (!token) {
     return (
-      <GuestPageShell>
+      <GuestPageShell className="max-w-[1280px] px-0">
         <GuestHero
-          eyebrow="Guest Booking"
+          testId="booking-header"
+          dark
+          eyebrow="Guest Portal"
           title="Book Your Stay"
-          subtitle="Choose dates and reserve your stay."
+          subtitle="Choose your dates, select a unit, and submit your booking request."
+          contentClassName="lg:min-h-[174px] lg:p-6"
+          rightSlot={(
+            <div className="rounded-3xl border border-white/15 bg-white/10 p-4 text-white/90 backdrop-blur">
+              <div className="flex items-center gap-2 text-base font-semibold text-white">
+                <ShieldCheck className="h-4 w-4 text-teal-300" aria-hidden="true" />
+                Secure booking
+              </div>
+              <p className="mt-2 text-sm text-white/75">
+                Availability and booking status update automatically after confirmation.
+              </p>
+            </div>
+          )}
         />
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        <div className="mt-5 rounded-[2rem] border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 shadow-sm">
           <p className="font-semibold">Sign in required to continue.</p>
           <p className="mt-1">Please sign in to check availability, save selections, and confirm booking.</p>
           <div className="mt-3 flex flex-wrap gap-2">
             <Link
               href="/login?next=/book"
-              className="inline-flex h-10 items-center justify-center rounded-[var(--radius-sm)] bg-slate-900 px-4 text-sm font-semibold text-white"
+              className="inline-flex h-11 items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white"
             >
               Sign in and continue
             </Link>
             <Link
               href="/tours"
-              className="inline-flex h-10 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-white px-4 text-sm font-semibold text-[var(--color-text)]"
+              className="inline-flex h-11 items-center justify-center rounded-xl border border-[var(--color-border)] bg-white px-4 text-sm font-semibold text-[var(--color-text)]"
             >
               Explore tours first
             </Link>
@@ -340,50 +406,96 @@ export function BookNowClient({
   }
 
   return (
-    <GuestPageShell className="px-1">
-      <GuestHero
-        eyebrow="Guest Booking"
-        title={<span className="md:text-4xl">Book Your Stay</span>}
-        subtitle={
-          <>
-            Signed in as <strong>{sessionEmail ?? "guest"}</strong>
-          </>
-        }
-        rightSlot={
-          <div className="grid gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white/90 px-4 py-3 text-xs text-[var(--color-muted)]">
-            <p className="font-semibold text-[var(--color-text)]">Secure booking flow</p>
-            <p>Select dates • pick units • review payment • confirm booking</p>
-            <p className="inline-flex items-center gap-1.5 text-[var(--color-primary)]">
-              <ShieldCheck className="h-3.5 w-3.5" />
-              Payment verification is required before check-in.
-            </p>
-          </div>
-        }
-      />
+    <GuestPageShell className="max-w-[1280px] px-0 pb-28 md:pb-0" >
+      <section data-testid="booking-page" className="mb-4 lg:mb-5">
+        <GuestHero
+          testId="booking-header"
+          dark
+          eyebrow="Guest Portal"
+          title="Book Your Stay"
+          subtitle="Choose your dates, select a unit, and submit your booking request."
+          contentClassName="lg:min-h-[174px] lg:p-6"
+          rightSlot={(
+            <div className="rounded-3xl border border-white/15 bg-white/10 p-4 text-white/90 backdrop-blur">
+              <div className="flex items-center gap-2 text-base font-semibold text-white">
+                <ShieldCheck className="h-4 w-4 text-teal-300" aria-hidden="true" />
+                Secure booking
+              </div>
+              <p className="mt-2 text-sm text-white/75">
+                Availability and booking status update automatically after confirmation.
+              </p>
+            </div>
+          )}
+        />
+      </section>
 
-      <div className="mb-4">
+      <div className="mb-4 hidden lg:block">
         <BookingStepper currentStep={bookingStep} />
       </div>
+      <div className="sticky top-[78px] z-20 mb-4 grid w-full grid-cols-3 gap-2 bg-[var(--color-background)] pb-2 pt-1 lg:hidden" data-testid="booking-stepper" aria-label="Booking progress">
+        {[
+          { step: 1, label: "Dates" },
+          { step: 2, label: "Unit" },
+          { step: 3, label: "Review" },
+        ].map((entry) => (
+          <button
+            key={entry.step}
+            type="button"
+            onClick={() => {
+              if (entry.step === 3 && selectedUnitIds.length === 0) {
+                setSubmitError("Select at least one unit before reviewing payment.");
+                setMobileStep(2);
+                return;
+              }
+              setMobileStep(entry.step);
+            }}
+            className={`inline-flex h-10 w-full items-center justify-center gap-2 rounded-2xl px-2 text-xs font-semibold ${
+              mobileStep === entry.step
+                ? "bg-[var(--color-primary)] text-white"
+                  : entry.step < bookingStep
+                    ? "bg-teal-50 text-teal-700"
+                    : "bg-white text-slate-600 ring-1 ring-slate-200"
+            }`}
+          >
+            <span
+              className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-[11px] ${
+                mobileStep === entry.step
+                  ? "bg-white/20 text-white"
+                  : entry.step < bookingStep
+                    ? "bg-teal-100 text-teal-700"
+                    : "bg-slate-100 text-slate-500"
+              }`}
+            >
+              {entry.step}
+            </span>
+            {entry.label}
+          </button>
+        ))}
+      </div>
 
-      <div className="mb-4 min-h-[3.25rem]">
-        {submitError ? (
+      {submitError && !unitAvailabilityAlert ? (
+        <div className="mb-3">
           <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{submitError}</p>
-        ) : null}
-        {!submitError && successMessage ? (
+        </div>
+      ) : null}
+      {!submitError && successMessage ? (
+        <div className="mb-3">
           <SyncAlertBanner
             message={successMessage}
             tone={successHasSyncCta ? "warning" : "success"}
             showSyncCta={successHasSyncCta}
             role="status"
           />
-        ) : null}
-        {!submitError && !successMessage && !networkOnline ? (
+        </div>
+      ) : null}
+      {!submitError && !successMessage && !networkOnline ? (
+        <div className="mb-3">
           <SyncAlertBanner
             message="You are offline. New bookings will be saved locally and synced when internet returns."
             showSyncCta
           />
-        ) : null}
-      </div>
+        </div>
+      ) : null}
       {latestAiRecommendation ? (
         <div className="mb-5 rounded-[var(--radius-md)] border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900 shadow-[var(--shadow-sm)]">
           <p className="font-semibold">
@@ -400,16 +512,27 @@ export function BookNowClient({
         </div>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1fr]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
         <div className="space-y-6">
-          <GuestSectionCard className="p-6">
+          <GuestSectionCard data-testid="booking-step-dates" className="rounded-[2rem] border-slate-200/80 p-5 md:p-6">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="inline-flex items-center gap-2 text-lg font-semibold text-[var(--color-text)]">
-                <CalendarDays className="h-5 w-5 text-[var(--color-secondary)]" />
-                Select Dates
-              </h2>
+              <button
+                type="button"
+                onClick={() => setMobileStep((prev) => (prev === 1 ? 0 : 1))}
+                className="inline-flex items-center gap-2 text-left md:pointer-events-none"
+                aria-expanded={mobileStep === 1}
+              >
+                <h2 className="inline-flex items-center gap-2 text-xl font-semibold tracking-tight text-[var(--color-text)]">
+                  <CalendarDays className="h-5 w-5 text-[var(--color-secondary)]" />
+                  Dates & Guests
+                </h2>
+                <span className="md:hidden">
+                  {mobileStep === 1 ? <ChevronDown className="h-4 w-4 text-slate-500" /> : <ChevronRight className="h-4 w-4 text-slate-500" />}
+                </span>
+              </button>
               <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">Step 1</span>
             </div>
+            <div className={`${mobileStep === 1 ? "block" : "hidden"} md:block`}>
             <div className="grid gap-3 sm:grid-cols-2">
               <FancyDatePicker
                 label="Check-in"
@@ -418,6 +541,7 @@ export function BookNowClient({
                 onChange={(nextValue) => {
                   setCheckInDate(nextValue);
                   setSelectedUnitIds([]);
+                  setUnitAvailabilityAlert(null);
                   if (checkOutDate <= nextValue) {
                     setCheckOutDate(addDaysToIsoDate(nextValue, 1));
                   }
@@ -430,6 +554,7 @@ export function BookNowClient({
                 onChange={(nextValue) => {
                   setCheckOutDate(nextValue);
                   setSelectedUnitIds([]);
+                  setUnitAvailabilityAlert(null);
                 }}
               />
               <label className="guest-form-label">
@@ -439,6 +564,7 @@ export function BookNowClient({
                   onChange={(event) => {
                     setUnitTypeFilter(event.target.value as UnitTypeFilter);
                     setSelectedUnitIds([]);
+                    setUnitAvailabilityAlert(null);
                   }}
                   className="guest-field-control"
                 >
@@ -449,26 +575,51 @@ export function BookNowClient({
                 </select>
               </label>
             </div>
-            <div className="mt-4 grid gap-3 sm:grid-cols-4">
-              <p className="rounded-[var(--radius-sm)] bg-blue-50 px-3 py-2 text-sm text-blue-800">
+            <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+              <p className="rounded-xl bg-blue-50 px-3 py-2 text-sm text-blue-800">
                 <strong>{nights}</strong> night{nights === 1 ? "" : "s"} stay
               </p>
-              <p className="inline-flex items-center gap-2 rounded-[var(--radius-sm)] bg-slate-50 px-3 py-2 text-sm text-slate-700">
-                <Search className="h-4 w-4 text-[var(--color-secondary)]" />
-                {unitCount} unit{unitCount === 1 ? "" : "s"} available
-              </p>
-              <label className="inline-flex items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-slate-700">
+              <label className="inline-flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-slate-700">
                 <Users className="h-4 w-4 text-[var(--color-secondary)]" />
                 <span>Guests</span>
                 <input
                   type="number"
                   min={1}
-                  value={guestCount}
-                  onChange={(event) => setGuestCount(Math.max(1, Number(event.target.value || 1)))}
+                  value={guestCountInput}
+                  onFocus={() => {
+                    if ((guestCountInput ?? "").trim() === "0" || (guestCountInput ?? "").trim() === "1") {
+                      setGuestCountInput("");
+                    }
+                  }}
+                  onChange={(event) => {
+                    const rawValue = event.target.value;
+                    if (rawValue.trim() === "") {
+                      setGuestCountInput("");
+                      setGuestCount(0);
+                      return;
+                    }
+                    const parsed = Number(rawValue);
+                    if (Number.isNaN(parsed)) return;
+                    const normalized = String(Math.max(0, parsed));
+                    setGuestCountInput(normalized);
+                    setGuestCount(Math.max(0, parsed));
+                  }}
+                  onBlur={() => {
+                    if ((guestCountInput ?? "").trim() === "") {
+                      applyGuestCount(1);
+                      return;
+                    }
+                    const parsed = Number(guestCountInput);
+                    if (!Number.isFinite(parsed) || parsed < 1) {
+                      applyGuestCount(1);
+                      return;
+                    }
+                    applyGuestCount(parsed);
+                  }}
                   className="guest-field-control guest-field-control-sm w-16 text-right text-sm"
                 />
               </label>
-              <p className="inline-flex items-center gap-2 rounded-[var(--radius-sm)] bg-slate-50 px-3 py-2 text-sm text-slate-700">
+              <p className="inline-flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-700">
                 <Users className="h-4 w-4 text-[var(--color-secondary)]" />
                 Capacity {selectedCapacity}
               </p>
@@ -478,37 +629,80 @@ export function BookNowClient({
                 Selected units can host up to <strong>{selectedCapacity}</strong> guest(s). Increase capacity or reduce guest count.
               </p>
             ) : null}
+            <div className="mt-4 md:hidden">
+              <button
+                type="button"
+                onClick={() => setMobileStep(2)}
+                className="inline-flex h-11 w-full items-center justify-center rounded-2xl bg-[var(--color-primary)] px-4 text-sm font-semibold text-white"
+              >
+                Continue to units
+              </button>
+            </div>
+            </div>
           </GuestSectionCard>
 
           <GuestSectionCard
-            className="p-6"
+            data-testid="booking-step-units"
+            className="rounded-[2rem] border-slate-200/80 p-5 md:p-6"
             aria-busy={unitsLoading}
           >
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="inline-flex items-center gap-2 text-lg font-semibold text-[var(--color-text)]">
-                <Moon className="h-5 w-5 text-[var(--color-secondary)]" />
-                Available Units
-              </h2>
+              <button
+                type="button"
+                onClick={() => setMobileStep((prev) => (prev === 2 ? 0 : 2))}
+                className="inline-flex items-center gap-2 text-left md:pointer-events-none"
+                aria-expanded={mobileStep === 2}
+              >
+                <h2 className="inline-flex items-center gap-2 text-xl font-semibold tracking-tight text-[var(--color-text)]">
+                  <BedDouble className="h-5 w-5 text-[var(--color-secondary)]" />
+                  Choose Unit
+                </h2>
+                <span className="md:hidden">
+                  {mobileStep === 2 ? <ChevronDown className="h-4 w-4 text-slate-500" /> : <ChevronRight className="h-4 w-4 text-slate-500" />}
+                </span>
+              </button>
               <div className="flex items-center gap-2">
-                {selectedUnitIds.length > 0 ? (
-                  <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-                    {selectedUnitIds.length} selected
-                  </span>
-                ) : null}
                 <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">Step 2</span>
               </div>
             </div>
-            {selectedUnitIds.length > 0 ? (
-              <div className="mb-3 flex items-center justify-end">
-                <button
-                  type="button"
-                  onClick={() => setSelectedUnitIds([])}
-                  className="inline-flex h-8 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-white px-3 text-xs font-semibold text-[var(--color-text)] transition-colors duration-150 hover:border-[var(--color-primary)]"
-                >
-                  Clear selection
-                </button>
+            <div className={`${mobileStep === 2 ? "block" : "hidden"} md:block`}>
+            {unitAvailabilityAlert ? (
+              <div className="sticky top-[7.75rem] z-20 mb-3 rounded-xl border border-red-200 bg-red-50/95 px-3 py-2 text-sm text-red-700 shadow-sm backdrop-blur md:top-24">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="font-medium leading-relaxed">{unitAvailabilityAlert}</p>
+                  <button
+                    type="button"
+                    onClick={() => setUnitAvailabilityAlert(null)}
+                    className="inline-flex h-6 min-w-6 items-center justify-center rounded-full border border-red-200 bg-white px-1 text-xs font-semibold text-red-700"
+                    aria-label="Dismiss unit availability alert"
+                  >
+                    ×
+                  </button>
+                </div>
               </div>
             ) : null}
+            <p className="mb-3 text-xs font-medium text-slate-600 md:hidden">
+              You can select multiple units. Tap cards to add or remove.
+            </p>
+            <div className="mb-3 flex items-center justify-between gap-2">
+              {selectedUnitIds.length > 0 ? (
+                <>
+                  <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                    {selectedUnitIds.length} selected
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedUnitIds([]);
+                      setUnitAvailabilityAlert(null);
+                    }}
+                    className="inline-flex h-8 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-white px-3 text-xs font-semibold text-[var(--color-text)] transition-colors duration-150 hover:border-[var(--color-primary)]"
+                  >
+                    Clear selection
+                  </button>
+                </>
+              ) : null}
+            </div>
             {unitsError ? (
               <div className="mb-3 rounded-[var(--radius-sm)] border border-red-200 bg-red-50 p-3 text-sm text-red-700">
                 <p>{unitsError}</p>
@@ -521,7 +715,7 @@ export function BookNowClient({
                 </button>
               </div>
             ) : null}
-            <div className="min-h-[22rem]">
+            <div className="min-h-[18rem]">
               {unitsLoading ? (
                 <div className="mb-2 grid gap-3 md:grid-cols-2">
                   {Array.from({ length: 4 }).map((_, idx) => (
@@ -536,10 +730,14 @@ export function BookNowClient({
               ) : null}
               {!unitsLoading && units.length === 0 ? (
                 <div className="rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-slate-50 p-4 text-sm text-[var(--color-muted)]">
-                  <p className="font-medium text-[var(--color-text)]">No units matched your current selection.</p>
+                  <p className="font-medium text-[var(--color-text)]">
+                    {unitTypeFilter === "all"
+                      ? "No units are available for these dates."
+                      : `${UNIT_TYPE_LABEL[unitTypeFilter].charAt(0).toUpperCase()}${UNIT_TYPE_LABEL[unitTypeFilter].slice(1)} are fully booked for these dates.`}
+                  </p>
                   <p className="mt-1">
                     {networkOnline
-                      ? "Try a different date range or room type to see more options."
+                      ? "Try different dates or switch unit type to see available options."
                       : "You appear to be offline. Reconnect to refresh live availability."}
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
@@ -548,6 +746,7 @@ export function BookNowClient({
                       onClick={() => {
                         setUnitTypeFilter("all");
                         setSelectedUnitIds([]);
+                        setUnitAvailabilityAlert(null);
                       }}
                       className="inline-flex h-9 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-white px-3 text-xs font-semibold text-[var(--color-text)]"
                     >
@@ -560,6 +759,7 @@ export function BookNowClient({
                         setCheckInDate(nextCheckIn);
                         setCheckOutDate(addDaysToIsoDate(nextCheckIn, Math.max(1, nights || 2)));
                         setSelectedUnitIds([]);
+                        setUnitAvailabilityAlert(null);
                       }}
                       className="inline-flex h-9 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-white px-3 text-xs font-semibold text-[var(--color-text)]"
                     >
@@ -593,7 +793,7 @@ export function BookNowClient({
                       }}
                       role="button"
                       tabIndex={0}
-                      className={`w-full overflow-hidden rounded-[var(--radius-md)] border-2 text-left transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] ${
+                      className={`w-full overflow-hidden rounded-2xl border-2 text-left transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] ${
                         selected
                           ? "border-[var(--color-primary)] bg-blue-50/70"
                           : "border-[var(--color-border)] bg-white hover:border-slate-300"
@@ -606,7 +806,7 @@ export function BookNowClient({
                           width={640}
                           height={256}
                           sizes="(min-width: 1024px) 40vw, 100vw"
-                          className="h-44 w-full object-cover"
+                          className="h-40 w-full object-cover"
                         />
                       ) : null}
                       <div className="p-4">
@@ -669,13 +869,80 @@ export function BookNowClient({
                 })}
               </div>
             </div>
+            <div className="mt-4 md:hidden">
+              <div className="sticky bottom-[calc(10.65rem+env(safe-area-inset-bottom))] z-10 mx-auto w-full max-w-[380px] rounded-2xl border border-slate-200 bg-white/95 p-2 shadow-sm backdrop-blur">
+                <div className="mb-2 flex items-center justify-between px-1">
+                  <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">Selected units</p>
+                  <p className="text-sm font-bold text-[var(--color-primary)]">{selectedUnitIds.length}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (selectedUnitIds.length === 0) {
+                      setSubmitError("Select at least one unit before reviewing payment.");
+                      return;
+                    }
+                    setMobileStep(3);
+                  }}
+                  disabled={selectedUnitIds.length === 0}
+                  className="inline-flex h-11 w-full items-center justify-center rounded-2xl bg-[var(--color-primary)] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  Continue to review
+                </button>
+              </div>
+            </div>
+            </div>
+          </GuestSectionCard>
+
+          <GuestSectionCard data-testid="booking-step-payment" className="rounded-[2rem] border-slate-200/80 p-5 md:p-6 lg:hidden">
+            <div className="mb-4 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setMobileStep((prev) => (prev === 3 ? 0 : 3))}
+                className="inline-flex items-center gap-2 text-left"
+                aria-expanded={mobileStep === 3}
+              >
+                <h2 className="inline-flex items-center gap-2 text-xl font-semibold tracking-tight text-[var(--color-text)]">
+                  <CircleCheckBig className="h-5 w-5 text-[var(--color-secondary)]" />
+                  Review & Continue
+                </h2>
+                {mobileStep === 3 ? <ChevronDown className="h-4 w-4 text-slate-500" /> : <ChevronRight className="h-4 w-4 text-slate-500" />}
+              </button>
+              <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">Step 3</span>
+            </div>
+            <div className={`${mobileStep === 3 ? "block" : "hidden"}`}>
+              <p className="mb-2 text-xs font-medium text-slate-600">
+                Selected unit{selectedUnitIds.length === 1 ? "" : "s"}: <span className="font-semibold text-[var(--color-primary)]">{selectedUnitIds.length}</span>
+              </p>
+              <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+                <div className="flex items-center justify-between"><span>Guest count</span><span className="font-semibold text-[var(--color-text)]">{guestCount}</span></div>
+                <div className="flex items-center justify-between"><span>Selected capacity</span><span className="font-semibold text-[var(--color-text)]">{selectedCapacity}</span></div>
+                <div className="flex items-center justify-between"><span>Total</span><span className="text-base font-bold text-[var(--color-text)]">{toPeso(total)}</span></div>
+                <div className="flex items-center justify-between"><span>Minimum online payment</span><span className="font-semibold text-[var(--color-text)]">{toPeso(minimumPayNow)}</span></div>
+              </div>
+              <p className="mt-3 text-sm text-slate-600">Payment proof is reviewed by admin before check-in.</p>
+              <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium leading-relaxed text-amber-800">
+                You must pay at least the minimum online payment first. Guest-initiated cancellation forfeits this minimum deposit.
+              </p>
+              <details className="mt-3 rounded-xl border border-slate-200 bg-white p-3 text-sm">
+                <summary className="cursor-pointer font-semibold text-[var(--color-primary)]">How payment works</summary>
+                <ol className="mt-2 list-decimal space-y-1 pl-4 text-slate-600">
+                  <li>Submit reservation details</li>
+                  <li>Pay minimum online deposit</li>
+                  <li>Upload payment proof</li>
+                  <li>Admin verifies payment</li>
+                  <li>Reservation is confirmed and ready for check-in</li>
+                </ol>
+              </details>
+              <p className="mt-3 text-xs font-medium text-slate-500">Final step: use the Booking Summary bar below to confirm.</p>
+            </div>
           </GuestSectionCard>
         </div>
 
-        <aside className="lg:col-span-1">
-          <div data-testid="booking-summary" className="sticky top-24 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-md)]">
+        <aside className="hidden lg:col-span-1 lg:block">
+          <div data-testid="booking-summary" className="sticky top-24 rounded-[2rem] border border-slate-200/80 bg-[var(--color-surface)] p-5 shadow-sm md:p-6">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="inline-flex items-center gap-2 text-lg font-semibold text-[var(--color-text)]">
+              <h2 className="inline-flex items-center gap-2 text-xl font-semibold tracking-tight text-[var(--color-text)]">
                 <ShieldCheck className="h-5 w-5 text-[var(--color-secondary)]" />
                 Booking Summary
               </h2>
@@ -720,10 +987,11 @@ export function BookNowClient({
             </div>
 
             <button
+              data-testid="confirm-booking-cta"
               type="button"
-              onClick={() => void createReservation()}
+              onClick={openConfirmDialog}
               disabled={submitBusy || !canSubmitReservation}
-              className="guest-primary-cta mt-4 w-full rounded-[var(--radius-md)] shadow-[var(--shadow-sm)]"
+              className="guest-primary-cta mt-4 h-12 w-full rounded-2xl shadow-sm"
             >
               {submitBusy ? (
                 <>
@@ -750,24 +1018,28 @@ export function BookNowClient({
               Minimum online payment now:{" "}
               <strong className="text-[var(--color-text)]">{toPeso(minimumPayNow)}</strong> (20% of total, clamped to PHP 500–1000).
             </p>
+            <p className="mt-2 rounded-[var(--radius-sm)] border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
+              Reservation policy: minimum deposit must be paid first. If you cancel the booking, the minimum deposit is non-refundable.
+            </p>
             <div className="mt-3">
               <PaymentVerificationInfo />
             </div>
           </div>
         </aside>
       </div>
-      <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 px-3 md:hidden">
+      <div className="sticky bottom-[calc(5.6rem+env(safe-area-inset-bottom))] z-20 mt-4 px-3 md:hidden">
         <div
-          data-testid="booking-summary"
-          className="mx-auto flex max-w-2xl items-center justify-between rounded-2xl border border-[var(--color-border)] bg-white px-3 py-2 shadow-[var(--shadow-md)]"
+          data-testid="booking-mini-summary"
+          className="mx-auto flex max-w-[430px] items-center justify-between rounded-2xl border border-[var(--color-border)] bg-white px-3 py-2 shadow-[var(--shadow-md)]"
         >
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-muted)]">Booking summary</p>
             <p className="text-sm font-bold text-[var(--color-text)]">{toPeso(total)}</p>
           </div>
           <button
+            data-testid="confirm-booking-cta"
             type="button"
-            onClick={() => void createReservation()}
+            onClick={openConfirmDialog}
             disabled={submitBusy || !canSubmitReservation}
             className="guest-primary-cta min-h-11 px-4 text-sm"
           >
@@ -775,6 +1047,59 @@ export function BookNowClient({
           </button>
         </div>
       </div>
+      {confirmDialogOpen ? (
+        <ModalDialog
+          titleId="book-confirm-dialog-title"
+          title="Confirm booking request"
+          onClose={() => setConfirmDialogOpen(false)}
+          zIndexClass="z-[70]"
+          maxWidthClass="sm:max-w-md"
+          panelClassName="max-h-[calc(100dvh-0.75rem)] border-[var(--color-border)] bg-[var(--color-surface)] pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
+          closeLabel="Close booking confirmation"
+          closeButtonClassName="h-10 w-auto border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)]"
+        >
+          <div className="space-y-3 text-sm text-slate-700">
+            <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+              You are booking <strong>{selectedUnitIds.length}</strong> unit{selectedUnitIds.length === 1 ? "" : "s"} for{" "}
+              <strong>{nights}</strong> night{nights === 1 ? "" : "s"}.
+            </p>
+            <div className="space-y-1 rounded-xl border border-slate-200 bg-white px-3 py-2">
+              <div className="flex items-center justify-between">
+                <span>Total</span>
+                <span className="font-bold text-[var(--color-primary)]">{toPeso(total)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Minimum online payment</span>
+                <span className="font-semibold text-[var(--color-primary)]">{toPeso(minimumPayNow)}</span>
+              </div>
+            </div>
+            <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium leading-relaxed text-amber-800">
+              Minimum online deposit is required first. Guest-initiated cancellation forfeits this minimum deposit.
+            </p>
+            <p className="text-xs text-slate-500">After submission, you will continue to payment proof instructions.</p>
+            <div className="flex gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setConfirmDialogOpen(false)}
+                className="inline-flex h-11 flex-1 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700"
+              >
+                Back
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirmDialogOpen(false);
+                  void createReservation();
+                }}
+                disabled={submitBusy}
+                className="guest-primary-cta h-11 flex-1 rounded-xl px-4 text-sm"
+              >
+                {submitBusy ? "Submitting..." : "Confirm booking"}
+              </button>
+            </div>
+          </div>
+        </ModalDialog>
+      ) : null}
       {galleryUnit ? (
         <ModalDialog
           titleId="book-unit-gallery-title"

@@ -13,6 +13,8 @@ import { Toast } from "../../components/shared/Toast";
 import { AuthShell } from "../../components/layout/AuthShell";
 import { GoogleIcon } from "../../components/branding/GoogleIcon";
 
+const AUTO_BOOTSTRAP_GUARD_KEY = "hs_login_auto_bootstrap_target";
+
 function AuthInput({
   label,
   type,
@@ -109,6 +111,23 @@ export default function LoginPage() {
     return "/my-bookings";
   };
 
+  const verifyApiAuthContext = async (accessToken: string): Promise<boolean> => {
+    const base = (process.env.NEXT_PUBLIC_API_BASE_URL || "").trim().replace(/\/+$/, "");
+    if (!base || !accessToken) return false;
+    try {
+      const response = await fetch(`${base}/v2/auth/context`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        cache: "no-store",
+      });
+      return response.ok;
+    } catch {
+      return false;
+    }
+  };
+
   const ensureUserProfileRow = async () => {
     const supabase = getSupabaseBrowserClient();
     const { session } = await safeGetSession();
@@ -151,10 +170,24 @@ export default function LoginPage() {
       safeGetSession().then(({ session }) => {
         if (!mounted) return;
         if (session?.access_token) {
+          const guardTarget = nextPath || "__default__";
+          const previousAttempt = window.sessionStorage.getItem(AUTO_BOOTSTRAP_GUARD_KEY);
+          if (previousAttempt === guardTarget) {
+            return;
+          }
+          window.sessionStorage.setItem(AUTO_BOOTSTRAP_GUARD_KEY, guardTarget);
           void setServerSessionCookie(session.access_token, session.user?.email ?? null)
             .catch(() => null)
-            .then(() => resolveNextPath(nextPath))
-            .then((target) => {
+            .then(async () => {
+              const valid = await verifyApiAuthContext(session.access_token);
+              if (!valid) {
+                await supabase.auth.signOut().catch(() => null);
+                await fetch("/api/auth/session", { method: "DELETE" }).catch(() => null);
+                if (!mounted) return;
+                setError("Session is stale or API is unavailable. Please sign in again.");
+                return;
+              }
+              const target = await resolveNextPath(nextPath);
               if (!mounted) return;
               if (target === window.location.pathname) return;
               navigateAfterAuth(target);
@@ -174,6 +207,7 @@ export default function LoginPage() {
     event.preventDefault();
     setBusy(true);
     setError(null);
+    window.sessionStorage.removeItem(AUTO_BOOTSTRAP_GUARD_KEY);
     if (!agree) {
       setBusy(false);
       setError("Please agree to the Terms and Privacy Policy before signing in.");
@@ -196,6 +230,13 @@ export default function LoginPage() {
 
       if (data.session?.access_token) {
         await setServerSessionCookie(data.session.access_token, data.user?.email ?? null);
+        const valid = await verifyApiAuthContext(data.session.access_token);
+        if (!valid) {
+          await supabase.auth.signOut().catch(() => null);
+          await fetch("/api/auth/session", { method: "DELETE" }).catch(() => null);
+          setError("Signed in, but API auth validation failed. Check API server and env values.");
+          return;
+        }
       }
 
       void ensureUserProfileRow().catch(() => null);
@@ -218,6 +259,7 @@ export default function LoginPage() {
 
   return (
     <AuthShell
+      fullScreen
       sideTitle="Welcome Back!"
       sideSubtitle=""
       sideDescription="Sign in to manage your bookings and enjoy your stay."
@@ -243,7 +285,7 @@ export default function LoginPage() {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold text-[var(--color-text)]">Password</span>
-            <Link href="/auth/forgot-password" className="text-sm font-semibold text-[var(--color-primary)] hover:underline">
+            <Link href="/auth/forgot-password" className="text-sm font-semibold text-[var(--color-secondary)] hover:underline md:hidden">
               Forgot Password?
             </Link>
           </div>
@@ -264,15 +306,20 @@ export default function LoginPage() {
           />
         </div>
 
-        <label className="flex items-center gap-2 text-sm text-[var(--color-text)]">
-          <input
-            type="checkbox"
-            checked={agree}
-            onChange={(event) => setAgree(event.target.checked)}
-            className="h-4 w-4 rounded border-[var(--color-border)] text-[var(--color-secondary)] focus-visible:ring-2 focus-visible:ring-teal-200"
-          />
-          Remember me
-        </label>
+        <div className="flex items-center justify-between gap-3">
+          <label className="flex items-center gap-2 text-sm text-[var(--color-text)]">
+            <input
+              type="checkbox"
+              checked={agree}
+              onChange={(event) => setAgree(event.target.checked)}
+              className="h-4 w-4 rounded border-[var(--color-border)] text-[var(--color-secondary)] focus-visible:ring-2 focus-visible:ring-teal-200"
+            />
+            Remember me
+          </label>
+          <Link href="/auth/forgot-password" className="hidden text-sm font-semibold text-[var(--color-secondary)] hover:underline md:inline">
+            Forgot Password?
+          </Link>
+        </div>
 
         {error ? <Toast type="error" title="Sign in failed" message={error} /> : null}
 
@@ -303,7 +350,7 @@ export default function LoginPage() {
 
       <div className="mt-8 text-center text-sm text-[var(--color-muted)]">
         Don&apos;t have an account?{" "}
-        <Link href="/auth/sign-up" className="font-semibold text-[var(--color-primary)] hover:underline">
+        <Link href="/auth/sign-up" className="font-semibold text-[var(--color-secondary)] hover:underline">
           Sign Up
         </Link>
       </div>

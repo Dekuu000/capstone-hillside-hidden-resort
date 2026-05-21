@@ -347,10 +347,27 @@ export type PaymentReservationSummary = ReservationPolicyMetadata & {
   reservation_source?: "online" | "walk_in" | null;
   total_amount?: number | null;
   deposit_required?: number | null;
+  chain_key?: string | null;
+  chain_tx_hash?: string | null;
+  onchain_booking_id?: string | null;
   guest?: {
     name?: string | null;
     email?: string | null;
   } | null;
+};
+
+export type PaymentWebhookAuditSummary = {
+  event_type?: string | null;
+  dedupe_result?: "processed" | "deduped" | null;
+  provider?: string | null;
+  provider_event_id?: string | null;
+  linked_payment_id?: string | null;
+  linked_reservation_id?: string | null;
+  chain_proof_reference?: string | null;
+  chain_key?: string | null;
+  onchain_booking_id?: string | null;
+  processed?: string | null;
+  received_at?: string | null;
 };
 
 export type AdminPaymentItem = {
@@ -371,6 +388,7 @@ export type AdminPaymentItem = {
   reservation?: PaymentReservationSummary | null;
   verified_admin?: PaymentAdminUser | null;
   rejected_admin?: PaymentAdminUser | null;
+  webhook_audit?: PaymentWebhookAuditSummary | null;
 };
 
 export type AdminPaymentsResponse = {

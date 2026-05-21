@@ -209,6 +209,9 @@ PAYMENT_SELECT = """
         reservation_source,
         total_amount,
         deposit_required,
+        chain_key,
+        chain_tx_hash,
+        onchain_booking_id,
         deposit_policy_version,
         deposit_rule_applied,
         cancellation_actor,
@@ -535,6 +538,105 @@ def _normalize_reservation_row(row: dict[str, Any]) -> dict[str, Any]:
     return _normalize_service_bookings(normalized)
 
 
+def _parse_utc_datetime(value: object) -> datetime | None:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    if text.endswith("Z"):
+        text = f"{text[:-1]}+00:00"
+    try:
+        parsed = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def release_expired_pending_payment_holds(*, older_than_utc: datetime, limit: int = 200) -> int:
+    """
+    Auto-release stale pending-payment holds so units return to inventory.
+    """
+    try:
+        client = get_supabase_client()
+        cutoff = older_than_utc.astimezone(timezone.utc).isoformat()
+        response = (
+            client.table("reservations")
+            .select("reservation_id,created_at,amount_paid_verified,status")
+            .eq("status", "pending_payment")
+            .lt("created_at", cutoff)
+            .order("created_at", desc=False)
+            .limit(limit)
+            .execute()
+        )
+        candidates = response.data or []
+        if not candidates:
+            return 0
+
+        released = 0
+        for row in candidates:
+            amount_paid = float(row.get("amount_paid_verified") or 0)
+            if amount_paid > 0:
+                continue
+            reservation_id = str(row.get("reservation_id") or "")
+            if not reservation_id:
+                continue
+            client.table("reservations").update(
+                {
+                    "status": "cancelled",
+                    "policy_outcome": "forfeited",
+                    "cancellation_actor": "guest",
+                }
+            ).eq("reservation_id", reservation_id).eq("status", "pending_payment").execute()
+            released += 1
+        return released
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def expire_pending_payment_hold_for_reservation(
+    *,
+    reservation_id: str,
+    older_than_utc: datetime,
+) -> bool:
+    """
+    Expire one pending-payment reservation hold when its payment window elapsed.
+    Returns True when reservation was transitioned to cancelled.
+    """
+    try:
+        client = get_supabase_client()
+        response = (
+            client.table("reservations")
+            .select("reservation_id,created_at,status,amount_paid_verified")
+            .eq("reservation_id", reservation_id)
+            .limit(1)
+            .execute()
+        )
+        rows = response.data or []
+        if not rows:
+            return False
+        row = rows[0]
+        if str(row.get("status") or "").lower() != "pending_payment":
+            return False
+        amount_paid = float(row.get("amount_paid_verified") or 0)
+        if amount_paid > 0:
+            return False
+        created_at = _parse_utc_datetime(row.get("created_at"))
+        if created_at is None or created_at >= older_than_utc.astimezone(timezone.utc):
+            return False
+
+        client.table("reservations").update(
+            {
+                "status": "cancelled",
+                "policy_outcome": "forfeited",
+                "cancellation_actor": "guest",
+            }
+        ).eq("reservation_id", reservation_id).eq("status", "pending_payment").execute()
+        return True
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
 def _attach_admin_users(payments: list[dict[str, Any]]) -> list[dict[str, Any]]:
     admin_ids = sorted(
         {
@@ -564,6 +666,64 @@ def _attach_admin_users(payments: list[dict[str, Any]]) -> list[dict[str, Any]]:
         rejected_id = row.get("rejected_by_admin_id")
         next_row["verified_admin"] = admin_map.get(verified_id) if verified_id else None
         next_row["rejected_admin"] = admin_map.get(rejected_id) if rejected_id else None
+        enriched.append(next_row)
+    return enriched
+
+
+def _attach_latest_webhook_audit(payments: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    payment_ids = sorted({str(row.get("payment_id") or "").strip() for row in payments if row.get("payment_id")})
+    if not payment_ids:
+        return payments
+
+    try:
+        client = get_supabase_client()
+        response = (
+            client.table("sync_operation_receipts")
+            .select("entity_id,status,response_payload,created_at")
+            .eq("entity_type", "payment_webhook")
+            .eq("action", "payments.webhooks.provider")
+            .in_("entity_id", payment_ids)
+            .order("created_at", desc=True)
+            .limit(500)
+            .execute()
+        )
+        receipt_rows = response.data or []
+    except Exception:
+        return payments
+
+    latest_by_payment: dict[str, dict[str, Any]] = {}
+    for receipt in receipt_rows:
+        payment_id = str(receipt.get("entity_id") or "").strip()
+        if not payment_id or payment_id in latest_by_payment:
+            continue
+        payload = receipt.get("response_payload") if isinstance(receipt.get("response_payload"), dict) else {}
+        latest_by_payment[payment_id] = {
+            "event_type": str(payload.get("event_type") or "").strip().lower() or None,
+            "dedupe_result": "deduped" if bool(payload.get("deduped")) else "processed",
+            "provider": str(payload.get("provider") or "").strip().lower() or None,
+            "provider_event_id": str(payload.get("event_id") or "").strip() or None,
+            "linked_payment_id": str(payload.get("payment_id") or "").strip() or None,
+            "linked_reservation_id": str(payload.get("reservation_id") or "").strip() or None,
+            "processed": str(payload.get("processed") or "").strip().lower() or None,
+            "received_at": receipt.get("created_at"),
+        }
+
+    enriched: list[dict[str, Any]] = []
+    for row in payments:
+        next_row = dict(row)
+        payment_id = str(row.get("payment_id") or "").strip()
+        if payment_id and payment_id in latest_by_payment:
+            audit = dict(latest_by_payment[payment_id])
+            reservation = row.get("reservation") or {}
+            chain_tx_hash = str(reservation.get("chain_tx_hash") or "").strip()
+            chain_key = str(reservation.get("chain_key") or "").strip()
+            onchain_booking_id = str(reservation.get("onchain_booking_id") or "").strip()
+            audit["chain_proof_reference"] = chain_tx_hash or None
+            audit["chain_key"] = chain_key or None
+            audit["onchain_booking_id"] = onchain_booking_id or None
+            next_row["webhook_audit"] = audit
+        else:
+            next_row["webhook_audit"] = None
         enriched.append(next_row)
     return enriched
 
@@ -1498,7 +1658,7 @@ def list_admin_payments(
             total = int(response.count or len(rows))
         else:
             total = len(rows)
-        return _attach_admin_users(paginated), total
+        return _attach_latest_webhook_audit(_attach_admin_users(paginated)), total
 
     return _run(PAYMENT_SELECT)
 
@@ -1888,6 +2048,54 @@ def verify_payment(payment_id: str, *, access_token: str, approved: bool = True)
 def reject_payment(payment_id: str, *, access_token: str, reason: str) -> None:
     try:
         client = get_supabase_user_scoped_client(access_token)
+        client.rpc(
+            "reject_payment_with_reason",
+            {
+                "p_payment_id": payment_id,
+                "p_rejected_reason": reason,
+            },
+        ).execute()
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def get_payment_by_reference_no(*, reference_no: str) -> dict[str, Any] | None:
+    reference_value = str(reference_no or "").strip()
+    if not reference_value:
+        return None
+    try:
+        client = get_supabase_client()
+        response = (
+            client.table("payments")
+            .select("payment_id,reservation_id,reference_no,status,created_at")
+            .eq("reference_no", reference_value)
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        rows = response.data or []
+        return rows[0] if rows else None
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def verify_payment_service_role(payment_id: str, *, approved: bool = True) -> None:
+    try:
+        client = get_supabase_client()
+        client.rpc(
+            "verify_payment",
+            {
+                "p_payment_id": payment_id,
+                "p_approved": approved,
+            },
+        ).execute()
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def reject_payment_service_role(payment_id: str, *, reason: str) -> None:
+    try:
+        client = get_supabase_client()
         client.rpc(
             "reject_payment_with_reason",
             {

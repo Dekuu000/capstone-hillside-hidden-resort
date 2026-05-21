@@ -15,6 +15,10 @@ export function MapLegend() {
         <span className="h-2.5 w-2.5 rounded-full bg-[var(--color-secondary)]" />
         Selected
       </span>
+      <span className="inline-flex items-center gap-1">
+        <span className="h-2.5 w-2.5 rounded-full bg-[var(--color-primary)]" />
+        Route path
+      </span>
     </div>
   );
 }

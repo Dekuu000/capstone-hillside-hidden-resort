@@ -1,0 +1,7 @@
+{
+  "id": "inv-evt-expired-001",
+  "event": "invoice.expired",
+  "status": "EXPIRED",
+  "external_id": "PMT-REF-999",
+  "failure_reason": "Invoice expired"
+}

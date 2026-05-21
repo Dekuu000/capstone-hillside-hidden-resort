@@ -1,0 +1,19 @@
+<svg width="192" height="192" viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Hillside Hidden Resort app icon">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#0E1F33"/>
+      <stop offset="100%" stop-color="#10294A"/>
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="42" fill="url(#bg)"/>
+  <circle cx="96" cy="96" r="74" fill="#F2F6F8" stroke="#0E1F33" stroke-width="6"/>
+  <path d="M41 117c18-18 39-27 61-27 18 0 33 5 49 15-9 14-20 23-35 28-25 9-48 2-75-16Z" fill="#22A699"/>
+  <path d="M24 123h145c-4 13-14 27-28 36H52c-13-8-23-19-28-36Z" fill="#0E1F33"/>
+  <path d="M54 132c9-14 23-22 45-25-12 7-21 16-27 26-7 11-16 18-30 25l12-26Z" fill="#F2F6F8"/>
+  <path d="M46 122c37-25 65-35 96-35" stroke="#F2F6F8" stroke-width="6" stroke-linecap="round"/>
+  <path d="M79 55h12v58H79zM49 55h12v58H49zM49 72c13-3 25-3 30 0v12c-8-3-16-3-30 0z" fill="#0E1F33"/>
+  <circle cx="75" cy="46" r="8" fill="#FF8A4C"/>
+  <path d="M131 63c6 0 10 3 13 8-6-3-12-3-19 0 3-5 4-8 6-8Z" fill="#22A699"/>
+  <path d="M125 71c6 0 10 4 16 10-7-4-14-4-22 0 3-5 4-8 6-10Z" fill="#22A699"/>
+  <path d="M129 60v25" stroke="#0E1F33" stroke-width="3" stroke-linecap="round"/>
+</svg>

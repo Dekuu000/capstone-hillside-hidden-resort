@@ -29,8 +29,17 @@ export function BottomSheet({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[130] bg-slate-900/40 backdrop-blur-[1px]" role="dialog" aria-modal="true" aria-label={title}>
-      <div className="absolute inset-x-0 bottom-0 mx-auto w-full max-w-xl rounded-t-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-lg)] sm:bottom-4 sm:rounded-2xl">
+    <div
+      className="fixed inset-0 z-[130] flex items-center justify-center bg-slate-900/40 p-3 backdrop-blur-[1px] sm:p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+      onClick={onClose}
+    >
+      <div
+        className="mx-auto w-full max-w-xl rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-lg)]"
+        onClick={(event) => event.stopPropagation()}
+      >
         <div className="mb-3 flex items-center justify-between">
           <p className="text-sm font-semibold text-[var(--color-text)]">{title}</p>
           <button

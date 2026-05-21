@@ -241,6 +241,9 @@ export function GuestServicesClient({ accessToken }: Props) {
     () => requests.filter((item) => item.service_item?.category === category),
     [category, requests],
   );
+  const syncSummaryText = networkOnline
+    ? "Online · requests sync automatically."
+    : "Offline · requests queue and sync automatically.";
 
   return (
     <div className="space-y-4">
@@ -249,21 +252,22 @@ export function GuestServicesClient({ accessToken }: Props) {
           items={CATEGORY_TABS.map((tab) => ({ id: tab.id, label: tab.label }))}
           value={category}
           onChange={(id) => setCategory(id as ResortServiceCategory)}
-          className="sm:grid-cols-2"
+          className="grid-cols-2 bg-white sm:grid-cols-2"
+          tabClassName="h-11 rounded-2xl text-sm"
+          activeClassName="border border-[var(--color-secondary)] bg-teal-50 text-[var(--color-secondary)] shadow-sm"
+          inactiveClassName="border border-transparent text-slate-500 hover:bg-slate-100"
         />
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-          <p className="text-sm text-[var(--color-muted)]">
-            Request services anytime. Online requests are sent instantly; offline requests queue for sync.
-          </p>
+        <div className="mt-2.5 flex items-center justify-between gap-2 rounded-xl border border-slate-200/80 bg-slate-50 px-3 py-2">
+          <p className="text-xs font-medium text-slate-600">{syncSummaryText}</p>
           <Link
             href="/guest/sync"
-            className="guest-secondary-cta guest-secondary-cta-sm rounded-full"
+            className="inline-flex h-8 items-center rounded-full border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
           >
-            Open Sync Center
+            Details
           </Link>
         </div>
       </section>
-      <div className="min-h-[3.25rem]">
+      <div>
         {actionMessage ? (
           <SyncAlertBanner
             message={actionMessage}
@@ -316,7 +320,7 @@ export function GuestServicesClient({ accessToken }: Props) {
             </div>
           ) : null}
 
-          <div className="mt-3 min-h-[20rem]">
+          <div className="mt-3 min-h-[16rem] sm:min-h-[18rem]">
             <div className="grid gap-3">
               {services.map((service) => (
                 <InsetPanel key={service.service_item_id} tone="surface">
@@ -380,7 +384,7 @@ export function GuestServicesClient({ accessToken }: Props) {
               />
             </div>
           ) : null}
-          <div className="mt-3 min-h-[20rem]">
+          <div className="mt-3 min-h-[16rem] sm:min-h-[18rem]">
             <ul className="space-y-2">
               {filteredRequests.map((item) => (
                 <InsetPanel as="li" key={item.request_id}>

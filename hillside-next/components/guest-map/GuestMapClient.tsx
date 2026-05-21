@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Compass } from "lucide-react";
+import { ArrowLeftRight, MapPinned, Route } from "lucide-react";
 import { guestMapAmenityPackSchema } from "../../../packages/shared/src/schemas";
 import type { GuestMapAmenityPin } from "../../../packages/shared/src/types";
 import { formatCachedAt } from "../../lib/dateDisplay";
 import { useNetworkOnline } from "../../lib/hooks/useNetworkOnline";
-import { InsetPanel } from "../shared/InsetPanel";
 import { NetworkStatusBadge } from "../shared/NetworkStatusBadge";
 import { Skeleton } from "../shared/Skeleton";
 import { StatusPill } from "../shared/StatusPill";
@@ -14,6 +13,7 @@ import { SyncAlertBanner } from "../shared/SyncAlertBanner";
 import { Tabs } from "../shared/Tabs";
 import { loadMapSnapshot, saveMapSnapshot } from "../../lib/offlineSync/store";
 import { guestMapLocations } from "../../data/guestMapLocations";
+import { guestTrailEdges } from "../../data/guestMapGraph";
 import { MapDirectionsPanel } from "../guest/map/MapDirectionsPanel";
 import { ResortMapCanvas } from "../guest/map/ResortMapCanvas";
 
@@ -22,6 +22,12 @@ const AMENITY_DATA_URL = "/data/guest-map-amenities.json";
 const MAP_CACHE_NAME = "guest-map-v2";
 
 const FALLBACK_AMENITIES: GuestMapAmenityPin[] = guestMapLocations;
+const WALK_MINUTES_SCALE = 0.38;
+
+type RouteDifficulty = {
+  label: "Easy" | "Moderate" | "Long";
+  tone: "success" | "warn" | "error";
+};
 
 async function loadAmenityPack(): Promise<GuestMapAmenityPin[]> {
   const fallback = FALLBACK_AMENITIES;
@@ -54,20 +60,110 @@ async function loadAmenityPack(): Promise<GuestMapAmenityPin[]> {
   return fallback;
 }
 
-function buildDirections(origin: GuestMapAmenityPin, destination: GuestMapAmenityPin): string[] {
-  if (origin.id === destination.id) {
-    return [`You are already at ${destination.name}.`];
-  }
-  const horizontal = destination.x >= origin.x ? "east" : "west";
-  const vertical = destination.y >= origin.y ? "south" : "north";
-  const horizontalSteps = Math.max(1, Math.round(Math.abs(destination.x - origin.x) / 8));
-  const verticalSteps = Math.max(1, Math.round(Math.abs(destination.y - origin.y) / 8));
+function distanceBetween(a: GuestMapAmenityPin, b: GuestMapAmenityPin) {
+  const dx = a.x - b.x;
+  const dy = a.y - b.y;
+  return Math.sqrt(dx * dx + dy * dy);
+}
 
-  return [
-    `From ${origin.name}, move ${horizontal} along the main path for about ${horizontalSteps} marker block(s).`,
-    `Turn ${vertical} at the landmark corridor and continue for about ${verticalSteps} marker block(s).`,
-    `You should see ${destination.name} ahead.`,
-  ];
+function shortestPath(
+  startId: string | null,
+  endId: string | null,
+  pins: GuestMapAmenityPin[],
+): string[] {
+  if (!startId || !endId) return [];
+  if (startId === endId) return [startId];
+
+  const pinById = new Map(pins.map((pin) => [pin.id, pin]));
+  if (!pinById.has(startId) || !pinById.has(endId)) return [];
+
+  const neighbors = new Map<string, Array<{ id: string; weight: number }>>();
+  const ensure = (id: string) => {
+    if (!neighbors.has(id)) neighbors.set(id, []);
+  };
+
+  for (const edge of guestTrailEdges) {
+    const from = pinById.get(edge.from);
+    const to = pinById.get(edge.to);
+    if (!from || !to) continue;
+    const weight = distanceBetween(from, to);
+    ensure(from.id);
+    ensure(to.id);
+    neighbors.get(from.id)?.push({ id: to.id, weight });
+    neighbors.get(to.id)?.push({ id: from.id, weight });
+  }
+
+  const dist = new Map<string, number>();
+  const prev = new Map<string, string | null>();
+  const unvisited = new Set<string>(Array.from(pinById.keys()));
+  for (const id of unvisited) {
+    dist.set(id, id === startId ? 0 : Number.POSITIVE_INFINITY);
+    prev.set(id, null);
+  }
+
+  while (unvisited.size > 0) {
+    let current: string | null = null;
+    let best = Number.POSITIVE_INFINITY;
+    for (const id of unvisited) {
+      const next = dist.get(id) ?? Number.POSITIVE_INFINITY;
+      if (next < best) {
+        best = next;
+        current = id;
+      }
+    }
+    if (!current || current === endId || !Number.isFinite(best)) break;
+    unvisited.delete(current);
+    for (const next of neighbors.get(current) ?? []) {
+      if (!unvisited.has(next.id)) continue;
+      const candidate = (dist.get(current) ?? Number.POSITIVE_INFINITY) + next.weight;
+      if (candidate < (dist.get(next.id) ?? Number.POSITIVE_INFINITY)) {
+        dist.set(next.id, candidate);
+        prev.set(next.id, current);
+      }
+    }
+  }
+
+  const path: string[] = [];
+  let walk: string | null = endId;
+  while (walk) {
+    path.unshift(walk);
+    walk = prev.get(walk) ?? null;
+  }
+  return path[0] === startId ? path : [];
+}
+
+function routeDistance(path: string[], pinById: Map<string, GuestMapAmenityPin>): number {
+  if (path.length < 2) return 0;
+  let total = 0;
+  for (let index = 0; index < path.length - 1; index += 1) {
+    const from = pinById.get(path[index]);
+    const to = pinById.get(path[index + 1]);
+    if (!from || !to) continue;
+    total += distanceBetween(from, to);
+  }
+  return total;
+}
+
+function resolveRouteDifficulty(minutes: number): RouteDifficulty {
+  if (minutes <= 4) return { label: "Easy", tone: "success" };
+  if (minutes <= 8) return { label: "Moderate", tone: "warn" };
+  return { label: "Long", tone: "error" };
+}
+
+function routeSteps(path: string[], pinById: Map<string, GuestMapAmenityPin>) {
+  if (path.length <= 1) return ["You are already at your selected destination."];
+  const steps: string[] = [];
+  for (let index = 0; index < path.length - 1; index += 1) {
+    const from = pinById.get(path[index]);
+    const to = pinById.get(path[index + 1]);
+    if (!from || !to) continue;
+    steps.push(`Walk from ${from.name} toward ${to.name}.`);
+  }
+  const destination = pinById.get(path[path.length - 1]);
+  if (destination) {
+    steps.push(`You have arrived at ${destination.name}.`);
+  }
+  return steps;
 }
 
 export function GuestMapClient() {
@@ -120,16 +216,53 @@ export function GuestMapClient() {
     })();
   }, []);
 
-  const activeAmenity = amenities.find((item) => item.id === activeAmenityId) || null;
-  const originAmenity = amenities.find((item) => item.id === originAmenityId) || null;
-  const visibleAmenities = useMemo(
+  const filteredAmenities = useMemo(
     () => (kindFilter === "all" ? amenities : amenities.filter((item) => item.kind === kindFilter)),
     [amenities, kindFilter],
   );
-  const directionSteps = useMemo(() => {
-    if (!activeAmenity || !originAmenity) return [];
-    return buildDirections(originAmenity, activeAmenity);
-  }, [activeAmenity, originAmenity]);
+  const pinById = useMemo(
+    () => new Map(amenities.map((item) => [item.id, item])),
+    [amenities],
+  );
+  const activeAmenity = pinById.get(activeAmenityId ?? "") || null;
+  const originAmenity = pinById.get(originAmenityId ?? "") || null;
+
+  useEffect(() => {
+    if (!filteredAmenities.length) return;
+    if (!activeAmenityId || !filteredAmenities.some((pin) => pin.id === activeAmenityId)) {
+      setActiveAmenityId(filteredAmenities[0].id);
+    }
+  }, [filteredAmenities, activeAmenityId]);
+
+  useEffect(() => {
+    if (!filteredAmenities.length) return;
+    if (!originAmenityId || !filteredAmenities.some((pin) => pin.id === originAmenityId)) {
+      setOriginAmenityId(filteredAmenities[0].id);
+    }
+  }, [filteredAmenities, originAmenityId]);
+
+  const pathPinIds = useMemo(
+    () => shortestPath(originAmenityId, activeAmenityId, amenities),
+    [originAmenityId, activeAmenityId, amenities],
+  );
+  const directionSteps = useMemo(
+    () => routeSteps(pathPinIds, pinById),
+    [pathPinIds, pinById],
+  );
+  const etaMinutes = useMemo(() => {
+    if (pathPinIds.length < 2) return 0;
+    const totalDistance = routeDistance(pathPinIds, pinById);
+    return Math.max(1, Math.round(totalDistance * WALK_MINUTES_SCALE));
+  }, [pathPinIds, pinById]);
+  const routeDifficulty = useMemo(
+    () => (etaMinutes > 0 ? resolveRouteDifficulty(etaMinutes) : null),
+    [etaMinutes],
+  );
+  const swapRoutePoints = () => {
+    if (!originAmenityId || !activeAmenityId) return;
+    setOriginAmenityId(activeAmenityId);
+    setActiveAmenityId(originAmenityId);
+  };
 
   if (loading) {
     return (
@@ -144,19 +277,51 @@ export function GuestMapClient() {
   return (
     <div className="space-y-4">
       <section className="surface p-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-wrap items-start justify-between gap-2.5">
           <div>
             <h2 className="text-xl font-semibold text-[var(--color-text)]">Resort Navigation (Offline-First)</h2>
             <p className="mt-1 text-sm text-[var(--color-muted)]">
-              Map assets and amenity pack are cached for offline use.
+              Explore interactive trails and facilities in Hillside Hidden without active GPS.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex w-full flex-wrap items-center gap-2 md:w-auto">
             <NetworkStatusBadge />
-            <StatusPill label="Map cached" tone="info" icon={<Compass className="h-3.5 w-3.5" aria-hidden="true" />} />
+            {etaMinutes > 0 ? (
+              <StatusPill
+                label={`~${etaMinutes} min walk`}
+                tone="success"
+                icon={<Route className="h-3.5 w-3.5" aria-hidden="true" />}
+              />
+            ) : null}
+            {routeDifficulty ? (
+              <StatusPill label={routeDifficulty.label} tone={routeDifficulty.tone} />
+            ) : null}
+            <div className="flex w-full items-center justify-between sm:ml-auto sm:w-auto sm:justify-start sm:gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const target = document.getElementById("route-controls");
+                  target?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+                className="inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                <Route className="h-3.5 w-3.5" aria-hidden="true" />
+                Select route
+              </button>
+              <a
+                href="https://maps.google.com/?q=Hillside+Hidden+Resort"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-full border border-[var(--color-secondary)] bg-teal-50 px-3 text-xs font-semibold text-[var(--color-primary)] transition hover:bg-teal-100"
+              >
+                <MapPinned className="h-3.5 w-3.5 text-[var(--color-secondary)]" aria-hidden="true" />
+                Google Maps
+              </a>
+            </div>
           </div>
         </div>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
+
+        <div id="route-controls" className="mt-3">
           <Tabs
             items={[
               { id: "all", label: "All" },
@@ -166,97 +331,87 @@ export function GuestMapClient() {
             value={kindFilter}
             onChange={(next) => setKindFilter(next as "all" | "trail" | "facility")}
             ariaLabel="Map pin filter"
-            className="w-full max-w-md border-none bg-transparent p-0 sm:grid-cols-3"
+            className="w-full grid-cols-3 border-none bg-transparent p-0 sm:max-w-md sm:grid-cols-3"
             tabClassName="h-9 rounded-full px-3 text-xs"
             activeClassName="border border-[var(--color-secondary)] bg-teal-50 text-[var(--color-text)]"
             inactiveClassName="border border-[var(--color-border)] bg-white text-[var(--color-muted)] hover:bg-slate-50"
           />
-          <span className="text-xs text-[var(--color-muted)] sm:ml-auto">Pins: {visibleAmenities.length}</span>
-          <a
-            href="https://maps.google.com/?q=Hillside+Hidden+Resort"
-            target="_blank"
-            rel="noreferrer"
-            className="guest-secondary-cta guest-secondary-cta-sm"
-          >
-            Open in Google Maps
-          </a>
         </div>
-        {error ? <p className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-[var(--color-error)]">{error}</p> : null}
-        {cachedMeta ? <p className="guest-surface-soft mt-2 px-3 py-2 text-xs font-semibold text-amber-700">{cachedMeta}</p> : null}
+
+        <div className="mt-3 grid gap-2.5 sm:grid-cols-[1fr_auto_1fr] sm:items-end">
+          <label className="guest-form-label">
+            I am here
+            <select
+              value={originAmenityId || ""}
+              onChange={(event) => setOriginAmenityId(event.target.value)}
+              className="guest-field-control"
+            >
+              {filteredAmenities.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            onClick={swapRoutePoints}
+            className="guest-secondary-cta h-10 px-3 sm:mb-[1px]"
+            aria-label="Swap start and destination"
+          >
+            <ArrowLeftRight className="h-4 w-4" />
+            <span className="text-xs font-semibold">Swap</span>
+          </button>
+          <label className="guest-form-label">
+            Take me to
+            <select
+              value={activeAmenityId || ""}
+              onChange={(event) => setActiveAmenityId(event.target.value)}
+              className="guest-field-control"
+            >
+              {filteredAmenities.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        {error ? (
+          <p className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-[var(--color-error)]">
+            {error}
+          </p>
+        ) : null}
+        {cachedMeta ? (
+          <p className="guest-surface-soft mt-2 px-3 py-2 text-xs font-semibold text-amber-700">
+            {cachedMeta}
+          </p>
+        ) : null}
       </section>
+
       {!networkOnline ? (
         <SyncAlertBanner
-          message="Offline mode: map stays available from cached data. New map updates will sync when internet returns."
+          message="Offline mode: map and directions stay available from cached data. New map updates will sync when internet returns."
           showSyncCta
         />
       ) : null}
 
       <ResortMapCanvas
         mapImageUrl={MAP_IMAGE_URL}
-        pins={visibleAmenities}
+        pins={filteredAmenities}
         selectedPinId={activeAmenityId}
+        trailEdges={guestTrailEdges}
+        routePinIds={pathPinIds}
         onSelectPin={setActiveAmenityId}
       />
 
-      <section className="grid gap-3 lg:grid-cols-[1.1fr_0.9fr]">
-        <div className="surface p-4">
-          <h3 className="text-base font-semibold text-[var(--color-text)]">Amenity Directory</h3>
-          {visibleAmenities.length === 0 ? (
-            <p className="mt-2 rounded-lg border border-dashed border-[var(--color-border)] p-3 text-sm text-[var(--color-muted)]">
-              No amenity data available.
-            </p>
-          ) : (
-            <ul className="mt-3 space-y-2">
-              {visibleAmenities.map((item) => (
-                <li key={item.id}>
-                  <button
-                    type="button"
-                    onClick={() => setActiveAmenityId(item.id)}
-                    className={`w-full rounded-xl border p-3 text-left ${
-                      item.id === activeAmenityId
-                        ? "border-[var(--color-secondary)] bg-teal-50"
-                        : "border-[var(--color-border)] bg-white"
-                    }`}
-                  >
-                    <p className="text-sm font-semibold text-[var(--color-text)]">{item.name}</p>
-                    <p className="mt-1 text-xs text-[var(--color-muted)]">{item.description}</p>
-                    <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-muted)]">
-                      {item.kind === "trail" ? "Trail point" : "Facility"}
-                    </p>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <div className="space-y-3">
-          <section className="surface p-4">
-            <h3 className="text-base font-semibold text-[var(--color-text)]">You are here</h3>
-            <p className="mt-1 text-xs text-[var(--color-muted)]">Manual selector only (GPS-free MVP).</p>
-            <label htmlFor="map-origin-select" className="sr-only">
-              Select map origin
-            </label>
-            <select
-              id="map-origin-select"
-              value={originAmenityId || ""}
-              onChange={(event) => setOriginAmenityId(event.target.value)}
-              className="guest-field-control mt-2"
-            >
-              {amenities.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
-          </section>
-
-          <MapDirectionsPanel
-            destination={activeAmenity}
-            steps={directionSteps}
-          />
-        </div>
-      </section>
+      <MapDirectionsPanel
+        origin={originAmenity}
+        destination={activeAmenity}
+        estimatedMinutes={etaMinutes || null}
+        steps={directionSteps}
+      />
     </div>
   );
 }

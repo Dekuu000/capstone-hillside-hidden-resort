@@ -24,7 +24,6 @@ export default async function ToursPage() {
     <GuestShell initialEmail={emailHint}>
       <ToursBookingClient
         initialToken={accessToken}
-        initialSessionEmail={emailHint}
         initialServicesData={initialServicesData}
       />
     </GuestShell>

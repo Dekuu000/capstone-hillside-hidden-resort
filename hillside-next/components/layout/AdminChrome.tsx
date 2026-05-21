@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { clearServerSessionCookie } from "../../lib/authSessionCookie";
 import { getSupabaseBrowserClient, safeGetSession } from "../../lib/supabase";
 import { resolveUserDisplayName } from "../../lib/userProfile";
+import { HillsideLogo } from "../branding/HillsideLogo";
 
 type AdminChromeProps = {
   children: ReactNode;
@@ -87,7 +88,7 @@ export function AdminChrome({ children, initialName = null, initialEmail = null 
       >
         <div className="flex h-full flex-col">
           <div className="border-b border-white/15 px-6 py-7">
-            <h1 className="text-2xl font-bold">Hillside Resort</h1>
+            <HillsideLogo light compact className="[&_svg]:h-10 [&_svg]:w-10 [&_p]:text-base" />
             <p className="mt-1 text-sm text-teal-100">Admin Panel</p>
           </div>
 
@@ -140,7 +141,7 @@ export function AdminChrome({ children, initialName = null, initialEmail = null 
             >
               {sidebarOpen ? "X" : "Menu"}
             </button>
-            <h2 className="text-base font-semibold text-[var(--color-text)]">Hillside Resort</h2>
+            <h2 className="text-base font-semibold text-[var(--color-text)]">Hillside Hidden</h2>
             <div className="w-9" />
           </div>
         </header>

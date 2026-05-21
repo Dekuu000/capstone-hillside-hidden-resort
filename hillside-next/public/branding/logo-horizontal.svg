@@ -1,0 +1,24 @@
+<svg width="840" height="220" viewBox="0 0 840 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Hillside Hidden Resort Logo</title>
+  <desc id="desc">Circular crest with hillside path and a horizontal wordmark for Hillside Hidden Resort.</desc>
+  <defs>
+    <linearGradient id="sea" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#22A699"/>
+      <stop offset="100%" stop-color="#0E1F33"/>
+    </linearGradient>
+  </defs>
+  <circle cx="110" cy="110" r="96" fill="#F2F6F8" stroke="#0E1F33" stroke-width="8"/>
+  <path d="M38 138c24-24 51-36 80-36 23 0 43 6 64 20-11 18-26 31-46 37-33 11-64 2-98-21Z" fill="#22A699"/>
+  <path d="M17 146h186c-6 17-18 34-36 46H52c-17-9-29-24-35-46Z" fill="#0E1F33"/>
+  <path d="M55 158c12-19 30-29 60-33-15 9-28 21-35 34-9 14-21 25-40 33l15-34Z" fill="#F2F6F8"/>
+  <path d="M44 144c50-34 85-47 126-47" stroke="#F2F6F8" stroke-width="8" stroke-linecap="round"/>
+  <path d="M87 51h16v76H87zM48 51h16v76H48zM48 73c18-4 33-4 39 0v16c-11-4-22-4-39 0z" fill="#0E1F33"/>
+  <circle cx="82" cy="38" r="11" fill="#FF8A4C"/>
+  <path d="M154 62c8 0 13 4 17 11-8-4-16-4-25 0 3-7 6-11 8-11Z" fill="#22A699"/>
+  <path d="M146 72c8 0 14 5 22 13-10-5-19-5-30 0 4-7 6-12 8-13Z" fill="#22A699"/>
+  <path d="M152 58v35" stroke="#0E1F33" stroke-width="4" stroke-linecap="round"/>
+  <text x="230" y="112" fill="#0E1F33" font-size="74" font-family="Georgia, 'Times New Roman', serif" font-weight="600">Hillside Hidden</text>
+  <line x1="233" y1="148" x2="360" y2="148" stroke="#22A699" stroke-width="4"/>
+  <text x="390" y="160" fill="#22A699" font-size="50" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-weight="600" letter-spacing="18">RESORT</text>
+  <line x1="643" y1="148" x2="794" y2="148" stroke="#22A699" stroke-width="4"/>
+</svg>

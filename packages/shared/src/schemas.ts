@@ -335,6 +335,9 @@ export const paymentReservationSummarySchema = z.object({
   reservation_source: z.enum(["online", "walk_in"]).optional().nullable(),
   total_amount: z.number().optional().nullable(),
   deposit_required: z.number().optional().nullable(),
+  chain_key: z.string().optional().nullable(),
+  chain_tx_hash: z.string().optional().nullable(),
+  onchain_booking_id: z.string().optional().nullable(),
   ...reservationPolicyMetadataShape,
   guest: z
     .object({
@@ -343,6 +346,20 @@ export const paymentReservationSummarySchema = z.object({
     })
     .optional()
     .nullable(),
+});
+
+export const paymentWebhookAuditSummarySchema = z.object({
+  event_type: z.string().optional().nullable(),
+  dedupe_result: z.enum(["processed", "deduped"]).optional().nullable(),
+  provider: z.string().optional().nullable(),
+  provider_event_id: z.string().optional().nullable(),
+  linked_payment_id: z.string().optional().nullable(),
+  linked_reservation_id: z.string().optional().nullable(),
+  chain_proof_reference: z.string().optional().nullable(),
+  chain_key: z.string().optional().nullable(),
+  onchain_booking_id: z.string().optional().nullable(),
+  processed: z.string().optional().nullable(),
+  received_at: z.string().optional().nullable(),
 });
 
 export const adminPaymentItemSchema = z.object({
@@ -363,6 +380,7 @@ export const adminPaymentItemSchema = z.object({
   reservation: paymentReservationSummarySchema.optional().nullable(),
   verified_admin: paymentAdminUserSchema.optional().nullable(),
   rejected_admin: paymentAdminUserSchema.optional().nullable(),
+  webhook_audit: paymentWebhookAuditSummarySchema.optional().nullable(),
 });
 
 export const adminPaymentsResponseSchema = z.object({

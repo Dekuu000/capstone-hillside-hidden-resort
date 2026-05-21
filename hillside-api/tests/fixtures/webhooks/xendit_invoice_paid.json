@@ -1,0 +1,10 @@
+{
+  "id": "inv-evt-paid-001",
+  "event": "invoice.paid",
+  "status": "PAID",
+  "external_id": "PMT-REF-123",
+  "metadata": {
+    "reservation_id": "res-1"
+  },
+  "paid_amount": 1000
+}

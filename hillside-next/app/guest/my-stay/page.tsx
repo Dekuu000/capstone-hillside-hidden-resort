@@ -8,11 +8,12 @@ import type {
 } from "../../../../packages/shared/src/types";
 import { MyStayDashboardClient } from "../../../components/guest-stay/MyStayDashboardClient";
 import { GuestShell } from "../../../components/layout/GuestShell";
-import { PageHeader } from "../../../components/layout/PageHeader";
-import { Badge } from "../../../components/shared/Badge";
-import { NetworkStatusBadge } from "../../../components/shared/NetworkStatusBadge";
+import { GuestHero } from "../../../components/guest/GuestHero";
+import { GuestSyncStatus } from "../../../components/guest/GuestSyncStatus";
 import { GuestEmptyState } from "../../../components/guest/GuestEmptyState";
+import { StaySnapshotCard } from "../../../components/guest/StaySnapshotCard";
 import { buildTokenExplorerUrl, buildTxExplorerUrl, shortHash } from "../../../lib/chainExplorer";
+import { formatDateWithWeekday } from "../../../lib/dateDisplay";
 import { formatPhpPeso as toPeso } from "../../../lib/formatCurrency";
 import { fetchServerApiData } from "../../../lib/serverApi";
 import { getServerAccessToken, getServerEmailHint } from "../../../lib/serverAuth";
@@ -28,6 +29,13 @@ function roomFallbackDisplay(stay: ReservationListItem) {
   });
   if (names.length === 1) return names[0];
   return `${names[0]} +${names.length - 1} more`;
+}
+
+function getQrStatusLabel(status: string) {
+  if (["pending_payment", "for_verification", "confirmed", "checked_in"].includes(status)) {
+    return "QR ready";
+  }
+  return "No QR yet";
 }
 
 async function fetchStayDashboard(accessToken: string): Promise<StayDashboardResponse | null> {
@@ -63,23 +71,30 @@ export default async function GuestMyStayPage() {
 
   return (
     <GuestShell initialEmail={emailHint}>
-      <PageHeader
+      <GuestHero
+        testId="guest-hero"
+        dark
+        eyebrow="Guest Portal"
         title="My Stay"
-        subtitle="Track your check-in readiness and show QR to front desk staff."
-        statusSlot={(
-          <>
-            <NetworkStatusBadge />
-            <Badge label="Offline-friendly QR" variant="info" />
-          </>
+        contentClassName="lg:gap-6 lg:p-7"
+        rightSlot={(
+          <StaySnapshotCard
+            nextStayDate={formatDateWithWeekday(stay?.check_in_date || null)}
+            outstandingBalance={toPeso(Number(stay?.balance_due ?? 0))}
+            qrStatus={stay ? getQrStatusLabel(stay.status) : "No QR yet"}
+            dark
+          />
         )}
       />
+      <GuestSyncStatus compact className="mb-3" />
       {!stay ? (
         <GuestEmptyState
+          testId="guest-empty-state"
           title="No active stay yet"
           message="Your check-in dashboard appears once a reservation becomes active."
         />
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           <MyStayDashboardClient
             accessToken={accessToken}
             reservationId={stay.reservation_id}
@@ -92,7 +107,7 @@ export default async function GuestMyStayPage() {
           />
 
           <section className="grid gap-4 md:grid-cols-2">
-            <article className="surface p-5">
+            <article className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm">
               <h2 className="inline-flex items-center gap-2 text-base font-semibold text-[var(--color-text)]">
                 <ShieldCheck className="h-4 w-4 text-[var(--color-secondary)]" />
                 Payment Summary
@@ -119,7 +134,7 @@ export default async function GuestMyStayPage() {
               </div>
             </article>
 
-            <article className="surface p-5">
+            <article className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm">
               <h2 className="inline-flex items-center gap-2 text-base font-semibold text-[var(--color-text)]">
                 <KeyRound className="h-4 w-4 text-[var(--color-secondary)]" />
                 Digital Guest Pass

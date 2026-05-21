@@ -30,6 +30,11 @@ export function ModalDialog({
   closeButtonClassName,
 }: ModalDialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     const activeBeforeOpen = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -56,7 +61,7 @@ export function ModalDialog({
       if (!dialogEl) return;
       if (event.key === "Escape") {
         event.preventDefault();
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (event.key !== "Tab") return;
@@ -92,12 +97,12 @@ export function ModalDialog({
       dialogEl?.removeEventListener("keydown", handleKeyDown);
       activeBeforeOpen?.focus();
     };
-  }, [onClose]);
+  }, []);
 
   return (
     <div
       className={cn(
-        "fixed inset-0 flex items-end justify-center p-0 md:items-center md:p-4",
+        "fixed inset-0 flex items-center justify-center p-3 md:p-4",
         zIndexClass,
         overlayClassName,
       )}
@@ -110,7 +115,7 @@ export function ModalDialog({
         aria-labelledby={titleId}
         tabIndex={-1}
         className={cn(
-          "max-h-[92vh] w-full overflow-auto rounded-t-2xl border border-slate-200/70 bg-white p-4 md:rounded-2xl",
+          "max-h-[92vh] w-full overflow-auto rounded-2xl border border-slate-200/70 bg-white p-4",
           maxWidthClass,
           panelClassName,
         )}

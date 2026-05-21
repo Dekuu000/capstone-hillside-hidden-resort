@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 import logging
 from uuid import uuid4
 
@@ -33,6 +33,7 @@ from app.integrations.supabase_client import (
     get_reservation_by_id,
     get_dynamic_pricing_signals,
     list_recent_reservations,
+    release_expired_pending_payment_holds,
     update_reservation_policy_metadata,
     update_reservation_source as update_reservation_source_rpc,
 )
@@ -58,6 +59,7 @@ from app.services.idempotency import (
     load_cached_response_payload,
     store_operation_receipt_safely,
 )
+from app.services.payment_policy import CancellationPolicyDecision, resolve_cancellation_policy
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -430,10 +432,12 @@ def _maybe_refund_escrow_on_cancel(reservation_row: dict) -> None:
         )
 
 
-def _derive_cancellation_policy(actor: str) -> tuple[str, str]:
-    actor_normalized = "admin" if actor == "admin" else "guest"
-    outcome = "refunded" if actor_normalized == "admin" else "forfeited"
-    return actor_normalized, outcome
+def _derive_cancellation_policy(*, actor_role: str, reservation_row: dict) -> CancellationPolicyDecision:
+    return resolve_cancellation_policy(
+        actor_role=actor_role,
+        paid_amount=reservation_row.get("amount_paid_verified"),
+        minimum_deposit=reservation_row.get("deposit_required"),
+    )
 
 
 def _apply_cancellation_policy_metadata(
@@ -485,34 +489,37 @@ def _apply_cancellation_side_effects(
     reservation_id: str,
     reservation_row: dict,
     actor_role: str,
-) -> tuple[str, str]:
-    actor, outcome = _derive_cancellation_policy(actor_role)
+) -> CancellationPolicyDecision:
+    decision = _derive_cancellation_policy(actor_role=actor_role, reservation_row=reservation_row)
     _apply_cancellation_policy_metadata(
         reservation_id=reservation_id,
-        actor=actor,
-        outcome=outcome,
+        actor=decision.actor,
+        outcome=decision.outcome,
         rule_applied=_resolve_reservation_policy_rule(reservation_row),
     )
-    if outcome == "refunded":
+    if decision.outcome == "refunded":
         _maybe_refund_escrow_on_cancel(reservation_row)
-    return actor, outcome
+    return decision
 
 
 def _build_cancel_response(
     *,
     reservation_id: str,
     reservation_row: dict,
-    actor: str,
-    outcome: str,
-) -> dict[str, str | bool | None]:
+    decision: CancellationPolicyDecision,
+) -> dict[str, str | bool | float | None]:
     return {
         "ok": True,
         "reservation_id": reservation_id,
         "status": "cancelled",
         "deposit_policy_version": _resolve_reservation_policy_version(reservation_row),
         "deposit_rule_applied": _resolve_reservation_policy_rule(reservation_row),
-        "cancellation_actor": actor,
-        "policy_outcome": outcome,
+        "cancellation_actor": decision.actor,
+        "policy_outcome": decision.outcome,
+        "paid_amount": decision.paid_amount,
+        "minimum_deposit": decision.minimum_deposit,
+        "refundable_amount": decision.refundable_amount,
+        "non_refundable_amount": decision.non_refundable_amount,
     }
 
 
@@ -540,7 +547,26 @@ def _validate_stay_reservation_inputs(
         )
 
 
+def _pending_payment_hold_cutoff_utc() -> datetime:
+    hold_minutes = max(5, int(settings.reservation_pending_payment_hold_minutes or 120))
+    return datetime.now(timezone.utc) - timedelta(minutes=hold_minutes)
+
+
+def _release_expired_pending_payment_holds() -> None:
+    try:
+        released = release_expired_pending_payment_holds(
+            older_than_utc=_pending_payment_hold_cutoff_utc(),
+            limit=max(10, int(settings.reservation_hold_cleanup_batch_size or 200)),
+        )
+    except RuntimeError:
+        logger.exception("Failed to release expired pending-payment holds before availability check.")
+        return
+    if released > 0:
+        logger.info("Released %s expired pending-payment hold(s) before availability query.", released)
+
+
 def _get_available_unit_map(*, check_in_date: date, check_out_date: date) -> dict[str, dict]:
+    _release_expired_pending_payment_holds()
     try:
         available_units = get_available_units_rpc(
             check_in_date=check_in_date.isoformat(),
@@ -557,7 +583,10 @@ def _ensure_selected_units_available(*, unit_ids: list[str], unit_map: dict[str,
     if missing:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="One or more selected units are no longer available.",
+            detail=(
+                "One or more selected units are no longer available for the selected dates. "
+                "Please choose another unit or adjust your stay dates."
+            ),
         )
 
 
@@ -1043,7 +1072,7 @@ def cancel_reservation(
     except RuntimeError as exc:
         raise_http_from_runtime_error(exc, default_status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
-    actor, outcome = _apply_cancellation_side_effects(
+    decision = _apply_cancellation_side_effects(
         reservation_id=reservation_id,
         reservation_row=row,
         actor_role=auth.role,
@@ -1051,6 +1080,5 @@ def cancel_reservation(
     return _build_cancel_response(
         reservation_id=reservation_id,
         reservation_row=row,
-        actor=actor,
-        outcome=outcome,
+        decision=decision,
     )

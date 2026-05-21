@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { cn } from "../../lib/cn";
 
 type HillsideLogoProps = {
@@ -7,28 +8,50 @@ type HillsideLogoProps = {
 };
 
 export function HillsideLogo({ className, light = false, compact = false }: HillsideLogoProps) {
-  const textPrimary = light ? "text-white" : "text-[var(--color-primary)]";
-  const textSecondary = light ? "text-[#67e8f9]" : "text-[var(--color-secondary)]";
+  const textPrimary = light ? "text-white" : "text-[#0E1F33]";
+  const textSecondary = light ? "text-teal-300" : "text-[#22A699]";
+  const divider = light ? "bg-teal-300" : "bg-[#22A699]";
 
   return (
-    <div className={cn("inline-flex items-center gap-3", className)}>
-      <svg width="48" height="48" viewBox="0 0 48 48" aria-hidden="true">
-        <defs>
-          <linearGradient id="hillside-logo-grad" x1="0" x2="1" y1="0" y2="1">
-            <stop offset="0%" stopColor="#0ea5a4" />
-            <stop offset="100%" stopColor="#22d3ee" />
-          </linearGradient>
-        </defs>
-        <path d="M8 34c5-7 11-10 19-10 5 0 9 1 13 3-3 5-7 9-12 12-5 2-12 2-20-5Z" fill="url(#hillside-logo-grad)" opacity="0.95" />
-        <path d="M25 9c-2 4-2 8 1 12" stroke="#f97316" strokeWidth="2.5" strokeLinecap="round" fill="none" />
-        <path d="M30 12c-1.5 3-1.5 6 0.5 9" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" fill="none" />
-        <path d="M18 11c2 4 2 8-1 12" stroke="#22c55e" strokeWidth="2.3" strokeLinecap="round" fill="none" />
-      </svg>
-      <div>
-        <p className={cn("text-[1.72rem] font-semibold leading-none tracking-[0.12em]", textPrimary)}>HILLSIDE</p>
+    <div className={cn("inline-flex min-w-0 items-center gap-2.5 sm:gap-4", className)}>
+      <Image
+        src="/branding/hillside-logo-emblem-transparent.png"
+        alt="Hillside Hidden emblem"
+        width={56}
+        height={56}
+        className="h-12 w-12 shrink-0 object-contain sm:h-14 sm:w-14"
+        priority
+      />
+      <div className="min-w-0">
+        <p
+          className={cn("truncate text-[1.5rem] font-semibold leading-none tracking-[0.01em] sm:text-[2rem]", textPrimary)}
+          style={{ fontFamily: "Cambria, Georgia, 'Times New Roman', serif" }}
+        >
+          Hillside Hidden
+        </p>
         {!compact ? (
-          <p className={cn("mt-1 text-[0.72rem] font-semibold uppercase tracking-[0.32em]", textSecondary)}>Hidden Resort</p>
-        ) : null}
+          <div
+            className={cn(
+              "mt-1.5 flex w-full items-center justify-start gap-2 sm:mt-2 sm:justify-center sm:gap-3",
+              textSecondary,
+            )}
+          >
+            <span className={cn("hidden h-px w-10 sm:block", divider)} />
+            <p className="text-[0.72rem] font-semibold uppercase tracking-[0.42em] sm:text-[0.8rem] sm:tracking-[0.52em]">
+              RESORT
+            </p>
+            <span className={cn("hidden h-px w-10 sm:block", divider)} />
+          </div>
+        ) : (
+          <p
+            className={cn(
+              "mt-1 block w-full text-left text-[0.72rem] font-semibold uppercase tracking-[0.35em]",
+              light ? "text-[#5EEAD4]" : "text-[#22A699]",
+            )}
+          >
+            RESORT
+          </p>
+        )}
       </div>
     </div>
   );

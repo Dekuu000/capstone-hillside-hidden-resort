@@ -1,8 +1,12 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pathlib import Path
+
+
+_ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=_ENV_FILE, extra="ignore")
 
     app_env: str = "local"
     app_name: str = "hillside-api"
@@ -15,6 +19,8 @@ class Settings(BaseSettings):
     api_jwt_issuer: str = ""
     api_jwt_audience: str = "authenticated"
     cache_ttl_seconds: int = 60
+    reservation_pending_payment_hold_minutes: int = 120
+    reservation_hold_cleanup_batch_size: int = 200
     feature_offline_sync: bool = True
     sync_pull_default_limit: int = 200
     sync_pull_max_limit: int = 500
@@ -73,6 +79,9 @@ class Settings(BaseSettings):
     ai_inference_timeout_ms: int = 1500
     ai_require_prophet_forecast: bool = False
     checkin_welcome_suggestions_limit: int = 2
+    payment_webhook_secret: str = ""
+    xendit_callback_token: str = ""
+    payment_mode: str = "proof_only"
 
 
 settings = Settings()

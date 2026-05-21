@@ -153,6 +153,7 @@ export default function RegisterPage() {
 
   return (
     <AuthShell
+      fullScreen
       sideTitle="Create Your Account"
       sideSubtitle=""
       sideDescription="Start your journey to a relaxing and memorable stay."

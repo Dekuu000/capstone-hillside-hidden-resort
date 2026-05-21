@@ -117,8 +117,8 @@ export default async function HomePage() {
         <div className="absolute inset-0 bg-[linear-gradient(112deg,rgba(6,18,37,0.88)_0%,rgba(6,18,37,0.68)_36%,rgba(6,18,37,0.42)_62%,rgba(6,18,37,0.56)_100%)]" />
 
         <div className="relative mx-auto w-full max-w-[1300px] px-5 pb-24 pt-7 sm:px-7 lg:px-10">
-          <header className="flex flex-wrap items-center justify-between gap-4 px-1 py-2">
-            <HillsideLogo light />
+          <header className="flex flex-nowrap items-start justify-between gap-2 px-1 py-2 lg:items-center">
+            <HillsideLogo light className="min-w-0" />
             <nav className="hidden items-center gap-6 text-sm font-medium text-white/92 lg:flex">
               <a href="#home" className="text-teal-300">
                 Home
@@ -139,16 +139,16 @@ export default async function HomePage() {
                 Check Reservation
               </Link>
             </nav>
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-2 pt-0.5 lg:gap-3 lg:pt-0">
               <Link
                 href="/auth/sign-in"
-                className="inline-flex h-11 items-center justify-center rounded-xl border border-white/35 px-4 text-sm font-semibold text-white transition hover:bg-white/10"
+                className="inline-flex h-10 items-center justify-center rounded-xl border border-white/35 px-3.5 text-sm font-semibold text-white transition hover:bg-white/10 lg:h-11 lg:px-4"
               >
                 Sign In
               </Link>
               <Link
-                href="/book"
-                className="inline-flex h-11 items-center justify-center rounded-xl border border-[var(--color-cta)] bg-[var(--color-cta)] px-4 text-sm font-semibold text-white transition hover:brightness-95"
+                href="/auth/sign-in?next=/book"
+                className="hidden h-11 items-center justify-center rounded-xl border border-[var(--color-cta)] bg-[var(--color-cta)] px-4 text-sm font-semibold text-white transition hover:brightness-95 lg:inline-flex"
               >
                 Book a Stay
               </Link>
@@ -168,19 +168,13 @@ export default async function HomePage() {
               Experience hillside tranquility, warm Filipino hospitality, and modern convenience.
               Book securely, check in seamlessly, and enjoy a stay you will never forget.
             </p>
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-6 lg:hidden">
               <Link
-                href="/book"
-                className="inline-flex h-12 items-center justify-center rounded-xl border border-[var(--color-cta)] bg-[var(--color-cta)] px-6 text-sm font-semibold text-white transition hover:brightness-95"
+                href="/auth/sign-in?next=/book"
+                className="inline-flex h-12 w-full items-center justify-center rounded-xl border border-[var(--color-cta)] bg-[var(--color-cta)] px-6 text-base font-semibold text-white transition hover:brightness-95"
               >
                 Book a Stay
               </Link>
-              <a
-                href="#accommodations"
-                className="inline-flex h-12 items-center justify-center rounded-xl border border-white/35 bg-white/5 px-6 text-sm font-semibold text-white transition hover:bg-white/10"
-              >
-                View Accommodations
-              </a>
             </div>
           </div>
         </div>
@@ -227,7 +221,10 @@ export default async function HomePage() {
               Comfort meets nature. Choose from our handpicked accommodations.
             </p>
           </div>
-          <Link href="/book" className="text-sm font-semibold text-[var(--color-secondary)] hover:underline">
+          <Link
+            href="/auth/sign-in?next=/book"
+            className="text-sm font-semibold text-[var(--color-secondary)] hover:underline"
+          >
             View All Accommodations
           </Link>
         </div>
@@ -354,16 +351,20 @@ export default async function HomePage() {
           </article>
 
           <article className="bg-[#d7f5ef] p-8">
-            <p className="text-[var(--color-secondary)]">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M12 2c-3.9 0-7 3.2-7 7.1 0 5.3 7 12.9 7 12.9s7-7.6 7-12.9C19 5.2 15.9 2 12 2Zm0 9.5c-1.4 0-2.5-1.1-2.5-2.5S10.6 6.5 12 6.5s2.5 1.1 2.5 2.5-1.1 2.5-2.5 2.5Z" />
-              </svg>
+            <div className="flex items-center gap-3">
+              <h3 className="text-3xl font-semibold text-[var(--color-primary)]">Visit Us</h3>
+              <span className="text-[var(--color-secondary)]" aria-hidden="true">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2c-3.9 0-7 3.2-7 7.1 0 5.3 7 12.9 7 12.9s7-7.6 7-12.9C19 5.2 15.9 2 12 2Zm0 9.5c-1.4 0-2.5-1.1-2.5-2.5S10.6 6.5 12 6.5s2.5 1.1 2.5 2.5-1.1 2.5-2.5 2.5Z" />
+                </svg>
+              </span>
+            </div>
+            <p className="mt-4 text-base text-[var(--color-text)]">Hillside Hidden Resort</p>
+            <p className="text-base text-[var(--color-text)]">
+              Prk. 7, Jupiter St, Olongapo City, Zambales 2200, Philippines
             </p>
-            <h3 className="mt-4 text-3xl font-semibold text-[var(--color-primary)]">Visit Us</h3>
-            <p className="mt-4 text-base text-[var(--color-text)]">Brgy. Latag, Orani, Bataan</p>
-            <p className="text-base text-[var(--color-text)]">Philippines 2112</p>
             <a
-              href="https://maps.google.com/?q=Orani+Bataan"
+              href="https://www.google.com/maps/dir/?api=1&destination_place_id=ChIJZT_BXwBxljMRISjFCvccuhw&destination=Hillside+Hidden+Resort"
               className="mt-8 inline-flex text-sm font-semibold text-[var(--color-secondary)] hover:underline"
               target="_blank"
               rel="noreferrer"
@@ -373,13 +374,13 @@ export default async function HomePage() {
           </article>
 
           <article className="relative overflow-hidden bg-[#eff6fb]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/resort-map.svg" alt="Hillside resort location map" className="h-full min-h-[320px] w-full object-cover" loading="lazy" />
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <span className="rounded-full border border-[var(--color-secondary)] bg-white/90 px-3 py-1 text-xs font-semibold text-[var(--color-primary)] shadow-[var(--shadow-sm)]">
-                Hillside Hidden Resort
-              </span>
-            </div>
+            <iframe
+              title="Hillside Hidden Resort Google Map"
+              src="https://maps.google.com/maps?hl=en&q=14.8550578,120.3166328(Hillside%20Hidden%20Resort)&ll=14.8550578,120.3166328&z=18&t=m&output=embed"
+              className="h-full min-h-[320px] w-full border-0"
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
           </article>
         </div>
       </section>
@@ -398,7 +399,7 @@ export default async function HomePage() {
             <div>
               <HillsideLogo light />
               <p className="mt-4 text-sm text-white/75">
-                Your trusted getaway in Bataan. Relax, recharge, and stay with trust.
+                Your trusted getaway in Olongapo. Relax, recharge, and stay with trust.
               </p>
             </div>
             <div>
@@ -409,7 +410,7 @@ export default async function HomePage() {
             </div>
             <div className="flex flex-wrap gap-3">
               <Link
-                href="/book"
+                href="/auth/sign-in?next=/book"
                 className="inline-flex h-11 items-center justify-center rounded-xl border border-[var(--color-cta)] bg-[var(--color-cta)] px-5 text-sm font-semibold text-white hover:brightness-95"
               >
                 Book a Stay

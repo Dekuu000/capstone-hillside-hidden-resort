@@ -1,0 +1,32 @@
+<svg width="980" height="360" viewBox="0 0 980 360" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#EAF0F6" />
+      <stop offset="1" stop-color="#DCE6F1" />
+    </linearGradient>
+    <linearGradient id="ridge1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#B8C6D5" />
+      <stop offset="1" stop-color="#9FB1C4" />
+    </linearGradient>
+    <linearGradient id="ridge2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#9CB0C5" />
+      <stop offset="1" stop-color="#7F98B1" />
+    </linearGradient>
+    <linearGradient id="lake" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#A8BBCB" stop-opacity="0.35" />
+      <stop offset="1" stop-color="#7D96AC" stop-opacity="0.46" />
+    </linearGradient>
+    <filter id="soften" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="1.2" />
+    </filter>
+  </defs>
+  <rect width="980" height="360" fill="url(#sky)" />
+  <path d="M324 250C398 216 454 155 536 124C602 99 656 109 718 143C792 183 853 179 980 112V360H324V250Z" fill="url(#ridge1)" opacity="0.72" filter="url(#soften)" />
+  <path d="M276 276C352 226 430 216 512 175C590 137 664 132 739 164C815 197 870 196 980 163V360H276V276Z" fill="url(#ridge2)" opacity="0.78" />
+  <path d="M0 312C119 302 210 285 312 267C424 248 528 242 646 252C761 263 864 288 980 316V360H0V312Z" fill="url(#lake)" />
+  <path d="M702 244C719 219 747 211 771 234V360H702V244Z" fill="#537367" opacity="0.32" />
+  <path d="M734 247C751 219 780 213 804 238V360H734V247Z" fill="#4B6A5F" opacity="0.36" />
+  <path d="M768 252C784 226 813 220 838 244V360H768V252Z" fill="#47655A" opacity="0.39" />
+  <path d="M802 256C818 233 845 226 868 247V360H802V256Z" fill="#3F5C53" opacity="0.42" />
+  <rect y="332" width="980" height="28" fill="#8EA4B8" opacity="0.25" />
+</svg>

@@ -108,22 +108,21 @@ export function MyStayDashboardClient({
     <>
       <section className="surface p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">My stay dashboard</p>
-            <h2 className="mt-2 text-xl font-semibold text-[var(--color-text)]">{reservationCode}</h2>
+          <div className="min-w-0 flex-1">
+            <div className="mt-1 flex items-center justify-between gap-3">
+              <h2 className="truncate text-xl font-semibold text-[var(--color-text)]">{reservationCode}</h2>
+              <button
+                type="button"
+                onClick={() => setShowQr(true)}
+                aria-label="Open Check-in QR"
+                title="Open Check-in QR"
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-orange-200 bg-orange-50 text-[var(--color-cta)] transition hover:bg-orange-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-cta)]/35"
+              >
+                <QrCode className="h-4 w-4 stroke-[2.2]" />
+              </button>
+            </div>
             <p className="mt-1 text-sm text-[var(--color-muted)]">{checkInDate} to {checkOutDate}</p>
             <p className="mt-1 text-xs text-[var(--color-muted)]">Check-in starts at 8:00 AM local time.</p>
-          </div>
-          <div className="space-y-1">
-            <button
-              type="button"
-              onClick={() => setShowQr(true)}
-              className="guest-primary-cta"
-            >
-              <QrCode className="h-4 w-4" />
-              Open Check-in QR
-            </button>
-            <p className="text-xs text-[var(--color-muted)]">Show this at the front desk during arrival.</p>
           </div>
         </div>
 

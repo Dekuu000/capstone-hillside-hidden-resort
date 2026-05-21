@@ -530,6 +530,10 @@ class CancelReservationResponse(ReservationPolicyMetadata):
     ok: bool = True
     reservation_id: str
     status: Literal["cancelled"] = "cancelled"
+    paid_amount: float | None = None
+    minimum_deposit: float | None = None
+    refundable_amount: float | None = None
+    non_refundable_amount: float | None = None
 
 
 class PaymentAdminUserSummary(BaseModel):
@@ -549,7 +553,24 @@ class PaymentReservationSummary(ReservationPolicyMetadata):
     reservation_source: Literal["online", "walk_in"] = "online"
     total_amount: float | None = None
     deposit_required: float | None = None
+    chain_key: str | None = None
+    chain_tx_hash: str | None = None
+    onchain_booking_id: str | None = None
     guest: PaymentReservationGuestSummary | None = None
+
+
+class PaymentWebhookAuditSummary(BaseModel):
+    event_type: str | None = None
+    dedupe_result: Literal["processed", "deduped"] | None = None
+    provider: str | None = None
+    provider_event_id: str | None = None
+    linked_payment_id: str | None = None
+    linked_reservation_id: str | None = None
+    chain_proof_reference: str | None = None
+    chain_key: str | None = None
+    onchain_booking_id: str | None = None
+    processed: str | None = None
+    received_at: datetime | None = None
 
 
 class AdminPaymentItem(BaseModel):
@@ -570,6 +591,7 @@ class AdminPaymentItem(BaseModel):
     reservation: PaymentReservationSummary | None = None
     verified_admin: PaymentAdminUserSummary | None = None
     rejected_admin: PaymentAdminUserSummary | None = None
+    webhook_audit: PaymentWebhookAuditSummary | None = None
 
 
 class AdminPaymentsResponse(BaseModel):

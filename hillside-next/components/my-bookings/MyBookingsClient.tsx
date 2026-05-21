@@ -3,13 +3,12 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { QRCodeSVG } from "qrcode.react";
-import { Search, X } from "lucide-react";
+import { Calendar, CircleCheck, CircleX, CreditCard, Eye, QrCode } from "lucide-react";
 import type {
   MyBookingsCursor as Cursor,
   MyBookingsResponse as BookingsResponse,
   MyBookingsTab as TabKey,
   PaymentSubmissionResponse,
-  PricingRecommendation,
   QrToken,
   ReservationListItem as Booking,
   ReservationCancelResponse,
@@ -19,7 +18,6 @@ import { computeStayDepositPreview } from "../../../packages/shared/src/types";
 import {
   paymentSubmissionResponseSchema,
   myBookingsResponseSchema,
-  pricingRecommendationSchema,
   qrTokenSchema,
   reservationCancelResponseSchema,
   reservationListItemSchema,
@@ -37,25 +35,31 @@ import { loadBookingsSnapshot, saveBookingsSnapshot } from "../../lib/offlineSyn
 import { getReservationStatusMeta } from "../../lib/reservationStatus";
 import { getSupabaseBrowserClient } from "../../lib/supabase";
 import { compactQrTokenPayload } from "../../lib/qrPayload";
-import { AIPricingInsightCard } from "../ai/AIPricingInsightCard";
+import { BookingStatusTabs } from "../guest/BookingStatusTabs";
 import { GuestEmptyState } from "../guest/GuestEmptyState";
+import { GuestHero } from "../guest/GuestHero";
+import { GuestSearchBar } from "../guest/GuestSearchBar";
+import { GuestSyncStatus } from "../guest/GuestSyncStatus";
+import { StaySnapshotCard } from "../guest/StaySnapshotCard";
 import { ImageLightbox } from "../shared/ImageLightbox";
 import { GcashPaymentGuide } from "../shared/GcashPaymentGuide";
 import { ModalDialog } from "../shared/ModalDialog";
 import { SyncAlertBanner } from "../shared/SyncAlertBanner";
-import { Tabs } from "../shared/Tabs";
 import { UnitImageGallery } from "../shared/UnitImageGallery";
 import { normalizeUnitImageUrls, normalizeUnitThumbUrls } from "../../lib/unitMedia";
 
 type MyBookingsClientProps = {
   initialToken?: string | null;
   initialSessionEmail?: string | null;
+  initialTab?: TabKey;
   initialData?: BookingsResponse | null;
+  initialFocusReservationId?: string | null;
+  initialAutoOpenPay?: boolean;
 };
 
 const TAB_LABELS: Record<TabKey, string> = {
   upcoming: "Upcoming",
-  pending_payment: "Payment Due",
+  pending_payment: "Payment",
   completed: "Completed",
   cancelled: "Cancelled",
 };
@@ -65,6 +69,36 @@ const TAB_HINTS: Record<TabKey, string> = {
   pending_payment: "Bookings waiting for payment or payment verification.",
   completed: "Finished reservations for your records.",
   cancelled: "Cancelled reservations and policy outcomes.",
+};
+
+const TAB_CARD_ACCENT: Record<TabKey, { cardBorder: string; amountPanel: string; amountText: string }> = {
+  upcoming: {
+    cardBorder: "border-blue-200/70",
+    amountPanel: "border-blue-200 bg-blue-50/60",
+    amountText: "text-blue-700",
+  },
+  pending_payment: {
+    cardBorder: "border-orange-200/70",
+    amountPanel: "border-orange-200 bg-orange-50/60",
+    amountText: "text-orange-700",
+  },
+  completed: {
+    cardBorder: "border-emerald-200/70",
+    amountPanel: "border-emerald-200 bg-emerald-50/60",
+    amountText: "text-emerald-700",
+  },
+  cancelled: {
+    cardBorder: "border-red-200/70",
+    amountPanel: "border-red-200 bg-red-50/60",
+    amountText: "text-red-700",
+  },
+};
+
+const TAB_PAYMENT_PILL_CLASS: Record<TabKey, string> = {
+  upcoming: "bg-blue-100 text-blue-800",
+  pending_payment: "bg-orange-100 text-orange-800",
+  completed: "bg-emerald-100 text-emerald-800",
+  cancelled: "bg-red-100 text-red-800",
 };
 
 function toTitleCase(value: string) {
@@ -118,15 +152,31 @@ function cancellationResultMessage(outcome: ReservationPolicyOutcome | null | un
   return "Booking cancelled.";
 }
 
+function bookingFlowHint(status: string) {
+  if (status === "pending_payment") {
+    return "Next step: pay the minimum deposit and submit proof so admin can verify your booking.";
+  }
+  if (status === "for_verification") {
+    return "Payment proof submitted. Waiting for admin verification.";
+  }
+  if (status === "confirmed") {
+    return "Booking confirmed. Keep this reservation or cancel before check-in date if needed.";
+  }
+  return null;
+}
+
 export function MyBookingsClient({
   initialToken = null,
   initialSessionEmail = null,
+  initialTab = "upcoming",
   initialData = null,
+  initialFocusReservationId = null,
+  initialAutoOpenPay = false,
 }: MyBookingsClientProps) {
   const token = initialToken;
   const sessionEmail = initialSessionEmail;
 
-  const [tab, setTab] = useState<TabKey>("upcoming");
+  const [tab, setTab] = useState<TabKey>(initialTab);
   const [searchInput, setSearchInput] = useState("");
   const [searchValue, setSearchValue] = useState("");
 
@@ -138,13 +188,11 @@ export function MyBookingsClient({
   const [error, setError] = useState<string | null>(null);
   const requestIdRef = useRef(0);
   const didUseInitialUpcomingDataRef = useRef(false);
+  const autoOpenPayHandledRef = useRef(false);
 
   const [details, setDetails] = useState<Booking | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [detailsError, setDetailsError] = useState<string | null>(null);
-  const [detailsAiRecommendation, setDetailsAiRecommendation] = useState<PricingRecommendation | null>(null);
-  const [detailsAiLoading, setDetailsAiLoading] = useState(false);
-  const [detailsAiError, setDetailsAiError] = useState<string | null>(null);
 
   const [submitFor, setSubmitFor] = useState<Booking | null>(null);
   const [submitAmount, setSubmitAmount] = useState("");
@@ -182,10 +230,47 @@ export function MyBookingsClient({
     setActionHasSyncCta(withSyncCta);
   }, []);
 
+  const openPaymentSubmissionForBooking = useCallback((booking: Booking) => {
+    setSubmitFor(booking);
+    const bookingTotal = Number(booking.total_amount ?? 0);
+    const bookingPaid = Number(booking.amount_paid_verified ?? 0);
+    const remaining = Math.max(0, bookingTotal - bookingPaid);
+    const depositRequired = Number(booking.deposit_required ?? 0);
+    const expected = Number(booking.expected_pay_now ?? 0);
+    const suggestedAmount = depositRequired > 0 && expected > 0 ? expected : remaining;
+    setSubmitAmount(String(suggestedAmount));
+    setSubmitReferenceNo("");
+    setSubmitProofMode("file");
+    setSubmitProofFile(null);
+    setSubmitProofUrl("");
+    setSubmitError(null);
+  }, []);
+
   useEffect(() => {
     const timeout = window.setTimeout(() => setSearchValue(searchInput.trim()), 300);
     return () => window.clearTimeout(timeout);
   }, [searchInput]);
+
+
+  useEffect(() => {
+    if (autoOpenPayHandledRef.current) return;
+    if (!initialAutoOpenPay || !initialFocusReservationId) return;
+    if (tab !== "pending_payment") return;
+
+    const targetBooking = items.find((booking) => booking.reservation_id === initialFocusReservationId);
+    if (!targetBooking) return;
+
+    autoOpenPayHandledRef.current = true;
+    if (targetBooking.status === "pending_payment") {
+      openPaymentSubmissionForBooking(targetBooking);
+    }
+    const cardElement = document.getElementById(`booking-card-${targetBooking.reservation_id}`);
+    if (cardElement) {
+      window.setTimeout(() => {
+        cardElement.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 120);
+    }
+  }, [initialAutoOpenPay, initialFocusReservationId, items, openPaymentSubmissionForBooking, tab]);
 
   const fetchBookings = useCallback(
     async (cursor: Cursor | null, mode: "replace" | "append") => {
@@ -277,9 +362,6 @@ export function MyBookingsClient({
       if (!token) return;
       setDetailsLoading(true);
       setDetailsError(null);
-      setDetailsAiRecommendation(null);
-      setDetailsAiError(null);
-      setDetailsAiLoading(false);
       try {
         const data = await apiFetch<Booking>(
           `/v2/me/bookings/${encodeURIComponent(reservationId)}`,
@@ -288,41 +370,6 @@ export function MyBookingsClient({
           reservationListItemSchema,
         );
         setDetails(data);
-
-        setDetailsAiLoading(true);
-        const serviceBookings = data.service_bookings ?? [];
-        const firstTour = serviceBookings[0];
-        const isTour = serviceBookings.length > 0;
-        const partySize = isTour
-          ? serviceBookings.reduce((sum, item) => sum + Number(item.adult_qty ?? 0) + Number(item.kid_qty ?? 0), 0)
-          : Math.max(1, data.units?.length ?? 1);
-
-        try {
-          const aiData = await apiFetch<PricingRecommendation>(
-            "/v2/ai/pricing/recommendation",
-            {
-              method: "POST",
-              body: JSON.stringify({
-                reservation_id: data.reservation_id,
-                check_in_date: data.check_in_date,
-                check_out_date: data.check_out_date,
-                visit_date: firstTour?.visit_date ?? null,
-                total_amount: data.total_amount ?? 0,
-                party_size: partySize,
-                unit_count: Math.max(1, data.units?.length ?? 1),
-                is_tour: isTour,
-                occupancy_context: {},
-              }),
-            },
-            token,
-            pricingRecommendationSchema,
-          );
-          setDetailsAiRecommendation(aiData);
-        } catch (unknownError) {
-          setDetailsAiError(getApiErrorMessage(unknownError, "Failed to load AI recommendation."));
-        } finally {
-          setDetailsAiLoading(false);
-        }
       } catch (unknownError) {
         setDetailsError(getApiErrorMessage(unknownError, "Failed to load booking details."));
       } finally {
@@ -693,108 +740,162 @@ export function MyBookingsClient({
   }
 
   return (
-    <section className="mx-auto w-full max-w-5xl overflow-x-hidden">
-      <header className="mb-6 rounded-3xl border border-slate-200/70 bg-gradient-to-br from-white via-slate-50 to-blue-50 p-5 shadow-sm sm:p-6">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Guest Portal</p>
-            <h1 className="mt-2 text-3xl font-bold text-slate-900">My Stay</h1>
-            <p className="mt-2 text-sm text-slate-600">
-              Signed in as <strong>{sessionEmail ?? "guest"}</strong>
-            </p>
-          </div>
-          <div className="w-full rounded-xl border border-slate-200 bg-white/90 px-3 py-2.5 text-[11px] text-slate-600 sm:max-w-xs sm:rounded-2xl sm:px-4 sm:py-3 sm:text-xs">
-            <p className="font-semibold text-slate-900">Stay snapshot</p>
-            <div className="mt-1.5 grid gap-1.5 sm:mt-2">
-              <p>
-                Next stay date: <span className="font-semibold text-slate-900">{formatDateWithWeekday(summary.nextDate)}</span>
-              </p>
-              <p>
-                Outstanding balance: <span className="font-semibold text-slate-900">{formatPeso(summary.outstanding)}</span>
-              </p>
-              <p>
-                QR status:{" "}
-                <span className={`font-semibold ${summary.qrReady ? "text-emerald-700" : "text-slate-700"}`}>
-                  {summary.qrReady ? "QR ready" : "No QR yet"}
-                </span>
-              </p>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <div className="mb-4 rounded-2xl border border-slate-200/70 bg-white p-2.5 shadow-sm sm:p-3">
-        <div className="grid items-center gap-2 lg:grid-cols-[1fr_0.72fr]">
-          <div className="min-w-0 self-center rounded-xl border border-slate-200/70 bg-slate-50 p-1 text-sm">
-            <Tabs
-              items={(Object.keys(TAB_LABELS) as TabKey[]).map((key) => ({ id: key, label: TAB_LABELS[key] }))}
-              value={tab}
-              onChange={(next) => setTab(next as TabKey)}
-              ariaLabel="Booking status"
-              mobileMode="scroll"
-              className="border-none bg-transparent p-0 sm:grid-cols-4"
-              tabClassName="h-11 shrink-0 min-w-[132px] rounded-lg px-2.5 text-sm font-semibold leading-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 sm:min-w-0"
-              activeClassName="bg-white text-slate-900 shadow-sm"
-              inactiveClassName="text-slate-600 hover:bg-white/70 hover:text-slate-900"
+    <section className="mx-auto flex w-full max-w-[1240px] flex-col gap-4 overflow-x-hidden lg:gap-4">
+      <div className="lg:hidden">
+        <GuestHero
+          testId="guest-hero"
+          dark
+          eyebrow="Guest Portal"
+          title="My Bookings"
+          rightSlot={(
+            <StaySnapshotCard
+              nextStayDate={formatDateWithWeekday(summary.nextDate)}
+              outstandingBalance={formatPeso(summary.outstanding)}
+              qrStatus={summary.qrReady ? "QR ready" : "No QR yet"}
+              dark
             />
-          </div>
-          <div className="min-w-0 self-center rounded-xl border border-slate-200/70 bg-slate-50 p-1">
-            <label className="relative block">
-              <span className="sr-only">Search bookings</span>
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                value={searchInput ?? ""}
-                onChange={(event) => setSearchInput(event.target.value)}
-                placeholder="Search reservation code, unit, or date"
-                className="guest-field-control pl-9 pr-10 text-sm"
-              />
-              {searchInput ? (
-                <button
-                  type="button"
-                  aria-label="Clear search"
-                  onClick={() => {
-                    setSearchInput("");
-                    setSearchValue("");
-                  }}
-                  className="absolute right-2 top-1/2 inline-flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-slate-500 transition hover:bg-slate-200 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              ) : null}
-            </label>
-          </div>
-        </div>
-        <div className="mt-2 flex flex-wrap items-center justify-between gap-2 px-1 text-xs text-slate-500">
-          <p>{TAB_HINTS[tab]}</p>
-          <Link
-            href="/guest/sync"
-            className="guest-secondary-cta guest-secondary-cta-sm rounded-full"
-          >
-            Open Sync Center
-          </Link>
-        </div>
+          )}
+        />
+      </div>
+      <div className="hidden lg:block">
+        <GuestHero
+          testId="guest-hero"
+          eyebrow="Guest Portal"
+          title="My Bookings"
+          subtitle={(
+            <>
+              Welcome back, <span className="font-semibold">{(sessionEmail ?? "guest").split("@")[0] || "guest"}</span>
+            </>
+          )}
+          className="rounded-[2rem] border-slate-200/80 shadow-sm lg:min-h-[198px]"
+          contentClassName="lg:min-h-[174px] lg:p-6"
+          rightSlot={(
+            <StaySnapshotCard
+              nextStayDate={formatDateWithWeekday(summary.nextDate)}
+              outstandingBalance={formatPeso(summary.outstanding)}
+              qrStatus={summary.qrReady ? "QR ready" : "No QR yet"}
+            />
+          )}
+        />
       </div>
 
-      <div className="mb-3 min-h-[3.25rem]">
-        {error ? (
-          <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">{error}</p>
-        ) : null}
-        {!error && actionMessage ? (
-          <SyncAlertBanner
-            message={actionMessage}
-            tone={actionHasSyncCta ? "warning" : "success"}
-            showSyncCta={actionHasSyncCta}
-            role="status"
+      <section className="rounded-[2rem] border border-slate-200/80 bg-white p-4 shadow-sm lg:p-5">
+        <div className="lg:hidden" data-testid="guest-tabs">
+          <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <button
+              type="button"
+              onClick={() => setTab("upcoming")}
+              className={`inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-2xl px-4 text-[13px] font-bold leading-none transition ${
+                tab === "upcoming"
+                  ? "border border-[var(--color-secondary)] bg-teal-50 text-[var(--color-secondary)] shadow-sm"
+                  : "text-slate-500 hover:bg-slate-50"
+              }`}
+            >
+              <Calendar className="h-4 w-4 shrink-0" />
+              <span>Upcoming</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab("pending_payment")}
+              className={`inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-2xl px-4 text-[13px] font-bold leading-none transition ${
+                tab === "pending_payment"
+                  ? "border border-[var(--color-secondary)] bg-teal-50 text-[var(--color-secondary)] shadow-sm"
+                  : "text-slate-500 hover:bg-slate-50"
+              }`}
+            >
+              <CreditCard className="h-4 w-4 shrink-0" />
+              <span>Payment</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab("completed")}
+              className={`inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-2xl px-4 text-[13px] font-bold leading-none transition ${
+                tab === "completed"
+                  ? "border border-[var(--color-secondary)] bg-teal-50 text-[var(--color-secondary)] shadow-sm"
+                  : "text-slate-500 hover:bg-slate-50"
+              }`}
+            >
+              <CircleCheck className="h-4 w-4 shrink-0" />
+              <span>Completed</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab("cancelled")}
+              className={`inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-2xl px-4 text-[13px] font-bold leading-none transition ${
+                tab === "cancelled"
+                  ? "border border-[var(--color-secondary)] bg-teal-50 text-[var(--color-secondary)] shadow-sm"
+                  : "text-slate-500 hover:bg-slate-50"
+              }`}
+            >
+              <CircleX className="h-4 w-4 shrink-0" />
+              <span>Cancelled</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="hidden lg:flex lg:items-center lg:justify-between lg:gap-3">
+          <BookingStatusTabs
+            items={(Object.keys(TAB_LABELS) as TabKey[]).map((key) => ({
+              id: key,
+              label: TAB_LABELS[key],
+              shortLabel:
+                key === "pending_payment"
+                  ? "Payment"
+                  : key === "completed"
+                    ? "Completed"
+                    : key === "cancelled"
+                      ? "Cancelled"
+                      : "Upcoming",
+              icon:
+                key === "upcoming"
+                  ? <Calendar className="h-4 w-4 shrink-0" />
+                  : key === "pending_payment"
+                    ? <CreditCard className="h-4 w-4" />
+                    : key === "completed"
+                      ? <CircleCheck className="h-4 w-4" />
+                      : <CircleX className="h-4 w-4" />,
+            }))}
+            value={tab}
+            onChange={(next) => setTab(next as TabKey)}
           />
-        ) : null}
-        {!error && !actionMessage && cachedViewMeta ? (
-          <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-semibold text-amber-800">
-            {cachedViewMeta}
-          </p>
-        ) : null}
-      </div>
-      <div className="min-h-[22rem]" aria-busy={loading}>
+          <GuestSearchBar
+            value={searchInput ?? ""}
+            onChange={setSearchInput}
+            onClear={() => {
+              setSearchInput("");
+              setSearchValue("");
+            }}
+            placeholder="Search booking, unit, date"
+            className="w-[390px]"
+          />
+        </div>
+        <div className="mt-3 flex flex-col gap-3 lg:mt-4">
+          <p className="text-sm text-slate-500">{TAB_HINTS[tab]}</p>
+          <GuestSyncStatus compact />
+        </div>
+      </section>
+
+      {error || actionMessage || cachedViewMeta ? (
+        <div className="mb-1">
+          {error ? (
+            <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">{error}</p>
+          ) : null}
+          {!error && actionMessage ? (
+            <SyncAlertBanner
+              message={actionMessage}
+              tone={actionHasSyncCta ? "warning" : "success"}
+              showSyncCta={actionHasSyncCta}
+              role="status"
+            />
+          ) : null}
+          {!error && !actionMessage && cachedViewMeta ? (
+            <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-semibold text-amber-800">
+              {cachedViewMeta}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+      <div className={loading ? "min-h-[16rem] lg:min-h-[14rem]" : ""} aria-busy={loading}>
         {loading ? (
           <div className="grid gap-3">
             {Array.from({ length: 3 }).map((_, idx) => (
@@ -813,8 +914,10 @@ export function MyBookingsClient({
 
         {!loading && items.length === 0 ? (
           <GuestEmptyState
+            testId="guest-empty-state"
             title="No bookings found for this tab."
             message="Try switching tabs, adjusting your search, or create a new reservation."
+            className="min-h-[300px] md:min-h-[280px] lg:min-h-[clamp(220px,31vh,280px)] lg:py-7"
           />
         ) : null}
 
@@ -823,9 +926,12 @@ export function MyBookingsClient({
           const paid = Number(booking.amount_paid_verified ?? 0);
           const total = Number(booking.total_amount ?? 0);
           const remaining = Math.max(0, total - paid);
+          const expectedPayNow = Number(booking.expected_pay_now ?? 0);
+          const minimumPayNow = expectedPayNow > 0 ? expectedPayNow : remaining;
           const paymentMeta = getPaymentStateMeta(total, paid);
           const statusMeta = getReservationStatusMeta(booking.status);
           const isTour = (booking.service_bookings?.length ?? 0) > 0;
+          const isPaymentTab = tab === "pending_payment";
           const bookingLabel = isTour ? "Tour" : "Stay";
           const bookingTarget = isTour
             ? booking.service_bookings?.map((item) => item.service?.service_name || "Tour service").join(", ")
@@ -835,42 +941,91 @@ export function MyBookingsClient({
           const canCancel = ["pending_payment", "for_verification", "confirmed"].includes(booking.status) && checkInDate > now;
           const canShowQr = canShowQrForBooking(booking.status);
           const reservationStatusLabel = toTitleCase(booking.status.replace(/_/g, " "));
+          const flowHint = bookingFlowHint(booking.status);
+          const showSecondaryActions = booking.status !== "pending_payment" && canCancel;
+          const accent = TAB_CARD_ACCENT[tab];
+          const paymentPillClass = tab === "pending_payment" ? paymentMeta.className : TAB_PAYMENT_PILL_CLASS[tab];
 
           return (
-            <article key={booking.reservation_id} className="relative rounded-2xl border border-slate-200/70 bg-white p-5 shadow-sm">
-              {canCancel ? (
-                <button
-                  type="button"
-                  className="guest-danger-cta guest-danger-cta-sm absolute right-4 top-4 rounded-full"
-                  onClick={() => setCancelFor(booking)}
-                >
-                  Cancel booking
-                </button>
-              ) : null}
-              <div className="flex flex-col justify-between gap-4 sm:flex-row">
-                <div className={canCancel ? "pr-28 md:pr-40" : undefined}>
-                  <h2 className="text-xl font-semibold text-slate-900">{booking.reservation_code}</h2>
+            <article
+              key={booking.reservation_id}
+              id={`booking-card-${booking.reservation_id}`}
+              className={`rounded-2xl border bg-white p-4 shadow-sm lg:p-3.5 ${accent.cardBorder}`}
+            >
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <h2 className="min-w-0 truncate text-[1.5rem] font-bold leading-tight text-slate-900 lg:text-[1.35rem]">
+                      {booking.reservation_code}
+                    </h2>
+                    {canShowQr ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setQrFor(booking);
+                          setQrToken(null);
+                          setQrError(null);
+                          setQrSecondsLeft(0);
+                        }}
+                        className="guest-secondary-cta h-10 min-h-10 w-10 shrink-0 p-0 text-slate-700"
+                        aria-label="Show check-in QR"
+                        title="Show QR"
+                      >
+                        <QrCode className="h-4 w-4 shrink-0 stroke-[2.2]" aria-hidden="true" />
+                      </button>
+                    ) : null}
+                  </div>
                   <p className="mt-1 text-sm font-medium text-slate-700">{bookingTarget || `${bookingLabel} reservation`}</p>
                   <p className="text-xs text-slate-500">Booked on {formatLocalDateTime(booking.created_at)}</p>
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <div className="mt-2 flex items-center gap-2">
                     <span
                       className={`inline-flex max-w-fit items-center rounded-full px-2 py-1 text-[10px] font-semibold tracking-wide sm:px-2.5 sm:text-[11px] ${statusMeta.className}`}
                     >
                       {reservationStatusLabel}
                     </span>
                     <span
-                      className={`inline-flex max-w-fit items-center rounded-full px-2 py-1 text-[10px] font-semibold sm:px-2.5 sm:text-[11px] ${paymentMeta.className}`}
+                      className={`inline-flex max-w-fit items-center rounded-full px-2 py-1 text-[10px] font-semibold sm:px-2.5 sm:text-[11px] ${paymentPillClass}`}
                     >
                       {paymentMeta.label}
                     </span>
+                    <span className="ml-auto inline-flex items-center rounded-full bg-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-700">
+                      {isTour ? "Tour booking" : "Stay booking"}
+                    </span>
                   </div>
                 </div>
-                <div className={`flex flex-col gap-2 sm:items-end ${canCancel ? "sm:pt-10" : ""}`}>
-                  <p className="text-2xl font-bold text-slate-900">{formatPeso(total)}</p>
+                <div className={`rounded-xl border p-2.5 sm:min-w-[150px] ${accent.amountPanel}`}>
+                  <p className="text-xs font-medium text-slate-600">{isPaymentTab ? "Amount due" : "Total amount"}</p>
+                  <p className={`mt-1 text-[2rem] font-bold leading-tight lg:text-[1.8rem] ${isPaymentTab ? "text-orange-700" : accent.amountText}`}>
+                    {formatPeso(isPaymentTab ? remaining : total)}
+                  </p>
+                  {isPaymentTab && minimumPayNow > 0 ? (
+                    <p className="mt-1 text-[11px] font-medium text-slate-600">
+                      Minimum pay now: <span className="font-semibold text-slate-800">{formatPeso(minimumPayNow)}</span>
+                    </p>
+                  ) : null}
                 </div>
               </div>
+              {isPaymentTab ? (
+                <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium leading-relaxed text-amber-800">
+                  To keep this reservation active, pay at least the minimum deposit first and submit proof. If you cancel this booking, the minimum deposit is non-refundable.
+                </p>
+              ) : null}
+              {flowHint ? (
+                <p className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium leading-relaxed text-slate-700">
+                  {flowHint}
+                </p>
+              ) : null}
 
-              <div className="mt-4 grid gap-3 rounded-2xl border border-slate-200/70 bg-slate-50/60 p-4 sm:grid-cols-2">
+              <div className="relative mt-3 grid gap-2.5 rounded-2xl border border-slate-200/70 bg-slate-50/60 p-3.5 pr-14 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => void openDetails(booking.reservation_id)}
+                  className="guest-secondary-cta absolute right-3 top-3 h-9 min-h-9 w-9 p-0 text-slate-700"
+                  aria-label="View booking details"
+                  title="View details"
+                >
+                  <Eye className="h-4 w-4 shrink-0 stroke-[2.2]" aria-hidden="true" />
+                </button>
                 <div>
                   <span className="block text-xs text-slate-500">{isTour ? "Visit date" : "Stay dates"}</span>
                   <p className="text-sm font-medium text-slate-800">
@@ -887,62 +1042,76 @@ export function MyBookingsClient({
                 </div>
                 <div>
                   <span className="block text-xs text-slate-500">Outstanding balance</span>
-                  <p className="text-sm font-semibold text-orange-700">{formatPeso(remaining)}</p>
+                  <p className={`text-sm font-semibold ${accent.amountText}`}>{formatPeso(remaining)}</p>
                 </div>
               </div>
 
-              <div className="mt-3">
-                <span className="inline-flex items-center rounded-full bg-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-700">
-                  {isTour ? "Tour booking" : "Stay booking"}
-                </span>
+              <div className="mt-3 flex items-center gap-2">
+                <div className="hidden lg:ml-auto lg:flex lg:items-center lg:justify-end lg:gap-2">
+                  {booking.status === "pending_payment" ? (
+                    <>
+                      <button
+                        type="button"
+                        className="guest-primary-cta min-h-10 h-10 w-[132px] px-3 text-xs"
+                        onClick={() => openPaymentSubmissionForBooking(booking)}
+                      >
+                        Submit proof
+                      </button>
+                      {canCancel ? (
+                        <button
+                          type="button"
+                          className="guest-danger-cta min-h-10 h-10 w-[132px] px-3 text-xs"
+                          onClick={() => setCancelFor(booking)}
+                        >
+                          Cancel booking
+                        </button>
+                      ) : null}
+                    </>
+                  ) : null}
+
+                  {showSecondaryActions ? (
+                    <button
+                      type="button"
+                      className="guest-danger-cta min-h-10 h-10 w-[132px] px-3 text-xs"
+                      onClick={() => setCancelFor(booking)}
+                    >
+                      Cancel booking
+                    </button>
+                  ) : null}
+                </div>
               </div>
 
-              <div className="mt-4 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => void openDetails(booking.reservation_id)}
-                  className="guest-secondary-cta min-h-10 px-3 text-sm"
-                >
-                  View details
-                </button>
-
+              <div className="mt-3 space-y-2 lg:hidden">
                 {booking.status === "pending_payment" ? (
-                  <button
-                    type="button"
-                    className="guest-primary-cta min-h-10 px-3 text-sm"
-                    onClick={() => {
-                      setSubmitFor(booking);
-                      const total = Number(booking.total_amount ?? 0);
-                      const paid = Number(booking.amount_paid_verified ?? 0);
-                      const remaining = Math.max(0, total - paid);
-                      const depositRequired = Number(booking.deposit_required ?? 0);
-                      const expected = Number(booking.expected_pay_now ?? 0);
-                      const suggestedAmount = depositRequired > 0 && expected > 0 ? expected : remaining;
-                      setSubmitAmount(String(suggestedAmount));
-                      setSubmitReferenceNo("");
-                      setSubmitProofMode("file");
-                      setSubmitProofFile(null);
-                      setSubmitProofUrl("");
-                      setSubmitError(null);
-                    }}
-                  >
-                    Pay now
-                  </button>
+                  <div className={`grid w-full gap-2 ${canCancel ? "grid-cols-2" : "grid-cols-1"}`}>
+                    <button
+                      type="button"
+                      className="guest-primary-cta min-h-12 w-full px-3 text-sm"
+                      onClick={() => openPaymentSubmissionForBooking(booking)}
+                    >
+                      Submit proof
+                    </button>
+                    {canCancel ? (
+                      <button
+                        type="button"
+                        className="guest-danger-cta min-h-12 w-full px-3 text-sm"
+                        onClick={() => setCancelFor(booking)}
+                      >
+                        Cancel booking
+                      </button>
+                    ) : null}
+                  </div>
                 ) : null}
-
-                {canShowQr ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setQrFor(booking);
-                      setQrToken(null);
-                      setQrError(null);
-                      setQrSecondsLeft(0);
-                    }}
-                    className="guest-secondary-cta min-h-10 px-3 text-sm"
-                  >
-                    Show QR
-                  </button>
+                {showSecondaryActions ? (
+                  <div className="grid w-full grid-cols-1 gap-2">
+                    <button
+                      type="button"
+                      className="guest-danger-cta min-h-11 w-full px-3 text-sm"
+                      onClick={() => setCancelFor(booking)}
+                    >
+                      Cancel booking
+                    </button>
+                  </div>
                 ) : null}
 
               </div>
@@ -969,12 +1138,11 @@ export function MyBookingsClient({
         <ModalDialog
           titleId="booking-details-title"
           title={details?.reservation_code ?? "Loading..."}
+          zIndexClass="z-[70]"
           maxWidthClass="md:max-w-2xl"
+          panelClassName="max-h-[calc(100dvh-0.9rem)] border-slate-200/80 bg-white pb-[calc(1rem+env(safe-area-inset-bottom))]"
           onClose={() => {
             setDetails(null);
-            setDetailsAiRecommendation(null);
-            setDetailsAiError(null);
-            setDetailsAiLoading(false);
           }}
         >
             {detailsLoading ? <p className="text-sm text-slate-600" role="status">Loading details...</p> : null}
@@ -983,12 +1151,6 @@ export function MyBookingsClient({
             {details ? (
               <div className="space-y-4">
                 <p className="text-xs text-slate-500">Status: {details.status.replace(/_/g, " ")}</p>
-                <AIPricingInsightCard
-                  recommendation={detailsAiRecommendation}
-                  loading={detailsAiLoading}
-                  error={detailsAiError}
-                  title="AI Pricing Insight"
-                />
 
                 {detailUnits.length > 0 ? (
                   <section>
@@ -1040,11 +1202,16 @@ export function MyBookingsClient({
         <ModalDialog
           titleId="payment-proof-title"
           title="Submit payment proof"
+          zIndexClass="z-[70]"
           maxWidthClass="md:max-w-xl"
+          panelClassName="max-h-[calc(100dvh-0.75rem)] border-slate-200/80 bg-white pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
           onClose={closeSubmitModal}
         >
             <p className="mb-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
               Next step after submit: payment status changes to <strong>For verification</strong> while admin reviews your proof.
+            </p>
+            <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-medium leading-relaxed text-amber-800">
+              Minimum deposit is required first. Guest-initiated cancellation forfeits this minimum deposit.
             </p>
             <form className="grid gap-3" onSubmit={submitPayment}>
               <label className="guest-form-label">
@@ -1122,7 +1289,7 @@ export function MyBookingsClient({
                 )}
               </div>
               {submitError ? <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">{submitError}</p> : null}
-              <div className="mt-1 flex justify-end gap-2">
+              <div className="sticky bottom-0 mt-1 flex justify-end gap-2 border-t border-slate-200 bg-white/95 pt-3 backdrop-blur">
                 <button
                   type="button"
                   onClick={closeSubmitModal}
@@ -1146,7 +1313,9 @@ export function MyBookingsClient({
         <ModalDialog
           titleId="checkin-qr-title"
           title="Check-in QR Token"
+          zIndexClass="z-[70]"
           maxWidthClass="md:max-w-2xl"
+          panelClassName="max-h-[calc(100dvh-0.9rem)] border-slate-200/80 bg-white pb-[calc(1rem+env(safe-area-inset-bottom))]"
           onClose={() => {
             setQrFor(null);
             setQrToken(null);
@@ -1223,7 +1392,12 @@ export function MyBookingsClient({
         <ModalDialog
           titleId="cancel-booking-title"
           title="Cancel booking?"
+          zIndexClass="z-[70]"
+          overlayClassName="bg-slate-900/55"
           maxWidthClass="md:max-w-md"
+          panelClassName="max-h-[calc(100dvh-0.75rem)] border-slate-200/80 bg-white pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
+          closeLabel="Close cancel booking dialog"
+          closeButtonClassName="h-10 w-10 rounded-full border-2 border-teal-200 bg-white text-slate-500"
           onClose={() => setCancelFor(null)}
         >
             <p className="text-sm text-slate-600">This booking will be cancelled and removed from active flow.</p>
@@ -1231,17 +1405,17 @@ export function MyBookingsClient({
               {cancellationConsequenceText(cancelFor)}
             </p>
             {cancelError ? <p className="mt-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">{cancelError}</p> : null}
-            <div className="mt-3 flex justify-end gap-2">
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
               <button
                 type="button"
                 onClick={() => setCancelFor(null)}
-                className="guest-secondary-cta min-h-10 px-3 text-sm"
+                className="guest-secondary-cta min-h-10 min-w-[140px] px-3 text-sm"
               >
                 Keep booking
               </button>
               <button
                 type="button"
-                className="guest-danger-cta min-h-10 px-3 text-sm"
+                className="guest-danger-cta min-h-10 min-w-[140px] px-3 text-sm"
                 onClick={() => void confirmCancel()}
                 disabled={cancelBusy}
               >
@@ -1251,12 +1425,12 @@ export function MyBookingsClient({
         </ModalDialog>
       ) : null}
       {detailGalleryOpen ? (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/55 p-0 md:items-center md:p-4" role="presentation">
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/55 p-3 md:p-4" role="presentation">
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="unit-gallery-title"
-            className="max-h-[92vh] w-full overflow-auto rounded-t-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 md:max-w-3xl md:rounded-2xl md:p-5"
+            className="max-h-[92vh] w-full overflow-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 md:max-w-3xl md:p-5"
           >
             <div className="mb-3 flex items-center justify-between gap-3">
               <h3 id="unit-gallery-title" className="text-lg font-semibold text-[var(--color-text)]">{detailGalleryTitle}</h3>
