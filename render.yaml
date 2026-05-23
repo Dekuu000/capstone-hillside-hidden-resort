@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: hillside-api
+    runtime: python
+    rootDir: hillside-api
+    plan: free
+    autoDeploy: true
+    buildCommand: pip install .
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: APP_ENV
+        value: production
+      - key: API_VERSION
+        value: v2
+      - key: API_JWT_AUDIENCE
+        value: authenticated
+      - key: CHAIN_ACTIVE_KEY
+        value: sepolia
+      - key: CHAIN_ALLOWED_KEYS
+        value: sepolia,amoy

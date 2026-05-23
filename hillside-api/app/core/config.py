@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     feature_dynamic_qr: bool = False
     feature_escrow_reconciliation_scheduler: bool = False
     feature_checkin_welcome_notification: bool = False
+    feature_checkin_schedule_bypass: bool = False
     qr_signing_secret: str = ""
     qr_signing_private_key: str = ""
     qr_rotation_seconds: int = 30

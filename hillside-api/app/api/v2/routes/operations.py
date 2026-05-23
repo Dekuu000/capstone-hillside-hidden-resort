@@ -16,6 +16,7 @@ from app.integrations.supabase_client import (
     perform_checkout as perform_checkout_rpc,
     get_reservation_by_id,
     list_reservation_unit_ids,
+    validate_qr_checkin,
     update_units_operational_status,
     update_reservation_policy_metadata,
     write_reservation_escrow_shadow_metadata,
@@ -37,6 +38,7 @@ logger = logging.getLogger(__name__)
 DEPOSIT_POLICY_VERSION = "v1_2026_04"
 DEPOSIT_RULE_ROOM_COTTAGE = "room_cottage_20pct_clamp_500_1000"
 DEPOSIT_RULE_TOUR = "tour_fixed_500_or_full_if_below_500"
+SCHEDULE_BYPASS_REASON = "Demo mode: schedule gate bypass enabled."
 
 
 @dataclass(frozen=True)
@@ -56,6 +58,19 @@ def _safe_int(raw: object, default: int = 0) -> int:
 def _optional_str(value: object) -> str | None:
     text = str(value or "").strip()
     return text or None
+
+
+def _is_schedule_gate_reason(reason: object) -> bool:
+    text = str(reason or "").strip().lower()
+    if not text:
+        return False
+    return (
+        "check-in allowed only on the reservation date" in text
+        or "check in allowed only on the reservation date" in text
+        or "check-in starts at" in text
+        or "check in starts at" in text
+        or ("reservation date" in text and "check-in" in text)
+    )
 
 
 def _resolve_policy_rule(reservation_row: dict) -> str:
@@ -245,11 +260,25 @@ def perform_checkin(
     if not row:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation not found")
 
+    override_reason = payload.override_reason
+    if settings.feature_checkin_schedule_bypass and not _optional_str(override_reason):
+        reservation_code = str(row.get("reservation_code") or "").strip()
+        if reservation_code:
+            try:
+                validation = validate_qr_checkin(
+                    access_token=auth.access_token,
+                    reservation_code=reservation_code,
+                )
+            except RuntimeError:
+                validation = None
+            if validation and _is_schedule_gate_reason(validation.get("reason")):
+                override_reason = SCHEDULE_BYPASS_REASON
+
     try:
         perform_checkin_rpc(
             access_token=auth.access_token,
             reservation_id=payload.reservation_id,
-            override_reason=payload.override_reason,
+            override_reason=override_reason,
         )
     except RuntimeError as exc:
         raise_http_from_runtime_error(exc, default_status=status.HTTP_503_SERVICE_UNAVAILABLE)

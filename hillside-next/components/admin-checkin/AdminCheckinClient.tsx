@@ -1273,6 +1273,30 @@ export function AdminCheckinClient({
       tone: "neutral" as const,
     };
   })();
+  const flowToneClasses =
+    flowStatus.tone === "success"
+      ? {
+          box: "border-emerald-200 bg-emerald-50",
+          title: "text-emerald-900",
+          detail: "text-emerald-700",
+        }
+      : flowStatus.tone === "warn"
+        ? {
+            box: "border-amber-200 bg-amber-50",
+            title: "text-amber-900",
+            detail: "text-amber-700",
+          }
+        : flowStatus.tone === "error"
+          ? {
+              box: "border-red-200 bg-red-50",
+              title: "text-red-900",
+              detail: "text-red-700",
+            }
+          : {
+              box: "border-[var(--color-border)] bg-slate-50",
+              title: "text-[var(--color-text)]",
+              detail: "text-[var(--color-muted)]",
+            };
 
   useEffect(() => {
     if (!token || !result?.reservation_id || !networkOnline) return;
@@ -1447,8 +1471,8 @@ export function AdminCheckinClient({
         </div>
       </header>
 
-      <div className={`grid gap-3 sm:gap-4 ${tabletView ? "xl:grid-cols-[1.35fr_0.65fr]" : "xl:grid-cols-[1.15fr_0.85fr]"} xl:items-start`}>
-        <section className="surface p-3 sm:p-4">
+      <div className={`grid gap-3 sm:gap-4 ${tabletView ? "xl:grid-cols-[1.35fr_0.65fr]" : "xl:grid-cols-[1.15fr_0.85fr]"} xl:items-stretch`}>
+        <section className="surface h-full p-3 sm:p-4">
           <div className="mb-2 flex items-center justify-between gap-2">
             <p className="text-sm font-semibold text-[var(--color-text)] sm:text-base">Manual fallback + system status</p>
             <StatusPill
@@ -1774,7 +1798,7 @@ export function AdminCheckinClient({
           </div>
         </section>
 
-        <aside className="space-y-3 sm:space-y-4">
+        <aside className="flex h-full flex-col space-y-3 sm:space-y-4">
           {tokenExpiry && !tabletView ? (
             <section className="surface p-3 text-xs text-[var(--color-text)]">
               <p className="font-semibold">Token</p>
@@ -1789,37 +1813,44 @@ export function AdminCheckinClient({
             </section>
           ) : null}
 
-          <section ref={resultCardRef} className={`surface p-3 sm:p-4 xl:sticky ${tabletView ? "xl:top-2" : "xl:top-4"}`}>
+          <section ref={resultCardRef} className={`surface flex-1 p-3 sm:p-4 xl:sticky ${tabletView ? "xl:top-2" : "xl:top-4"}`}>
             <p className="text-sm font-semibold text-[var(--color-text)] sm:text-base">Result Card</p>
             {!result ? <p className="mt-2 rounded-xl border border-dashed border-[var(--color-border)] bg-slate-50 p-3 text-sm text-[var(--color-muted)]">No validated reservation yet.</p> : (
               <div className="mt-3 space-y-3">
                 <div className="grid gap-2 sm:grid-cols-2"><div className="rounded-xl border border-[var(--color-border)] bg-slate-50 p-3"><p className="text-xs text-[var(--color-muted)]">Reservation</p><p className="font-semibold">{result.reservation_code}</p></div><div className="rounded-xl border border-[var(--color-border)] bg-slate-50 p-3"><p className="text-xs text-[var(--color-muted)]">Reservation status</p><p className="font-semibold">{resultStatusLabel}</p></div></div>
                 <div className="rounded-xl border border-[var(--color-border)] bg-slate-50 p-3"><p className="text-xs text-[var(--color-muted)]">Stay dates</p>{detailLoading ? <div className="mt-1 space-y-1"><Skeleton className="h-4 w-36" /><Skeleton className="h-4 w-28" /></div> : <p className="font-semibold">{formatDateWithYear(detail?.check_in_date)} - {formatDateWithYear(detail?.check_out_date)}</p>}</div>
-                <div
-                  className={`rounded-xl border p-3 ${
-                    flowStatus.tone === "success"
-                      ? "border-emerald-200 bg-emerald-50"
-                      : flowStatus.tone === "warn"
-                        ? "border-amber-200 bg-amber-50"
-                        : flowStatus.tone === "error"
-                          ? "border-red-200 bg-red-50"
-                          : "border-[var(--color-border)] bg-slate-50"
-                  }`}
-                >
-                  <p className="text-sm font-semibold text-[var(--color-text)]">{flowStatus.label}</p>
-                  <p className="mt-1 text-xs text-[var(--color-muted)]">{flowStatus.detail}</p>
+                <div className={`rounded-xl border p-3 ${flowToneClasses.box}`}>
+                  <p className={`text-sm font-semibold ${flowToneClasses.title}`}>{flowStatus.label}</p>
+                  <p className={`mt-1 text-xs ${flowToneClasses.detail}`}>{flowStatus.detail}</p>
                 </div>
                 {showOverrideFlow ? <textarea value={overrideReason} onChange={(e) => setOverrideReason(e.target.value)} placeholder="Override reason (min 5 chars)" className="min-h-[84px] w-full rounded-xl border border-[var(--color-border)] px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-secondary)]/30" /> : null}
                 {hasOutstandingBalance && result?.reservation_id ? (
-                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
-                    <p className="text-sm font-semibold text-amber-800">Payment incomplete: {formatPeso(unpaidBalance)} remaining.</p>
-                    <p className="mt-1 text-xs text-amber-700">Record remaining payment first to avoid manual override.</p>
+                  <div className="rounded-xl border border-amber-300 bg-amber-50 p-3">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-amber-700">Remaining balance</p>
+                        <p className="mt-1 text-2xl font-extrabold leading-none text-amber-900">{formatPeso(unpaidBalance)}</p>
+                      </div>
+                      <StatusPill label="Payment needed" tone="warn" />
+                    </div>
+                    <p className="mt-2 text-xs text-amber-700">Record remaining payment first. Override should be used only when approved by policy.</p>
                     <Link
                       href={`/admin/payments?source=checkin&reservation_id=${encodeURIComponent(result.reservation_id)}&amount=${encodeURIComponent(String(Math.max(1, Math.round(unpaidBalance))))}&method=cash`}
-                      className="mt-2 inline-flex h-10 items-center justify-center rounded-lg border border-amber-400 bg-white px-3 text-sm font-semibold text-amber-900"
+                      className="mt-2 inline-flex h-10 w-full items-center justify-center rounded-lg border border-amber-400 bg-white px-3 text-sm font-semibold text-amber-900 sm:w-auto"
                     >
                       Go to Payments
                     </Link>
+                  </div>
+                ) : result ? (
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700">Remaining balance</p>
+                        <p className="mt-1 text-2xl font-extrabold leading-none text-emerald-900">{formatPeso(0)}</p>
+                      </div>
+                      <StatusPill label="Settled" tone="success" />
+                    </div>
+                    <p className="mt-2 text-xs text-emerald-700">Payment is complete. Proceed with normal check-in flow.</p>
                   </div>
                 ) : null}
                 <div className="grid gap-2 sm:grid-cols-2">
@@ -1846,7 +1877,7 @@ export function AdminCheckinClient({
                         : pendingQueuedCheckin
                           ? "Already queued"
                           : networkOnline
-                            ? "Override Check-in (Admin)"
+                            ? "Use override check-in"
                             : "Confirm Check-in (Queue)"}
                     </button>
                   ) : (

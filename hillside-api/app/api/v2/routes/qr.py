@@ -29,6 +29,33 @@ from app.schemas.common import (
 router = APIRouter()
 
 
+def _is_schedule_gate_reason(reason: object) -> bool:
+    text = str(reason or "").strip().lower()
+    if not text:
+        return False
+    return (
+        "check-in allowed only on the reservation date" in text
+        or "check in allowed only on the reservation date" in text
+        or "check-in starts at" in text
+        or "check in starts at" in text
+        or ("reservation date" in text and "check-in" in text)
+    )
+
+
+def _apply_schedule_bypass_if_enabled(validation: dict) -> dict:
+    if not settings.feature_checkin_schedule_bypass:
+        return validation
+    if bool(validation.get("allowed")):
+        return validation
+    if not _is_schedule_gate_reason(validation.get("reason")):
+        return validation
+    patched = dict(validation)
+    patched["allowed"] = True
+    patched["can_override"] = True
+    patched["reason"] = "Schedule gate bypass is enabled for demo mode."
+    return patched
+
+
 def _effective_rotation_seconds() -> int:
     configured = max(10, int(settings.qr_rotation_seconds))
     env = str(settings.app_env or "").strip().lower()
@@ -202,7 +229,7 @@ def _verify_dynamic_qr(payload: QrVerifyRequest, auth: AuthContext) -> dict:
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Reservation not found for provided QR payload.",
         )
-    return validation
+    return _apply_schedule_bypass_if_enabled(validation)
 
 
 def _verify_legacy_qr(payload: QrVerifyRequest, auth: AuthContext) -> dict:
@@ -222,7 +249,7 @@ def _verify_legacy_qr(payload: QrVerifyRequest, auth: AuthContext) -> dict:
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Reservation not found for provided QR payload.",
         )
-    return validation
+    return _apply_schedule_bypass_if_enabled(validation)
 
 
 @router.post("/verify")

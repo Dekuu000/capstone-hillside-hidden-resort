@@ -1,10 +1,9 @@
 [build]
-  # Legacy React app is archived; Netlify config now targets hillside-next.
   base = "hillside-next"
   command = "npm run build"
-  publish = ".next"
 
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+[build.environment]
+  NODE_VERSION = "20"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
