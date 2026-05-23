@@ -1,6 +1,6 @@
 [build]
   base = "."
-  command = "npm run build --workspace hillside-next"
+  command = "npm install --workspace hillside-next lightningcss-linux-x64-gnu@1.31.1 --no-save && npm run build --workspace hillside-next"
 
 [build.environment]
   NODE_VERSION = "20"
