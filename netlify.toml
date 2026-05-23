@@ -1,6 +1,6 @@
 [build]
-  base = "hillside-next"
-  command = "npm run build"
+  base = "."
+  command = "npm run build --workspace hillside-next"
 
 [build.environment]
   NODE_VERSION = "20"
