@@ -1,6 +1,6 @@
-export default function AdminAuditLoading() {
+﻿export default function AdminAuditLoading() {
   return (
-    <section className="mx-auto w-full max-w-6xl animate-pulse">
+    <section className="mx-auto w-full max-w-[1600px] animate-pulse">
       <div className="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="h-9 w-56 rounded bg-slate-200" />
       </div>
@@ -21,3 +21,4 @@ export default function AdminAuditLoading() {
     </section>
   );
 }
+

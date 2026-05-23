@@ -728,7 +728,7 @@ export function MyBookingsClient({
   if (!token) {
     return (
       <section className="mx-auto w-full max-w-5xl">
-        <header className="mb-4 rounded-3xl border border-slate-200/70 bg-gradient-to-br from-white via-slate-50 to-blue-50 p-6 shadow-sm">
+        <header className="mb-5 rounded-3xl border border-slate-200/70 bg-gradient-to-br from-white via-slate-50 to-blue-50 p-6 shadow-sm">
           <h1 className="text-3xl font-bold text-slate-900">My Stay</h1>
           <p className="mt-2 text-sm text-slate-600">Track reservations, check-in QR, and payment status.</p>
         </header>
@@ -740,7 +740,7 @@ export function MyBookingsClient({
   }
 
   return (
-    <section className="mx-auto flex w-full max-w-[1240px] flex-col gap-4 overflow-x-hidden lg:gap-4">
+    <section className="mx-auto flex w-full max-w-[1240px] flex-col gap-5 overflow-x-hidden lg:gap-5">
       <div className="lg:hidden">
         <GuestHero
           testId="guest-hero"

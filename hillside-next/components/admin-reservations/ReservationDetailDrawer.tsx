@@ -280,7 +280,7 @@ export function ReservationDetailDrawer({
                     <button
                       type="button"
                       onClick={onRefreshPayments}
-                      className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700"
+                      className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
                     >
                       Refresh
                     </button>
@@ -300,15 +300,15 @@ export function ReservationDetailDrawer({
                     <Link href={paymentListUrl} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
                       View Payments
                     </Link>
-                    <Link href={paymentRecordUrl} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+                    <Link href={paymentRecordUrl} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200">
                       Open Payment Form
                     </Link>
                     <Link
                       href={checkInActionHref}
                       className={`rounded-lg px-3 py-2 text-xs font-semibold ${
                         paymentState === "settled"
-                          ? "border border-emerald-700 bg-emerald-700 text-white"
-                          : "border border-amber-400 bg-amber-50 text-amber-800"
+                          ? "border border-slate-900 bg-slate-900 text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                          : "border border-amber-400 bg-amber-50 text-amber-800 transition hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200"
                       }`}
                     >
                       {checkInActionLabel}
@@ -318,7 +318,7 @@ export function ReservationDetailDrawer({
                         type="button"
                         onClick={() => onVerifyPayment(firstPendingPayment.payment_id)}
                         disabled={Boolean(verifyBusy[firstPendingPayment.payment_id])}
-                        className="rounded-lg border border-emerald-600 bg-emerald-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-60"
+                        className="rounded-lg border border-slate-900 bg-slate-900 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 disabled:opacity-60"
                       >
                         {verifyBusy[firstPendingPayment.payment_id] ? "Verifying..." : "Verify Payment"}
                       </button>
@@ -351,7 +351,7 @@ export function ReservationDetailDrawer({
                                     type="button"
                                     onClick={() => onOpenProof(payment)}
                                     disabled={Boolean(proofBusy[payment.payment_id])}
-                                    className="rounded border border-slate-300 bg-white px-2 py-1 font-semibold text-slate-700 disabled:opacity-60"
+                                    className="rounded border border-slate-300 bg-white px-2 py-1 font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 disabled:opacity-60"
                                   >
                                     {proofBusy[payment.payment_id] ? "Loading..." : "View"}
                                   </button>
@@ -384,12 +384,12 @@ export function ReservationDetailDrawer({
                       <p><span className="text-slate-500">Token ID:</span> {reservation.guest_pass_token_id ?? "-"}</p>
                       <p><span className="text-slate-500">Booking hash:</span> <span className="font-mono text-xs break-all">{reservation.guest_pass_reservation_hash || reservation.onchain_booking_id || "-"}</span></p>
                       <div className="flex flex-wrap gap-2 pt-1">
-                        <Link href="/admin/blockchain?tab=reconciliation" className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+                        <Link href="/admin/blockchain?tab=reconciliation" className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200">
                           Open Reconciliation
                         </Link>
                         <Link
                           href={`/admin/blockchain?tab=audit&search=${encodeURIComponent(reservation.reservation_id)}`}
-                          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700"
+                          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
                         >
                           Open Audit
                         </Link>
@@ -398,7 +398,7 @@ export function ReservationDetailDrawer({
                             href={txUrl}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700"
+                            className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
                           >
                             View transaction
                             <ExternalLink className="h-3.5 w-3.5" />
@@ -418,7 +418,7 @@ export function ReservationDetailDrawer({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700"
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
                 >
                   Close
                 </button>
@@ -426,7 +426,7 @@ export function ReservationDetailDrawer({
                   primaryAction.type === "view_history" ? (
                     <Link
                       href={primaryAction.href}
-                      className="inline-flex items-center gap-1 rounded-lg border border-slate-900 bg-slate-900 px-3 py-2 text-xs font-semibold text-white"
+                      className="inline-flex items-center gap-1 rounded-lg border border-slate-900 bg-slate-900 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
                     >
                       <ShieldCheck className="h-3.5 w-3.5" />
                       {primaryAction.label}
@@ -434,7 +434,7 @@ export function ReservationDetailDrawer({
                   ) : (
                     <Link
                       href={primaryAction.href}
-                      className="rounded-lg border border-slate-900 bg-slate-900 px-3 py-2 text-xs font-semibold text-white"
+                      className="rounded-lg border border-slate-900 bg-slate-900 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
                     >
                       {primaryAction.label}
                     </Link>

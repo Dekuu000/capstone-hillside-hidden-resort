@@ -67,7 +67,21 @@ export function AuthShell({
         }`}
       >
         {showSidePanel ? (
-          <div className="flex h-[118px] flex-col justify-between border-b border-white/20 bg-[var(--color-primary)] px-5 py-3 text-white lg:hidden">
+          <div className="relative flex h-[118px] flex-col justify-between overflow-hidden border-b border-white/20 bg-[var(--color-primary)] px-5 py-3 text-white lg:hidden">
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-y-0 right-0 w-32 bg-[radial-gradient(circle_at_85%_50%,rgba(94,234,212,0.14),transparent_62%)]"
+            />
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -right-8 top-0 h-28 w-28 bg-contain bg-no-repeat opacity-[0.17]"
+              style={{ backgroundImage: "url('/branding/palm-leaf-shadow.svg')" }}
+            />
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -right-2 top-6 h-16 w-16 bg-contain bg-no-repeat opacity-[0.1]"
+              style={{ backgroundImage: "url('/branding/palm-leaf-shadow.svg')" }}
+            />
             <HillsideLogo
               light
               compact

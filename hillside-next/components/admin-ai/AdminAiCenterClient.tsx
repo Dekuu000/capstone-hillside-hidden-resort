@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useState } from "react";
 import {
@@ -390,7 +390,7 @@ export function AdminAiCenterClient({ token }: AdminAiCenterClientProps) {
   };
 
   return (
-    <section className="mx-auto w-full max-w-6xl">
+    <section className="mx-auto w-full max-w-[1600px]">
       <PageHeader
         title="AI Hospitality Intelligence"
         subtitle="Defense-ready center for pricing, occupancy forecasting, and anonymized concierge recommendations."
@@ -814,3 +814,4 @@ export function AdminAiCenterClient({ token }: AdminAiCenterClientProps) {
     </section>
   );
 }
+

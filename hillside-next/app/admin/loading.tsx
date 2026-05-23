@@ -1,9 +1,9 @@
-import { ResortSnapshotSkeleton } from "../../components/admin-dashboard/ResortSnapshotSkeleton";
+﻿import { ResortSnapshotSkeleton } from "../../components/admin-dashboard/ResortSnapshotSkeleton";
 import { Skeleton } from "../../components/shared/Skeleton";
 
 export default function AdminDashboardLoading() {
   return (
-    <section className="mx-auto w-full max-w-6xl animate-pulse space-y-4">
+    <section className="mx-auto w-full max-w-[1600px] animate-pulse space-y-4">
       <div className="surface p-4 sm:p-6">
         <Skeleton className="h-3 w-40" />
         <Skeleton className="mt-3 h-9 w-80 max-w-full" />
@@ -35,3 +35,4 @@ export default function AdminDashboardLoading() {
     </section>
   );
 }
+

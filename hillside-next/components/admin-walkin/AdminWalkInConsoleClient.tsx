@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useState } from "react";
 import type { ServiceListResponse } from "../../../packages/shared/src/types";
@@ -27,7 +27,7 @@ export function AdminWalkInConsoleClient({
   }, [tab]);
 
   return (
-    <section className="mx-auto w-full max-w-6xl">
+    <section className="mx-auto w-full max-w-[1600px]">
       <header className="mb-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-sm)]">
         <h1 className="text-3xl font-bold text-[var(--color-text)]">Walk-in Console</h1>
         <p className="mt-1 text-sm text-[var(--color-muted)]">{tabDescription}</p>
@@ -66,4 +66,5 @@ export function AdminWalkInConsoleClient({
     </section>
   );
 }
+
 

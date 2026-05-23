@@ -31,11 +31,11 @@ export function ResortSnapshotPanel({
   const demandPath = snapshot ? toDemandPath(snapshot.ai_demand_7d.items) : "";
 
   return (
-    <section className="surface p-4 sm:p-5">
+    <section className="surface p-4 shadow-[0_10px_24px_rgba(15,23,42,0.08)] transition-[box-shadow,border-color] duration-200 hover:shadow-[0_14px_30px_rgba(15,23,42,0.12)] sm:p-5 lg:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-muted)]">Resort Snapshot</p>
-          <h2 className="mt-2 text-xl font-bold text-[var(--color-text)]">Current occupancy, revenue, and demand</h2>
+          <h2 className="mt-2 text-xl font-bold text-[var(--color-text)] lg:text-2xl">Current occupancy, revenue, and demand</h2>
           <p className="mt-1 text-sm text-[var(--color-muted)]">
             As of{" "}
             {snapshot
@@ -56,13 +56,11 @@ export function ResortSnapshotPanel({
       </div>
 
       {error ? (
-        <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-4 text-sm text-red-700">
-          {error}
-        </div>
+        <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-4 text-sm text-red-700">{error}</div>
       ) : null}
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <article className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
+        <article className="rounded-xl border border-[var(--color-border)] bg-white p-3 shadow-[0_6px_14px_rgba(15,23,42,0.04)] transition-[box-shadow,border-color,transform] duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_20px_rgba(15,23,42,0.10)]">
           <p className="inline-flex items-center gap-2 text-xs text-[var(--color-muted)]">
             <Hotel className="h-4 w-4 text-[var(--color-primary)]" />
             Occupancy now
@@ -77,7 +75,7 @@ export function ResortSnapshotPanel({
           </p>
         </article>
 
-        <article className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
+        <article className="rounded-xl border border-[var(--color-border)] bg-white p-3 shadow-[0_6px_14px_rgba(15,23,42,0.04)] transition-[box-shadow,border-color,transform] duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_20px_rgba(15,23,42,0.10)]">
           <p className="inline-flex items-center gap-2 text-xs text-[var(--color-muted)]">
             <Coins className="h-4 w-4 text-[var(--color-secondary)]" />
             FIAT revenue (7d)
@@ -86,7 +84,7 @@ export function ResortSnapshotPanel({
           <p className="text-xs text-[var(--color-muted)]">Settled PHP collection</p>
         </article>
 
-        <article className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
+        <article className="rounded-xl border border-[var(--color-border)] bg-white p-3 shadow-[0_6px_14px_rgba(15,23,42,0.04)] transition-[box-shadow,border-color,transform] duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_20px_rgba(15,23,42,0.10)]">
           <p className="inline-flex items-center gap-2 text-xs text-[var(--color-muted)]">
             <Activity className="h-4 w-4 text-[var(--color-cta)]" />
             Crypto revenue
@@ -95,11 +93,11 @@ export function ResortSnapshotPanel({
             {snapshot ? `${snapshot.revenue.crypto_native_total.toFixed(4)} ${snapshot.revenue.crypto_unit}` : "--"}
           </p>
           <p className="text-xs text-[var(--color-muted)]">
-            {snapshot ? `${snapshot.revenue.crypto_tx_count} tx • ${snapshot.revenue.crypto_chain_key}` : "No chain activity"}
+            {snapshot ? `${snapshot.revenue.crypto_tx_count} tx | ${snapshot.revenue.crypto_chain_key}` : "No chain activity"}
           </p>
         </article>
 
-        <article className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
+        <article className="rounded-xl border border-[var(--color-border)] bg-white p-3 shadow-[0_6px_14px_rgba(15,23,42,0.04)] transition-[box-shadow,border-color,transform] duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_20px_rgba(15,23,42,0.10)]">
           <p className="inline-flex items-center gap-2 text-xs text-[var(--color-muted)]">
             <BrainCircuit className="h-4 w-4 text-[var(--color-secondary)]" />
             AI demand (7d)
@@ -119,9 +117,7 @@ export function ResortSnapshotPanel({
         {snapshot && snapshot.ai_demand_7d.items.length > 0 ? (
           <>
             <div className="mb-2 flex items-center justify-between gap-2">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">
-                Demand trend next 7 days
-              </p>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">Demand trend next 7 days</p>
               <span className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs font-semibold text-[var(--color-text)]">
                 {snapshot.ai_demand_7d.model_version || "unknown-model"}
               </span>
@@ -132,7 +128,7 @@ export function ResortSnapshotPanel({
             <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[var(--color-muted)]">
               {snapshot.ai_demand_7d.items.map((item) => (
                 <span key={item.date} className="rounded-full border border-[var(--color-border)] px-2 py-0.5">
-                  {item.date.slice(5)} • {item.occupancy_pct}%
+                  {item.date.slice(5)} | {item.occupancy_pct}%
                 </span>
               ))}
             </div>
@@ -152,3 +148,5 @@ export function ResortSnapshotPanel({
     </section>
   );
 }
+
+

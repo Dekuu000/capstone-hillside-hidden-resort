@@ -24,8 +24,10 @@ export function HillsideLogo({ className, light = false, compact = false }: Hill
       />
       <div className="min-w-0">
         <p
-          className={cn("truncate text-[1.5rem] font-semibold leading-none tracking-[0.01em] sm:text-[2rem]", textPrimary)}
-          style={{ fontFamily: "Cambria, Georgia, 'Times New Roman', serif" }}
+          className={cn(
+            "hillside-brand-title truncate text-[1.5rem] font-semibold leading-none tracking-[0.01em] sm:text-[2rem]",
+            textPrimary,
+          )}
         >
           Hillside Hidden
         </p>
@@ -37,7 +39,7 @@ export function HillsideLogo({ className, light = false, compact = false }: Hill
             )}
           >
             <span className={cn("hidden h-px w-10 sm:block", divider)} />
-            <p className="text-[0.72rem] font-semibold uppercase tracking-[0.42em] sm:text-[0.8rem] sm:tracking-[0.52em]">
+            <p className="hillside-brand-subtitle text-[0.72rem] font-semibold uppercase tracking-[0.42em] sm:text-[0.8rem] sm:tracking-[0.52em]">
               RESORT
             </p>
             <span className={cn("hidden h-px w-10 sm:block", divider)} />
@@ -45,7 +47,7 @@ export function HillsideLogo({ className, light = false, compact = false }: Hill
         ) : (
           <p
             className={cn(
-              "mt-1 block w-full text-left text-[0.72rem] font-semibold uppercase tracking-[0.35em]",
+              "hillside-brand-subtitle mt-1 block w-full text-left text-[0.72rem] font-semibold uppercase tracking-[0.35em]",
               light ? "text-[#5EEAD4]" : "text-[#22A699]",
             )}
           >

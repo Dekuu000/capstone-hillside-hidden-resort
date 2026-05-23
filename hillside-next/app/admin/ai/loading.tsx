@@ -1,8 +1,8 @@
-import { Skeleton } from "../../../components/shared/Skeleton";
+﻿import { Skeleton } from "../../../components/shared/Skeleton";
 
 export default function AdminAiLoading() {
   return (
-    <section className="mx-auto w-full max-w-6xl space-y-4">
+    <section className="mx-auto w-full max-w-[1600px] space-y-4">
       <div className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-sm)]">
         <Skeleton className="h-8 w-64" />
         <Skeleton className="mt-2 h-4 w-96" />
@@ -22,3 +22,4 @@ export default function AdminAiLoading() {
     </section>
   );
 }
+

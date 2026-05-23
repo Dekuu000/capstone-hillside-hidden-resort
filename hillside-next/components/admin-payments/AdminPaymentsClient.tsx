@@ -661,8 +661,8 @@ export function AdminPaymentsClient({
 
   if (!token) {
     return (
-      <section className="mx-auto w-full max-w-6xl">
-        <header className="mb-4 rounded-3xl border border-slate-200/70 bg-gradient-to-br from-white via-slate-50 to-blue-50 p-6 shadow-sm">
+      <section className="mx-auto w-full max-w-[1720px]">
+        <header className="mb-4 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
           <h1 className="text-3xl font-bold text-slate-900">Payments Console</h1>
           <p className="mt-2 text-sm text-slate-600">Verification inbox, on-site payments, and payment history.</p>
         </header>
@@ -674,28 +674,33 @@ export function AdminPaymentsClient({
   }
 
   return (
-    <section className="mx-auto w-full max-w-6xl">
-      <header className="mb-6 rounded-3xl border border-slate-200/70 bg-gradient-to-br from-white via-slate-50 to-blue-50 p-6 shadow-sm">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+    <section className="mx-auto w-full max-w-[1720px]">
+      <header className="mb-5 rounded-3xl border border-slate-200/80 bg-white p-5 shadow-[0_10px_24px_rgba(15,23,42,0.08)] sm:p-6">
+        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Payments Desk</p>
             <h1 className="mt-2 text-3xl font-bold text-slate-900">Payments Console</h1>
             <p className="mt-2 text-sm text-slate-600">Verification inbox, on-site payments, and payment history.</p>
-            <div className="mt-2">
+            <div className="mt-2 md:hidden">
               <DataFreshnessBadge />
             </div>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-xs text-slate-600">
-            <p className="font-semibold text-slate-900">Queue snapshot</p>
-            <p className="mt-1">{count} total records</p>
+          <div className="flex flex-col gap-2 md:items-end">
+            <div className="hidden md:block">
+              <DataFreshnessBadge />
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-xs text-slate-600">
+              <p className="font-semibold text-slate-900">Queue snapshot</p>
+              <p className="mt-1">{count} total records</p>
+            </div>
           </div>
         </div>
       </header>
 
-      <div className="mb-4 rounded-2xl border border-slate-200/70 bg-white p-3 shadow-sm">
-        <div className="flex flex-col gap-2 xl:flex-row xl:items-center">
+      <div className="mb-5 rounded-2xl border border-slate-200/80 bg-white p-3 shadow-[0_8px_20px_rgba(15,23,42,0.06)] lg:p-3.5">
+        <div className="grid gap-2 xl:grid-cols-[760px_minmax(0,1fr)] xl:items-center">
           <div
-            className="grid grid-cols-2 gap-1 rounded-xl border border-slate-200/80 bg-slate-50 p-1 sm:grid-cols-4 md:grid-cols-7 xl:min-w-[640px]"
+            className="grid grid-cols-2 gap-1 rounded-xl border border-slate-200/80 bg-slate-50 p-1 sm:grid-cols-4 md:grid-cols-7 xl:min-w-[760px]"
             role="tablist"
             aria-label="Payment workflow filters"
           >
@@ -727,9 +732,9 @@ export function AdminPaymentsClient({
             })}
           </div>
 
-          <div className="relative flex-1 rounded-xl border border-slate-200/80 bg-slate-50 p-2">
+          <div className="relative flex-1 rounded-xl border border-slate-200/80 bg-slate-50 p-1.5">
             <div className="flex flex-col gap-2 sm:flex-row">
-              <div className="flex h-10 flex-1 items-center rounded-lg border border-slate-300 bg-white px-2">
+              <div className="flex h-9 flex-1 items-center rounded-lg border border-slate-300 bg-white px-2">
                 <Search className="h-4 w-4 text-slate-400" />
                 <input
                   type="text"
@@ -756,7 +761,7 @@ export function AdminPaymentsClient({
                   onClick={() => setFiltersOpen((prev) => !prev)}
                   aria-expanded={filtersOpen}
                   aria-controls="payments-filters-popover"
-                  className="inline-flex h-10 items-center justify-center gap-1 rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                  className="inline-flex h-9 items-center justify-center gap-1 rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
                 >
                   <SlidersHorizontal className="h-4 w-4" />
                   Filters
@@ -773,7 +778,7 @@ export function AdminPaymentsClient({
                       setToDateFilter("");
                       setPage(1);
                     }}
-                    className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                    className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
                   >
                     Clear filters
                   </button>
@@ -850,14 +855,14 @@ export function AdminPaymentsClient({
             <div className="flex flex-wrap gap-2">
               <Link
                 href={walkInFlowType === "tour" ? "/admin/walk-in?tab=tour" : "/admin/walk-in?tab=stay"}
-                className="inline-flex rounded-md border border-emerald-300 bg-white px-2.5 py-1 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100"
+                className="inline-flex rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
               >
                 {walkInFlowType === "tour" ? "Create another walk-in tour" : "Create another walk-in"}
               </Link>
               {reservationContext?.reservation_code ? (
                 <Link
                   href={`/admin/reservations?reservation_id=${encodeURIComponent(reservationContext.reservation_id)}`}
-                  className="inline-flex rounded-md border border-emerald-300 bg-white px-2.5 py-1 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100"
+                  className="inline-flex rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
                 >
                   View reservation
                 </Link>
@@ -867,7 +872,7 @@ export function AdminPaymentsClient({
         </div>
       ) : null}
 
-      <div className="mb-4 rounded-2xl border border-emerald-100 bg-white p-4 shadow-sm">
+      <div className="mb-4 rounded-2xl border border-emerald-100 bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.06)]">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-600">Walk-in</p>
@@ -1066,7 +1071,7 @@ export function AdminPaymentsClient({
                   type="button"
                   onClick={() => void submitOnSitePayment()}
                   disabled={onSiteBusy}
-                  className="w-full rounded-lg border border-emerald-700 bg-emerald-700 px-3 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="w-full rounded-lg border border-slate-900 bg-slate-900 px-3 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {onSitePrimaryLabel}
                 </button>
@@ -1083,14 +1088,14 @@ export function AdminPaymentsClient({
             <div className="mt-2 flex flex-wrap gap-2">
               <Link
                 href={walkInFlowType === "tour" ? "/admin/walk-in?tab=tour" : "/admin/walk-in?tab=stay"}
-                className="inline-flex rounded-lg border border-emerald-300 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-800"
+                className="inline-flex rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
               >
                 {walkInFlowType === "tour" ? "Create another walk-in tour" : "Create another walk-in"}
               </Link>
               {lastProcessedReservation?.reservationId ? (
                 <Link
                   href={`/admin/reservations?reservation_id=${encodeURIComponent(lastProcessedReservation.reservationId)}`}
-                  className="inline-flex rounded-lg border border-emerald-300 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-800"
+                  className="inline-flex rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
                 >
                   View reservation
                 </Link>
@@ -1098,7 +1103,7 @@ export function AdminPaymentsClient({
               {walkInFlowType === "tour" && lastProcessedReservation?.reservationCode ? (
                 <Link
                   href={`/admin/check-in?mode=code&reservation_code=${encodeURIComponent(lastProcessedReservation.reservationCode)}`}
-                  className="inline-flex rounded-lg border border-emerald-300 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-800"
+                  className="inline-flex rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
                 >
                   Mark arrived / Check in
                 </Link>
@@ -1121,7 +1126,7 @@ export function AdminPaymentsClient({
       {loading ? <p className="mb-3 text-sm text-slate-600">Loading payments...</p> : null}
 
       {!loading && count === 0 ? (
-        <div className="rounded-2xl border border-slate-200/70 bg-white p-8 text-center shadow-sm">
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-8 text-center shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
           <h3 className="text-lg font-semibold text-slate-900">
             {isToReview ? "No payment submissions to review" : "No payment history in this tab"}
           </h3>
@@ -1140,22 +1145,22 @@ export function AdminPaymentsClient({
       ) : null}
 
       {count > 0 ? (
-        <div className="overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-sm">
+        <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
           <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
-              <thead className="bg-slate-50 text-slate-600">
+            <table className="min-w-full text-left text-[13px] leading-5">
+              <thead className="bg-slate-50/90 text-slate-600">
                 <tr>
-                  <th className="px-4 py-3 font-semibold">Reservation</th>
-                  <th className="px-4 py-3 font-semibold">Source</th>
-                  <th className="px-4 py-3 font-semibold">Reservation Status</th>
-                  <th className="px-4 py-3 font-semibold">Guest</th>
-                  <th className="px-4 py-3 font-semibold">Amount</th>
-                  <th className="px-4 py-3 font-semibold">Method</th>
-                  <th className="px-4 py-3 font-semibold">Reference</th>
-                  <th className="px-4 py-3 font-semibold">Proof</th>
-                  {showVerifiedCols ? <th className="px-4 py-3 font-semibold">Verified</th> : null}
-                  {showRejectedCols ? <th className="px-4 py-3 font-semibold">Rejected</th> : null}
-                  {isToReview ? <th className="px-4 py-3 text-right font-semibold">Actions</th> : null}
+                  <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em]">Reservation</th>
+                  <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em]">Source</th>
+                  <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em]">Reservation Status</th>
+                  <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em]">Guest</th>
+                  <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em]">Amount</th>
+                  <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em]">Method</th>
+                  <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em]">Reference</th>
+                  <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em]">Proof</th>
+                  {showVerifiedCols ? <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em]">Verified</th> : null}
+                  {showRejectedCols ? <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em]">Rejected</th> : null}
+                  {isToReview ? <th className="px-3 py-2.5 text-right text-[11px] font-semibold uppercase tracking-[0.12em]">Actions</th> : null}
                 </tr>
               </thead>
               <tbody>
@@ -1166,8 +1171,8 @@ export function AdminPaymentsClient({
                   const resMeta = getReservationStatusMeta(reservationStatus, "payments");
                   const outcomeMeta = policyOutcomeMeta(payment.reservation?.policy_outcome);
                   return (
-                    <tr key={payment.payment_id} className="border-t border-slate-100 hover:bg-slate-50/80">
-                      <td className="px-4 py-3">
+                    <tr key={payment.payment_id} className="border-t border-slate-100 hover:bg-slate-50/80 even:bg-slate-50/30">
+                      <td className="px-3 py-2.5 align-top">
                         <p className="font-mono font-semibold text-slate-900">{payment.reservation?.reservation_code ?? "-"}</p>
                         <p className="text-xs text-slate-500">{formatDateTime(payment.created_at)}</p>
                         {payment.webhook_audit ? (
@@ -1190,7 +1195,7 @@ export function AdminPaymentsClient({
                           </div>
                         ) : null}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-2.5 align-top">
                         {(() => {
                           const source = getPaymentSource(payment);
                           return (
@@ -1204,7 +1209,7 @@ export function AdminPaymentsClient({
                           );
                         })()}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-2.5 align-top">
                         <div className="flex flex-wrap items-center gap-1.5">
                           <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${resMeta.className}`}>{resMeta.label}</span>
                           {outcomeMeta ? (
@@ -1219,14 +1224,14 @@ export function AdminPaymentsClient({
                           </p>
                         ) : null}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-2.5 align-top">
                         <p className="font-medium text-slate-900">{payment.reservation?.guest?.name || payment.reservation?.guest?.email || "-"}</p>
                         <p className="text-xs text-slate-500">{payment.reservation?.guest?.email || "-"}</p>
                       </td>
-                      <td className="px-4 py-3 font-semibold text-slate-900">{formatPeso(payment.amount)}</td>
-                      <td className="px-4 py-3 capitalize text-slate-700">{payment.method}</td>
-                      <td className="px-4 py-3 text-slate-700">{payment.reference_no || "-"}</td>
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-2.5 align-top font-semibold text-slate-900">{formatPeso(payment.amount)}</td>
+                      <td className="px-3 py-2.5 align-top capitalize text-slate-700">{payment.method}</td>
+                      <td className="px-3 py-2.5 align-top text-slate-700">{payment.reference_no || "-"}</td>
+                      <td className="px-3 py-2.5 align-top">
                         {payment.proof_url ? (
                           <button
                             type="button"
@@ -1241,7 +1246,7 @@ export function AdminPaymentsClient({
                         )}
                       </td>
                       {showVerifiedCols ? (
-                        <td className="px-4 py-3 text-slate-700">
+                        <td className="px-3 py-2.5 align-top text-slate-700">
                           {formatDateTime(payment.verified_at)}
                           <br />
                           <span className="text-xs text-slate-500">
@@ -1250,7 +1255,7 @@ export function AdminPaymentsClient({
                         </td>
                       ) : null}
                       {showRejectedCols ? (
-                        <td className="px-4 py-3 text-slate-700">
+                        <td className="px-3 py-2.5 align-top text-slate-700">
                           {payment.rejected_reason || "-"}
                           <br />
                           <span className="text-xs text-slate-500">
@@ -1259,13 +1264,13 @@ export function AdminPaymentsClient({
                         </td>
                       ) : null}
                       {isToReview ? (
-                        <td className="px-4 py-3 text-right">
+                        <td className="px-3 py-2.5 align-top text-right">
                           <div className="inline-flex gap-2">
                             <button
                               type="button"
                               onClick={() => void verifyPayment(payment.payment_id)}
                               disabled={isCancelledReservation || !hasEvidence}
-                              className="rounded-lg border border-emerald-600 bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-40"
+                              className="rounded-lg border border-slate-900 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-40"
                             >
                               Verify
                             </button>
@@ -1277,7 +1282,7 @@ export function AdminPaymentsClient({
                                 setRejectError(null);
                               }}
                               disabled={isCancelledReservation || !hasEvidence}
-                              className="rounded-lg border border-red-600 bg-red-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-40"
+                              className="rounded-lg border border-red-600 bg-red-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-200 disabled:cursor-not-allowed disabled:opacity-40"
                             >
                               Reject
                             </button>
@@ -1291,7 +1296,7 @@ export function AdminPaymentsClient({
             </table>
           </div>
 
-          <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3">
+          <div className="flex items-center justify-between border-t border-slate-200 px-3 py-2.5">
             <p className="text-xs text-slate-500">
               Page {page} of {totalPages} • {count} total
             </p>
@@ -1300,7 +1305,7 @@ export function AdminPaymentsClient({
                 type="button"
                 onClick={() => setPage((prev) => Math.max(1, prev - 1))}
                 disabled={!canPrev}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 disabled:opacity-50"
+                className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
               >
                 Previous
               </button>
@@ -1308,7 +1313,7 @@ export function AdminPaymentsClient({
                 type="button"
                 onClick={() => setPage((prev) => prev + 1)}
                 disabled={!canNext}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 disabled:opacity-50"
+                className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
               >
                 Next
               </button>
@@ -1331,7 +1336,7 @@ export function AdminPaymentsClient({
                   setRejectReason("");
                   setRejectError(null);
                 }}
-                className="h-8 w-8 rounded-lg border border-slate-300 text-slate-600"
+                className="h-8 w-8 rounded-lg border border-slate-300 text-slate-600 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
               >
                 x
               </button>
@@ -1358,7 +1363,7 @@ export function AdminPaymentsClient({
                   setRejectReason("");
                   setRejectError(null);
                 }}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700"
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
                 disabled={rejectBusy}
               >
                 Cancel
@@ -1366,7 +1371,7 @@ export function AdminPaymentsClient({
               <button
                 type="button"
                 onClick={() => void confirmReject()}
-                className="rounded-lg border border-red-600 bg-red-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                className="rounded-lg border border-red-600 bg-red-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-200 disabled:opacity-50"
                 disabled={rejectBusy || rejectReason.trim().length < 5}
               >
                 {rejectBusy ? "Rejecting..." : "Confirm Reject"}
@@ -1378,3 +1383,9 @@ export function AdminPaymentsClient({
     </section>
   );
 }
+
+
+
+
+
+

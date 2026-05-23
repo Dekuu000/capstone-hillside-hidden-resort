@@ -1,6 +1,6 @@
-export default function AdminReportsLoading() {
+﻿export default function AdminReportsLoading() {
   return (
-    <section className="mx-auto w-full max-w-6xl animate-pulse">
+    <section className="mx-auto w-full max-w-[1600px] animate-pulse">
       <div className="mb-6 rounded-3xl border border-slate-200/70 bg-white p-6 shadow-sm">
         <div className="h-3 w-24 rounded bg-slate-200" />
         <div className="mt-3 h-9 w-56 rounded bg-slate-200" />
@@ -17,4 +17,5 @@ export default function AdminReportsLoading() {
     </section>
   );
 }
+
 

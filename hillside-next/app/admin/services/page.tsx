@@ -1,4 +1,4 @@
-import { ConciergeBell } from "lucide-react";
+﻿import { ConciergeBell } from "lucide-react";
 import { AdminServicesClient } from "../../../components/admin-services/AdminServicesClient";
 import { PageHeader } from "../../../components/layout/PageHeader";
 import { getServerAccessToken } from "../../../lib/serverAuth";
@@ -7,7 +7,7 @@ export default async function AdminServicesPage() {
   const accessToken = await getServerAccessToken();
 
   return (
-    <section className="mx-auto w-full max-w-[1400px] space-y-4">
+    <section className="mx-auto w-full max-w-[1600px] space-y-4">
       <PageHeader
         title="Service Queue"
         subtitle="Manage room-service and spa requests."
@@ -22,3 +22,4 @@ export default async function AdminServicesPage() {
     </section>
   );
 }
+

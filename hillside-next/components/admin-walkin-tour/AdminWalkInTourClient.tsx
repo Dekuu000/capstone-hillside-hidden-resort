@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -193,7 +193,7 @@ export function AdminWalkInTourClient({
   }
 
   return (
-    <section className={`mx-auto w-full ${embedded ? "max-w-none" : "max-w-6xl"}`}>
+    <section className={`mx-auto w-full ${embedded ? "max-w-none" : "max-w-[1600px]"}`}>
       {!embedded ? (
         <header className="mb-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-sm)]">
           <h1 className="text-3xl font-bold text-[var(--color-text)]">Walk-in Tour</h1>
@@ -356,3 +356,4 @@ export function AdminWalkInTourClient({
     </section>
   );
 }
+

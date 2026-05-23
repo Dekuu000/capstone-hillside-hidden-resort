@@ -1,8 +1,8 @@
-import { Skeleton } from "../../../components/shared/Skeleton";
+﻿import { Skeleton } from "../../../components/shared/Skeleton";
 
 export default function AdminEscrowLoading() {
   return (
-    <section className="mx-auto w-full max-w-6xl">
+    <section className="mx-auto w-full max-w-[1600px]">
       <div className="mb-5 space-y-2">
         <Skeleton className="h-9 w-72" />
         <Skeleton className="h-4 w-96" />
@@ -34,4 +34,5 @@ export default function AdminEscrowLoading() {
     </section>
   );
 }
+
 

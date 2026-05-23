@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useMemo, useState } from "react";
 import { Activity, FileSearch, ShieldAlert } from "lucide-react";
@@ -180,7 +180,7 @@ export function BlockchainExplorerClient({
   );
 
   return (
-    <section className="mx-auto w-full max-w-6xl space-y-4">
+    <section className="mx-auto w-full max-w-[1600px] space-y-4">
       <header className="surface p-4 sm:p-6">
         <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[var(--color-muted)]">Blockchain Explorer</p>
         <h1 className="mt-2 text-2xl font-bold text-[var(--color-text)] sm:text-3xl">Contract Status + Audit Logs</h1>
@@ -287,3 +287,4 @@ export function BlockchainExplorerClient({
     </section>
   );
 }
+

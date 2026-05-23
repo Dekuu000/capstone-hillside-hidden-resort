@@ -45,11 +45,11 @@ export function ResourceHeatmapPanel({ snapshot }: { snapshot: ResortSnapshotRes
   }, null);
 
   return (
-    <section className="surface p-4 sm:p-5">
+    <section className="surface p-4 shadow-[0_10px_24px_rgba(15,23,42,0.08)] transition-[box-shadow,border-color] duration-200 hover:shadow-[0_14px_30px_rgba(15,23,42,0.12)] sm:p-5 lg:p-6">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-muted)]">Resource Heatmap</p>
-          <h2 className="mt-2 text-xl font-bold text-[var(--color-text)]">Guest concentration by team load</h2>
+          <h2 className="mt-2 text-xl font-bold text-[var(--color-text)] lg:text-2xl">Guest concentration by team load</h2>
           <p className="mt-1 text-sm text-[var(--color-muted)]">Use this to plan housekeeping, kitchen prep, and front desk staffing.</p>
         </div>
         <span className="rounded-full border border-[var(--color-border)] px-3 py-1 text-xs font-semibold text-[var(--color-text)]">
@@ -87,7 +87,7 @@ export function ResourceHeatmapPanel({ snapshot }: { snapshot: ResortSnapshotRes
                 {TEAMS.map((team) => {
                   const Icon = team.icon;
                   return (
-                    <tr key={team.key} className="border-t border-[var(--color-border)]">
+                    <tr key={team.key} className="border-t border-[var(--color-border)] bg-white">
                       <td className="px-3 py-2">
                         <span className="inline-flex items-center gap-2 font-semibold text-[var(--color-text)]">
                           <Icon className="h-4 w-4 text-[var(--color-secondary)]" />
@@ -121,3 +121,5 @@ export function ResourceHeatmapPanel({ snapshot }: { snapshot: ResortSnapshotRes
     </section>
   );
 }
+
+

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -1418,7 +1418,7 @@ export function AdminCheckinClient({
   }
 
   return (
-    <section className={`mx-auto w-full ${tabletView ? "max-w-7xl" : "max-w-6xl"} space-y-3 sm:space-y-4`}>
+    <section className={`mx-auto w-full ${tabletView ? "max-w-[1700px]" : "max-w-[1600px]"} space-y-3 sm:space-y-4`}>
       {!networkOnline ? (
         <ResultBanner
           tone="offline"
@@ -1432,13 +1432,18 @@ export function AdminCheckinClient({
           <div>
             <h1 className="text-2xl font-bold text-[var(--color-text)] sm:text-3xl">Check-in Console</h1>
             <p className="mt-1 text-xs text-[var(--color-muted)] sm:text-sm">Kiosk-friendly scan flow with offline queue.</p>
-            <div className="mt-2">
+            <div className="mt-2 sm:hidden">
               <DataFreshnessBadge />
             </div>
           </div>
-          <ScanHeader
-            onOpenSettings={() => setSettingsDrawerOpen(true)}
-          />
+          <div className="flex flex-col gap-2 sm:items-end">
+            <div className="hidden sm:block">
+              <DataFreshnessBadge />
+            </div>
+            <ScanHeader
+              onOpenSettings={() => setSettingsDrawerOpen(true)}
+            />
+          </div>
         </div>
       </header>
 
@@ -1912,3 +1917,4 @@ export function AdminCheckinClient({
     </section>
   );
 }
+

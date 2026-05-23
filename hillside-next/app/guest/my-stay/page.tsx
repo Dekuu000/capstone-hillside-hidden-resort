@@ -86,7 +86,7 @@ export default async function GuestMyStayPage() {
           />
         )}
       />
-      <GuestSyncStatus compact className="mb-3" />
+      <GuestSyncStatus compact />
       {!stay ? (
         <GuestEmptyState
           testId="guest-empty-state"

@@ -15,11 +15,11 @@ export function LedgerExplorerPanel({
   const items = contractStatus?.recent_successful_txs ?? [];
 
   return (
-    <section className="surface p-4 sm:p-5">
+    <section className="surface p-4 shadow-[0_10px_24px_rgba(15,23,42,0.08)] transition-[box-shadow,border-color] duration-200 hover:shadow-[0_14px_30px_rgba(15,23,42,0.12)] sm:p-5 lg:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-muted)]">Ledger Explorer</p>
-          <h2 className="mt-2 text-xl font-bold text-[var(--color-text)]">Blockchain transaction summary</h2>
+          <h2 className="mt-2 text-xl font-bold text-[var(--color-text)] lg:text-2xl">Blockchain transaction summary</h2>
           <p className="mt-1 text-sm text-[var(--color-muted)]">Simplified ledger feed for accounting verification and settlement tracking.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -36,9 +36,7 @@ export function LedgerExplorerPanel({
       </div>
 
       {error ? (
-        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-          {error}
-        </div>
+        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">{error}</div>
       ) : null}
 
       <div className="mt-4 overflow-hidden rounded-xl border border-[var(--color-border)]">
@@ -60,7 +58,7 @@ export function LedgerExplorerPanel({
                   const explorerHref = buildTxExplorerUrlFromBase(contractStatus?.explorer_base_url, row.chain_tx_hash);
                   const normalizedHash = normalizeTxHash(row.chain_tx_hash);
                   return (
-                    <tr key={`${row.reservation_id}-${row.chain_tx_hash}`} className="border-t border-[var(--color-border)]">
+                    <tr key={`${row.reservation_id}-${row.chain_tx_hash}`} className="border-t border-[var(--color-border)] bg-white">
                       <td className="px-3 py-2 font-semibold text-[var(--color-text)]">{row.reservation_code}</td>
                       <td className="px-3 py-2">
                         <Badge label={row.escrow_state} variant={statusToBadgeVariant(row.escrow_state)} />
@@ -75,7 +73,7 @@ export function LedgerExplorerPanel({
                               className="group inline-flex items-center gap-1 text-[var(--color-secondary)]"
                               aria-label={normalizedHash || row.chain_tx_hash}
                             >
-                              <span className="rounded border border-amber-300 bg-amber-100 px-1.5 py-0.5 font-mono text-xs text-blue-800">
+                              <span className="rounded border border-slate-300 bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-700">
                                 {shortHash(normalizedHash || row.chain_tx_hash || "--")}
                               </span>
                               <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
@@ -111,4 +109,5 @@ export function LedgerExplorerPanel({
     </section>
   );
 }
+
 

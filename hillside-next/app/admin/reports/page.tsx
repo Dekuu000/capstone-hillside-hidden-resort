@@ -1,4 +1,4 @@
-import type { ReportsOverviewResponse } from "../../../../packages/shared/src/types";
+﻿import type { ReportsOverviewResponse } from "../../../../packages/shared/src/types";
 import { reportsOverviewResponseSchema } from "../../../../packages/shared/src/schemas";
 import { ReportsDateRangeForm } from "../../../components/admin-reports/ReportsDateRangeForm";
 import { todayPlusLocalIsoDate } from "../../../lib/dateIso";
@@ -52,8 +52,8 @@ export default async function AdminReportsPage({
   const accessToken = await getServerAccessToken();
   if (!accessToken) {
     return (
-      <section className="mx-auto w-full max-w-6xl">
-        <header className="mb-4 rounded-3xl border border-slate-200/70 bg-gradient-to-br from-white via-slate-50 to-blue-50 p-6 shadow-sm">
+      <section className="mx-auto w-full max-w-[1600px]">
+        <header className="mb-4 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
           <h1 className="text-3xl font-bold text-slate-900">Reports</h1>
           <p className="mt-2 text-sm text-slate-600">Daily, monthly, and summary analytics via V2 API.</p>
         </header>
@@ -70,8 +70,8 @@ export default async function AdminReportsPage({
   const overview = await fetchOverview(accessToken, fromDate, toDate);
 
   return (
-    <section className="mx-auto w-full max-w-6xl">
-      <header className="mb-6 rounded-3xl border border-slate-200/70 bg-gradient-to-br from-white via-slate-50 to-blue-50 p-6 shadow-sm">
+    <section className="mx-auto w-full max-w-[1600px]">
+      <header className="mb-5 rounded-3xl border border-slate-200/80 bg-white p-5 shadow-[0_10px_24px_rgba(15,23,42,0.08)] sm:p-6">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Analytics</p>
@@ -191,3 +191,4 @@ export default async function AdminReportsPage({
     </section>
   );
 }
+

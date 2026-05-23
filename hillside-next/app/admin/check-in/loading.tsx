@@ -1,8 +1,8 @@
-import { Skeleton } from "../../../components/shared/Skeleton";
+﻿import { Skeleton } from "../../../components/shared/Skeleton";
 
 export default function AdminCheckinLoading() {
   return (
-    <section className="mx-auto w-full max-w-6xl">
+    <section className="mx-auto w-full max-w-[1600px]">
       <div className="mb-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <Skeleton className="h-9 w-64" />
         <Skeleton className="mt-2 h-4 w-80" />
@@ -32,3 +32,4 @@ export default function AdminCheckinLoading() {
     </section>
   );
 }
+

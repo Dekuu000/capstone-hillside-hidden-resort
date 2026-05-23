@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Search, X } from "lucide-react";
+import { PlusCircle, Search, X } from "lucide-react";
 import type {
   AdminPaymentItem,
   AdminPaymentsResponse,
@@ -98,12 +98,10 @@ function matchesStatQuickFilter(
 
 export function AdminReservationsClient({
   initialToken = null,
-  initialSessionEmail = null,
   initialData = null,
   initialOpenReservationId = null,
 }: AdminReservationsClientProps) {
   const token = initialToken;
-  const sessionEmail = initialSessionEmail;
   const { showToast } = useToast();
 
   const [quickFilter, setQuickFilter] = useState<ReservationQuickFilter>("all");
@@ -507,7 +505,7 @@ export function AdminReservationsClient({
 
   if (!token) {
     return (
-      <section className="mx-auto w-full max-w-6xl">
+      <section className="mx-auto w-full max-w-[1720px]">
         <h1 className="text-3xl font-bold text-slate-900">Admin Reservations (V2)</h1>
         <p className="mt-3 text-sm text-slate-600">No active session found. Sign in as admin first.</p>
       </section>
@@ -515,87 +513,93 @@ export function AdminReservationsClient({
   }
 
   return (
-    <section className="mx-auto w-full max-w-6xl">
-      <header className="mb-6 rounded-3xl border border-slate-200/70 bg-gradient-to-br from-white via-slate-50 to-blue-50 p-6 shadow-sm">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+    <section className="mx-auto w-full max-w-[1720px]">
+      <header className="relative mb-5 rounded-3xl border border-slate-200/80 bg-white p-5 shadow-[0_10px_24px_rgba(15,23,42,0.08)] sm:p-6">
+        <div className="absolute right-6 top-6 hidden lg:block">
+          <DataFreshnessBadge />
+        </div>
+        <div className="flex flex-col gap-5">
           <div className="lg:min-w-[280px]">
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Reservations Console</p>
             <h1 className="mt-2 text-3xl font-bold text-slate-900">Admin Reservations</h1>
             <p className="mt-2 text-sm text-slate-600">
-              Signed in as <strong>{sessionEmail ?? "user"}</strong>
+              Manage arrivals, payment state, and walk-ins from one queue.
             </p>
-            <div className="mt-2">
+            <div className="mt-3 lg:hidden">
               <DataFreshnessBadge />
             </div>
           </div>
-          <div className="grid flex-1 gap-2 text-xs sm:grid-cols-2 lg:max-w-[520px]">
-            {[
-              {
-                id: "today_arrivals" as StatQuickFilter,
-                label: "Today arrivals",
-                caption: "Arrivals due today",
-                value: quickStats.todayArrivals,
-              },
-              {
-                id: "pending_payment" as StatQuickFilter,
-                label: "Pending payment",
-                caption: "Needs payment action",
-                value: quickStats.pendingPayment,
-              },
-              {
-                id: "walk_ins_today" as StatQuickFilter,
-                label: "Walk-ins today",
-                caption: "Created or arriving today",
-                value: quickStats.walkInsToday,
-              },
-              {
-                id: "ready_for_checkin" as StatQuickFilter,
-                label: "Ready for check-in",
-                caption: "Eligible now",
-                value: quickStats.readyForCheckIn,
-              },
-            ].map((card) => {
-              const active = statQuickFilter === card.id;
-              return (
-                <button
-                  key={card.id}
-                  type="button"
-                  aria-pressed={active}
-                  onClick={() => {
-                    const next = active ? "none" : card.id;
-                    setStatQuickFilter(next);
-                    setPage(1);
-                  }}
-                  className={`group rounded-xl border px-3 py-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 ${
-                    active
-                      ? "border-blue-300 bg-blue-50 text-slate-900"
-                      : "border-slate-200 bg-white/90 text-slate-900 hover:border-slate-300 hover:bg-white"
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{card.label}</p>
-                      <p className="mt-0.5 text-[11px] text-slate-600">{card.caption}</p>
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-stretch lg:justify-between">
+            <div className="grid flex-1 gap-2 text-xs sm:grid-cols-2 xl:grid-cols-4">
+              {[
+                {
+                  id: "today_arrivals" as StatQuickFilter,
+                  label: "Today arrivals",
+                  caption: "Arrivals due today",
+                  value: quickStats.todayArrivals,
+                },
+                {
+                  id: "pending_payment" as StatQuickFilter,
+                  label: "Pending payment",
+                  caption: "Needs payment action",
+                  value: quickStats.pendingPayment,
+                },
+                {
+                  id: "walk_ins_today" as StatQuickFilter,
+                  label: "Walk-ins today",
+                  caption: "Created or arriving today",
+                  value: quickStats.walkInsToday,
+                },
+                {
+                  id: "ready_for_checkin" as StatQuickFilter,
+                  label: "Ready for check-in",
+                  caption: "Eligible now",
+                  value: quickStats.readyForCheckIn,
+                },
+              ].map((card) => {
+                const active = statQuickFilter === card.id;
+                return (
+                  <button
+                    key={card.id}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => {
+                      const next = active ? "none" : card.id;
+                      setStatQuickFilter(next);
+                      setPage(1);
+                    }}
+                    className={`group rounded-xl border px-3 py-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 ${
+                      active
+                        ? "border-blue-300 bg-blue-50 text-slate-900"
+                        : "border-slate-200 bg-white/90 text-slate-900 hover:border-slate-300 hover:bg-white"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{card.label}</p>
+                        <p className="mt-0.5 text-[11px] text-slate-600">{card.caption}</p>
+                      </div>
+                      <p className="text-lg font-bold text-slate-900">{card.value}</p>
                     </div>
-                    <p className="text-lg font-bold text-slate-900">{card.value}</p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-          <div className="flex lg:min-w-[220px] lg:justify-end">
-            <Link
-              href="/admin/walk-in"
-              className="inline-flex h-10 items-center rounded-xl border border-slate-900 bg-slate-900 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
-            >
-              New Walk-in Reservation
-            </Link>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex lg:min-w-[220px] lg:justify-end">
+              <Link
+                href="/admin/walk-in"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-900 bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 lg:w-auto"
+              >
+                <PlusCircle className="h-4 w-4" />
+                <span>Walk-in Reservation</span>
+              </Link>
+            </div>
           </div>
         </div>
       </header>
 
-      <div className="mb-4 rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm">
-        <div className="flex flex-col gap-3">
+      <div className="mb-5 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.06)] lg:p-5">
+        <div className="flex flex-col gap-2.5">
           {statQuickFilterLabel ? (
             <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs text-blue-800">
               <span>
@@ -607,14 +611,14 @@ export function AdminReservationsClient({
                   setStatQuickFilter("none");
                   setPage(1);
                 }}
-                className="rounded-md border border-blue-200 bg-white px-2 py-1 font-semibold text-blue-700 transition hover:bg-blue-100"
+                className="rounded-md border border-slate-300 bg-white px-2 py-1 font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
               >
                 Reset quick filter
               </button>
             </div>
           ) : null}
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-            <div className="grid grid-cols-3 gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1 lg:min-w-[360px]">
+          <div className="grid gap-2.5 lg:grid-cols-[420px_minmax(0,1fr)] lg:items-center">
+            <div className="grid grid-cols-3 gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1">
               {QUICK_FILTERS.map((filter) => {
                 const active = quickFilter === filter.id;
                 return (
@@ -650,7 +654,7 @@ export function AdminReservationsClient({
                 value={searchInput}
                 onChange={(event) => setSearchInput(event.target.value)}
                 placeholder="Search code, guest, unit, or phone"
-                className="h-10 w-full rounded-lg border border-slate-300 pl-9 pr-9 text-sm outline-none ring-blue-200 focus:ring-2"
+                className="h-9 w-full rounded-lg border border-slate-300 pl-9 pr-9 text-sm outline-none ring-blue-200 focus:ring-2"
               />
               {searchInput ? (
                 <button
@@ -668,7 +672,7 @@ export function AdminReservationsClient({
               ) : null}
             </div>
           </div>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-[1.1fr_1fr_0.9fr_0.8fr]">
             <label className="grid gap-1 text-xs text-slate-600">
               Reservation status
               <select
@@ -677,7 +681,7 @@ export function AdminReservationsClient({
                   setReservationStatusFilter(event.target.value as ReservationStatus | "all");
                   setPage(1);
                 }}
-                className="h-10 rounded-lg border border-slate-300 px-3 text-sm text-slate-700"
+                className="h-9 rounded-lg border border-slate-300 px-3 text-sm text-slate-700"
               >
                 <option value="all">All statuses</option>
                 <option value="pending_payment">Pending Payment</option>
@@ -698,7 +702,7 @@ export function AdminReservationsClient({
                   setPaymentStatusFilter(event.target.value as PaymentStatusFilter);
                   setPage(1);
                 }}
-                className="h-10 rounded-lg border border-slate-300 px-3 text-sm text-slate-700"
+                className="h-9 rounded-lg border border-slate-300 px-3 text-sm text-slate-700"
               >
                 <option value="all">All payments</option>
                 <option value="unpaid">Unpaid</option>
@@ -716,7 +720,7 @@ export function AdminReservationsClient({
                   setArrivalDateFilter(event.target.value);
                   setPage(1);
                 }}
-                className="h-10 rounded-lg border border-slate-300 px-3 text-sm text-slate-700"
+                className="h-9 rounded-lg border border-slate-300 px-3 text-sm text-slate-700"
               />
             </label>
 
@@ -732,7 +736,7 @@ export function AdminReservationsClient({
                   setSearchValue("");
                   setPage(1);
                 }}
-                className="inline-flex h-10 w-full items-center justify-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                className="inline-flex h-9 w-full items-center justify-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
               >
                 Clear filters
               </button>
@@ -751,18 +755,18 @@ export function AdminReservationsClient({
       {notice ? <p className="mb-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">{notice}</p> : null}
       {loading ? <p className="mb-3 text-sm text-slate-600">Loading reservations...</p> : null}
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
         <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-sm">
-              <thead className="bg-slate-50 text-slate-600">
+          <table className="min-w-full text-left text-[13px] leading-5">
+              <thead className="bg-slate-50/90 text-slate-600">
                 <tr>
-                  <th className="px-4 py-3 font-semibold">Code</th>
-                  <th className="px-4 py-3 font-semibold">Source</th>
-                  <th className="px-4 py-3 font-semibold">Guest</th>
-                  <th className="px-4 py-3 font-semibold">Stay Dates</th>
-                  <th className="px-4 py-3 font-semibold">Reservation Status</th>
-                  <th className="px-4 py-3 font-semibold">Payment Status</th>
-                  <th className="px-4 py-3 font-semibold">Amount</th>
+                  <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em]">Code</th>
+                  <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em]">Source</th>
+                  <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em]">Guest</th>
+                  <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em]">Stay Dates</th>
+                  <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em]">Reservation Status</th>
+                  <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em]">Payment Status</th>
+                  <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em]">Amount</th>
                 </tr>
               </thead>
               <tbody>
@@ -778,13 +782,13 @@ export function AdminReservationsClient({
                         void openDetails(reservation.reservation_id, reservation);
                       }
                     }}
-                    className="cursor-pointer border-t border-slate-100 transition hover:bg-slate-50/90 focus-within:bg-slate-50/90"
+                    className="cursor-pointer border-t border-slate-100 transition hover:bg-slate-50/90 focus-within:bg-slate-50/90 even:bg-slate-50/30"
                   >
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-2.5 align-top">
                       <p className="font-semibold text-slate-900">{reservation.reservation_code}</p>
                       <p className="text-xs text-slate-500">{formatDateTime(reservation.created_at)}</p>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-2.5 align-top">
                       {(() => {
                         const source = getReservationSource(reservation);
                         return (
@@ -798,16 +802,16 @@ export function AdminReservationsClient({
                         );
                       })()}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-2.5 align-top">
                       <p className="font-medium text-slate-800">{reservation.guest?.name || "-"}</p>
                       <p className="text-xs text-slate-500">{reservation.guest?.email || "-"}</p>
                     </td>
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-2.5 align-top">
                     <p className="text-sm text-slate-700">
                       {formatDateWithYear(reservation.check_in_date)} to {formatDateWithYear(reservation.check_out_date)}
                     </p>
                   </td>
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-2.5 align-top">
                       {(() => {
                         const statusMeta = getReservationStatusMeta(reservation.status);
                         return (
@@ -819,7 +823,7 @@ export function AdminReservationsClient({
                         );
                       })()}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-2.5 align-top">
                       {(() => {
                         const paymentMeta = getPaymentStateMeta(getReservationPaymentState(reservation));
                         return (
@@ -829,7 +833,7 @@ export function AdminReservationsClient({
                         );
                       })()}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-2.5 align-top">
                       <p className="font-semibold text-slate-900">{formatPeso(reservation.total_amount)}</p>
                       <p className="text-xs text-slate-500">Paid: {formatPeso(reservation.amount_paid_verified)}</p>
                     </td>
@@ -837,7 +841,7 @@ export function AdminReservationsClient({
               ))}
               {!loading && items.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-6 text-center text-sm text-slate-600">
+                  <td colSpan={7} className="px-3 py-6 text-center text-sm text-slate-600">
                     No reservations found.
                   </td>
                 </tr>
@@ -847,7 +851,7 @@ export function AdminReservationsClient({
         </div>
       </div>
 
-      <div className="mt-4 flex items-center justify-between">
+      <div className="mt-3 flex items-center justify-between">
         <p className="text-xs text-slate-500">
           Page {page} of {totalPages} • {count} total
         </p>
@@ -856,7 +860,7 @@ export function AdminReservationsClient({
             type="button"
             onClick={() => setPage((prev) => Math.max(1, prev - 1))}
             disabled={!canPrev}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 disabled:opacity-50"
+            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
           >
             Previous
           </button>
@@ -864,7 +868,7 @@ export function AdminReservationsClient({
             type="button"
             onClick={() => setPage((prev) => prev + 1)}
             disabled={!canNext}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 disabled:opacity-50"
+            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
           >
             Next
           </button>
@@ -899,6 +903,14 @@ export function AdminReservationsClient({
     </section>
   );
 }
+
+
+
+
+
+
+
+
 
 
 

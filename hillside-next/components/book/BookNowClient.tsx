@@ -407,7 +407,7 @@ export function BookNowClient({
 
   return (
     <GuestPageShell className="max-w-[1280px] px-0 pb-28 md:pb-0" >
-      <section data-testid="booking-page" className="mb-4 lg:mb-5">
+      <section data-testid="booking-page" className="mb-5">
         <GuestHero
           testId="booking-header"
           dark
@@ -429,10 +429,10 @@ export function BookNowClient({
         />
       </section>
 
-      <div className="mb-4 hidden lg:block">
+      <div className="mb-5 hidden lg:block">
         <BookingStepper currentStep={bookingStep} />
       </div>
-      <div className="sticky top-[78px] z-20 mb-4 grid w-full grid-cols-3 gap-2 bg-[var(--color-background)] pb-2 pt-1 lg:hidden" data-testid="booking-stepper" aria-label="Booking progress">
+      <div className="mb-5 grid w-full grid-cols-3 gap-2 text-center lg:hidden" data-testid="booking-stepper" aria-label="Booking progress">
         {[
           { step: 1, label: "Dates" },
           { step: 2, label: "Unit" },

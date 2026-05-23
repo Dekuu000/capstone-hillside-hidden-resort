@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { ExternalLink, RotateCcw, Search, SlidersHorizontal } from "lucide-react";
 import type { AuditLogsResponse } from "../../../../packages/shared/src/types";
 import { auditLogsResponseSchema } from "../../../../packages/shared/src/schemas";
@@ -81,7 +81,7 @@ export default async function AdminAuditPage({
   const accessToken = await getServerAccessToken();
   if (!accessToken) {
     return (
-      <section className="mx-auto w-full max-w-6xl">
+      <section className="mx-auto w-full max-w-[1600px]">
         <h1 className="text-3xl font-bold text-[var(--color-text)]">Audit Logs</h1>
         <p className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
           No active session found. Sign in as admin first.
@@ -112,7 +112,7 @@ export default async function AdminAuditPage({
   const hasActiveFilters = Boolean(search || action || fromDate !== toIsoDate(-7) || toDate !== toIsoDate(0));
 
   return (
-    <section className="mx-auto w-full max-w-6xl">
+    <section className="mx-auto w-full max-w-[1600px]">
       <header className="mb-5">
         <h1 className="text-3xl font-bold text-[var(--color-text)]">Audit Logs</h1>
         <p className="mt-1 text-sm text-[var(--color-muted)]">
@@ -299,3 +299,4 @@ export default async function AdminAuditPage({
     </section>
   );
 }
+

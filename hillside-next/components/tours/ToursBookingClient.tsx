@@ -344,26 +344,28 @@ export function ToursBookingClient({
 
   return (
     <GuestPageShell className="max-w-[1240px] pb-40 md:pb-10">
-      <GuestHero
-        testId="booking-header"
-        dark
-        eyebrow="Guest Portal"
-        title="Book a Tour"
-        subtitle="Simple flow: choose a tour, select your date, then submit payment proof."
-        contentClassName="lg:min-h-[174px] lg:p-6"
-        rightSlot={(
-          <div className="rounded-3xl border border-white/15 bg-white/10 p-4 text-white/90 backdrop-blur">
-            <div className="flex items-center gap-2 text-base font-semibold text-white">
-              <ShieldCheck className="h-4 w-4 text-teal-300" aria-hidden="true" />
-              Secure booking
+      <section data-testid="booking-page" className="mb-5">
+        <GuestHero
+          testId="booking-header"
+          dark
+          eyebrow="Guest Portal"
+          title="Book a Tour"
+          subtitle="Simple flow: choose a tour, select your date, then submit payment proof."
+          contentClassName="lg:min-h-[174px] lg:p-6"
+          rightSlot={(
+            <div className="rounded-3xl border border-white/15 bg-white/10 p-4 text-white/90 backdrop-blur">
+              <div className="flex items-center gap-2 text-base font-semibold text-white">
+                <ShieldCheck className="h-4 w-4 text-teal-300" aria-hidden="true" />
+                Secure booking
+              </div>
+              <p className="mt-2 text-sm text-white/75">
+                Payment proof is reviewed before check-in confirmation.
+              </p>
             </div>
-            <p className="mt-2 text-sm text-white/75">
-              Payment proof is reviewed before check-in confirmation.
-            </p>
-          </div>
-        )}
-      />
-      <div className="mt-4 mb-4 grid w-full grid-cols-3 gap-2 text-center lg:mt-5 lg:max-w-md">
+          )}
+        />
+      </section>
+      <div className="mb-5 grid w-full grid-cols-3 gap-2 text-center lg:max-w-md">
           <button
             type="button"
             onClick={() => setMobileStep(1)}

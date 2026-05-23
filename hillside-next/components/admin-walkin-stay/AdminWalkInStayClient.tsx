@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -263,7 +263,7 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
   }
 
   return (
-    <section className={`mx-auto w-full ${embedded ? "max-w-none" : "max-w-6xl"}`}>
+    <section className={`mx-auto w-full ${embedded ? "max-w-none" : "max-w-[1600px]"}`}>
       {!embedded ? (
         <header className="mb-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-sm)]">
           <h1 className="text-3xl font-bold text-[var(--color-text)]">Walk-in Stay</h1>
@@ -474,7 +474,7 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
                       <span>
                         <span className="block text-sm font-semibold text-[var(--color-text)]">{unit.name}</span>
                         <span className="block text-xs text-[var(--color-muted)]">
-                          {unit.type} • Capacity {unit.capacity}
+                          {unit.type} â€¢ Capacity {unit.capacity}
                         </span>
                       </span>
                     </span>
@@ -571,3 +571,4 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
     </section>
   );
 }
+

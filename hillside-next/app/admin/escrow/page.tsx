@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import {
   escrowReconciliationResponseSchema,
 } from "../../../../packages/shared/src/schemas";
@@ -43,7 +43,7 @@ export default async function AdminEscrowPage({
   const accessToken = await getServerAccessToken();
   if (!accessToken) {
     return (
-      <section className="mx-auto w-full max-w-6xl">
+      <section className="mx-auto w-full max-w-[1600px]">
         <h1 className="text-3xl font-bold text-slate-900">Escrow Reconciliation</h1>
         <p className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
           No active session found. Sign in as admin first.
@@ -59,7 +59,7 @@ export default async function AdminEscrowPage({
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
   return (
-    <section className="mx-auto w-full max-w-6xl">
+    <section className="mx-auto w-full max-w-[1600px]">
       <header className="mb-5">
         <h1 className="text-3xl font-bold text-slate-900">Escrow Reconciliation</h1>
         <p className="mt-1 text-sm text-slate-600">
@@ -166,4 +166,5 @@ function MetricCard({
     </div>
   );
 }
+
 

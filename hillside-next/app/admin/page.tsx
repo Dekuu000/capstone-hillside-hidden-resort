@@ -60,21 +60,21 @@ export default async function AdminShellPage() {
   }
 
   return (
-    <section className="mx-auto w-full max-w-6xl space-y-4">
-      <header className="surface p-4 sm:p-6">
+    <section className="mx-auto w-full max-w-[1720px] space-y-6 pb-2">
+      <header className="surface p-5 shadow-[0_10px_24px_rgba(15,23,42,0.08)] transition-[box-shadow,border-color] duration-200 hover:shadow-[0_14px_30px_rgba(15,23,42,0.12)] sm:p-6 lg:p-7">
         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)]">Admin Dashboard</p>
         <h1 className="mt-2 text-2xl font-bold text-[var(--color-text)] sm:text-3xl">Resort View</h1>
         <p className="mt-2 text-sm text-[var(--color-muted)]">
-          Snapshot, room management, and guest verification in one operations screen.
+          Snapshot, room operations, and guest verification in one unified workspace.
         </p>
       </header>
 
-      <div className="grid gap-4 xl:grid-cols-[1.45fr_0.95fr]">
+      <div className="grid gap-5 xl:grid-cols-[1.45fr_1fr] 2xl:grid-cols-[1.55fr_1fr]">
         <ResortSnapshotPanel snapshot={snapshot} error={snapshotError} />
         <GuestVerificationPanel />
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[0.92fr_1.08fr]">
+      <div className="grid gap-5 xl:grid-cols-[1fr_1.15fr] 2xl:grid-cols-[1fr_1.2fr]">
         <RoomInventorySyncPanel units={initialUnits} />
         <ResourceHeatmapPanel snapshot={snapshot} />
       </div>
@@ -85,3 +85,4 @@ export default async function AdminShellPage() {
     </section>
   );
 }
+

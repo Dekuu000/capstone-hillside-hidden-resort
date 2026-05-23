@@ -1,6 +1,6 @@
-export default function AdminServicesLoading() {
+﻿export default function AdminServicesLoading() {
   return (
-    <section className="mx-auto w-full max-w-[1400px] space-y-4">
+    <section className="mx-auto w-full max-w-[1600px] space-y-4">
       <div className="surface p-5">
         <div className="skeleton h-7 w-56" />
         <div className="mt-2 skeleton h-4 w-72" />
@@ -16,3 +16,4 @@ export default function AdminServicesLoading() {
     </section>
   );
 }
+

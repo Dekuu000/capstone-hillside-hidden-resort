@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
@@ -88,8 +88,12 @@ export function AdminChrome({ children, initialName = null, initialEmail = null 
       >
         <div className="flex h-full flex-col">
           <div className="border-b border-white/15 px-6 py-7">
-            <HillsideLogo light compact className="[&_svg]:h-10 [&_svg]:w-10 [&_p]:text-base" />
-            <p className="mt-1 text-sm text-teal-100">Admin Panel</p>
+            <HillsideLogo
+              light
+              compact
+              className="[&_img]:h-11 [&_img]:w-11 [&_.hillside-brand-title]:text-[1.2rem] [&_.hillside-brand-title]:font-semibold [&_.hillside-brand-subtitle]:text-[0.58rem] [&_.hillside-brand-subtitle]:tracking-[0.29em]"
+            />
+            <p className="mt-2 text-sm text-teal-100">Admin Panel</p>
           </div>
 
           <nav className="no-scrollbar flex-1 space-y-1 overflow-y-auto px-3 py-6">
@@ -146,9 +150,10 @@ export function AdminChrome({ children, initialName = null, initialEmail = null 
           </div>
         </header>
 
-        <main className="p-4 sm:p-6 lg:p-8">{children}</main>
+        <main className="px-4 py-4 sm:px-6 sm:py-6 lg:px-6 lg:py-6 2xl:px-8">{children}</main>
       </div>
     </div>
   );
 }
+
 

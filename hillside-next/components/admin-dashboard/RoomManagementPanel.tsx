@@ -179,18 +179,18 @@ export function RoomManagementPanel({
 
   if (!token) {
     return (
-      <section className="surface p-4 sm:p-5">
+      <section className="surface p-4 shadow-[0_10px_24px_rgba(15,23,42,0.08)] transition-[box-shadow,border-color] duration-200 hover:shadow-[0_14px_30px_rgba(15,23,42,0.12)] sm:p-5 lg:p-6">
         <p className="text-sm font-semibold text-[var(--color-text)]">No admin session found.</p>
       </section>
     );
   }
 
   return (
-    <section className="surface p-4 sm:p-5">
+    <section className="surface p-4 shadow-[0_10px_24px_rgba(15,23,42,0.08)] transition-[box-shadow,border-color] duration-200 hover:shadow-[0_14px_30px_rgba(15,23,42,0.12)] sm:p-5 lg:p-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-muted)]">Room Management</p>
-          <h2 className="mt-2 text-xl font-bold text-[var(--color-text)]">Update amenities, base pricing, and status</h2>
+          <h2 className="mt-2 text-xl font-bold text-[var(--color-text)] lg:text-2xl">Update amenities, base pricing, and status</h2>
           <p className="mt-1 text-sm text-[var(--color-muted)]">Use quick edits here, or open full Units page for inventory administration.</p>
         </div>
         <Link
@@ -205,7 +205,7 @@ export function RoomManagementPanel({
         <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
       ) : null}
 
-      <div className="mt-4 grid gap-3 lg:grid-cols-[1.1fr_1fr]">
+      <div className="mt-4 grid gap-4 lg:grid-cols-[1.1fr_1fr]">
         <div className="space-y-3">
           <label className="block">
             <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">Search unit</span>
@@ -342,3 +342,5 @@ export function RoomManagementPanel({
     </section>
   );
 }
+
+

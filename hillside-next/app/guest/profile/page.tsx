@@ -16,6 +16,7 @@ export default async function GuestProfilePage() {
       <PageHeader
         title="Profile & Settings"
         subtitle="Manage guest profile, account security, and optional wallet connection."
+        className="mb-0 rounded-[2rem] p-5 sm:p-6"
         statusSlot={
           <>
             <Badge label="Guest account" variant="info" />

@@ -29,10 +29,10 @@ export function RoomInventorySyncPanel({ units }: { units: UnitItem[] }) {
   const maintenancePct = total > 0 ? (maintenance / total) * 100 : 0;
 
   return (
-    <section className="surface p-4 sm:p-5">
+    <section className="surface p-4 shadow-[0_10px_24px_rgba(15,23,42,0.08)] transition-[box-shadow,border-color] duration-200 hover:shadow-[0_14px_30px_rgba(15,23,42,0.12)] sm:p-5 lg:p-6">
       <div className="flex items-center justify-between gap-2">
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-muted)]">Room Inventory Sync</p>
-        <p className="text-[11px] font-semibold text-[var(--color-muted)] whitespace-nowrap">
+        <p className="text-[11px] font-semibold whitespace-nowrap text-[var(--color-muted)]">
           {formatDateTime(latestUpdate, {
             locale: "en-PH",
             formatOptions: {
@@ -48,28 +48,28 @@ export function RoomInventorySyncPanel({ units }: { units: UnitItem[] }) {
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3">
-        <article className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
+        <article className="rounded-xl border border-[var(--color-border)] bg-white p-3 shadow-[0_6px_14px_rgba(15,23,42,0.04)] transition-[box-shadow,border-color,transform] duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_20px_rgba(15,23,42,0.10)]">
           <p className="inline-flex items-center gap-2 text-sm text-[var(--color-muted)]">
             <Sparkles className="h-4 w-4 text-teal-600" />
             Cleaned
           </p>
           <p className="mt-1 text-3xl font-bold text-[var(--color-text)]">{cleaned}</p>
         </article>
-        <article className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
+        <article className="rounded-xl border border-[var(--color-border)] bg-white p-3 shadow-[0_6px_14px_rgba(15,23,42,0.04)] transition-[box-shadow,border-color,transform] duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_20px_rgba(15,23,42,0.10)]">
           <p className="inline-flex items-center gap-2 text-sm text-[var(--color-muted)]">
             <BedDouble className="h-4 w-4 text-[var(--color-primary)]" />
             Occupied
           </p>
           <p className="mt-1 text-3xl font-bold text-[var(--color-text)]">{occupied}</p>
         </article>
-        <article className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
+        <article className="rounded-xl border border-[var(--color-border)] bg-white p-3 shadow-[0_6px_14px_rgba(15,23,42,0.04)] transition-[box-shadow,border-color,transform] duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_20px_rgba(15,23,42,0.10)]">
           <p className="inline-flex items-center gap-2 text-sm text-[var(--color-muted)]">
             <Wrench className="h-4 w-4 text-orange-500" />
             Maintenance
           </p>
           <p className="mt-1 text-3xl font-bold text-[var(--color-text)]">{maintenance}</p>
         </article>
-        <article className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
+        <article className="rounded-xl border border-[var(--color-border)] bg-white p-3 shadow-[0_6px_14px_rgba(15,23,42,0.04)] transition-[box-shadow,border-color,transform] duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_20px_rgba(15,23,42,0.10)]">
           <p className="inline-flex items-center gap-2 text-sm text-[var(--color-muted)]">
             <AlertTriangle className="h-4 w-4 text-rose-500" />
             Dirty
@@ -111,3 +111,5 @@ export function RoomInventorySyncPanel({ units }: { units: UnitItem[] }) {
     </section>
   );
 }
+
+
