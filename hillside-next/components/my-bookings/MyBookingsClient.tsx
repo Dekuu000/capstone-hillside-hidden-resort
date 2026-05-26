@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 import { Calendar, CircleCheck, CircleX, CreditCard, Eye, QrCode } from "lucide-react";
 import type {
@@ -173,6 +174,7 @@ export function MyBookingsClient({
   initialFocusReservationId = null,
   initialAutoOpenPay = false,
 }: MyBookingsClientProps) {
+  const router = useRouter();
   const token = initialToken;
   const sessionEmail = initialSessionEmail;
 
@@ -468,6 +470,8 @@ export function MyBookingsClient({
           setSubmitProofMode("file");
           setSubmitProofFile(null);
           setSubmitProofUrl("");
+          setTab("upcoming");
+          router.replace("/my-bookings?tab=upcoming");
           return;
         }
 
@@ -515,9 +519,8 @@ export function MyBookingsClient({
         setSubmitProofMode("file");
         setSubmitProofFile(null);
         setSubmitProofUrl("");
-        if (outcome.mode === "online") {
-          await fetchBookings(null, "replace");
-        }
+        setTab("upcoming");
+        router.replace("/my-bookings?tab=upcoming");
       } catch (unknownError) {
         const message = getApiErrorMessage(unknownError, "Failed to submit payment.");
         if (message.toLowerCase().includes("deposit is not required")) {
@@ -532,7 +535,7 @@ export function MyBookingsClient({
       }
     },
     [
-      fetchBookings,
+      router,
       submitAmount,
       submitFor,
       submitProofFile,
@@ -1208,11 +1211,36 @@ export function MyBookingsClient({
           onClose={closeSubmitModal}
         >
             <p className="mb-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
-              Next step after submit: payment status changes to <strong>For verification</strong> while admin reviews your proof.
+              Next step after submit: payment status changes to <strong>For verification</strong> while admin reviews your proof. You will be returned to the <strong>Upcoming</strong> tab.
             </p>
             <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-medium leading-relaxed text-amber-800">
               Minimum deposit is required first. Guest-initiated cancellation forfeits this minimum deposit.
             </p>
+            <div className="mb-3 rounded-xl border border-slate-200 bg-white p-3">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Payment summary</p>
+              <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                  <p className="text-xs text-slate-500">Total amount</p>
+                  <p className="font-semibold text-slate-900">{formatPeso(Number(submitFor.total_amount ?? 0))}</p>
+                </div>
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                  <p className="text-xs text-slate-500">Amount paid</p>
+                  <p className="font-semibold text-emerald-700">{formatPeso(Number(submitFor.amount_paid_verified ?? 0))}</p>
+                </div>
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                  <p className="text-xs text-slate-500">Remaining balance</p>
+                  <p className="font-semibold text-orange-700">
+                    {formatPeso(Math.max(0, Number(submitFor.total_amount ?? 0) - Number(submitFor.amount_paid_verified ?? 0)))}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                  <p className="text-xs text-slate-500">Minimum due now</p>
+                  <p className="font-semibold text-slate-900">
+                    {formatPeso(Number(submitFor.expected_pay_now ?? submitFor.deposit_required ?? 0))}
+                  </p>
+                </div>
+              </div>
+            </div>
             <form className="grid gap-3" onSubmit={submitPayment}>
               <label className="guest-form-label">
                 Amount
