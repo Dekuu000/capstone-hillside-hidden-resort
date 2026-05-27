@@ -4,6 +4,7 @@ import { availableUnitsResponseSchema } from "../../../packages/shared/src/schem
 import type { AvailableUnitsResponse } from "../../../packages/shared/src/types";
 import { fetchServerApiData } from "../../lib/serverApi";
 import { getServerAccessToken, getServerAuthContext, getServerEmailHint } from "../../lib/serverAuth";
+import { redirect } from "next/navigation";
 
 function isoLocalDate(dayOffset: number) {
   const d = new Date();
@@ -37,6 +38,9 @@ export default async function BookPage() {
 
   const accessToken = await getServerAccessToken();
   const auth = accessToken ? await getServerAuthContext(accessToken) : null;
+  if (String(auth?.role || "").toLowerCase() === "admin") {
+    redirect("/admin/reservations");
+  }
   const emailHint = auth?.email || (await getServerEmailHint());
   const initialUnitsData = accessToken
     ? await fetchInitialAvailableUnits(accessToken, checkInDate, checkOutDate)

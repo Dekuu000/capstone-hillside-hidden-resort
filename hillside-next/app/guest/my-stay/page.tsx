@@ -16,7 +16,7 @@ import { buildTokenExplorerUrl, buildTxExplorerUrl, shortHash } from "../../../l
 import { formatDateWithWeekday } from "../../../lib/dateDisplay";
 import { formatPhpPeso as toPeso } from "../../../lib/formatCurrency";
 import { fetchServerApiData } from "../../../lib/serverApi";
-import { getServerAccessToken, getServerEmailHint } from "../../../lib/serverAuth";
+import { getServerAccessToken, getServerAuthContext, getServerEmailHint } from "../../../lib/serverAuth";
 
 function roomFallbackDisplay(stay: ReservationListItem) {
   const units = stay.units ?? [];
@@ -62,6 +62,10 @@ async function fetchGuestPass(
 export default async function GuestMyStayPage() {
   const accessToken = await getServerAccessToken();
   if (!accessToken) redirect("/login?next=/guest/my-stay");
+  const auth = await getServerAuthContext(accessToken);
+  if (String(auth?.role || "").toLowerCase() === "admin") {
+    redirect("/admin/reservations");
+  }
 
   const emailHint = await getServerEmailHint();
   const stayDashboard = await fetchStayDashboard(accessToken);

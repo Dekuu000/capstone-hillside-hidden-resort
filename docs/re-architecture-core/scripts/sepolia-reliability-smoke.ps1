@@ -2,6 +2,7 @@ param(
   [string]$ApiBaseUrl = "http://localhost:8000",
   [int]$LoopCount = 10,
   [int]$VisitDateOffsetDays = 0,
+  [switch]$AllowDataWrites,
   [string]$AdminToken = "",
   [string]$SupabaseUrl = "",
   [string]$SupabasePublishableKey = "",
@@ -70,6 +71,9 @@ if ($health.service -ne "hillside-api") {
 }
 if (-not $health.active_chain -or $health.active_chain.key -ne "sepolia") {
   throw "Active chain is not sepolia. This smoke is intended for Sepolia reliability runs."
+}
+if (-not $AllowDataWrites) {
+  throw "Safety stop: this script creates reservations and performs override check-ins. Re-run with -AllowDataWrites only on isolated staging/test data."
 }
 
 $services = Invoke-RestMethod -Method GET -Uri ("{0}/v2/catalog/services" -f $ApiBaseUrl.TrimEnd("/")) -Headers $headers

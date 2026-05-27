@@ -474,7 +474,7 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
                       <span>
                         <span className="block text-sm font-semibold text-[var(--color-text)]">{unit.name}</span>
                         <span className="block text-xs text-[var(--color-muted)]">
-                          {unit.type} â€¢ Capacity {unit.capacity}
+                          {unit.type} • Capacity {unit.capacity}
                         </span>
                       </span>
                     </span>

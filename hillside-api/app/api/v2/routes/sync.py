@@ -124,6 +124,8 @@ def _apply_reservation_create(op: OfflineOperation, auth: AuthContext) -> tuple[
     is_walk_in = action_key in {"reservations.walk_in.create", "reservations.walkin.create"} or str(
         payload.get("reservation_source") or ""
     ).strip().lower() in {"walk_in", "walk-in", "walkin"}
+    if auth.role == "admin" and not is_walk_in:
+        raise RuntimeError("Admin accounts cannot create online guest reservations. Use Walk-in flow.")
     check_in = _parse_iso_date(str(payload.get("check_in_date") or ""), "check_in_date")
     check_out = _parse_iso_date(str(payload.get("check_out_date") or ""), "check_out_date")
     if check_out <= check_in:
@@ -201,6 +203,8 @@ def _apply_tour_reservation_create(op: OfflineOperation, auth: AuthContext) -> t
     if adult_qty + kid_qty <= 0:
         raise RuntimeError("At least one guest is required.")
     is_advance = bool(payload.get("is_advance", True))
+    if auth.role == "admin" and is_advance:
+        raise RuntimeError("Admin accounts cannot create online guest reservations. Use Walk-in flow.")
     notes = str(payload.get("notes") or "").strip() or None
     expected_pay_now_raw = payload.get("expected_pay_now")
     expected_pay_now = float(expected_pay_now_raw) if expected_pay_now_raw is not None else None

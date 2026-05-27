@@ -394,6 +394,45 @@ def test_create_tour_reservation_allows_admin_walk_in_same_day(monkeypatch) -> N
     assert payload["status"] == "pending_payment"
 
 
+def test_create_reservation_blocks_admin_online_booking(monkeypatch) -> None:
+    monkeypatch.setattr("app.core.auth.verify_access_token", _mock_admin_auth)
+
+    response = client.post(
+        "/v2/reservations",
+        headers=_admin_header(),
+        json={
+            "check_in_date": "2026-02-21",
+            "check_out_date": "2026-02-22",
+            "unit_ids": ["unit-1"],
+            "idempotency_key": "idem-admin-block-1",
+        },
+    )
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Admin accounts cannot create online guest reservations. Use Walk-in flow."
+
+
+def test_create_tour_reservation_blocks_admin_online_booking(monkeypatch) -> None:
+    tomorrow = (date.today() + timedelta(days=1)).isoformat()
+    monkeypatch.setattr("app.core.auth.verify_access_token", _mock_admin_auth)
+
+    response = client.post(
+        "/v2/reservations/tours",
+        headers=_admin_header(),
+        json={
+            "service_id": "svc-1",
+            "visit_date": tomorrow,
+            "adult_qty": 1,
+            "kid_qty": 0,
+            "is_advance": True,
+            "idempotency_key": "idem-admin-block-2",
+        },
+    )
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Admin accounts cannot create online guest reservations. Use Walk-in flow."
+
+
 def test_create_reservation_contract_without_shadow(monkeypatch) -> None:
     monkeypatch.setattr("app.core.auth.verify_access_token", _mock_guest_auth)
     released: dict = {}

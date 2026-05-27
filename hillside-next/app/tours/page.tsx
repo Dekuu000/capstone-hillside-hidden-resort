@@ -4,6 +4,7 @@ import { fetchServerApiData } from "../../lib/serverApi";
 import { getServerAccessToken, getServerAuthContext, getServerEmailHint } from "../../lib/serverAuth";
 import { serviceListResponseSchema } from "../../../packages/shared/src/schemas";
 import type { ServiceListResponse } from "../../../packages/shared/src/types";
+import { redirect } from "next/navigation";
 
 async function fetchInitialServices(accessToken: string): Promise<ServiceListResponse | null> {
   return fetchServerApiData({
@@ -17,6 +18,9 @@ async function fetchInitialServices(accessToken: string): Promise<ServiceListRes
 export default async function ToursPage() {
   const accessToken = await getServerAccessToken();
   const auth = accessToken ? await getServerAuthContext(accessToken) : null;
+  if (String(auth?.role || "").toLowerCase() === "admin") {
+    redirect("/admin/reservations");
+  }
   const emailHint = auth?.email || (await getServerEmailHint());
   const initialServicesData = accessToken ? await fetchInitialServices(accessToken) : null;
 

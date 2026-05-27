@@ -40,6 +40,9 @@ export default async function MyBookingsPage({
   if (!auth) {
     redirect("/login?next=/my-bookings");
   }
+  if (String(auth.role || "").toLowerCase() === "admin") {
+    redirect("/admin/reservations");
+  }
 
   const initialData = await fetchInitialBookings(accessToken, initialTab);
   const emailHint = auth.email || (await getServerEmailHint());

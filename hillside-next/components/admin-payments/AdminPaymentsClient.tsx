@@ -1296,16 +1296,24 @@ export function AdminPaymentsClient({
             </table>
           </div>
 
-          <div className="flex items-center justify-between border-t border-slate-200 px-3 py-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 px-3 py-2.5">
             <p className="text-xs text-slate-500">
-              Page {page} of {totalPages} • {count} total
+              Page {page} of {totalPages} | {count} total
             </p>
-            <div className="flex gap-2">
+            <div className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white p-1 shadow-sm">
+              <button
+                type="button"
+                onClick={() => setPage(1)}
+                disabled={!canPrev}
+                className="rounded-full px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-45"
+              >
+                First
+              </button>
               <button
                 type="button"
                 onClick={() => setPage((prev) => Math.max(1, prev - 1))}
                 disabled={!canPrev}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                className="rounded-full px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-45"
               >
                 Previous
               </button>
@@ -1313,9 +1321,17 @@ export function AdminPaymentsClient({
                 type="button"
                 onClick={() => setPage((prev) => prev + 1)}
                 disabled={!canNext}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                className="rounded-full px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-45"
               >
                 Next
+              </button>
+              <button
+                type="button"
+                onClick={() => setPage(totalPages)}
+                disabled={!canNext}
+                className="rounded-full px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-45"
+              >
+                Last
               </button>
             </div>
           </div>
@@ -1383,6 +1399,7 @@ export function AdminPaymentsClient({
     </section>
   );
 }
+
 
 
 

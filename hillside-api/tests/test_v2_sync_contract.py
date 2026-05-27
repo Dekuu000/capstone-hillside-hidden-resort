@@ -285,3 +285,94 @@ def test_apply_payment_submission_on_site_accepts_reservation_code(monkeypatch) 
     assert called["method"] == "cash"
     assert called["reference_no"] == "OR-100"
 
+
+def test_sync_push_blocks_admin_online_stay_reservation_create(monkeypatch) -> None:
+    monkeypatch.setattr("app.core.auth.verify_access_token", _mock_admin_auth)
+    monkeypatch.setattr("app.api.v2.routes.sync.get_sync_operation_receipt", lambda **_: None)
+    monkeypatch.setattr("app.api.v2.routes.sync.cleanup_sync_operation_receipts", lambda retention_hours: None)
+
+    def fake_upsert_sync_operation_receipt(**kwargs):
+        return {
+            "operation_id": kwargs["operation_id"],
+            "idempotency_key": kwargs["idempotency_key"],
+            "entity_type": kwargs["entity_type"],
+            "action": kwargs["action"],
+            "status": kwargs["status"],
+            "http_status": kwargs["http_status"],
+            "error_message": kwargs.get("error_message"),
+            "response_payload": kwargs.get("response_payload") or {},
+        }
+
+    monkeypatch.setattr("app.api.v2.routes.sync.upsert_sync_operation_receipt", fake_upsert_sync_operation_receipt)
+
+    body = {
+        "scope": "admin",
+        "operations": [
+            _operation_payload(
+                operation_id="op-admin-online-stay",
+                idempotency_key="idem-admin-online-stay",
+                entity_type="reservation",
+                action="reservations.create",
+                entity_id=None,
+                payload={
+                    "check_in_date": "2026-05-26",
+                    "check_out_date": "2026-05-27",
+                    "unit_ids": ["unit-1"],
+                    "guest_count": 1,
+                },
+            )
+        ],
+    }
+    response = client.post("/v2/sync/push", headers=_token_header("admin-token"), json=body)
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["conflict"] == 1
+    assert payload["results"][0]["status"] == "conflict"
+    assert "Admin accounts cannot create online guest reservations" in (payload["results"][0]["error_message"] or "")
+
+
+def test_sync_push_blocks_admin_online_tour_reservation_create(monkeypatch) -> None:
+    monkeypatch.setattr("app.core.auth.verify_access_token", _mock_admin_auth)
+    monkeypatch.setattr("app.api.v2.routes.sync.get_sync_operation_receipt", lambda **_: None)
+    monkeypatch.setattr("app.api.v2.routes.sync.cleanup_sync_operation_receipts", lambda retention_hours: None)
+
+    def fake_upsert_sync_operation_receipt(**kwargs):
+        return {
+            "operation_id": kwargs["operation_id"],
+            "idempotency_key": kwargs["idempotency_key"],
+            "entity_type": kwargs["entity_type"],
+            "action": kwargs["action"],
+            "status": kwargs["status"],
+            "http_status": kwargs["http_status"],
+            "error_message": kwargs.get("error_message"),
+            "response_payload": kwargs.get("response_payload") or {},
+        }
+
+    monkeypatch.setattr("app.api.v2.routes.sync.upsert_sync_operation_receipt", fake_upsert_sync_operation_receipt)
+
+    body = {
+        "scope": "admin",
+        "operations": [
+            _operation_payload(
+                operation_id="op-admin-online-tour",
+                idempotency_key="idem-admin-online-tour",
+                entity_type="tour_reservation",
+                action="reservations.tours.create",
+                entity_id=None,
+                payload={
+                    "service_id": "tour-1",
+                    "visit_date": "2026-05-26",
+                    "adult_qty": 1,
+                    "kid_qty": 0,
+                    "is_advance": True,
+                },
+            )
+        ],
+    }
+    response = client.post("/v2/sync/push", headers=_token_header("admin-token"), json=body)
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["conflict"] == 1
+    assert payload["results"][0]["status"] == "conflict"
+    assert "Admin accounts cannot create online guest reservations" in (payload["results"][0]["error_message"] or "")
+

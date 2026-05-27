@@ -4,11 +4,11 @@ import { useMemo, useState } from "react";
 import {
   Activity,
   AlertTriangle,
-  CalendarDays,
+  BrainCircuit,
   CheckCircle2,
   CircleDashed,
+  Lightbulb,
   RefreshCcw,
-  Sparkles,
   Timer,
   TrendingUp,
   Users,
@@ -511,7 +511,7 @@ export function AdminAiCenterClient({ token }: AdminAiCenterClientProps) {
                   Refresh metrics
                 </Button>
                 <Button
-                  leftSlot={<Sparkles className="h-4 w-4" />}
+                  leftSlot={<BrainCircuit className="h-4 w-4" />}
                   onClick={() => void generatePricingRecommendation()}
                   loading={recommendationLoading}
                 >
@@ -541,7 +541,7 @@ export function AdminAiCenterClient({ token }: AdminAiCenterClientProps) {
         <div id="tab-panel-forecast" role="tabpanel" aria-labelledby="tab-forecast" className="space-y-4">
           <div className="flex flex-wrap gap-2">
             <Button
-              leftSlot={<CalendarDays className="h-4 w-4" />}
+              leftSlot={<TrendingUp className="h-4 w-4" />}
               onClick={() => void generateForecast()}
               loading={forecastLoading}
             >
@@ -716,7 +716,7 @@ export function AdminAiCenterClient({ token }: AdminAiCenterClientProps) {
               </label>
               <div className="flex items-end">
                 <Button
-                  leftSlot={<Sparkles className="h-4 w-4" />}
+                  leftSlot={<Lightbulb className="h-4 w-4" />}
                   onClick={() => void loadConcierge()}
                   loading={conciergeLoading}
                 >
