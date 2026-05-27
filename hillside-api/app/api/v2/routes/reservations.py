@@ -818,7 +818,11 @@ def create_tour_reservation(
     payload: TourReservationCreateRequest,
     auth: AuthContext = Depends(require_authenticated),
 ):
-    _ensure_guest_only_online_booking(auth)
+    if auth.role == "admin" and payload.is_advance:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin accounts cannot create online guest reservations. Use Walk-in flow.",
+        )
     replayed = _try_replay_reservation_response(
         route_key="reservations.tours.create",
         user_id=auth.user_id,
