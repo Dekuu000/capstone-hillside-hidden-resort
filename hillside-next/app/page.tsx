@@ -364,7 +364,7 @@ export default async function HomePage() {
               Prk. 7, Jupiter St, Olongapo City, Zambales 2200, Philippines
             </p>
             <a
-              href="https://www.google.com/maps/dir/?api=1&destination_place_id=ChIJZT_BXwBxljMRISjFCvccuhw&destination=Hillside+Hidden+Resort"
+              href="https://maps.app.goo.gl/XxHBh1QnaYQPcVB27"
               className="mt-8 inline-flex text-sm font-semibold text-[var(--color-secondary)] hover:underline"
               target="_blank"
               rel="noreferrer"
@@ -376,7 +376,7 @@ export default async function HomePage() {
           <article className="relative overflow-hidden bg-[#eff6fb]">
             <iframe
               title="Hillside Hidden Resort Google Map"
-              src="https://maps.google.com/maps?hl=en&q=14.8550578,120.3166328(Hillside%20Hidden%20Resort)&ll=14.8550578,120.3166328&z=18&t=m&output=embed"
+              src="https://maps.google.com/maps?hl=en&ll=14.8550578,120.3166328&z=19&q=Hillside+Hidden+Resort,+Prk.+7,+Jupiter+St,+Olongapo+City,+Zambales+2200,+Philippines&t=m&output=embed"
               className="h-full min-h-[320px] w-full border-0"
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"

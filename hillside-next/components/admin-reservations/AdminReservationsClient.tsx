@@ -26,6 +26,7 @@ import { getReservationPaymentState, getReservationSource } from "../../lib/rese
 import { getSupabaseBrowserClient } from "../../lib/supabase";
 import { ReservationDetailDrawer } from "./ReservationDetailDrawer";
 import { DataFreshnessBadge } from "../shared/DataFreshnessBadge";
+import { FancyDatePicker } from "../shared/FancyDatePicker";
 import { useToast } from "../shared/ToastProvider";
 import { loadReservationsSnapshot, saveReservationsSnapshot } from "../../lib/offlineSync/store";
 
@@ -654,7 +655,7 @@ export function AdminReservationsClient({
                 value={searchInput}
                 onChange={(event) => setSearchInput(event.target.value)}
                 placeholder="Search code, guest, unit, or phone"
-                className="h-9 w-full rounded-lg border border-slate-300 pl-9 pr-9 text-sm outline-none ring-blue-200 focus:ring-2"
+                className="h-10 w-full rounded-lg border border-slate-300 pl-9 pr-9 text-sm outline-none ring-blue-200 focus:ring-2"
               />
               {searchInput ? (
                 <button
@@ -681,7 +682,7 @@ export function AdminReservationsClient({
                   setReservationStatusFilter(event.target.value as ReservationStatus | "all");
                   setPage(1);
                 }}
-                className="h-9 rounded-lg border border-slate-300 px-3 text-sm text-slate-700"
+                className="h-10 rounded-lg border border-slate-300 px-3 text-sm text-slate-700"
               >
                 <option value="all">All statuses</option>
                 <option value="pending_payment">Pending Payment</option>
@@ -702,7 +703,7 @@ export function AdminReservationsClient({
                   setPaymentStatusFilter(event.target.value as PaymentStatusFilter);
                   setPage(1);
                 }}
-                className="h-9 rounded-lg border border-slate-300 px-3 text-sm text-slate-700"
+                className="h-10 rounded-lg border border-slate-300 px-3 text-sm text-slate-700"
               >
                 <option value="all">All payments</option>
                 <option value="unpaid">Unpaid</option>
@@ -711,18 +712,19 @@ export function AdminReservationsClient({
               </select>
             </label>
 
-            <label className="grid gap-1 text-xs text-slate-600">
-              Date
-              <input
-                type="date"
+            <div className="grid gap-1 text-xs text-slate-600">
+              <FancyDatePicker
+                label="Date"
                 value={arrivalDateFilter}
-                onChange={(event) => {
-                  setArrivalDateFilter(event.target.value);
+                onChange={(next) => {
+                  setArrivalDateFilter(next);
                   setPage(1);
                 }}
-                className="h-9 rounded-lg border border-slate-300 px-3 text-sm text-slate-700"
+                allowClear
+                popoverAlign="end"
+                labelClassName="text-xs text-slate-600"
               />
-            </label>
+            </div>
 
             <div className="flex items-end">
               <button
@@ -736,7 +738,7 @@ export function AdminReservationsClient({
                   setSearchValue("");
                   setPage(1);
                 }}
-                className="inline-flex h-9 w-full items-center justify-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                className="inline-flex h-10 w-full items-center justify-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
               >
                 Clear filters
               </button>

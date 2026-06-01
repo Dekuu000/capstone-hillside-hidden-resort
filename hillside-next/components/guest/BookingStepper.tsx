@@ -1,42 +1,41 @@
 "use client";
 
-const STEP_LABELS = [
-  "Select dates",
-  "Choose unit",
-  "Review payment",
-  "Confirm booking",
-];
+type BookingStepperProps = {
+  currentStep: number;
+  steps?: string[];
+};
 
-export function BookingStepper({ currentStep }: { currentStep: number }) {
-  const clamped = Math.max(1, Math.min(4, currentStep));
+const DEFAULT_STEP_LABELS = ["Dates", "Units", "Confirm"];
+
+export function BookingStepper({ currentStep, steps = DEFAULT_STEP_LABELS }: BookingStepperProps) {
+  const stepLabels = steps.length > 0 ? steps : DEFAULT_STEP_LABELS;
+  const clamped = Math.max(1, Math.min(stepLabels.length, currentStep));
   return (
     <ol
       data-testid="booking-stepper"
-      className="grid grid-cols-2 gap-2 lg:grid-cols-4"
+      className={`grid gap-2 text-center ${stepLabels.length === 4 ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-3"}`}
       aria-label="Booking progress steps"
     >
-      {STEP_LABELS.map((label, index) => {
+      {stepLabels.map((label, index) => {
         const step = index + 1;
         const active = step === clamped;
         const completed = step < clamped;
         return (
           <li
             key={label}
-            className={`flex min-h-11 items-center gap-2 rounded-2xl border px-3.5 text-xs font-semibold transition-colors ${
+            className={`flex h-10 items-center justify-center gap-2 rounded-2xl border px-3 text-xs font-bold transition-colors ${
               active
-                ? "border-[var(--color-secondary)] bg-teal-50 text-[var(--color-text)] shadow-sm"
+                ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white shadow-sm"
                 : completed
-                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                  : "border-[var(--color-border)] bg-white text-[var(--color-muted)]"
+                  ? "border-slate-200 bg-white text-slate-700"
+                  : "border-slate-200 bg-white text-slate-500"
             }`}
           >
             <span
               className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-[11px] ${
                 active
-                  ? "bg-[var(--color-secondary)] text-white"
-                  : completed
-                    ? "bg-emerald-500 text-white"
-                    : "bg-slate-200 text-slate-700"
+                  ? "bg-white/20 text-white"
+                  : "bg-slate-100 text-slate-500"
               }`}
               aria-hidden="true"
             >

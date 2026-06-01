@@ -1,10 +1,10 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
-import { Calendar, CircleCheck, CircleX, CreditCard, Eye, QrCode } from "lucide-react";
+import { Calendar, CircleCheck, CircleX, CreditCard, Eye, QrCode, Upload } from "lucide-react";
 import type {
   MyBookingsCursor as Cursor,
   MyBookingsResponse as BookingsResponse,
@@ -27,6 +27,7 @@ import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
 import { formatCachedAt, formatDateWithWeekday, formatLocalDateTime } from "../../lib/dateDisplay";
 import { formatPhpPeso as formatPeso } from "../../lib/formatCurrency";
+import { getUnitLabel } from "../../lib/unitLabel";
 import { parseJwtSub } from "../../lib/jwt";
 import { loadLastIssuedQrToken, saveLastIssuedQrToken } from "../../lib/guestQrTokenCache";
 import { useNetworkOnline } from "../../lib/hooks/useNetworkOnline";
@@ -226,6 +227,7 @@ export function MyBookingsClient({
   const [detailGalleryIndex, setDetailGalleryIndex] = useState(0);
   const [detailGalleryOpen, setDetailGalleryOpen] = useState(false);
   const [detailLightboxOpen, setDetailLightboxOpen] = useState(false);
+  const submitProofInputId = useId();
 
   const pushActionMessage = useCallback((message: string, withSyncCta = false) => {
     setActionMessage(message);
@@ -685,9 +687,10 @@ export function MyBookingsClient({
     } | null) => {
       const images = normalizeUnitImageUrls(unit?.image_urls, unit?.image_url);
       if (!images.length) return;
+      const label = getUnitLabel(unit?.name || "Unit");
       setDetailGalleryImages(images);
       setDetailGalleryThumbs(normalizeUnitThumbUrls(images, unit?.image_thumb_urls ?? null));
-      setDetailGalleryTitle(unit?.name || "Unit photos");
+      setDetailGalleryTitle(label.subtitle ? `${label.title} (${label.subtitle})` : label.title || "Unit photos");
       setDetailGalleryIndex(0);
       setDetailGalleryOpen(true);
       setDetailLightboxOpen(false);
@@ -763,20 +766,17 @@ export function MyBookingsClient({
       <div className="hidden lg:block">
         <GuestHero
           testId="guest-hero"
+          dark
           eyebrow="Guest Portal"
           title="My Bookings"
-          subtitle={(
-            <>
-              Welcome back, <span className="font-semibold">{(sessionEmail ?? "guest").split("@")[0] || "guest"}</span>
-            </>
-          )}
-          className="rounded-[2rem] border-slate-200/80 shadow-sm lg:min-h-[198px]"
+          className="rounded-[2rem] shadow-sm lg:min-h-[198px]"
           contentClassName="lg:min-h-[174px] lg:p-6"
           rightSlot={(
             <StaySnapshotCard
               nextStayDate={formatDateWithWeekday(summary.nextDate)}
               outstandingBalance={formatPeso(summary.outstanding)}
               qrStatus={summary.qrReady ? "QR ready" : "No QR yet"}
+              dark
             />
           )}
         />
@@ -938,7 +938,10 @@ export function MyBookingsClient({
           const bookingLabel = isTour ? "Tour" : "Stay";
           const bookingTarget = isTour
             ? booking.service_bookings?.map((item) => item.service?.service_name || "Tour service").join(", ")
-            : booking.units?.map((item) => item.unit?.name || "Unit").join(", ");
+            : booking.units?.map((item) => {
+                const label = getUnitLabel(item.unit?.name || "Unit");
+                return label.subtitle ? `${label.title} (${label.subtitle})` : label.title;
+              }).join(", ");
           const visitDate = booking.service_bookings?.[0]?.visit_date ?? booking.check_in_date;
           const checkInDate = new Date(`${booking.check_in_date}T00:00:00`);
           const canCancel = ["pending_payment", "for_verification", "confirmed"].includes(booking.status) && checkInDate > now;
@@ -1161,7 +1164,12 @@ export function MyBookingsClient({
                     {detailUnits.map((row) => (
                       <div key={row.reservation_unit_id} className="mb-2 rounded-lg border border-slate-200 p-3">
                         <div>
-                          <strong>{row.unit?.name ?? "Unit"}</strong>
+                          <strong>
+                            {(() => {
+                              const label = getUnitLabel(row.unit?.name || "Unit");
+                              return label.subtitle ? `${label.title} (${label.subtitle})` : label.title;
+                            })()}
+                          </strong>
                           <p className="text-xs text-slate-500">
                             {row.quantity_or_nights} night(s) x {formatPeso(row.rate_snapshot)}
                           </p>
@@ -1299,12 +1307,53 @@ export function MyBookingsClient({
                 </div>
 
                 {submitProofMode === "file" ? (
-                  <input
-                    type="file"
-                    accept="image/*,.pdf"
-                    onChange={(event) => setSubmitProofFile(event.target.files?.[0] ?? null)}
-                    className="guest-field-control guest-field-control-file text-sm"
-                  />
+                  <div className="grid gap-2">
+                    <label
+                      htmlFor={submitProofInputId}
+                      className="group inline-flex min-h-14 w-full cursor-pointer items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 transition hover:border-[var(--color-secondary)] hover:bg-teal-50/20"
+                    >
+                      <span className="min-w-0 text-sm font-semibold text-slate-700 transition group-hover:text-[var(--color-secondary)]">
+                        <span className="block truncate">{submitProofFile ? "Change payment proof" : "Upload payment proof"}</span>
+                        <span className="block text-xs font-medium text-slate-500 transition group-hover:text-slate-600">
+                          JPG, PNG, or PDF
+                        </span>
+                      </span>
+                      <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-500 transition group-hover:border-[var(--color-secondary)] group-hover:bg-teal-50 group-hover:text-[var(--color-secondary)]">
+                        <Upload className="h-4 w-4" />
+                      </span>
+                    </label>
+                    <input
+                      id={submitProofInputId}
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={(event) => setSubmitProofFile(event.target.files?.[0] ?? null)}
+                      className="sr-only"
+                    />
+                    {submitProofFile ? (
+                      <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+                        <span className="inline-flex min-w-0 items-center gap-2">
+                          <CircleCheck className="h-4 w-4 shrink-0" />
+                          <span className="truncate font-medium">{submitProofFile.name}</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSubmitProofFile(null);
+                            const input = document.getElementById(submitProofInputId) as HTMLInputElement | null;
+                            if (input) input.value = "";
+                          }}
+                          className="inline-flex items-center gap-1 rounded-lg px-2 py-1 font-semibold text-emerald-800 transition hover:bg-emerald-100"
+                        >
+                          <CircleX className="h-3.5 w-3.5" />
+                          Remove
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                        No file chosen
+                      </p>
+                    )}
+                  </div>
                 ) : (
                   <input
                     type="url"

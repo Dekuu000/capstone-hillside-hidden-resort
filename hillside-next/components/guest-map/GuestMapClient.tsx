@@ -22,7 +22,9 @@ const AMENITY_DATA_URL = "/data/guest-map-amenities.json";
 const MAP_CACHE_NAME = "guest-map-v2";
 
 const FALLBACK_AMENITIES: GuestMapAmenityPin[] = guestMapLocations;
-const WALK_MINUTES_SCALE = 0.38;
+// Resort is compact; keep ETA estimates short and practical for on-site walking.
+const WALK_MINUTES_SCALE = 0.08;
+const WALK_MINUTES_MAX = 9;
 
 type RouteDifficulty = {
   label: "Easy" | "Moderate" | "Long";
@@ -252,7 +254,10 @@ export function GuestMapClient() {
   const etaMinutes = useMemo(() => {
     if (pathPinIds.length < 2) return 0;
     const totalDistance = routeDistance(pathPinIds, pinById);
-    return Math.max(1, Math.round(totalDistance * WALK_MINUTES_SCALE));
+    return Math.min(
+      WALK_MINUTES_MAX,
+      Math.max(1, Math.round(totalDistance * WALK_MINUTES_SCALE)),
+    );
   }, [pathPinIds, pinById]);
   const routeDifficulty = useMemo(
     () => (etaMinutes > 0 ? resolveRouteDifficulty(etaMinutes) : null),
@@ -309,7 +314,7 @@ export function GuestMapClient() {
                 Select route
               </button>
               <a
-                href="https://maps.google.com/?q=Hillside+Hidden+Resort"
+                href="https://www.google.com/maps/dir/?api=1&destination_place_id=ChIJZT_BXwBxljMRISjFCvccuhw&destination=Hillside+Hidden+Resort"
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-full border border-[var(--color-secondary)] bg-teal-50 px-3 text-xs font-semibold text-[var(--color-primary)] transition hover:bg-teal-100"
@@ -332,9 +337,9 @@ export function GuestMapClient() {
             onChange={(next) => setKindFilter(next as "all" | "trail" | "facility")}
             ariaLabel="Map pin filter"
             className="w-full grid-cols-3 border-none bg-transparent p-0 sm:max-w-md sm:grid-cols-3"
-            tabClassName="h-9 rounded-full px-3 text-xs"
-            activeClassName="border border-[var(--color-secondary)] bg-teal-50 text-[var(--color-text)]"
-            inactiveClassName="border border-[var(--color-border)] bg-white text-[var(--color-muted)] hover:bg-slate-50"
+            tabClassName="h-11 rounded-2xl px-3 text-sm font-semibold"
+            activeClassName="border border-[var(--color-secondary)] bg-teal-50 text-[var(--color-secondary)] shadow-sm"
+            inactiveClassName="border border-[var(--color-border)] bg-white text-slate-500 hover:bg-slate-50"
           />
         </div>
 
@@ -400,6 +405,7 @@ export function GuestMapClient() {
       <ResortMapCanvas
         mapImageUrl={MAP_IMAGE_URL}
         pins={filteredAmenities}
+        routePins={amenities}
         selectedPinId={activeAmenityId}
         trailEdges={guestTrailEdges}
         routePinIds={pathPinIds}

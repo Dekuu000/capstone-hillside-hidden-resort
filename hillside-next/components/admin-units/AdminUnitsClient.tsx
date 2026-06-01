@@ -13,6 +13,7 @@ import {
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
 import { formatPhpPeso as formatPeso } from "../../lib/formatCurrency";
+import { getUnitLabel } from "../../lib/unitLabel";
 import { ImageLightbox } from "../shared/ImageLightbox";
 import { UnitImageGallery } from "../shared/UnitImageGallery";
 import { UnitPhotoUploader } from "../shared/UnitPhotoUploader";
@@ -631,6 +632,7 @@ export function AdminUnitsClient({
       {!loading && items.length > 0 ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {items.map((unit) => {
+            const label = getUnitLabel(unit.name);
             const cover =
               (unit.image_thumb_urls && unit.image_thumb_urls.length
                 ? unit.image_thumb_urls[0]
@@ -647,7 +649,7 @@ export function AdminUnitsClient({
                 {cover ? (
                   <Image
                     src={cover}
-                    alt={unit.name}
+                    alt={label.title}
                     width={640}
                     height={256}
                     sizes="(min-width: 1280px) 33vw, (min-width: 640px) 50vw, 100vw"
@@ -659,7 +661,10 @@ export function AdminUnitsClient({
                 <div className="p-3">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <h3 className="line-clamp-1 text-base font-semibold text-[var(--color-text)]">{unit.name}</h3>
+                      <h3 className="line-clamp-1 text-base font-semibold text-[var(--color-text)]">{label.title}</h3>
+                      {label.subtitle ? (
+                        <p className="mt-0.5 text-xs font-medium text-[var(--color-muted)]">{label.subtitle}</p>
+                      ) : null}
                     </div>
                     <p className="text-sm font-bold text-[var(--color-text)]">{formatPeso(unit.base_price)}</p>
                   </div>

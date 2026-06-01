@@ -29,6 +29,8 @@ export function ResortSnapshotPanel({
   const aiTone = aiStatus === "ready" ? "success" : aiStatus === "stale" ? "warn" : "error";
   const aiLabel = aiStatus === "ready" ? "Demand ready" : aiStatus === "stale" ? "Demand stale" : "Demand missing";
   const demandPath = snapshot ? toDemandPath(snapshot.ai_demand_7d.items) : "";
+  const occupancyPercent = snapshot ? Math.round(snapshot.occupancy.occupancy_rate * 100) : null;
+  const remainingCleanable = snapshot ? Math.max(snapshot.occupancy.active_units - snapshot.occupancy.occupied_units, 0) : null;
 
   return (
     <section className="surface p-4 shadow-[0_10px_24px_rgba(15,23,42,0.08)] transition-[box-shadow,border-color] duration-200 hover:shadow-[0_14px_30px_rgba(15,23,42,0.12)] sm:p-5 lg:p-6">
@@ -60,28 +62,28 @@ export function ResortSnapshotPanel({
       ) : null}
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <article className="rounded-xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50 to-emerald-100/40 p-3 shadow-[0_8px_16px_rgba(16,185,129,0.10)] transition-[box-shadow,border-color,transform] duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_22px_rgba(16,185,129,0.16)] lg:col-span-2">
+          <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-emerald-800">
+            <Coins className="h-4 w-4 text-emerald-700" />
+            Cash Revenue (7d)
+          </p>
+          <p className="mt-2 text-3xl font-bold text-[var(--color-text)]">{snapshot ? formatPeso(snapshot.revenue.fiat_php_7d) : "--"}</p>
+          <p className="mt-1 text-xs font-medium text-emerald-800">Settled PHP collection</p>
+        </article>
+
         <article className="rounded-xl border border-[var(--color-border)] bg-white p-3 shadow-[0_6px_14px_rgba(15,23,42,0.04)] transition-[box-shadow,border-color,transform] duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_20px_rgba(15,23,42,0.10)]">
           <p className="inline-flex items-center gap-2 text-xs text-[var(--color-muted)]">
             <Hotel className="h-4 w-4 text-[var(--color-primary)]" />
             Occupancy now
           </p>
           <p className="mt-2 text-2xl font-bold text-[var(--color-text)]">
-            {snapshot ? `${Math.round(snapshot.occupancy.occupancy_rate * 100)}%` : "--"}
+            {occupancyPercent !== null ? `${occupancyPercent}%` : "--"}
           </p>
           <p className="text-xs text-[var(--color-muted)]">
             {snapshot
               ? `${snapshot.occupancy.occupied_units} occupied / ${snapshot.occupancy.active_units} active`
               : "No live occupancy data"}
           </p>
-        </article>
-
-        <article className="rounded-xl border border-[var(--color-border)] bg-white p-3 shadow-[0_6px_14px_rgba(15,23,42,0.04)] transition-[box-shadow,border-color,transform] duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_20px_rgba(15,23,42,0.10)]">
-          <p className="inline-flex items-center gap-2 text-xs text-[var(--color-muted)]">
-            <Coins className="h-4 w-4 text-[var(--color-secondary)]" />
-            FIAT revenue (7d)
-          </p>
-          <p className="mt-2 text-2xl font-bold text-[var(--color-text)]">{snapshot ? formatPeso(snapshot.revenue.fiat_php_7d) : "--"}</p>
-          <p className="text-xs text-[var(--color-muted)]">Settled PHP collection</p>
         </article>
 
         <article className="rounded-xl border border-[var(--color-border)] bg-white p-3 shadow-[0_6px_14px_rgba(15,23,42,0.04)] transition-[box-shadow,border-color,transform] duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_20px_rgba(15,23,42,0.10)]">
@@ -111,6 +113,18 @@ export function ResortSnapshotPanel({
               : "No forecast generated yet"}
           </p>
         </article>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-[var(--color-border)] bg-white p-3 text-xs text-[var(--color-muted)]">
+        <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 font-semibold text-slate-700">
+          Active units: {snapshot?.occupancy.active_units ?? "--"}
+        </span>
+        <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 font-semibold text-slate-700">
+          Vacant now: {remainingCleanable ?? "--"}
+        </span>
+        <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 font-semibold text-slate-700">
+          Chain: {snapshot?.revenue.crypto_chain_key ?? "sepolia"}
+        </span>
       </div>
 
       <div className="mt-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">

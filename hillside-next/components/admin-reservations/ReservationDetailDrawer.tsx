@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { AlertCircle, ChevronDown, ExternalLink, ShieldCheck, X } from "lucide-react";
+import { AlertCircle, Check, ChevronDown, Copy, ExternalLink, ShieldCheck, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { AdminPaymentItem, ReservationListItem } from "../../../packages/shared/src/types";
 import { buildTxExplorerUrl } from "../../lib/chainExplorer";
 import { formatDateTime, formatDateWithYear } from "../../lib/dateDisplay";
 import { formatPhpPeso as formatPeso } from "../../lib/formatCurrency";
 import { getReservationStatusMeta } from "../../lib/reservationStatus";
+import { getUnitLabel } from "../../lib/unitLabel";
 import { getReservationPaymentState, getReservationSource, type ReservationPaymentState } from "../../lib/reservationView";
 
 type ReservationDetailDrawerProps = {
@@ -94,6 +95,10 @@ export function ReservationDetailDrawer({
   onVerifyPayment,
 }: ReservationDetailDrawerProps) {
   const [ledgerOpen, setLedgerOpen] = useState(false);
+  const [copiedField, setCopiedField] = useState<
+    "reservation_code" | "contact" | "total_due" | "total_paid" | "remaining" | null
+  >(null);
+  const [copyToast, setCopyToast] = useState<string | null>(null);
 
   const source = reservation ? getReservationSource(reservation) : "online";
   const isTour = (reservation?.service_bookings?.length ?? 0) > 0;
@@ -139,6 +144,11 @@ export function ReservationDetailDrawer({
   const checkInActionHref = paymentState === "settled" ? checkInUrl : `${checkInUrl}&override=1`;
   const checkInActionLabel = paymentState === "settled" ? "Check-in" : "Check-in (Override)";
   const remainingBalance = Number(reservation?.balance_due ?? 0);
+  const hasRemainingBalance = remainingBalance > 0;
+  const remainingBalanceClass = hasRemainingBalance ? "text-amber-700" : "text-emerald-700";
+  const remainingBadgeClass = hasRemainingBalance
+    ? "border-amber-200 bg-amber-50 text-amber-800"
+    : "border-emerald-200 bg-emerald-50 text-emerald-800";
   const historyUrl = reservation
     ? `/admin/blockchain?tab=audit&search=${encodeURIComponent(reservation.reservation_id)}`
     : "/admin/blockchain?tab=audit";
@@ -199,6 +209,39 @@ export function ReservationDetailDrawer({
     const amount = Math.max(0, remainingBalance);
     return `Recording ${formatPeso(amount)} will unlock check-in.`;
   }, [paymentState, readinessState, remainingBalance, reservation]);
+
+  const handleCopy = async (
+    field: "reservation_code" | "contact",
+    value: string | null | undefined,
+    label: string,
+  ) => {
+    if (!value) return;
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopiedField(field);
+      setCopyToast(`${label} copied`);
+      window.setTimeout(() => setCopiedField((prev) => (prev === field ? null : prev)), 1200);
+      window.setTimeout(() => setCopyToast((prev) => (prev ? null : prev)), 1400);
+    } catch {
+      // no-op: keep UX quiet if clipboard permission is denied
+    }
+  };
+  const handleCopyMoney = async (
+    field: "total_due" | "total_paid" | "remaining",
+    value: number | null | undefined,
+    label: string,
+  ) => {
+    if (value == null) return;
+    try {
+      await navigator.clipboard.writeText(formatPeso(Number(value)));
+      setCopiedField(field);
+      setCopyToast(`${label} copied`);
+      window.setTimeout(() => setCopiedField((prev) => (prev === field ? null : prev)), 1200);
+      window.setTimeout(() => setCopyToast((prev) => (prev ? null : prev)), 1400);
+    } catch {
+      // no-op
+    }
+  };
 
   if (!open) return null;
 
@@ -262,15 +305,64 @@ export function ReservationDetailDrawer({
 
                 <section className="rounded-2xl border border-slate-200 p-3">
                   <h4 className="text-sm font-semibold text-slate-900">Reservation Summary</h4>
-                  <div className="mt-2 grid gap-2 text-sm md:grid-cols-2">
-                    <p><span className="text-slate-500">Guest:</span> {reservation.guest?.name || "-"}</p>
-                    <p><span className="text-slate-500">Contact:</span> {reservation.guest?.phone || reservation.guest?.email || "-"}</p>
-                    <p><span className="text-slate-500">{isTour ? "Tour" : "Unit"}:</span> {isTour ? (reservation.service_bookings?.map((item) => item.service?.service_name || "Tour").join(", ") || "-") : (reservation.units?.map((item) => item.unit?.name || "Unit").join(", ") || "-")}</p>
-                    <p><span className="text-slate-500">{isTour ? "Visit date:" : "Stay dates:"}</span> {isTour ? formatDateWithYear(arrivalDate) : `${formatDateWithYear(reservation.check_in_date)} to ${formatDateWithYear(reservation.check_out_date)}`}</p>
-                    <p><span className="text-slate-500">Pax:</span> {reservation.guest_count ?? "-"}</p>
-                    <p><span className="text-slate-500">Created at:</span> {formatDateTime(reservation.created_at)}</p>
-                    <p><span className="text-slate-500">Booking source:</span> {source === "walk_in" ? "Walk-in front desk" : "Online guest portal"}</p>
-                    <p><span className="text-slate-500">Created by:</span> {source === "walk_in" ? "Front desk admin" : "Guest account"}</p>
+                  <div className="mt-2 grid gap-3 md:grid-cols-2">
+                    <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-2.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm">
+                          <span className="text-slate-500">Reservation:</span>{" "}
+                          <span className="font-semibold text-slate-900">{reservation.reservation_code}</span>
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => handleCopy("reservation_code", reservation.reservation_code, "Reservation code")}
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50"
+                          aria-label="Copy reservation code"
+                          title="Copy reservation code"
+                        >
+                          {copiedField === "reservation_code" ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+                        </button>
+                      </div>
+                      <p className="mt-1 text-sm">
+                        <span className="text-slate-500">Guest:</span>{" "}
+                        <span className="font-semibold text-slate-900">{reservation.guest?.name || "-"}</span>
+                      </p>
+                      <p className="mt-1 text-sm">
+                        <span className="text-slate-500">{isTour ? "Tour" : "Unit"}:</span>{" "}
+                        <span className="font-semibold text-slate-900">
+                          {isTour
+                            ? (reservation.service_bookings?.map((item) => item.service?.service_name || "Tour").join(", ") || "-")
+                            : (
+                                reservation.units?.map((item) => {
+                                  const label = getUnitLabel(item.unit?.name || "Unit");
+                                  return label.subtitle ? `${label.title} (${label.subtitle})` : label.title;
+                                }).join(", ") || "-"
+                              )}
+                        </span>
+                      </p>
+                      <p className="mt-1 text-sm"><span className="text-slate-500">Pax:</span> {reservation.guest_count ?? "-"}</p>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-200 bg-white p-2.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm">
+                          <span className="text-slate-500">Contact:</span>{" "}
+                          <span className="font-semibold text-slate-900">{reservation.guest?.phone || reservation.guest?.email || "-"}</span>
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => handleCopy("contact", reservation.guest?.phone || reservation.guest?.email, "Contact")}
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50"
+                          aria-label="Copy contact"
+                          title="Copy contact"
+                        >
+                          {copiedField === "contact" ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+                        </button>
+                      </div>
+                      <p className="mt-1 text-sm"><span className="text-slate-500">{isTour ? "Visit date:" : "Stay dates:"}</span> {isTour ? formatDateWithYear(arrivalDate) : `${formatDateWithYear(reservation.check_in_date)} to ${formatDateWithYear(reservation.check_out_date)}`}</p>
+                      <p className="mt-1 text-sm"><span className="text-slate-500">Created at:</span> {formatDateTime(reservation.created_at)}</p>
+                      <p className="mt-1 text-sm"><span className="text-slate-500">Booking source:</span> {source === "walk_in" ? "Walk-in front desk" : "Online guest portal"}</p>
+                      <p className="mt-1 text-sm"><span className="text-slate-500">Created by:</span> {source === "walk_in" ? "Front desk admin" : "Guest account"}</p>
+                    </div>
                   </div>
                 </section>
 
@@ -285,13 +377,69 @@ export function ReservationDetailDrawer({
                       Refresh
                     </button>
                   </div>
-                  <div className="grid gap-2 text-sm md:grid-cols-2">
-                    <p><span className="text-slate-500">Total due:</span> {formatPeso(reservation.total_amount)}</p>
-                    <p><span className="text-slate-500">Total paid:</span> {formatPeso(reservation.amount_paid_verified)}</p>
-                    <p><span className="text-slate-500">Remaining:</span> {formatPeso(reservation.balance_due)}</p>
+                  <div className="mb-3 grid gap-2 sm:grid-cols-3">
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Total due</p>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyMoney("total_due", Number(reservation.total_amount), "Total due")}
+                          className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-100"
+                          aria-label="Copy total due"
+                          title="Copy total due"
+                        >
+                          {copiedField === "total_due" ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+                        </button>
+                      </div>
+                      <p className="mt-1 text-lg font-semibold text-slate-900">{formatPeso(reservation.total_amount)}</p>
+                    </div>
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 px-3 py-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-700">Paid</p>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyMoney("total_paid", Number(reservation.amount_paid_verified), "Total paid")}
+                          className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-emerald-200 bg-white/90 text-emerald-700 transition hover:bg-emerald-100"
+                          aria-label="Copy total paid"
+                          title="Copy total paid"
+                        >
+                          {copiedField === "total_paid" ? <Check className="h-3.5 w-3.5 text-emerald-700" /> : <Copy className="h-3.5 w-3.5" />}
+                        </button>
+                      </div>
+                      <p className="mt-1 text-lg font-semibold text-emerald-800">{formatPeso(reservation.amount_paid_verified)}</p>
+                    </div>
+                    <div className={`rounded-xl border px-3 py-2 ${remainingBadgeClass}`}>
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em]">Remaining</p>
+                        <div className="flex items-center gap-1.5">
+                          <span className="rounded-full border border-current/20 bg-white/70 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em]">
+                            {hasRemainingBalance ? "Payment needed" : "Settled"}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleCopyMoney("remaining", Number(reservation.balance_due), "Remaining balance")}
+                            className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-current/25 bg-white/80 text-current transition hover:bg-white"
+                            aria-label="Copy remaining balance"
+                            title="Copy remaining balance"
+                          >
+                            {copiedField === "remaining" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                          </button>
+                        </div>
+                      </div>
+                      <p className={`mt-1 text-2xl font-bold leading-none ${remainingBalanceClass}`}>{formatPeso(reservation.balance_due)}</p>
+                    </div>
+                  </div>
+                  <div className="grid gap-2 text-sm md:grid-cols-3">
                     <p><span className="text-slate-500">Payment method:</span> {latestPayment?.method?.toUpperCase() || "-"}</p>
                     <p><span className="text-slate-500">Latest payment:</span> {formatDateTime(latestPayment?.created_at)}</p>
-                    <p><span className="text-slate-500">Verification:</span> {firstPendingPayment ? "Pending verification" : paymentMeta.label}</p>
+                    <p>
+                      <span className="text-slate-500">Verification:</span>{" "}
+                      {firstPendingPayment ? (
+                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">Pending verification</span>
+                      ) : (
+                        <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${paymentMeta.className}`}>{paymentMeta.label}</span>
+                      )}
+                    </p>
                   </div>
                   <p className="mt-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700">
                     {paymentDynamicNote}
@@ -303,16 +451,29 @@ export function ReservationDetailDrawer({
                     <Link href={paymentRecordUrl} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200">
                       Open Payment Form
                     </Link>
-                    <Link
-                      href={checkInActionHref}
-                      className={`rounded-lg px-3 py-2 text-xs font-semibold ${
-                        paymentState === "settled"
-                          ? "border border-slate-900 bg-slate-900 text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
-                          : "border border-amber-400 bg-amber-50 text-amber-800 transition hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200"
-                      }`}
-                    >
-                      {checkInActionLabel}
-                    </Link>
+                    {paymentState !== "settled" ? (
+                      <Link
+                        href={paymentRecordUrl}
+                        className="rounded-lg border border-slate-900 bg-slate-900 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                      >
+                        Record Payment
+                      </Link>
+                    ) : (
+                      <Link
+                        href={checkInActionHref}
+                        className="rounded-lg border border-slate-900 bg-slate-900 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                      >
+                        {checkInActionLabel}
+                      </Link>
+                    )}
+                    {paymentState !== "settled" ? (
+                      <Link
+                        href={checkInActionHref}
+                        className="rounded-lg border border-amber-400 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800 transition hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200"
+                      >
+                        Check-in (Override)
+                      </Link>
+                    ) : null}
                     {source === "online" && firstPendingPayment ? (
                       <button
                         type="button"
@@ -414,7 +575,22 @@ export function ReservationDetailDrawer({
 
           {reservation ? (
             <div className="sticky bottom-0 z-10 border-t border-slate-200 bg-white/95 p-3 backdrop-blur">
-              <div className="flex flex-wrap justify-end gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex min-h-7 items-center gap-2" aria-live="polite">
+                  <span
+                    className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold ${remainingBadgeClass}`}
+                  >
+                    {hasRemainingBalance
+                      ? `Blocked: ${formatPeso(remainingBalance)} remaining`
+                      : "Payment settled"}
+                  </span>
+                  {copyToast ? (
+                    <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
+                      {copyToast}
+                    </span>
+                  ) : null}
+                </div>
+                <div className="flex flex-wrap justify-end gap-2">
                 <button
                   type="button"
                   onClick={onClose}
@@ -440,6 +616,7 @@ export function ReservationDetailDrawer({
                     </Link>
                   )
                 ) : null}
+                </div>
               </div>
             </div>
           ) : null}

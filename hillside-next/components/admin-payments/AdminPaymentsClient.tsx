@@ -59,6 +59,13 @@ const WORKFLOW_FILTERS: Array<{ id: PaymentWorkflowFilter; label: string }> = [
   { id: "rejected", label: "Rejected" },
 ];
 
+function workflowToApiTab(filter: PaymentWorkflowFilter): AdminPaymentsTab {
+  if (filter === "to_review") return "to_review";
+  if (filter === "rejected") return "rejected";
+  if (filter === "paid") return "verified";
+  return "all";
+}
+
 const CANCELLED_STATUSES = new Set<ReservationStatus>(["cancelled", "no_show"]);
 
 function policyOutcomeMeta(outcome?: string | null) {
@@ -112,10 +119,10 @@ export function AdminPaymentsClient({
   const searchParams = useSearchParams();
   const { showToast } = useToast();
 
-  const [tab, setTab] = useState<AdminPaymentsTab>(initialTab);
   const [workflowFilter, setWorkflowFilter] = useState<PaymentWorkflowFilter>(
     initialTab === "to_review" ? "to_review" : initialTab === "rejected" ? "rejected" : "all",
   );
+  const [tab, setTab] = useState<AdminPaymentsTab>(workflowToApiTab(initialTab === "to_review" ? "to_review" : initialTab === "rejected" ? "rejected" : "all"));
   const [searchInput, setSearchInput] = useState(initialSearch);
   const [searchValue, setSearchValue] = useState(initialSearch);
   const [page, setPage] = useState(Math.max(1, initialPage));
@@ -238,21 +245,6 @@ export function AdminPaymentsClient({
       cancelled = true;
     };
   }, [onSiteReservationId, token]);
-
-  useEffect(() => {
-    const nextTab: AdminPaymentsTab =
-      workflowFilter === "to_review"
-        ? "to_review"
-        : workflowFilter === "rejected"
-          ? "rejected"
-          : workflowFilter === "paid"
-            ? "verified"
-            : "all";
-    if (tab !== nextTab) {
-      setTab(nextTab);
-      setPage(1);
-    }
-  }, [tab, workflowFilter]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -716,6 +708,7 @@ export function AdminPaymentsClient({
                   id={`payments-tab-${filterDef.id}`}
                   onClick={() => {
                     setWorkflowFilter(filterDef.id);
+                    setTab(workflowToApiTab(filterDef.id));
                     setPage(1);
                   }}
                   className={`inline-flex h-9 items-center justify-center gap-1 rounded-lg px-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 ${

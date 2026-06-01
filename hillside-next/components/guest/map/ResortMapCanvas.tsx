@@ -6,6 +6,7 @@ import { MapPin } from "./MapPin";
 export function ResortMapCanvas({
   mapImageUrl,
   pins,
+  routePins,
   selectedPinId,
   trailEdges,
   routePinIds,
@@ -13,12 +14,13 @@ export function ResortMapCanvas({
 }: {
   mapImageUrl: string;
   pins: GuestMapAmenityPin[];
+  routePins?: GuestMapAmenityPin[];
   selectedPinId: string | null;
   trailEdges: Array<{ from: string; to: string }>;
   routePinIds: string[];
   onSelectPin: (id: string) => void;
 }) {
-  const pinById = new Map(pins.map((pin) => [pin.id, pin]));
+  const routePinById = new Map((routePins ?? pins).map((pin) => [pin.id, pin]));
   const routeSegments = routePinIds.slice(0, -1).map((fromId, index) => ({
     fromId,
     toId: routePinIds[index + 1],
@@ -41,8 +43,8 @@ export function ResortMapCanvas({
           preserveAspectRatio="none"
         >
           {trailEdges.map((edge) => {
-            const from = pinById.get(edge.from);
-            const to = pinById.get(edge.to);
+            const from = routePinById.get(edge.from);
+            const to = routePinById.get(edge.to);
             if (!from || !to) return null;
             return (
               <line
@@ -58,8 +60,8 @@ export function ResortMapCanvas({
             );
           })}
           {routeSegments.map((segment) => {
-            const from = pinById.get(segment.fromId);
-            const to = pinById.get(segment.toId);
+            const from = routePinById.get(segment.fromId);
+            const to = routePinById.get(segment.toId);
             if (!from || !to) return null;
             return (
               <line

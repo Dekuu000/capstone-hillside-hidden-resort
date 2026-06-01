@@ -68,7 +68,7 @@ export function FilterBar({
             type="date"
             value={dateValue}
             onChange={handleDate}
-            className="h-10 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-sm text-[var(--color-text)] outline-none focus-visible:ring-4 focus-visible:ring-teal-200"
+            className="app-date-input"
           />
         </label>
       ) : null}

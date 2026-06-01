@@ -2,10 +2,18 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
+  CalendarClock,
+  CheckCircle2,
   ClipboardList,
+  Hash,
   Loader2,
+  NotebookText,
+  OctagonX,
+  Package,
+  PlayCircle,
+  ReceiptText,
   Search,
-  Sparkles,
+  UserRound,
   Wrench,
 } from "lucide-react";
 import type {
@@ -45,6 +53,16 @@ const STATUS_STYLE: Record<string, string> = {
   done: "bg-emerald-100 text-emerald-800",
   cancelled: "bg-rose-100 text-rose-800",
 };
+
+function getServiceCategoryBadge(category?: string | null) {
+  if (category === "spa") {
+    return { label: "Spa", className: "bg-purple-100 text-purple-800" };
+  }
+  if (category === "room_service") {
+    return { label: "Room Service", className: "bg-teal-100 text-teal-800" };
+  }
+  return { label: "Service", className: "bg-slate-100 text-slate-700" };
+}
 
 export function AdminServicesClient({ accessToken }: Props) {
   const { showToast } = useToast();
@@ -249,11 +267,18 @@ export function AdminServicesClient({ accessToken }: Props) {
                 <p className="font-semibold text-[var(--color-text)]">
                   {row.service_item?.service_name || "Service request"}
                 </p>
-                <span
-                  className={`rounded-full px-2 py-1 text-xs font-semibold ${STATUS_STYLE[row.status] || "bg-slate-100 text-slate-700"}`}
-                >
-                  {row.status.replaceAll("_", " ")}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className={`rounded-full px-2 py-1 text-xs font-semibold ${getServiceCategoryBadge(row.service_item?.category).className}`}
+                  >
+                    {getServiceCategoryBadge(row.service_item?.category).label}
+                  </span>
+                  <span
+                    className={`rounded-full px-2 py-1 text-xs font-semibold ${STATUS_STYLE[row.status] || "bg-slate-100 text-slate-700"}`}
+                  >
+                    {row.status.replaceAll("_", " ")}
+                  </span>
+                </div>
               </div>
               <div className="mt-1 text-sm text-[var(--color-muted)]">
                 <span>{row.guest?.name || row.guest?.email || "Guest"}</span>
@@ -276,19 +301,42 @@ export function AdminServicesClient({ accessToken }: Props) {
         {activeRow ? (
           <div className="space-y-4">
             <section className="rounded-xl border border-[var(--color-border)] bg-slate-50 p-3 text-sm text-[var(--color-text)]">
-              <p><strong>Guest:</strong> {activeRow.guest?.name || activeRow.guest?.email || "-"}</p>
-              <p><strong>Reservation:</strong> {activeRow.reservation?.reservation_code || "-"}</p>
-              <p><strong>Quantity:</strong> {activeRow.quantity}</p>
-              <p><strong>Price:</strong> {toPeso(Number(activeRow.service_item?.price || 0))}</p>
-              <p><strong>Requested:</strong> {formatDateTime(activeRow.requested_at)}</p>
-              <p>
-                <strong>Preferred time:</strong>{" "}
-                {activeRow.preferred_time ? formatDateTime(activeRow.preferred_time) : "-"}
-              </p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <div className="inline-flex items-start gap-2">
+                  <UserRound className="mt-0.5 h-4 w-4 text-slate-500" />
+                  <p><strong>Guest:</strong> {activeRow.guest?.name || activeRow.guest?.email || "-"}</p>
+                </div>
+                <div className="inline-flex items-start gap-2">
+                  <Hash className="mt-0.5 h-4 w-4 text-slate-500" />
+                  <p><strong>Reservation:</strong> {activeRow.reservation?.reservation_code || "-"}</p>
+                </div>
+                <div className="inline-flex items-start gap-2">
+                  <Package className="mt-0.5 h-4 w-4 text-slate-500" />
+                  <p><strong>Quantity:</strong> {activeRow.quantity}</p>
+                </div>
+                <div className="inline-flex items-start gap-2">
+                  <ReceiptText className="mt-0.5 h-4 w-4 text-slate-500" />
+                  <p><strong>Price:</strong> {toPeso(Number(activeRow.service_item?.price || 0))}</p>
+                </div>
+                <div className="inline-flex items-start gap-2 sm:col-span-2">
+                  <CalendarClock className="mt-0.5 h-4 w-4 text-slate-500" />
+                  <p><strong>Requested:</strong> {formatDateTime(activeRow.requested_at)}</p>
+                </div>
+                <div className="inline-flex items-start gap-2 sm:col-span-2">
+                  <Wrench className="mt-0.5 h-4 w-4 text-slate-500" />
+                  <p>
+                    <strong>Preferred time:</strong>{" "}
+                    {activeRow.preferred_time ? formatDateTime(activeRow.preferred_time) : "-"}
+                  </p>
+                </div>
+              </div>
             </section>
             {activeRow.notes ? (
               <section className="rounded-xl border border-[var(--color-border)] bg-white p-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">Notes</p>
+                <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">
+                  <NotebookText className="h-3.5 w-3.5" />
+                  Notes
+                </p>
                 <p className="mt-1 text-sm text-[var(--color-text)]">{activeRow.notes}</p>
               </section>
             ) : null}
@@ -299,7 +347,7 @@ export function AdminServicesClient({ accessToken }: Props) {
                 onClick={() => void updateStatus(activeRow.request_id, "in_progress")}
                 className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)] disabled:opacity-50"
               >
-                <Wrench className="h-4 w-4" />
+                <PlayCircle className="h-4 w-4 text-amber-600" />
                 Start
               </button>
               <button
@@ -308,15 +356,16 @@ export function AdminServicesClient({ accessToken }: Props) {
                 onClick={() => void updateStatus(activeRow.request_id, "done")}
                 className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[var(--color-success)] px-3 text-sm font-semibold text-white disabled:opacity-50"
               >
-                {actionBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                {actionBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                 Complete
               </button>
               <button
                 type="button"
                 disabled={actionBusy || activeRow.status === "cancelled"}
                 onClick={() => void updateStatus(activeRow.request_id, "cancelled")}
-                className="inline-flex h-10 items-center justify-center rounded-lg border border-rose-300 bg-rose-50 px-3 text-sm font-semibold text-rose-700 disabled:opacity-50"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-rose-300 bg-rose-50 px-3 text-sm font-semibold text-rose-700 disabled:opacity-50"
               >
+                <OctagonX className="h-4 w-4" />
                 Cancel
               </button>
             </section>

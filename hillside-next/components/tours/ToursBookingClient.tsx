@@ -1,9 +1,9 @@
 ﻿"use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CalendarDays, CheckCircle2, ChevronDown, ChevronRight, CreditCard, ShieldCheck } from "lucide-react";
+import { CalendarDays, CheckCircle2, ChevronDown, ChevronRight, CreditCard, ShieldCheck, Upload } from "lucide-react";
 import type {
   PaymentSubmissionResponse,
   PricingRecommendation,
@@ -71,6 +71,7 @@ export function ToursBookingClient({
   const [successHasSyncCta, setSuccessHasSyncCta] = useState(false);
   const [latestAiRecommendation, setLatestAiRecommendation] = useState<PricingRecommendation | null>(null);
   const networkOnline = useNetworkOnline();
+  const proofFileInputId = useId();
 
   const applyAdultQty = (next: number) => {
     const safe = Math.max(0, next);
@@ -773,12 +774,52 @@ export function ToursBookingClient({
                       </button>
                     </div>
                     {proofMode === "file" ? (
-                      <input
-                        type="file"
-                        accept="image/*,.pdf"
-                        onChange={(event) => setProofFile(event.target.files?.[0] ?? null)}
-                        className="guest-field-control guest-field-control-file text-sm"
-                      />
+                      <div className="grid gap-2">
+                        <label
+                          htmlFor={proofFileInputId}
+                          className="group inline-flex min-h-14 w-full cursor-pointer items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 transition hover:border-[var(--color-secondary)] hover:bg-teal-50/20"
+                        >
+                          <span className="min-w-0 text-sm font-semibold text-slate-700 transition group-hover:text-[var(--color-secondary)]">
+                            <span className="block truncate">{proofFile ? "Change payment proof" : "Upload payment proof"}</span>
+                            <span className="block text-xs font-medium text-slate-500 transition group-hover:text-slate-600">
+                              JPG, PNG, or PDF
+                            </span>
+                          </span>
+                          <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-500 transition group-hover:border-[var(--color-secondary)] group-hover:bg-teal-50 group-hover:text-[var(--color-secondary)]">
+                            <Upload className="h-4 w-4" />
+                          </span>
+                        </label>
+                        <input
+                          id={proofFileInputId}
+                          type="file"
+                          accept="image/*,.pdf"
+                          onChange={(event) => setProofFile(event.target.files?.[0] ?? null)}
+                          className="sr-only"
+                        />
+                        {proofFile ? (
+                          <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+                            <span className="inline-flex min-w-0 items-center gap-2">
+                              <CheckCircle2 className="h-4 w-4 shrink-0" />
+                              <span className="truncate font-medium">{proofFile.name}</span>
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setProofFile(null);
+                                const input = document.getElementById(proofFileInputId) as HTMLInputElement | null;
+                                if (input) input.value = "";
+                              }}
+                              className="rounded-lg px-2 py-1 font-semibold text-emerald-800 transition hover:bg-emerald-100"
+                            >
+                              Clear
+                            </button>
+                          </div>
+                        ) : (
+                          <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                            No file chosen
+                          </p>
+                        )}
+                      </div>
                     ) : (
                       <input
                         type="url"

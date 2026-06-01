@@ -50,6 +50,12 @@ from app.schemas.common import (
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
+PAX_BASED_STAY_UNIT_RULES: dict[str, tuple[int, float, float]] = {
+    # unit_code: (included_pax, fallback_min_rate, extra_pax_rate)
+    "AMN-EVERGREEN-PAVILION": (30, 8500.0, 250.0),
+    "AMN-PINECREST-EXCLUSIVE": (20, 12000.0, 400.0),
+}
+
 
 def _parse_iso_date(value: str, field_name: str) -> date:
     try:
@@ -167,9 +173,17 @@ def _apply_reservation_create(op: OfflineOperation, auth: AuthContext) -> tuple[
     rates: list[float] = []
     total_amount = 0.0
     for unit_id in unit_ids:
-        base_price = float(unit_map[unit_id].get("base_price") or 0)
-        rates.append(base_price)
-        total_amount += base_price * nights
+        unit = unit_map[unit_id]
+        base_price = float(unit.get("base_price") or 0)
+        unit_code = str(unit.get("unit_code") or "").upper()
+        rate = base_price
+        if unit_code in PAX_BASED_STAY_UNIT_RULES:
+            included_pax, fallback_min_rate, extra_pax_rate = PAX_BASED_STAY_UNIT_RULES[unit_code]
+            min_rate = base_price if base_price > 0 else fallback_min_rate
+            extra_pax = max(0, int(guest_count) - included_pax)
+            rate = min_rate + (extra_pax * extra_pax_rate)
+        rates.append(rate)
+        total_amount += rate * nights
 
     created = create_reservation_atomic_rpc(
         access_token=auth.access_token,

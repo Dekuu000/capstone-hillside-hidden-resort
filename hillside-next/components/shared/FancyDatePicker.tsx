@@ -12,6 +12,7 @@ type FancyDatePickerProps = {
   placeholder?: string;
   allowClear?: boolean;
   popoverAlign?: "start" | "end";
+  labelClassName?: string;
 };
 
 const WEEK_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
@@ -45,6 +46,7 @@ export function FancyDatePicker({
   placeholder = "mm/dd/yyyy",
   allowClear = false,
   popoverAlign = "start",
+  labelClassName,
 }: FancyDatePickerProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const popoverRef = useRef<HTMLDivElement | null>(null);
@@ -154,12 +156,12 @@ export function FancyDatePicker({
 
   return (
     <div ref={rootRef} className="relative">
-      <label className="grid gap-1 text-sm text-[var(--color-text)]">
+      <label className={`grid gap-1 text-sm text-[var(--color-text)] ${labelClassName ?? ""}`.trim()}>
         {label}
         <button
           type="button"
           onClick={() => setOpen((prev) => !prev)}
-          className="flex w-full items-center justify-between rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-[var(--color-text)] outline-none ring-[var(--color-secondary)]/20 transition focus:ring-2"
+          className="app-date-input inline-flex items-center justify-between gap-2 ring-[var(--color-secondary)]/20 focus:ring-2"
         >
           <span className="inline-flex items-center gap-2">
             <Calendar className="h-4 w-4 text-[var(--color-muted)]" />

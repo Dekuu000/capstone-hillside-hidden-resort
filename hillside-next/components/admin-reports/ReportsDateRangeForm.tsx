@@ -51,7 +51,7 @@ export function ReportsDateRangeForm({ fromDate, toDate, daily, monthly }: Props
   };
 
   return (
-    <form method="get" className="mb-5 grid gap-3 rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm lg:grid-cols-12">
+    <form method="get" className="mb-5 grid gap-3 rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm lg:grid-cols-12 lg:gap-4">
       <div className="lg:col-span-12">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Quick range</p>
         <div className="mt-2 flex flex-wrap gap-2">
@@ -67,7 +67,7 @@ export function ReportsDateRangeForm({ fromDate, toDate, daily, monthly }: Props
               className={`inline-flex h-8 items-center rounded-full border px-3 text-xs font-semibold transition ${
                 activePreset === preset.id
                   ? "border-slate-900 bg-slate-900 text-white"
-                  : "border-slate-300 bg-white text-slate-700 hover:border-slate-400"
+                  : "border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:bg-slate-50"
               }`}
             >
               {preset.label}
@@ -103,10 +103,7 @@ export function ReportsDateRangeForm({ fromDate, toDate, daily, monthly }: Props
       <input type="hidden" name="to" value={to} />
 
       <div className="flex items-end lg:col-span-2">
-        {hasChanges ? (
-          <span className="mr-2 hidden text-xs font-semibold text-amber-700 lg:inline">Date range changed</span>
-        ) : null}
-        <Button type="submit" variant="secondary" className="h-10 w-full rounded-lg border-slate-300 bg-slate-900 px-4 text-white hover:bg-slate-800">
+        <Button type="submit" variant="secondary" className="h-10 w-full rounded-xl border-slate-300 bg-slate-900 px-4 text-white hover:bg-slate-800">
           Apply range
         </Button>
       </div>
@@ -114,6 +111,12 @@ export function ReportsDateRangeForm({ fromDate, toDate, daily, monthly }: Props
       <div className="flex items-end justify-start lg:col-span-4 lg:justify-end">
         <ReportsExportButtons daily={daily} monthly={monthly} compact />
       </div>
+
+      {hasChanges ? (
+        <div className="lg:col-span-12">
+          <p className="text-xs font-semibold text-amber-700">Date range changed. Click Apply range to refresh reports.</p>
+        </div>
+      ) : null}
     </form>
   );
 }

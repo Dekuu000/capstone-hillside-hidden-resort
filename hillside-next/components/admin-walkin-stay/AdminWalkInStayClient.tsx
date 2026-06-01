@@ -10,6 +10,7 @@ import { getApiErrorMessage } from "../../lib/apiError";
 import { todayPlusLocalIsoDate } from "../../lib/dateIso";
 import { formatPhpPeso as toPeso } from "../../lib/formatCurrency";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
+import { getUnitLabel } from "../../lib/unitLabel";
 import { FancyDatePicker } from "../shared/FancyDatePicker";
 import { useToast } from "../shared/ToastProvider";
 
@@ -151,7 +152,10 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
       const summarySnapshot = {
         checkInDate,
         checkOutDate,
-        unitNames: selectedUnits.map((unit) => unit.name),
+        unitNames: selectedUnits.map((unit) => {
+          const label = getUnitLabel(unit.name);
+          return label.subtitle ? `${label.title} (${label.subtitle})` : label.title;
+        }),
         sameDay: checkInDate === todayPlusLocalIsoDate(0),
         estimatedTotal,
       };
@@ -455,6 +459,7 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
             <div className="space-y-2">
               {availableUnits.map((unit) => {
                 const checked = selectedUnitIds.includes(unit.unit_id);
+                const label = getUnitLabel(unit.name);
                 return (
                   <label
                     key={unit.unit_id}
@@ -472,7 +477,10 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
                         className="mt-0.5 h-4 w-4 rounded border-[var(--color-border)] text-[var(--color-secondary)] focus:ring-[var(--color-secondary)]"
                       />
                       <span>
-                        <span className="block text-sm font-semibold text-[var(--color-text)]">{unit.name}</span>
+                        <span className="block text-sm font-semibold text-[var(--color-text)]">
+                          {label.title}
+                          {label.subtitle ? <span className="ml-1 font-medium text-[var(--color-muted)]">({label.subtitle})</span> : null}
+                        </span>
                         <span className="block text-xs text-[var(--color-muted)]">
                           {unit.type} • Capacity {unit.capacity}
                         </span>

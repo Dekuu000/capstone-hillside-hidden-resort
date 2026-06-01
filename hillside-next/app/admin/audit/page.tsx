@@ -179,7 +179,7 @@ export default async function AdminAuditPage({
               type="date"
               name="from"
               defaultValue={fromDate}
-              className="h-10 rounded-lg border border-[var(--color-border)] px-3 text-sm text-[var(--color-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-secondary)]/30"
+              className="app-date-input"
             />
           </label>
           <label className="grid gap-1 text-xs text-[var(--color-muted)] md:col-span-2">
@@ -188,7 +188,7 @@ export default async function AdminAuditPage({
               type="date"
               name="to"
               defaultValue={toDate}
-              className="h-10 rounded-lg border border-[var(--color-border)] px-3 text-sm text-[var(--color-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-secondary)]/30"
+              className="app-date-input"
             />
           </label>
           <div className="flex items-end md:col-span-1">

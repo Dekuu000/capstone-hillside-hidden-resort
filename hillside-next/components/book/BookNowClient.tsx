@@ -30,6 +30,7 @@ import { getAiSource } from "../../lib/aiPricing";
 import { getApiErrorMessage } from "../../lib/apiError";
 import { addDaysToIsoDate, todayPlusLocalIsoDate } from "../../lib/dateIso";
 import { formatPhpPeso as toPeso } from "../../lib/formatCurrency";
+import { getUnitLabel } from "../../lib/unitLabel";
 import { useNetworkOnline } from "../../lib/hooks/useNetworkOnline";
 import { getSupabaseBrowserClient, safeGetSession } from "../../lib/supabase";
 import { FancyDatePicker } from "../shared/FancyDatePicker";
@@ -54,6 +55,27 @@ const UNIT_TYPE_LABEL: Record<UnitTypeFilter, string> = {
   cottage: "cottages",
   amenity: "amenities",
 };
+
+const PAX_BASED_UNIT_PRICING: Record<string, { includedPax: number; fallbackMinRate: number; extraPaxRate: number }> = {
+  "AMN-EVERGREEN-PAVILION": { includedPax: 30, fallbackMinRate: 8500, extraPaxRate: 250 },
+  "AMN-PINECREST-EXCLUSIVE": { includedPax: 20, fallbackMinRate: 12000, extraPaxRate: 400 },
+};
+
+function getUnitNightlyRate(unit: AvailableUnit, partySize: number): number {
+  const baseRate = Number(unit.base_price || 0);
+  const unitCode = String(unit.unit_code || "").toUpperCase();
+  const dynamicRule = PAX_BASED_UNIT_PRICING[unitCode];
+  if (!dynamicRule) return baseRate;
+  const includedPax = dynamicRule.includedPax;
+  const minRate = baseRate > 0 ? baseRate : dynamicRule.fallbackMinRate;
+  const extraPax = Math.max(0, Math.max(1, Math.floor(partySize || 1)) - includedPax);
+  return minRate + extraPax * dynamicRule.extraPaxRate;
+}
+
+function isPaxPricedUnit(unit: AvailableUnit): boolean {
+  const unitCode = String(unit.unit_code || "").toUpperCase();
+  return Boolean(PAX_BASED_UNIT_PRICING[unitCode]);
+}
 
 type BookNowClientProps = {
   initialToken?: string | null;
@@ -187,7 +209,10 @@ export function BookNowClient({
   }, [checkInDate, checkOutDate]);
 
   const selectedUnits = useMemo(() => units.filter((unit) => selectedUnitIds.includes(unit.unit_id)), [selectedUnitIds, units]);
-  const total = useMemo(() => selectedUnits.reduce((sum, unit) => sum + Number(unit.base_price || 0) * nights, 0), [nights, selectedUnits]);
+  const total = useMemo(
+    () => selectedUnits.reduce((sum, unit) => sum + getUnitNightlyRate(unit, guestCount) * nights, 0),
+    [guestCount, nights, selectedUnits],
+  );
   const minimumPayNow = useMemo(() => computeStayDepositPreview(total), [total]);
   const unitCount = units.length;
   const selectedCapacity = useMemo(
@@ -209,6 +234,11 @@ export function BookNowClient({
     if (!canSubmitReservation) return 3;
     return 4;
   }, [canSubmitReservation, checkInDate, checkOutDate, nights, selectedUnitIds.length]);
+  const desktopStepperStep = useMemo(() => {
+    if (!checkInDate || !checkOutDate || nights <= 0 || guestCount <= 0) return 1;
+    if (selectedUnitIds.length === 0) return 2;
+    return 3;
+  }, [checkInDate, checkOutDate, guestCount, nights, selectedUnitIds.length]);
   const [mobileStep, setMobileStep] = useState(1);
 
   const galleryImages = useMemo(
@@ -429,14 +459,17 @@ export function BookNowClient({
         />
       </section>
 
-      <div className="mb-5 hidden lg:block">
-        <BookingStepper currentStep={bookingStep} />
+      <div className="mb-5 hidden lg:block lg:max-w-md">
+        <BookingStepper
+          currentStep={desktopStepperStep}
+          steps={["Dates", "Units", "Confirm"]}
+        />
       </div>
       <div className="mb-5 grid w-full grid-cols-3 gap-2 text-center lg:hidden" data-testid="booking-stepper" aria-label="Booking progress">
         {[
           { step: 1, label: "Dates" },
-          { step: 2, label: "Unit" },
-          { step: 3, label: "Review" },
+          { step: 2, label: "Units" },
+          { step: 3, label: "Confirm" },
         ].map((entry) => (
           <button
             key={entry.step}
@@ -452,18 +485,14 @@ export function BookNowClient({
             className={`inline-flex h-10 w-full items-center justify-center gap-2 rounded-2xl px-2 text-xs font-semibold ${
               mobileStep === entry.step
                 ? "bg-[var(--color-primary)] text-white"
-                  : entry.step < bookingStep
-                    ? "bg-teal-50 text-teal-700"
-                    : "bg-white text-slate-600 ring-1 ring-slate-200"
+                  : "border border-slate-200 bg-white text-slate-500"
             }`}
           >
             <span
               className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-[11px] ${
                 mobileStep === entry.step
                   ? "bg-white/20 text-white"
-                  : entry.step < bookingStep
-                    ? "bg-teal-100 text-teal-700"
-                    : "bg-slate-100 text-slate-500"
+                  : "bg-slate-100 text-slate-500"
               }`}
             >
               {entry.step}
@@ -777,6 +806,7 @@ export function BookNowClient({
               <div className="grid gap-4 md:grid-cols-2">
                 {units.map((unit) => {
                   const selected = selectedUnitIds.includes(unit.unit_id);
+                  const label = getUnitLabel(unit.name);
                   const normalizedImages = normalizeUnitImageUrls(unit.image_urls, unit.image_url);
                   const normalizedThumbs = normalizeUnitThumbUrls(normalizedImages, unit.image_thumb_urls ?? null);
                   const previewImage = normalizedThumbs[0] || normalizedImages[0] || "";
@@ -802,7 +832,7 @@ export function BookNowClient({
                       {previewImage ? (
                         <Image
                           src={previewImage}
-                          alt={unit.name}
+                          alt={label.subtitle ? `${label.title} (${label.subtitle})` : label.title}
                           width={640}
                           height={256}
                           sizes="(min-width: 1024px) 40vw, 100vw"
@@ -812,8 +842,9 @@ export function BookNowClient({
                       <div className="p-4">
                         <div className="flex items-start justify-between gap-3">
                           <div>
-                            <h3 className="font-semibold text-slate-900">{unit.name}</h3>
+                            <h3 className="font-semibold text-slate-900">{label.title}</h3>
                             <p className="text-sm text-slate-500 capitalize">
+                              {label.subtitle ? `${label.subtitle} • ` : ""}
                               {unit.type} • Up to {unit.capacity} guests
                             </p>
                             <p className="text-xs text-slate-500">
@@ -821,8 +852,10 @@ export function BookNowClient({
                             </p>
                           </div>
                           <div className="text-right">
-                            <p className="font-semibold text-[var(--color-text)]">{toPeso(Number(unit.base_price || 0))}</p>
-                            <p className="text-xs text-slate-500">per night</p>
+                            <p className="font-semibold text-[var(--color-text)]">{toPeso(getUnitNightlyRate(unit, guestCount))}</p>
+                            <p className="text-xs text-slate-500">
+                              {isPaxPricedUnit(unit) ? `for ${guestCount} guest${guestCount === 1 ? "" : "s"}` : "per night"}
+                            </p>
                           </div>
                         </div>
                         {unit.description ? <p className="mt-2 text-sm text-slate-600">{unit.description}</p> : null}
@@ -954,20 +987,21 @@ export function BookNowClient({
               </div>
             ) : (
               <div className="space-y-2">
-                {selectedUnits.map((unit) => (
-                  <div
-                    key={unit.unit_id}
-                    className="flex items-center justify-between rounded-[var(--radius-sm)] bg-slate-50 px-3 py-2"
-                  >
-                    <div>
-                      <p className="text-sm font-medium text-[var(--color-text)]">{unit.name}</p>
-                      <p className="text-xs text-slate-500">
-                        {nights} night{nights === 1 ? "" : "s"}
-                      </p>
+                {selectedUnits.map((unit) => {
+                  const label = getUnitLabel(unit.name);
+                  return (
+                    <div key={unit.unit_id} className="flex items-center justify-between rounded-[var(--radius-sm)] bg-slate-50 px-3 py-2">
+                      <div>
+                        <p className="text-sm font-medium text-[var(--color-text)]">{label.title}</p>
+                        <p className="text-xs text-slate-500">
+                          {label.subtitle ? `${label.subtitle} • ` : ""}
+                          {nights} night{nights === 1 ? "" : "s"}
+                        </p>
+                      </div>
+                      <p className="text-sm font-semibold text-slate-900">{toPeso(getUnitNightlyRate(unit, guestCount) * nights)}</p>
                     </div>
-                    <p className="text-sm font-semibold text-slate-900">{toPeso(Number(unit.base_price || 0) * nights)}</p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 

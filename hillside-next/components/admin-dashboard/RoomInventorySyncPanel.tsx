@@ -48,14 +48,14 @@ export function RoomInventorySyncPanel({ units }: { units: UnitItem[] }) {
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3">
-        <article className="rounded-xl border border-[var(--color-border)] bg-white p-3 shadow-[0_6px_14px_rgba(15,23,42,0.04)] transition-[box-shadow,border-color,transform] duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_20px_rgba(15,23,42,0.10)]">
+        <article className="rounded-xl border border-teal-200/70 bg-gradient-to-br from-teal-50 to-teal-100/40 p-3 shadow-[0_8px_16px_rgba(20,184,166,0.10)] transition-[box-shadow,border-color,transform] duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_22px_rgba(20,184,166,0.16)]">
           <p className="inline-flex items-center gap-2 text-sm text-[var(--color-muted)]">
             <Sparkles className="h-4 w-4 text-teal-600" />
             Cleaned
           </p>
           <p className="mt-1 text-3xl font-bold text-[var(--color-text)]">{cleaned}</p>
         </article>
-        <article className="rounded-xl border border-[var(--color-border)] bg-white p-3 shadow-[0_6px_14px_rgba(15,23,42,0.04)] transition-[box-shadow,border-color,transform] duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_20px_rgba(15,23,42,0.10)]">
+        <article className="rounded-xl border border-[var(--color-primary)]/20 bg-gradient-to-br from-blue-50/70 to-slate-50 p-3 shadow-[0_8px_16px_rgba(15,23,42,0.10)] transition-[box-shadow,border-color,transform] duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_22px_rgba(15,23,42,0.16)]">
           <p className="inline-flex items-center gap-2 text-sm text-[var(--color-muted)]">
             <BedDouble className="h-4 w-4 text-[var(--color-primary)]" />
             Occupied

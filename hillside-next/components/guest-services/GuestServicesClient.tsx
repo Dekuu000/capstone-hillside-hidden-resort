@@ -6,7 +6,7 @@ import {
   ClipboardList,
   Clock3,
   Loader2,
-  Sparkles,
+  Send,
   UtensilsCrossed,
   Waves,
 } from "lucide-react";
@@ -36,6 +36,7 @@ import { Skeleton } from "../shared/Skeleton";
 import { SyncAlertBanner } from "../shared/SyncAlertBanner";
 import { Tabs } from "../shared/Tabs";
 import { useToast } from "../shared/ToastProvider";
+import { FancyDatePicker } from "../shared/FancyDatePicker";
 
 type Props = {
   accessToken: string | null;
@@ -60,6 +61,16 @@ const STATUS_BADGE_CLASS: Record<string, string> = {
   cancelled: "bg-slate-200 text-slate-700",
 };
 
+const TIME_OPTIONS = Array.from({ length: 48 }, (_, index) => {
+  const hour = Math.floor(index / 2);
+  const minute = index % 2 === 0 ? "00" : "30";
+  const value = `${String(hour).padStart(2, "0")}:${minute}`;
+  const suffix = hour >= 12 ? "PM" : "AM";
+  const displayHour = hour % 12 === 0 ? 12 : hour % 12;
+  const label = `${displayHour}:${minute} ${suffix}`;
+  return { value, label };
+});
+
 export function GuestServicesClient({ accessToken }: Props) {
   const { showToast } = useToast();
   const [category, setCategory] = useState<ResortServiceCategory>("room_service");
@@ -75,6 +86,7 @@ export function GuestServicesClient({ accessToken }: Props) {
 
   const [selectedService, setSelectedService] = useState<ResortServiceItem | null>(null);
   const [quantity, setQuantity] = useState(1);
+  const [preferredDate, setPreferredDate] = useState("");
   const [preferredTime, setPreferredTime] = useState("");
   const [reservationId, setReservationId] = useState("");
   const [notes, setNotes] = useState("");
@@ -168,7 +180,10 @@ export function GuestServicesClient({ accessToken }: Props) {
         service_item_id: selectedService.service_item_id,
         quantity,
         reservation_id: reservationId || null,
-        preferred_time: preferredTime ? new Date(preferredTime).toISOString() : null,
+        preferred_time:
+          preferredDate && preferredTime
+            ? new Date(`${preferredDate}T${preferredTime}`).toISOString()
+            : null,
         notes: notes.trim() || null,
         idempotency_key: crypto.randomUUID(),
       };
@@ -220,6 +235,7 @@ export function GuestServicesClient({ accessToken }: Props) {
       }
       setSelectedService(null);
       setQuantity(1);
+      setPreferredDate("");
       setPreferredTime("");
       setReservationId("");
       setNotes("");
@@ -253,9 +269,9 @@ export function GuestServicesClient({ accessToken }: Props) {
           value={category}
           onChange={(id) => setCategory(id as ResortServiceCategory)}
           className="grid-cols-2 bg-white sm:grid-cols-2"
-          tabClassName="h-11 rounded-2xl text-sm"
+          tabClassName="h-11 rounded-2xl px-3 text-sm font-semibold"
           activeClassName="border border-[var(--color-secondary)] bg-teal-50 text-[var(--color-secondary)] shadow-sm"
-          inactiveClassName="border border-transparent text-slate-500 hover:bg-slate-100"
+          inactiveClassName="border border-[var(--color-border)] bg-white text-slate-500 hover:bg-slate-50"
         />
         <div className="mt-2.5 flex items-center justify-between gap-2 rounded-xl border border-slate-200/80 bg-slate-50 px-3 py-2">
           <p className="text-xs font-medium text-slate-600">{syncSummaryText}</p>
@@ -472,16 +488,38 @@ export function GuestServicesClient({ accessToken }: Props) {
                   ))}
                 </select>
               </label>
-              <label className="guest-form-label">
-                Preferred time (optional)
-                <input
-                  type="datetime-local"
-                  value={preferredTime}
-                  onChange={(event) => setPreferredTime(event.target.value)}
-                  className="guest-field-control"
-                />
-                <span className="text-xs text-[var(--color-muted)]">Leave blank if you want the next available slot.</span>
-              </label>
+              <div className="guest-form-label">
+                <span>Preferred time (optional)</span>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <FancyDatePicker
+                    label="Date"
+                    value={preferredDate}
+                    onChange={setPreferredDate}
+                    allowClear
+                    placeholder="Select date"
+                    labelClassName="text-xs text-[var(--color-muted)]"
+                  />
+                  <label className="grid gap-1 text-xs text-[var(--color-muted)]">
+                    Time
+                    <select
+                      value={preferredTime}
+                      onChange={(event) => setPreferredTime(event.target.value)}
+                      disabled={!preferredDate}
+                      className="guest-field-control"
+                    >
+                      <option value="">Next available</option>
+                      {TIME_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                <span className="text-xs text-[var(--color-muted)]">
+                  Leave both blank if you want the next available slot.
+                </span>
+              </div>
               <label className="guest-form-label">
                 Notes (optional)
                 <textarea
@@ -511,7 +549,7 @@ export function GuestServicesClient({ accessToken }: Props) {
                     </>
                   ) : (
                     <>
-                      <Sparkles className="h-4 w-4" />
+                      <Send className="h-4 w-4" />
                       Submit request
                     </>
                   )}

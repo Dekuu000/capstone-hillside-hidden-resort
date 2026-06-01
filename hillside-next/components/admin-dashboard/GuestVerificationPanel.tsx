@@ -13,7 +13,7 @@ export function GuestVerificationPanel() {
       <div className="mt-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
         <Link
           href="/admin/check-in?mode=scan"
-          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-cta)] px-3 text-sm font-semibold text-white"
+          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-cta)] px-3 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(249,115,22,0.24)] transition hover:brightness-95"
         >
           <ScanLine className="h-4 w-4" />
           Open scanner
@@ -22,14 +22,14 @@ export function GuestVerificationPanel() {
         <div className="mt-2 grid gap-2 sm:grid-cols-2">
           <Link
             href="/admin/check-in?mode=code"
-            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)]"
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)] transition hover:bg-slate-50"
           >
             <QrCode className="h-4 w-4" />
             Code fallback
           </Link>
           <Link
             href="/admin/check-in?view=tablet&mode=scan"
-            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)]"
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)] transition hover:bg-slate-50"
           >
             <TabletSmartphone className="h-4 w-4" />
             Tablet view

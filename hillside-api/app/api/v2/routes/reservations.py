@@ -68,6 +68,12 @@ DEPOSIT_POLICY_VERSION = "v1_2026_04"
 DEPOSIT_RULE_ROOM_COTTAGE = "room_cottage_20pct_clamp_500_1000"
 DEPOSIT_RULE_TOUR = "tour_fixed_500_or_full_if_below_500"
 
+PAX_BASED_STAY_UNIT_RULES: dict[str, tuple[int, float, float]] = {
+    # unit_code: (included_pax, fallback_min_rate, extra_pax_rate)
+    "AMN-EVERGREEN-PAVILION": (30, 8500.0, 250.0),
+    "AMN-PINECREST-EXCLUSIVE": (20, 12000.0, 400.0),
+}
+
 
 def _to_optional_float(value: object) -> float | None:
     if value is None:
@@ -612,14 +618,23 @@ def _compute_stay_rates_and_total(
     check_out_date: date,
     unit_ids: list[str],
     unit_map: dict[str, dict],
+    guest_count: int | None = None,
 ) -> tuple[int, list[float], float]:
     nights = (check_out_date - check_in_date).days
     rates: list[float] = []
     total_amount = 0.0
     for unit_id in unit_ids:
-        base_price = float(unit_map[unit_id].get("base_price") or 0)
-        rates.append(base_price)
-        total_amount += base_price * nights
+        unit = unit_map[unit_id]
+        base_price = float(unit.get("base_price") or 0)
+        unit_code = str(unit.get("unit_code") or "").upper()
+        rate = base_price
+        if guest_count and unit_code in PAX_BASED_STAY_UNIT_RULES:
+            included_pax, fallback_min_rate, extra_pax_rate = PAX_BASED_STAY_UNIT_RULES[unit_code]
+            min_rate = base_price if base_price > 0 else fallback_min_rate
+            extra_pax = max(0, int(guest_count) - included_pax)
+            rate = min_rate + (extra_pax * extra_pax_rate)
+        rates.append(rate)
+        total_amount += rate * nights
     return nights, rates, total_amount
 
 
@@ -759,6 +774,7 @@ def create_reservation(
         check_out_date=payload.check_out_date,
         unit_ids=payload.unit_ids,
         unit_map=unit_map,
+        guest_count=payload.guest_count,
     )
 
     try:

@@ -68,6 +68,14 @@ export default async function AdminReportsPage({
   const fromDate = (Array.isArray(resolved.from) ? resolved.from[0] : resolved.from) || todayPlusLocalIsoDate(-7);
   const toDate = (Array.isArray(resolved.to) ? resolved.to[0] : resolved.to) || todayPlusLocalIsoDate(0);
   const overview = await fetchOverview(accessToken, fromDate, toDate);
+  const netBookings = overview
+    ? Math.max(overview.summary.bookings - overview.summary.cancellations, 0)
+    : 0;
+  const cancellationRate = overview
+    ? overview.summary.bookings > 0
+      ? overview.summary.cancellations / overview.summary.bookings
+      : 0
+    : 0;
 
   return (
     <section className="mx-auto w-full max-w-[1600px]">
@@ -103,23 +111,27 @@ export default async function AdminReportsPage({
         </p>
       ) : (
         <>
-          <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50 to-emerald-100/40 p-4 shadow-sm xl:col-span-2">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">Cash Collected</p>
+              <p className="mt-2 text-3xl font-bold text-slate-900">{formatPeso(overview.summary.cash_collected)}</p>
+              <p className="mt-2 text-xs font-medium text-emerald-800">Primary KPI for the selected period</p>
+            </div>
             <div className="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm">
               <p className="text-xs text-slate-500">Bookings</p>
               <p className="mt-1 text-2xl font-bold text-slate-900">{overview.summary.bookings}</p>
             </div>
             <div className="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm">
-              <p className="text-xs text-slate-500">Cancellations</p>
-              <p className="mt-1 text-2xl font-bold text-slate-900">{overview.summary.cancellations}</p>
-            </div>
-            <div className="rounded-2xl border border-emerald-200/70 bg-emerald-50/40 p-4 shadow-sm">
-              <p className="text-xs text-slate-500">Cash Collected</p>
-              <p className="mt-1 text-2xl font-bold text-slate-900">{formatPeso(overview.summary.cash_collected)}</p>
-              <p className="mt-1 text-[11px] font-medium text-emerald-700">Primary KPI for the selected period</p>
-            </div>
-            <div className="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm">
               <p className="text-xs text-slate-500">Occupancy Rate</p>
               <p className="mt-1 text-2xl font-bold text-slate-900">{formatPercent(overview.summary.occupancy_rate)}</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm">
+              <p className="text-xs text-slate-500">Net Bookings</p>
+              <p className="mt-1 text-2xl font-bold text-slate-900">{netBookings}</p>
+            </div>
+            <div className="rounded-2xl border border-rose-200/70 bg-rose-50/40 p-4 shadow-sm">
+              <p className="text-xs text-rose-700">Cancellations</p>
+              <p className="mt-1 text-2xl font-bold text-rose-700">{overview.summary.cancellations}</p>
             </div>
             <div className="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm">
               <p className="text-xs text-slate-500">Unit Booked Value</p>
@@ -131,6 +143,18 @@ export default async function AdminReportsPage({
             </div>
           </div>
 
+          <div className="mb-5 flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200/70 bg-white px-4 py-3 shadow-sm">
+            <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700">
+              Net bookings: {netBookings}
+            </span>
+            <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700">
+              Cancellation rate: {Math.round(cancellationRate * 100)}%
+            </span>
+            <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700">
+              Range: {formatDisplayDate(fromDate)} - {formatDisplayDate(toDate)}
+            </span>
+          </div>
+
           <div className="grid gap-4 lg:grid-cols-2">
             <section className="overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-sm">
               <header className="border-b border-slate-100 px-4 py-3">
@@ -139,7 +163,7 @@ export default async function AdminReportsPage({
               </header>
               <div className="max-h-[420px] overflow-auto">
                 <table className="min-w-full text-sm">
-                  <thead className="bg-slate-50 text-slate-600">
+                  <thead className="sticky top-0 z-10 bg-slate-50 text-slate-600">
                     <tr>
                       <th className="px-4 py-2 text-left">Date</th>
                       <th className="px-4 py-2 text-center">Bookings</th>
@@ -166,7 +190,7 @@ export default async function AdminReportsPage({
               </header>
               <div className="max-h-[420px] overflow-auto">
                 <table className="min-w-full text-sm">
-                  <thead className="bg-slate-50 text-slate-600">
+                  <thead className="sticky top-0 z-10 bg-slate-50 text-slate-600">
                     <tr>
                       <th className="px-4 py-2 text-left">Month</th>
                       <th className="px-4 py-2 text-center">Bookings</th>
