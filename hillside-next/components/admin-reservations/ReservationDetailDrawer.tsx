@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import type { AdminPaymentItem, ReservationListItem } from "../../../packages/shared/src/types";
 import { buildTxExplorerUrl } from "../../lib/chainExplorer";
 import { formatDateTime, formatDateWithYear } from "../../lib/dateDisplay";
+import { todayPlusLocalIsoDate } from "../../lib/dateIso";
 import { formatPhpPeso as formatPeso } from "../../lib/formatCurrency";
 import { getReservationStatusMeta } from "../../lib/reservationStatus";
 import { getUnitLabel } from "../../lib/unitLabel";
@@ -106,7 +107,7 @@ export function ReservationDetailDrawer({
   const arrivalDate = isTour
     ? reservation?.service_bookings?.[0]?.visit_date ?? reservation?.check_in_date ?? null
     : reservation?.check_in_date ?? null;
-  const todayKey = new Date().toISOString().slice(0, 10);
+  const todayKey = todayPlusLocalIsoDate(0);
   const isSameDay = Boolean(arrivalDate && arrivalDate === todayKey);
   const paymentState = reservation ? getReservationPaymentState(reservation) : "unpaid";
   const paymentMeta = getPaymentStateMeta(paymentState);

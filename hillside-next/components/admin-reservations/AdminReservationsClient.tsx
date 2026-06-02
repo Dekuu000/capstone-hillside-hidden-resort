@@ -19,6 +19,7 @@ import {
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
 import { formatCachedAt, formatDateTime, formatDateWithYear } from "../../lib/dateDisplay";
+import { todayPlusLocalIsoDate } from "../../lib/dateIso";
 import { formatPhpPeso as formatPeso } from "../../lib/formatCurrency";
 import { normalizePaymentProofPath } from "../../lib/paymentProof";
 import { getReservationStatusMeta } from "../../lib/reservationStatus";
@@ -69,6 +70,18 @@ function matchesPaymentFilter(reservation: ReservationItem, filter: PaymentStatu
   return state === "settled";
 }
 
+function needsActivePaymentAction(reservation: ReservationItem) {
+  if (["cancelled", "checked_out", "no_show"].includes(reservation.status)) {
+    return false;
+  }
+
+  return (
+    reservation.status === "pending_payment"
+    || reservation.status === "for_verification"
+    || getReservationPaymentState(reservation) !== "settled"
+  );
+}
+
 function matchesStatQuickFilter(
   reservation: ReservationItem,
   statFilter: StatQuickFilter,
@@ -81,11 +94,7 @@ function matchesStatQuickFilter(
   if (statFilter === "none") return true;
   if (statFilter === "today_arrivals") return reservation.check_in_date === today;
   if (statFilter === "pending_payment") {
-    return (
-      reservation.status === "pending_payment"
-      || reservation.status === "for_verification"
-      || getReservationPaymentState(reservation) !== "settled"
-    );
+    return needsActivePaymentAction(reservation);
   }
   if (statFilter === "walk_ins_today") {
     return isWalkInToday;
@@ -142,7 +151,7 @@ export function AdminReservationsClient({
   const [proofBusy, setProofBusy] = useState<Record<string, boolean>>({});
   const [verifyBusy, setVerifyBusy] = useState<Record<string, boolean>>({});
   const listRequestIdRef = useRef(0);
-  const todayIso = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const todayIso = useMemo(() => todayPlusLocalIsoDate(0), []);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -316,7 +325,7 @@ export function AdminReservationsClient({
   const fetchQuickStats = useCallback(async () => {
     if (!token) return;
     try {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = todayPlusLocalIsoDate(0);
       const qs = new URLSearchParams();
       qs.set("limit", "1000");
       qs.set("offset", "0");
@@ -330,11 +339,7 @@ export function AdminReservationsClient({
       );
       const rows = data.items ?? [];
       const todayRows = rows.filter((item) => item.check_in_date === today);
-      const pendingPaymentCount = rows.filter((item) =>
-        item.status === "pending_payment"
-        || item.status === "for_verification"
-        || getReservationPaymentState(item) !== "settled",
-      ).length;
+      const pendingPaymentCount = rows.filter((item) => needsActivePaymentAction(item)).length;
       const walkInsToday = rows.filter((item) => {
         const createdDate = item.created_at ? item.created_at.slice(0, 10) : "";
         return getReservationSource(item) === "walk_in" && (item.check_in_date === today || createdDate === today);
@@ -599,8 +604,8 @@ export function AdminReservationsClient({
         </div>
       </header>
 
-      <div className="mb-5 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.06)] lg:p-5">
-        <div className="flex flex-col gap-2.5">
+      <div className="mb-5 rounded-2xl border border-slate-200/80 bg-white p-3 shadow-[0_8px_20px_rgba(15,23,42,0.06)] lg:p-3.5">
+        <div className="flex flex-col gap-2">
           {statQuickFilterLabel ? (
             <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs text-blue-800">
               <span>
@@ -618,8 +623,8 @@ export function AdminReservationsClient({
               </button>
             </div>
           ) : null}
-          <div className="grid gap-2.5 lg:grid-cols-[420px_minmax(0,1fr)] lg:items-center">
-            <div className="grid grid-cols-3 gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1">
+          <div className="grid gap-2 lg:grid-cols-[420px_minmax(0,1fr)] lg:items-center">
+            <div className="grid grid-cols-3 gap-1 rounded-xl border border-slate-200/80 bg-slate-50 p-1">
               {QUICK_FILTERS.map((filter) => {
                 const active = quickFilter === filter.id;
                 return (
@@ -655,7 +660,7 @@ export function AdminReservationsClient({
                 value={searchInput}
                 onChange={(event) => setSearchInput(event.target.value)}
                 placeholder="Search code, guest, unit, or phone"
-                className="h-10 w-full rounded-lg border border-slate-300 pl-9 pr-9 text-sm outline-none ring-blue-200 focus:ring-2"
+                className="h-9 w-full rounded-lg border border-slate-300 pl-9 pr-9 text-sm outline-none ring-blue-200 focus:ring-2"
               />
               {searchInput ? (
                 <button
@@ -682,7 +687,7 @@ export function AdminReservationsClient({
                   setReservationStatusFilter(event.target.value as ReservationStatus | "all");
                   setPage(1);
                 }}
-                className="h-10 rounded-lg border border-slate-300 px-3 text-sm text-slate-700"
+                className="h-9 rounded-lg border border-slate-300 px-3 text-sm text-slate-700"
               >
                 <option value="all">All statuses</option>
                 <option value="pending_payment">Pending Payment</option>
@@ -703,7 +708,7 @@ export function AdminReservationsClient({
                   setPaymentStatusFilter(event.target.value as PaymentStatusFilter);
                   setPage(1);
                 }}
-                className="h-10 rounded-lg border border-slate-300 px-3 text-sm text-slate-700"
+                className="h-9 rounded-lg border border-slate-300 px-3 text-sm text-slate-700"
               >
                 <option value="all">All payments</option>
                 <option value="unpaid">Unpaid</option>
@@ -738,7 +743,7 @@ export function AdminReservationsClient({
                   setSearchValue("");
                   setPage(1);
                 }}
-                className="inline-flex h-10 w-full items-center justify-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                className="inline-flex h-9 w-full items-center justify-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
               >
                 Clear filters
               </button>
@@ -851,45 +856,45 @@ export function AdminReservationsClient({
             </tbody>
           </table>
         </div>
-      </div>
 
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs text-slate-500">
-          Page {page} of {totalPages} • {count} total
-        </p>
-        <div className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white p-1 shadow-sm">
-          <button
-            type="button"
-            onClick={() => setPage(1)}
-            disabled={!canPrev}
-            className="rounded-full px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-45"
-          >
-            First
-          </button>
-          <button
-            type="button"
-            onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-            disabled={!canPrev}
-            className="rounded-full px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-45"
-          >
-            Previous
-          </button>
-          <button
-            type="button"
-            onClick={() => setPage((prev) => prev + 1)}
-            disabled={!canNext}
-            className="rounded-full px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-45"
-          >
-            Next
-          </button>
-          <button
-            type="button"
-            onClick={() => setPage(totalPages)}
-            disabled={!canNext}
-            className="rounded-full px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-45"
-          >
-            Last
-          </button>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 px-3 py-2.5">
+          <p className="text-xs text-slate-500">
+            Page {page} of {totalPages} | {count} total
+          </p>
+          <div className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white p-1 shadow-sm">
+            <button
+              type="button"
+              onClick={() => setPage(1)}
+              disabled={!canPrev}
+              className="rounded-full px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-45"
+            >
+              First
+            </button>
+            <button
+              type="button"
+              onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+              disabled={!canPrev}
+              className="rounded-full px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-45"
+            >
+              Previous
+            </button>
+            <button
+              type="button"
+              onClick={() => setPage((prev) => prev + 1)}
+              disabled={!canNext}
+              className="rounded-full px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-45"
+            >
+              Next
+            </button>
+            <button
+              type="button"
+              onClick={() => setPage(totalPages)}
+              disabled={!canNext}
+              className="rounded-full px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-45"
+            >
+              Last
+            </button>
+          </div>
         </div>
       </div>
 
