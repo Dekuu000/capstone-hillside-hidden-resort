@@ -4,7 +4,7 @@ import { FormEvent, useCallback, useEffect, useId, useMemo, useRef, useState } f
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
-import { Calendar, CircleCheck, CircleX, CreditCard, Eye, QrCode, Upload } from "lucide-react";
+import { Calendar, CircleCheck, CircleX, CreditCard, Eye, Loader2, QrCode, Upload } from "lucide-react";
 import type {
   MyBookingsCursor as Cursor,
   MyBookingsResponse as BookingsResponse,
@@ -154,6 +154,46 @@ function cancellationResultMessage(outcome: ReservationPolicyOutcome | null | un
   return "Booking cancelled.";
 }
 
+function getReservationStatusTone(status: string) {
+  const normalized = status.toLowerCase();
+  if (["confirmed", "checked_in", "checked_out", "completed"].includes(normalized)) {
+    return {
+      dotClassName: "bg-emerald-500",
+      panelClassName: "border-emerald-200 bg-emerald-50 text-emerald-800",
+      helper:
+        normalized === "confirmed"
+          ? "Approved by admin. Keep your QR ready for check-in."
+          : "This reservation is active or already completed.",
+    };
+  }
+  if (normalized === "for_verification") {
+    return {
+      dotClassName: "bg-blue-500",
+      panelClassName: "border-blue-200 bg-blue-50 text-blue-800",
+      helper: "Payment proof is waiting for admin review.",
+    };
+  }
+  if (normalized === "pending_payment") {
+    return {
+      dotClassName: "bg-orange-500",
+      panelClassName: "border-orange-200 bg-orange-50 text-orange-800",
+      helper: "Submit your payment proof so admin can verify this booking.",
+    };
+  }
+  if (["cancelled", "rejected", "no_show"].includes(normalized)) {
+    return {
+      dotClassName: "bg-red-500",
+      panelClassName: "border-red-200 bg-red-50 text-red-800",
+      helper: "This reservation is no longer active.",
+    };
+  }
+  return {
+    dotClassName: "bg-slate-400",
+    panelClassName: "border-slate-200 bg-slate-50 text-slate-700",
+    helper: "Check the booking details below for the latest state.",
+  };
+}
+
 function bookingFlowHint(status: string) {
   if (status === "pending_payment") {
     return "Next step: pay the minimum deposit and submit proof so admin can verify your booking.";
@@ -205,6 +245,7 @@ export function MyBookingsClient({
   const [submitProofUrl, setSubmitProofUrl] = useState("");
   const [submitBusy, setSubmitBusy] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitProgress, setSubmitProgress] = useState<string | null>(null);
 
   const [cancelFor, setCancelFor] = useState<Booking | null>(null);
   const [cancelBusy, setCancelBusy] = useState(false);
@@ -248,12 +289,18 @@ export function MyBookingsClient({
     setSubmitProofFile(null);
     setSubmitProofUrl("");
     setSubmitError(null);
+    setSubmitProgress(null);
   }, []);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => setSearchValue(searchInput.trim()), 300);
     return () => window.clearTimeout(timeout);
   }, [searchInput]);
+
+  useEffect(() => {
+    if (!submitFor) return;
+    router.prefetch("/my-bookings?tab=upcoming");
+  }, [router, submitFor]);
 
 
   useEffect(() => {
@@ -446,12 +493,14 @@ export function MyBookingsClient({
 
       setSubmitBusy(true);
       setSubmitError(null);
+      setSubmitProgress("Preparing payment submission...");
 
       try {
         const paymentType = requiresDepositFlow
           ? (amount >= totalAmount ? "full" : "deposit")
           : "full";
         if (submitProofMode === "file" && submitProofFile && typeof navigator !== "undefined" && !navigator.onLine) {
+          setSubmitProgress("Saving proof for offline sync...");
           const userId = parseJwtSub(token);
           if (!userId) {
             throw new Error("Unable to identify current user for offline proof queue.");
@@ -472,11 +521,13 @@ export function MyBookingsClient({
           setSubmitProofMode("file");
           setSubmitProofFile(null);
           setSubmitProofUrl("");
+          setSubmitProgress("Opening your updated booking...");
           setTab("upcoming");
           router.replace("/my-bookings?tab=upcoming");
           return;
         }
 
+        setSubmitProgress("Preparing payment record...");
         await apiFetch(
           "/v2/payments/intent",
           {
@@ -489,7 +540,9 @@ export function MyBookingsClient({
           token,
         );
 
+        setSubmitProgress(submitProofMode === "file" ? "Uploading payment proof..." : "Checking proof link...");
         const proofPath = await uploadProofIfNeeded(submitFor.reservation_id);
+        setSubmitProgress("Sending proof to admin...");
         const payload = {
           reservation_id: submitFor.reservation_id,
           amount,
@@ -521,6 +574,7 @@ export function MyBookingsClient({
         setSubmitProofMode("file");
         setSubmitProofFile(null);
         setSubmitProofUrl("");
+        setSubmitProgress("Opening your updated booking...");
         setTab("upcoming");
         router.replace("/my-bookings?tab=upcoming");
       } catch (unknownError) {
@@ -534,6 +588,7 @@ export function MyBookingsClient({
         }
       } finally {
         setSubmitBusy(false);
+        setSubmitProgress(null);
       }
     },
     [
@@ -671,6 +726,7 @@ export function MyBookingsClient({
     setSubmitProofFile(null);
     setSubmitProofUrl("");
     setSubmitError(null);
+    setSubmitProgress(null);
   }, []);
 
   const canLoadMore = Boolean(nextCursor) && !loadingMore;
@@ -1156,7 +1212,27 @@ export function MyBookingsClient({
 
             {details ? (
               <div className="space-y-4">
-                <p className="text-xs text-slate-500">Status: {details.status.replace(/_/g, " ")}</p>
+                {(() => {
+                  const statusMeta = getReservationStatusMeta(details.status);
+                  const statusTone = getReservationStatusTone(details.status);
+                  return (
+                    <section className={`rounded-2xl border px-4 py-3 ${statusTone.panelClassName}`} aria-label="Reservation status">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] opacity-80">Reservation status</p>
+                          <div className="mt-2 flex items-center gap-2">
+                            <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${statusTone.dotClassName}`} aria-hidden="true" />
+                            <p className="text-base font-bold">{statusMeta.label}</p>
+                          </div>
+                          <p className="mt-1 text-xs leading-relaxed opacity-90">{statusTone.helper}</p>
+                        </div>
+                        <span className="rounded-full border border-current/15 bg-white/55 px-3 py-1 text-xs font-bold">
+                          {details.status.replace(/_/g, " ")}
+                        </span>
+                      </div>
+                    </section>
+                  );
+                })()}
 
                 {detailUnits.length > 0 ? (
                   <section>
@@ -1216,7 +1292,9 @@ export function MyBookingsClient({
           zIndexClass="z-[70]"
           maxWidthClass="md:max-w-xl"
           panelClassName="max-h-[calc(100dvh-0.75rem)] border-slate-200/80 bg-white pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
-          onClose={closeSubmitModal}
+          onClose={() => {
+            if (!submitBusy) closeSubmitModal();
+          }}
         >
             <p className="mb-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
               Next step after submit: payment status changes to <strong>For verification</strong> while admin reviews your proof. You will be returned to the <strong>Upcoming</strong> tab.
@@ -1365,12 +1443,23 @@ export function MyBookingsClient({
                   />
                 )}
               </div>
+              {submitBusy ? (
+                <div
+                  className="flex items-center gap-3 rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-semibold text-teal-800"
+                  role="status"
+                  aria-live="polite"
+                >
+                  <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden="true" />
+                  <span>{submitProgress ?? "Submitting payment proof..."}</span>
+                </div>
+              ) : null}
               {submitError ? <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">{submitError}</p> : null}
               <div className="sticky bottom-0 mt-1 flex justify-end gap-2 border-t border-slate-200 bg-white/95 pt-3 backdrop-blur">
                 <button
                   type="button"
                   onClick={closeSubmitModal}
                   className="guest-secondary-cta min-h-10 px-3 text-sm"
+                  disabled={submitBusy}
                 >
                   Cancel
                 </button>

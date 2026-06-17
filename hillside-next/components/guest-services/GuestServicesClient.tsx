@@ -433,7 +433,9 @@ export function GuestServicesClient({ accessToken }: Props) {
           titleId="service-request-title"
           title={`Request ${selectedService.service_name}`}
           onClose={() => setSelectedService(null)}
-          panelClassName="border-[var(--color-border)] bg-white"
+          maxWidthClass="sm:max-w-2xl"
+          zIndexClass="z-[90]"
+          panelClassName="max-h-[calc(100dvh-1rem)] border-[var(--color-border)] bg-white pb-0 sm:max-h-[min(760px,calc(100dvh-2rem))]"
           closeLabel="Close service request dialog"
           closeButtonClassName="border-[var(--color-border)] text-[var(--color-text)]"
         >
@@ -529,18 +531,18 @@ export function GuestServicesClient({ accessToken }: Props) {
                   className="guest-field-control h-auto min-h-[88px] py-2"
                 />
               </label>
-              <div className="mt-1 flex justify-end gap-2">
+              <div className="sticky bottom-0 z-10 -mx-4 mt-1 flex flex-col gap-2 border-t border-slate-200/80 bg-white/95 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur sm:flex-row sm:justify-end">
                 <button
                   type="button"
                   onClick={() => setSelectedService(null)}
-                  className="guest-secondary-cta"
+                  className="guest-secondary-cta min-h-11 w-full sm:w-auto"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitBusy}
-                  className="guest-primary-cta"
+                  className="guest-primary-cta min-h-11 w-full sm:w-auto"
                 >
                   {submitBusy ? (
                     <>

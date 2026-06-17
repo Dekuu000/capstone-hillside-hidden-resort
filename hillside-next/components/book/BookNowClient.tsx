@@ -158,6 +158,11 @@ export function BookNowClient({
 
   useEffect(() => {
     if (!token) return;
+    router.prefetch("/my-bookings?tab=pending_payment");
+  }, [router, token]);
+
+  useEffect(() => {
+    if (!token) return;
     if (!checkInDate || !checkOutDate) return;
     if (checkOutDate <= checkInDate) return;
     if (skipInitialFetch && `${checkInDate}|${checkOutDate}|${unitTypeFilter}` === initialQueryKey) {
@@ -319,9 +324,7 @@ export function BookNowClient({
         const redirectUrl = createdReservationId
           ? `/my-bookings?tab=pending_payment&focus=${encodeURIComponent(createdReservationId)}&pay=1`
           : "/my-bookings?tab=pending_payment";
-        window.setTimeout(() => {
-          router.push(redirectUrl);
-        }, 900);
+        router.push(redirectUrl);
       } else {
         setSuccessMessage("Reservation saved offline. It will sync automatically when connection is restored.");
         setSuccessHasSyncCta(true);
