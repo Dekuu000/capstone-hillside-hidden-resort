@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { Menu, X } from "lucide-react";
 import { clearServerSessionCookie } from "../../lib/authSessionCookie";
 import { getSupabaseBrowserClient, safeGetSession } from "../../lib/supabase";
 import { resolveUserDisplayName } from "../../lib/userProfile";
@@ -82,9 +83,10 @@ export function AdminChrome({ children, initialName = null, initialEmail = null 
       {sidebarOpen ? <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setSidebarOpen(false)} /> : null}
 
       <aside
-          className={`fixed left-0 top-0 z-50 h-full w-64 transform bg-[var(--color-primary)] text-white transition-transform duration-300 ${
-            sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-          }`}
+        id="admin-sidebar"
+        className={`fixed left-0 top-0 z-50 h-full w-64 transform bg-[var(--color-primary)] text-white transition-transform duration-300 ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        }`}
       >
         <div className="flex h-full flex-col">
           <div className="border-b border-white/15 px-6 py-7">
@@ -136,17 +138,31 @@ export function AdminChrome({ children, initialName = null, initialEmail = null 
 
       <div className="lg:pl-64">
         <header className="sticky top-0 z-30 border-b border-[var(--color-border)] bg-white/90 shadow-sm backdrop-blur lg:hidden">
-          <div className="flex items-center justify-between px-4 py-4">
+          <div className="flex h-[72px] items-center justify-between px-4">
             <button
               type="button"
               onClick={() => setSidebarOpen((prev) => !prev)}
-              className="rounded-lg p-2 text-[var(--color-text)] hover:bg-slate-100"
-              aria-label="Toggle menu"
+              className={`group inline-flex h-11 items-center gap-2 rounded-2xl border px-3 text-sm font-bold shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-secondary)] focus-visible:ring-offset-2 ${
+                sidebarOpen
+                  ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
+                  : "border-slate-200 bg-white text-[var(--color-primary)] hover:border-teal-200 hover:bg-teal-50 hover:text-[var(--color-secondary)]"
+              }`}
+              aria-label={sidebarOpen ? "Close admin navigation menu" : "Open admin navigation menu"}
+              aria-expanded={sidebarOpen}
+              aria-controls="admin-sidebar"
             >
-              {sidebarOpen ? "X" : "Menu"}
+              <span
+                className={`flex h-7 w-7 items-center justify-center rounded-xl transition ${
+                  sidebarOpen ? "bg-white/12" : "bg-slate-100 group-hover:bg-white"
+                }`}
+                aria-hidden="true"
+              >
+                {sidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+              </span>
+              <span className="hidden min-[360px]:inline">{sidebarOpen ? "Close" : "Menu"}</span>
             </button>
             <h2 className="text-base font-semibold text-[var(--color-text)]">Hillside Hidden</h2>
-            <div className="w-9" />
+            <div className="w-[88px]" aria-hidden="true" />
           </div>
         </header>
 

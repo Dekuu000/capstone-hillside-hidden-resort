@@ -88,9 +88,7 @@ export default function LoginPage() {
       user_metadata?: Record<string, unknown> | null;
     } | null,
   ) => {
-    const supabase = getSupabaseBrowserClient();
-    const { session } = await safeGetSession();
-    const user = signedInUser ?? session?.user;
+    const user = signedInUser ?? (await safeGetSession()).session?.user;
     if (!user) return "/login";
 
     const safePath = requestedPath && requestedPath.startsWith("/") ? requestedPath : "";
@@ -99,6 +97,7 @@ export default function LoginPage() {
 
     if (!safePath) {
       if (metadataIsAdmin) return "/admin/reservations";
+      const supabase = getSupabaseBrowserClient();
       const { data: isAdmin } = await supabase.rpc("is_admin");
       return isAdmin === true ? "/admin/reservations" : "/my-bookings";
     }
@@ -106,6 +105,7 @@ export default function LoginPage() {
     if (!safePath.startsWith("/admin")) return safePath;
     if (metadataIsAdmin) return safePath;
 
+    const supabase = getSupabaseBrowserClient();
     const { data: isAdmin, error: isAdminError } = await supabase.rpc("is_admin");
     if (!isAdminError && isAdmin === true) return safePath;
     return "/my-bookings";
@@ -176,22 +176,34 @@ export default function LoginPage() {
             return;
           }
           window.sessionStorage.setItem(AUTO_BOOTSTRAP_GUARD_KEY, guardTarget);
-          void setServerSessionCookie(session.access_token, session.user?.email ?? null)
-            .catch(() => null)
-            .then(async () => {
-              const valid = await verifyApiAuthContext(session.access_token);
-              if (!valid) {
+          void (async () => {
+            try {
+              const [cookieReady, valid, target] = await Promise.all([
+                setServerSessionCookie(session.access_token, session.user?.email ?? null)
+                  .then(() => true)
+                  .catch(() => false),
+                verifyApiAuthContext(session.access_token),
+                resolveNextPath(nextPath, session.user),
+              ]);
+              if (!cookieReady || !valid) {
                 await supabase.auth.signOut().catch(() => null);
                 await fetch("/api/auth/session", { method: "DELETE" }).catch(() => null);
                 if (!mounted) return;
-                setError("Session is stale or API is unavailable. Please sign in again.");
+                setError(
+                  cookieReady
+                    ? "Session is stale or API is unavailable. Please sign in again."
+                    : "Unable to initialize your browser session. Please sign in again.",
+                );
                 return;
               }
-              const target = await resolveNextPath(nextPath);
               if (!mounted) return;
               if (target === window.location.pathname) return;
               navigateAfterAuth(target);
-            });
+            } catch (unknownError) {
+              if (!mounted) return;
+              setError(getApiErrorMessage(unknownError, "Failed to initialize auth."));
+            }
+          })();
         }
       });
     } catch (unknownError) {
@@ -228,19 +240,32 @@ export default function LoginPage() {
         return;
       }
 
-      if (data.session?.access_token) {
-        await setServerSessionCookie(data.session.access_token, data.user?.email ?? null);
-        const valid = await verifyApiAuthContext(data.session.access_token);
-        if (!valid) {
-          await supabase.auth.signOut().catch(() => null);
-          await fetch("/api/auth/session", { method: "DELETE" }).catch(() => null);
-          setError("Signed in, but API auth validation failed. Check API server and env values.");
-          return;
-        }
+      const accessToken = data.session?.access_token;
+      if (!accessToken) {
+        setError("Signed in, but no browser session was returned. Please try again.");
+        return;
+      }
+
+      const [cookieReady, valid, target] = await Promise.all([
+        setServerSessionCookie(accessToken, data.user?.email ?? null)
+          .then(() => true)
+          .catch(() => false),
+        verifyApiAuthContext(accessToken),
+        resolveNextPath(nextPath, data.user),
+      ]);
+
+      if (!cookieReady || !valid) {
+        await supabase.auth.signOut().catch(() => null);
+        await fetch("/api/auth/session", { method: "DELETE" }).catch(() => null);
+        setError(
+          cookieReady
+            ? "Signed in, but API auth validation failed. Check API server and env values."
+            : "Signed in, but the browser session could not be initialized. Please try again.",
+        );
+        return;
       }
 
       void ensureUserProfileRow().catch(() => null);
-      const target = await resolveNextPath(nextPath, data.user);
       navigateAfterAuth(target);
     } catch (unknownError) {
       setError(
