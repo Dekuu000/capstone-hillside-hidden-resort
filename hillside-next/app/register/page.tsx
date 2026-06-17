@@ -251,21 +251,29 @@ export default function RegisterPage() {
           />
           <span>
             I agree to the{" "}
-            <Link href="/terms" className="font-semibold text-[var(--color-secondary)] hover:underline">
+            <Link
+              href="/terms"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-[var(--color-secondary)] hover:underline"
+              aria-label="Open Terms in a new tab"
+            >
               Terms
             </Link>{" "}
             and{" "}
-            <Link href="/privacy" className="font-semibold text-[var(--color-secondary)] hover:underline">
+            <Link
+              href="/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-[var(--color-secondary)] hover:underline"
+              aria-label="Open Privacy Policy in a new tab"
+            >
               Privacy Policy
             </Link>
             .
+            <span className="sr-only"> These links open in a new tab so your sign-up details stay on this page.</span>
           </span>
         </label>
-
-        <div className="rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-          <p className="font-semibold">Email Verification Required</p>
-          <p className="mt-1 text-emerald-700">We&apos;ll send you a verification link to confirm your email address.</p>
-        </div>
 
         {success ? <Toast type="success" title={success} /> : null}
         {error ? <Toast type="error" title="Registration failed" message={error} /> : null}
