@@ -1059,12 +1059,12 @@ export function AdminPaymentsClient({
                 </label>
               ) : null}
 
-              <div>
+              <div className="flex sm:justify-end">
                 <button
                   type="button"
                   onClick={() => void submitOnSitePayment()}
                   disabled={onSiteBusy}
-                  className="w-full rounded-lg border border-slate-900 bg-slate-900 px-3 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-slate-900 bg-slate-900 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[230px]"
                 >
                   {onSitePrimaryLabel}
                 </button>

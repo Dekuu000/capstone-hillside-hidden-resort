@@ -340,18 +340,19 @@ export function AdminWalkInTourClient({
           <p className="mt-1 text-xs text-slate-500">After create, you will be redirected to Payments for cashier recording.</p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => void submitWalkInTour()}
-          disabled={submitBusy}
-          className="mt-6 w-full rounded-xl bg-[var(--color-cta)] px-4 py-3 text-sm font-semibold text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {submitBusy ? "Creating..." : "Create Walk-in Tour"}
-        </button>
-
-        <p className="mt-2 text-xs text-[var(--color-muted)]">
-          You can also open <Link href="/admin/payments" className="font-semibold text-[var(--color-secondary)] underline">Payments</Link> directly.
-        </p>
+        <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-[var(--color-muted)]">
+            You can also open <Link href="/admin/payments" className="font-semibold text-[var(--color-secondary)] underline">Payments</Link> directly.
+          </p>
+          <button
+            type="button"
+            onClick={() => void submitWalkInTour()}
+            disabled={submitBusy}
+            className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-[var(--color-cta)] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[220px]"
+          >
+            {submitBusy ? "Creating..." : "Create Walk-in Tour"}
+          </button>
+        </div>
       </div>
     </section>
   );

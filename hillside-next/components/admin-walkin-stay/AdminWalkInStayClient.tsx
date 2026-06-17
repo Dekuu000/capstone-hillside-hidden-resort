@@ -562,18 +562,19 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => void handleCreate()}
-            disabled={submitBusy || !selectedUnitIds.length || nights <= 0}
-            className="mt-5 w-full rounded-xl bg-[var(--color-cta)] px-4 py-3 text-sm font-semibold text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {submitBusy ? "Creating walk-in stay..." : "Create Walk-in Stay"}
-          </button>
-
-          <p className="mt-2 text-xs text-[var(--color-muted)]">
-            On successful creation, proceed to <Link href="/admin/payments" className="font-semibold text-[var(--color-secondary)] underline">Payments</Link> to record or verify payment.
-          </p>
+          <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-[var(--color-muted)]">
+              On successful creation, proceed to <Link href="/admin/payments" className="font-semibold text-[var(--color-secondary)] underline">Payments</Link> to record or verify payment.
+            </p>
+            <button
+              type="button"
+              onClick={() => void handleCreate()}
+              disabled={submitBusy || !selectedUnitIds.length || nights <= 0}
+              className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-[var(--color-cta)] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[220px]"
+            >
+              {submitBusy ? "Creating..." : "Create Walk-in Stay"}
+            </button>
+          </div>
         </div>
       </div>
     </section>

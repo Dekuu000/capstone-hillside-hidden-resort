@@ -103,7 +103,7 @@ export function ReportsDateRangeForm({ fromDate, toDate, daily, monthly }: Props
       <input type="hidden" name="to" value={to} />
 
       <div className="flex items-end lg:col-span-2">
-        <Button type="submit" variant="secondary" className="h-10 w-full rounded-xl border-slate-300 bg-slate-900 px-4 text-white hover:bg-slate-800">
+        <Button type="submit" variant="secondary" className="h-10 w-full rounded-xl border-slate-300 bg-slate-900 px-5 text-white hover:bg-slate-800 sm:w-auto sm:min-w-[170px]">
           Apply range
         </Button>
       </div>

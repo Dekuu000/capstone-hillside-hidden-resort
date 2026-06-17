@@ -1659,15 +1659,17 @@ export function AdminCheckinClient({
                     </div>
                   </div>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={() => void validateManual()}
-                    disabled={busy || (reservationCode.trim().length === 0 && tokenFallbackInput.trim().length === 0)}
-                    className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] px-3 text-sm font-semibold text-white disabled:opacity-60"
-                  >
-                    <ShieldCheck className="h-4 w-4" />
-                    {busy ? "Validating..." : "Validate"}
-                  </button>
+                  <div className="flex sm:justify-end">
+                    <button
+                      type="button"
+                      onClick={() => void validateManual()}
+                      disabled={busy || (reservationCode.trim().length === 0 && tokenFallbackInput.trim().length === 0)}
+                      className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-60 sm:w-auto sm:min-w-[180px]"
+                    >
+                      <ShieldCheck className="h-4 w-4" />
+                      {busy ? "Validating..." : "Validate"}
+                    </button>
+                  </div>
                 )}
               </div>
             ) : null}
@@ -1723,12 +1725,12 @@ export function AdminCheckinClient({
                     No queued actions yet.
                   </p>
                 )}
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-end">
                   <button
                     type="button"
                     onClick={() => void syncQueue()}
                     disabled={!networkOnline || pendingQueueCount === 0 || syncing}
-                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] px-3 text-sm font-semibold text-white disabled:opacity-50"
+                    className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] px-5 text-sm font-semibold text-white disabled:opacity-50 sm:w-auto sm:min-w-[170px]"
                   >
                     <RefreshCcw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
                     {syncing ? "Syncing..." : "Sync now"}
@@ -1741,7 +1743,7 @@ export function AdminCheckinClient({
                       clearQueue();
                     }}
                     disabled={queue.length === 0 || syncing}
-                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)] disabled:opacity-50"
+                    className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-white px-5 text-sm font-semibold text-[var(--color-text)] disabled:opacity-50 sm:w-auto sm:min-w-[150px]"
                   >
                     <Trash2 className="h-4 w-4" />
                     Clear queue

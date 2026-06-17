@@ -33,7 +33,7 @@ export function AdminWalkInConsoleClient({
         <p className="mt-1 text-sm text-[var(--color-muted)]">{tabDescription}</p>
       </header>
 
-      <div className="mb-5 grid grid-cols-2 gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-2 shadow-[var(--shadow-sm)]">
+      <div className="mb-5 grid grid-cols-2 gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-2 shadow-[var(--shadow-sm)] lg:mx-auto lg:w-full lg:max-w-[560px]">
         <button
           type="button"
           onClick={() => setTab("stay")}

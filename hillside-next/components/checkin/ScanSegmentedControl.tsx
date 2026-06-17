@@ -20,7 +20,7 @@ export function ScanSegmentedControl({
   ];
 
   return (
-    <div className="grid grid-cols-3 gap-1 rounded-2xl border border-[var(--color-border)] bg-slate-50 p-1" role="tablist" aria-orientation="horizontal">
+    <div className="grid w-full grid-cols-3 gap-1 rounded-2xl border border-[var(--color-border)] bg-slate-50 p-1" role="tablist" aria-orientation="horizontal">
       {items.map((item) => {
         const active = value === item.id;
         return (

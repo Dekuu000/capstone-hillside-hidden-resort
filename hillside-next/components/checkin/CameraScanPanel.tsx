@@ -115,12 +115,12 @@ export function CameraScanPanel({
         </div>
       </div>
 
-      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-end">
         <button
           type="button"
           onClick={onToggleCamera}
           disabled={scanLoading}
-          className={`inline-flex h-11 items-center justify-center gap-2 rounded-xl px-3 text-sm font-semibold disabled:opacity-60 ${scanActive ? "border border-[var(--color-border)] bg-white text-[var(--color-text)]" : "bg-[var(--color-cta)] text-white"}`}
+          className={`inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold disabled:opacity-60 sm:w-auto sm:min-w-[180px] ${scanActive ? "border border-[var(--color-border)] bg-white text-[var(--color-text)]" : "bg-[var(--color-cta)] text-white"}`}
         >
           {scanActive ? <CameraOff className="h-4 w-4" /> : <Camera className="h-4 w-4" />}
           {scanLoading ? "Starting..." : scanActive ? "Stop camera" : "Start camera"}
@@ -128,7 +128,7 @@ export function CameraScanPanel({
         <button
           type="button"
           onClick={onReset}
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)]"
+          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-white px-5 text-sm font-semibold text-[var(--color-text)] sm:w-auto sm:min-w-[140px]"
         >
           <RefreshCcw className="h-4 w-4" />
           Rescan
