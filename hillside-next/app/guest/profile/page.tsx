@@ -12,7 +12,7 @@ export default async function GuestProfilePage() {
   return (
     <GuestShell initialEmail={emailHint}>
       <GuestPageIntro
-        title="Profile & settings"
+        title="Account settings"
         subtitle="Manage your guest details and account security."
       />
       <GuestProfileClient accessToken={accessToken} initialEmail={emailHint} />

@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { BedDouble, Bell, CalendarDays, ChevronDown, LogOut, MapPin, Mountain, UserRound } from "lucide-react";
-import { clearServerSessionCookie } from "../../lib/authSessionCookie";
-import { getSupabaseBrowserClient, safeGetSession } from "../../lib/supabase";
+import { usePathname } from "next/navigation";
+import { BedDouble, CalendarDays, TreePalm, UserRound } from "lucide-react";
+import { safeGetSession, getSupabaseBrowserClient } from "../../lib/supabase";
 import { resolveUserDisplayName } from "../../lib/userProfile";
 import { HillsideLogo } from "../branding/HillsideLogo";
 import { GuestBottomNav } from "../guest/GuestBottomNav";
@@ -16,86 +15,42 @@ type GuestChromeProps = {
   initialEmail?: string | null;
 };
 
-const navItems = [
+// Primary destinations (top tabs on desktop, first slots on the mobile bar).
+const primaryNav = [
   { label: "Stays", href: "/stays", icon: CalendarDays },
-  { label: "Tours", href: "/tours", icon: Mountain },
-  { label: "Map", href: "/guest/map", icon: MapPin },
-  { label: "Services", href: "/guest/services", icon: Bell },
-  { label: "My Trips", href: "/my-bookings", icon: BedDouble },
+  { label: "Tours", href: "/tours", icon: TreePalm },
+  { label: "Trips", href: "/my-bookings", icon: BedDouble },
 ];
 
-const guestMenuItemClass =
-  "inline-flex h-10 w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 text-sm font-medium text-[var(--color-text)] transition hover:bg-[var(--color-background)] disabled:opacity-60";
+// The avatar / Profile entry is its own destination (Airbnb-style account hub).
+const profileNav = { label: "Profile", href: "/guest/account", icon: UserRound };
+const bottomNav = [...primaryNav, profileNav];
 
-export function GuestChrome({ children, initialName = null, initialEmail = null }: GuestChromeProps) {
+export function GuestChrome({ children, initialName = null }: GuestChromeProps) {
   const pathname = usePathname();
-  const router = useRouter();
   const [name, setName] = useState(initialName || "Guest");
-  const [email, setEmail] = useState(initialEmail || "");
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     let mounted = true;
     const supabase = getSupabaseBrowserClient();
     void safeGetSession().then(({ session }) => {
-      if (!mounted) return;
-      const user = session?.user;
-      if (!user) return;
-      if (!initialName) {
-        setName(resolveUserDisplayName(user, "Guest"));
-      }
-      if (!initialEmail) {
-        setEmail(user.email ?? "");
-      }
+      if (!mounted || !session?.user || initialName) return;
+      setName(resolveUserDisplayName(session.user, "Guest"));
     });
     const { data: authSub } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!mounted) return;
-      const user = session?.user;
-      if (!user) return;
-      if (!initialName) {
-        setName(resolveUserDisplayName(user, "Guest"));
-      }
-      if (!initialEmail) {
-        setEmail(user.email ?? "");
-      }
+      if (!mounted || !session?.user || initialName) return;
+      setName(resolveUserDisplayName(session.user, "Guest"));
     });
     return () => {
       mounted = false;
       authSub.subscription.unsubscribe();
     };
-  }, [initialEmail, initialName]);
+  }, [initialName]);
 
   const initial = useMemo(() => name.trim().charAt(0).toUpperCase() || "G", [name]);
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
-
-  const handleSignOut = async () => {
-    const supabase = getSupabaseBrowserClient();
-    await supabase.auth.signOut();
-    await clearServerSessionCookie().catch(() => null);
-    router.replace("/login");
-  };
-
-  useEffect(() => {
-    const onPointerDown = (event: MouseEvent) => {
-      if (!menuRef.current) return;
-      if (menuRef.current.contains(event.target as Node)) return;
-      setMenuOpen(false);
-    };
-    const onEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setMenuOpen(false);
-    };
-    window.addEventListener("mousedown", onPointerDown);
-    window.addEventListener("keydown", onEscape);
-    return () => {
-      window.removeEventListener("mousedown", onPointerDown);
-      window.removeEventListener("keydown", onEscape);
-    };
-  }, []);
-
-  useEffect(() => {
-    setMenuOpen(false);
-  }, [pathname]);
+  // The Profile hub and account settings page share the avatar's active state.
+  const profileActive = isActive(profileNav.href) || isActive("/guest/profile");
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--color-background)]">
@@ -106,7 +61,7 @@ export function GuestChrome({ children, initialName = null, initialEmail = null 
           </Link>
 
           <nav className="hidden items-center gap-2 lg:flex">
-            {navItems.map((item) => {
+            {primaryNav.map((item) => {
               const active = isActive(item.href);
               const Icon = item.icon;
               return (
@@ -128,60 +83,19 @@ export function GuestChrome({ children, initialName = null, initialEmail = null 
             })}
           </nav>
 
-          <div className="flex items-center gap-3">
-            <div ref={menuRef} className="relative">
-              <button
-                type="button"
-                onClick={() => setMenuOpen((value) => !value)}
-                className="inline-flex h-11 items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-[var(--color-text)] shadow-sm transition hover:bg-[color:color-mix(in_srgb,var(--color-secondary)_8%,white)]"
-                aria-haspopup="menu"
-                aria-expanded={menuOpen}
-                aria-label="Open guest profile menu"
-              >
-                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[var(--color-primary)] text-xs font-semibold text-white">
-                  {initial}
-                </span>
-                <ChevronDown className="h-4 w-4 text-[var(--color-muted)]" />
-              </button>
-              {menuOpen ? (
-                <div
-                  role="menu"
-                  className="absolute right-0 z-40 mt-2 w-64 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white p-2 shadow-[var(--shadow-md)]"
-                >
-                  <div className="guest-surface-soft mb-1 px-3 py-2">
-                    <p className="truncate text-sm font-semibold text-[var(--color-text)]">{name || "Guest"}</p>
-                    <p className="truncate text-xs text-[var(--color-muted)]">{email || "guest"}</p>
-                  </div>
-                  <Link
-                    href="/guest/my-stay"
-                    role="menuitem"
-                    className={guestMenuItemClass}
-                  >
-                    <BedDouble className="h-4 w-4 text-[var(--color-muted)]" />
-                    My stay
-                  </Link>
-                  <Link
-                    href="/guest/profile"
-                    role="menuitem"
-                    className={guestMenuItemClass}
-                  >
-                    <UserRound className="h-4 w-4 text-[var(--color-muted)]" />
-                    Profile settings
-                  </Link>
-                  <div className="my-1 border-t border-[var(--color-border)]" />
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={handleSignOut}
-                    className={guestMenuItemClass}
-                  >
-                    <LogOut className="h-4 w-4 text-[var(--color-muted)]" />
-                    Sign out
-                  </button>
-                </div>
-              ) : null}
-            </div>
-          </div>
+          <Link
+            href={profileNav.href}
+            aria-label="Profile and account"
+            aria-current={profileActive ? "page" : undefined}
+            className={`inline-flex h-11 items-center gap-2 rounded-full border bg-[var(--color-surface)] px-2 pr-3 shadow-sm transition hover:bg-[color:color-mix(in_srgb,var(--color-secondary)_8%,white)] ${
+              profileActive ? "border-[var(--color-primary)]" : "border-[var(--color-border)]"
+            }`}
+          >
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[var(--color-primary)] text-xs font-semibold text-white">
+              {initial}
+            </span>
+            <span className="hidden text-sm font-semibold text-[var(--color-text)] sm:inline">Profile</span>
+          </Link>
         </div>
       </header>
 
@@ -189,7 +103,7 @@ export function GuestChrome({ children, initialName = null, initialEmail = null 
         {children}
       </main>
 
-      <GuestBottomNav items={navItems} isActive={isActive} />
+      <GuestBottomNav items={bottomNav} isActive={isActive} />
     </div>
   );
 }
