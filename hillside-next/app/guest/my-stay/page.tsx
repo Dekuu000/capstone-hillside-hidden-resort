@@ -1,19 +1,13 @@
 import Link from "next/link";
-import { Bell, CalendarCheck, ExternalLink, KeyRound, MapPin, ShieldCheck, TreePalm } from "lucide-react";
+import { Bell, CalendarCheck, MapPin, ShieldCheck, TreePalm } from "lucide-react";
 import { redirect } from "next/navigation";
-import { guestPassVerificationResponseSchema, stayDashboardResponseSchema } from "../../../../packages/shared/src/schemas";
-import type {
-  GuestPassVerificationResponse,
-  ReservationListItem,
-  StayDashboardResponse,
-} from "../../../../packages/shared/src/types";
+import { stayDashboardResponseSchema } from "../../../../packages/shared/src/schemas";
+import type { ReservationListItem, StayDashboardResponse } from "../../../../packages/shared/src/types";
 import { MyStayDashboardClient } from "../../../components/guest-stay/MyStayDashboardClient";
 import { GuestShell } from "../../../components/layout/GuestShell";
-import { GuestHero } from "../../../components/guest/GuestHero";
-import { GuestSyncStatus } from "../../../components/guest/GuestSyncStatus";
+import { GuestPageIntro } from "../../../components/guest/GuestPageIntro";
 import { GuestEmptyState } from "../../../components/guest/GuestEmptyState";
 import { StaySnapshotCard } from "../../../components/guest/StaySnapshotCard";
-import { buildTokenExplorerUrl, buildTxExplorerUrl, shortHash } from "../../../lib/chainExplorer";
 import { formatDateWithWeekday } from "../../../lib/dateDisplay";
 import { formatPhpPeso as toPeso } from "../../../lib/formatCurrency";
 import { fetchServerApiData } from "../../../lib/serverApi";
@@ -79,18 +73,6 @@ async function fetchStayDashboard(accessToken: string): Promise<StayDashboardRes
   });
 }
 
-async function fetchGuestPass(
-  accessToken: string,
-  reservationId: string,
-): Promise<GuestPassVerificationResponse | null> {
-  return fetchServerApiData({
-    accessToken,
-    path: `/v2/nft/guest-pass/${reservationId}`,
-    schema: guestPassVerificationResponseSchema,
-    revalidate: 0,
-  });
-}
-
 export default async function GuestMyStayPage() {
   const accessToken = await getServerAccessToken();
   if (!accessToken) redirect("/login?next=/guest/my-stay");
@@ -103,26 +85,23 @@ export default async function GuestMyStayPage() {
   const stayDashboard = await fetchStayDashboard(accessToken);
   const stay = stayDashboard?.reservation ?? null;
   const welcomeNotification = stayDashboard?.welcome_notification ?? null;
-  const guestPass = stay ? await fetchGuestPass(accessToken, stay.reservation_id) : null;
 
   return (
     <GuestShell initialEmail={emailHint}>
-      <GuestHero
+      <GuestPageIntro
         testId="guest-hero"
-        dark
-        eyebrow="Guest Portal"
-        title="My Stay"
-        contentClassName="lg:gap-6 lg:p-7"
-        rightSlot={(
-          <StaySnapshotCard
-            nextStayDate={formatDateWithWeekday(stay?.check_in_date || null)}
-            outstandingBalance={toPeso(Number(stay?.balance_due ?? 0))}
-            qrStatus={stay ? getQrStatusLabel(stay.status) : "No QR yet"}
-            dark
-          />
-        )}
+        title="My stay"
+        subtitle="Your trip at a glance — dates, balance, and check-in pass."
+        aside={
+          stay ? (
+            <StaySnapshotCard
+              nextStayDate={formatDateWithWeekday(stay.check_in_date || null)}
+              outstandingBalance={toPeso(Number(stay.balance_due ?? 0))}
+              qrStatus={getQrStatusLabel(stay.status)}
+            />
+          ) : undefined
+        }
       />
-      <GuestSyncStatus compact />
       <QuickActions />
       {!stay ? (
         <GuestEmptyState
@@ -143,89 +122,31 @@ export default async function GuestMyStayPage() {
             welcomeNotification={welcomeNotification}
           />
 
-          <section className="grid gap-4 md:grid-cols-2">
-            <article className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm">
-              <h2 className="inline-flex items-center gap-2 text-base font-semibold text-[var(--color-text)]">
-                <ShieldCheck className="h-4 w-4 text-[var(--color-secondary)]" />
-                Payment Summary
-              </h2>
-              <div className="mt-3 space-y-1 text-sm text-[var(--color-muted)]">
-                <p>
-                  Paid:{" "}
-                  <span className="font-semibold text-[var(--color-text)]">
-                    {toPeso(Number(stay.amount_paid_verified || 0))}
-                  </span>
-                </p>
-                <p>
-                  Remaining:{" "}
-                  <span className="font-semibold text-[var(--color-text)]">
-                    {toPeso(Number(stay.balance_due || 0))}
-                  </span>
-                </p>
-                <p className="pt-1 capitalize">
-                  Status:{" "}
-                  <span className="font-semibold text-[var(--color-text)]">
-                    {stay.status.replaceAll("_", " ")}
-                  </span>
-                </p>
-              </div>
-            </article>
-
-            <article className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm">
-              <h2 className="inline-flex items-center gap-2 text-base font-semibold text-[var(--color-text)]">
-                <KeyRound className="h-4 w-4 text-[var(--color-secondary)]" />
-                Digital Guest Pass
-              </h2>
-              <div className="mt-3 space-y-1 text-sm text-[var(--color-muted)]">
-                <p>
-                  Mint status:{" "}
-                  <span className="font-semibold text-[var(--color-text)]">
-                    {guestPass?.minted ? "Minted" : "Pending"}
-                  </span>
-                </p>
-                <p>
-                  Token ID:{" "}
-                  {guestPass?.token_id != null && guestPass.contract_address ? (
-                    <a
-                      href={buildTokenExplorerUrl(guestPass?.chain_key, guestPass.contract_address, guestPass.token_id) || "#"}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1 rounded border border-amber-300 bg-amber-100 px-1.5 py-0.5 font-mono text-xs text-blue-800"
-                      aria-label={`View token ${guestPass.token_id} on explorer`}
-                    >
-                      {guestPass.token_id}
-                      <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-                    </a>
-                  ) : (
-                    <span className="font-semibold text-[var(--color-text)]">{guestPass?.token_id ?? "-"}</span>
-                  )}
-                </p>
-                <p>
-                  Tx:{" "}
-                  {guestPass?.tx_hash ? (
-                    <span className="relative inline-flex items-center">
-                      <a
-                        href={buildTxExplorerUrl(guestPass?.chain_key, guestPass.tx_hash) || "#"}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="group inline-flex items-center gap-1 text-[var(--color-secondary)]"
-                        aria-label={guestPass.tx_hash}
-                      >
-                        <span className="rounded border border-amber-300 bg-amber-100 px-1.5 py-0.5 font-mono text-xs text-blue-800">
-                          {shortHash(guestPass.tx_hash)}
-                        </span>
-                        <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-                        <span className="pointer-events-none absolute bottom-full left-0 z-20 mb-1.5 hidden rounded-md bg-[#1e2b3f] px-2 py-1 font-mono text-[11px] text-slate-100 shadow-lg group-hover:block group-focus-visible:block">
-                          {guestPass.tx_hash}
-                        </span>
-                      </a>
-                    </span>
-                  ) : (
-                    <span className="font-mono text-xs text-[var(--color-text)]">-</span>
-                  )}
-                </p>
-              </div>
-            </article>
+          <section className="rounded-3xl border border-[var(--color-border)] bg-white p-5 shadow-sm">
+            <h2 className="inline-flex items-center gap-2 text-base font-semibold text-[var(--color-text)]">
+              <ShieldCheck className="h-4 w-4 text-[var(--color-secondary)]" />
+              Payment Summary
+            </h2>
+            <div className="mt-3 space-y-1 text-sm text-[var(--color-muted)]">
+              <p>
+                Paid:{" "}
+                <span className="font-semibold text-[var(--color-text)]">
+                  {toPeso(Number(stay.amount_paid_verified || 0))}
+                </span>
+              </p>
+              <p>
+                Remaining:{" "}
+                <span className="font-semibold text-[var(--color-text)]">
+                  {toPeso(Number(stay.balance_due || 0))}
+                </span>
+              </p>
+              <p className="pt-1 capitalize">
+                Status:{" "}
+                <span className="font-semibold text-[var(--color-text)]">
+                  {stay.status.replaceAll("_", " ")}
+                </span>
+              </p>
+            </div>
           </section>
         </div>
       )}

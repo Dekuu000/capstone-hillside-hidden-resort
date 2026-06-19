@@ -39,10 +39,8 @@ import { getSupabaseBrowserClient } from "../../lib/supabase";
 import { compactQrTokenPayload } from "../../lib/qrPayload";
 import { BookingStatusTabs } from "../guest/BookingStatusTabs";
 import { GuestEmptyState } from "../guest/GuestEmptyState";
-import { GuestHero } from "../guest/GuestHero";
+import { GuestPageIntro } from "../guest/GuestPageIntro";
 import { GuestSearchBar } from "../guest/GuestSearchBar";
-import { GuestSyncStatus } from "../guest/GuestSyncStatus";
-import { StaySnapshotCard } from "../guest/StaySnapshotCard";
 import { ImageLightbox } from "../shared/ImageLightbox";
 import { GcashPaymentGuide } from "../shared/GcashPaymentGuide";
 import { ModalDialog } from "../shared/ModalDialog";
@@ -760,33 +758,6 @@ export function MyBookingsClient({
     return date;
   }, []);
 
-  const summary = useMemo(() => {
-    const upcomingCandidates = items
-      .filter((booking) => !["checked_out", "cancelled", "no_show"].includes(booking.status))
-      .sort((a, b) => {
-        const left = new Date(`${a.check_in_date}T00:00:00`).getTime();
-        const right = new Date(`${b.check_in_date}T00:00:00`).getTime();
-        return left - right;
-      });
-
-    const nextBooking = upcomingCandidates[0] ?? null;
-    const nextDate = nextBooking
-      ? ((nextBooking.service_bookings?.[0]?.visit_date || nextBooking.check_in_date) ?? null)
-      : null;
-    const outstanding = upcomingCandidates.reduce((sum, booking) => {
-      const paid = Number(booking.amount_paid_verified ?? 0);
-      const total = Number(booking.total_amount ?? 0);
-      return sum + Math.max(0, total - paid);
-    }, 0);
-    const qrReady = nextBooking ? canShowQrForBooking(nextBooking.status) : false;
-
-    return {
-      nextDate,
-      outstanding,
-      qrReady,
-    };
-  }, [items]);
-
   if (!token) {
     return (
       <section className="mx-auto w-full max-w-5xl">
@@ -803,40 +774,11 @@ export function MyBookingsClient({
 
   return (
     <section className="mx-auto flex w-full max-w-[1240px] flex-col gap-5 overflow-x-hidden lg:gap-5">
-      <div className="lg:hidden">
-        <GuestHero
-          testId="guest-hero"
-          dark
-          eyebrow="Guest Portal"
-          title="My Bookings"
-          rightSlot={(
-            <StaySnapshotCard
-              nextStayDate={formatDateWithWeekday(summary.nextDate)}
-              outstandingBalance={formatPeso(summary.outstanding)}
-              qrStatus={summary.qrReady ? "QR ready" : "No QR yet"}
-              dark
-            />
-          )}
-        />
-      </div>
-      <div className="hidden lg:block">
-        <GuestHero
-          testId="guest-hero"
-          dark
-          eyebrow="Guest Portal"
-          title="My Bookings"
-          className="rounded-[2rem] shadow-sm lg:min-h-[198px]"
-          contentClassName="lg:min-h-[174px] lg:p-6"
-          rightSlot={(
-            <StaySnapshotCard
-              nextStayDate={formatDateWithWeekday(summary.nextDate)}
-              outstandingBalance={formatPeso(summary.outstanding)}
-              qrStatus={summary.qrReady ? "QR ready" : "No QR yet"}
-              dark
-            />
-          )}
-        />
-      </div>
+      <GuestPageIntro
+        testId="guest-hero"
+        title="My trips"
+        subtitle="Your bookings, payments, and check-in passes."
+      />
 
       <section className="rounded-[2rem] border border-[var(--color-border)] bg-white p-4 shadow-sm lg:p-5">
         <div className="lg:hidden" data-testid="guest-tabs">
@@ -846,7 +788,7 @@ export function MyBookingsClient({
               onClick={() => setTab("upcoming")}
               className={`inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-2xl px-4 text-[13px] font-bold leading-none transition ${
                 tab === "upcoming"
-                  ? "border border-[var(--color-secondary)] bg-teal-50 text-[var(--color-secondary)] shadow-sm"
+                  ? "border border-[var(--color-secondary)] bg-[color:color-mix(in_srgb,var(--color-secondary)_12%,white)] text-[var(--color-secondary)] shadow-sm"
                   : "text-[var(--color-muted)] hover:bg-[var(--color-background)]"
               }`}
             >
@@ -858,7 +800,7 @@ export function MyBookingsClient({
               onClick={() => setTab("pending_payment")}
               className={`inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-2xl px-4 text-[13px] font-bold leading-none transition ${
                 tab === "pending_payment"
-                  ? "border border-[var(--color-secondary)] bg-teal-50 text-[var(--color-secondary)] shadow-sm"
+                  ? "border border-[var(--color-secondary)] bg-[color:color-mix(in_srgb,var(--color-secondary)_12%,white)] text-[var(--color-secondary)] shadow-sm"
                   : "text-[var(--color-muted)] hover:bg-[var(--color-background)]"
               }`}
             >
@@ -870,7 +812,7 @@ export function MyBookingsClient({
               onClick={() => setTab("completed")}
               className={`inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-2xl px-4 text-[13px] font-bold leading-none transition ${
                 tab === "completed"
-                  ? "border border-[var(--color-secondary)] bg-teal-50 text-[var(--color-secondary)] shadow-sm"
+                  ? "border border-[var(--color-secondary)] bg-[color:color-mix(in_srgb,var(--color-secondary)_12%,white)] text-[var(--color-secondary)] shadow-sm"
                   : "text-[var(--color-muted)] hover:bg-[var(--color-background)]"
               }`}
             >
@@ -882,7 +824,7 @@ export function MyBookingsClient({
               onClick={() => setTab("cancelled")}
               className={`inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-2xl px-4 text-[13px] font-bold leading-none transition ${
                 tab === "cancelled"
-                  ? "border border-[var(--color-secondary)] bg-teal-50 text-[var(--color-secondary)] shadow-sm"
+                  ? "border border-[var(--color-secondary)] bg-[color:color-mix(in_srgb,var(--color-secondary)_12%,white)] text-[var(--color-secondary)] shadow-sm"
                   : "text-[var(--color-muted)] hover:bg-[var(--color-background)]"
               }`}
             >
@@ -928,9 +870,8 @@ export function MyBookingsClient({
             className="w-[390px]"
           />
         </div>
-        <div className="mt-3 flex flex-col gap-3 lg:mt-4">
+        <div className="mt-3 lg:mt-4">
           <p className="text-sm text-[var(--color-muted)]">{TAB_HINTS[tab]}</p>
-          <GuestSyncStatus compact />
         </div>
       </section>
 
@@ -1388,7 +1329,7 @@ export function MyBookingsClient({
                   <div className="grid gap-2">
                     <label
                       htmlFor={submitProofInputId}
-                      className="group inline-flex min-h-14 w-full cursor-pointer items-center justify-between gap-3 rounded-2xl border border-[var(--color-border)] bg-white px-4 py-3 transition hover:border-[var(--color-secondary)] hover:bg-teal-50/20"
+                      className="group inline-flex min-h-14 w-full cursor-pointer items-center justify-between gap-3 rounded-2xl border border-[var(--color-border)] bg-white px-4 py-3 transition hover:border-[var(--color-secondary)] hover:bg-[color:color-mix(in_srgb,var(--color-secondary)_12%,white)]/20"
                     >
                       <span className="min-w-0 text-sm font-semibold text-[var(--color-text)] transition group-hover:text-[var(--color-secondary)]">
                         <span className="block truncate">{submitProofFile ? "Change payment proof" : "Upload payment proof"}</span>
@@ -1396,7 +1337,7 @@ export function MyBookingsClient({
                           JPG, PNG, or PDF
                         </span>
                       </span>
-                      <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-muted)] transition group-hover:border-[var(--color-secondary)] group-hover:bg-teal-50 group-hover:text-[var(--color-secondary)]">
+                      <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-muted)] transition group-hover:border-[var(--color-secondary)] group-hover:bg-[color:color-mix(in_srgb,var(--color-secondary)_12%,white)] group-hover:text-[var(--color-secondary)]">
                         <Upload className="h-4 w-4" />
                       </span>
                     </label>
@@ -1445,7 +1386,7 @@ export function MyBookingsClient({
               </div>
               {submitBusy ? (
                 <div
-                  className="flex items-center gap-3 rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-semibold text-teal-800"
+                  className="flex items-center gap-3 rounded-2xl border border-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)] bg-[color:color-mix(in_srgb,var(--color-secondary)_12%,white)] px-4 py-3 text-sm font-semibold text-[var(--color-secondary)]"
                   role="status"
                   aria-live="polite"
                 >
@@ -1563,7 +1504,7 @@ export function MyBookingsClient({
           maxWidthClass="md:max-w-md"
           panelClassName="max-h-[calc(100dvh-0.75rem)] border-[var(--color-border)] bg-white pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
           closeLabel="Close cancel booking dialog"
-          closeButtonClassName="h-10 w-10 rounded-full border-2 border-teal-200 bg-white text-[var(--color-muted)]"
+          closeButtonClassName="h-10 w-10 rounded-full border-2 border-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)] bg-white text-[var(--color-muted)]"
           onClose={() => setCancelFor(null)}
         >
             <p className="text-sm text-[var(--color-muted)]">This booking will be cancelled and removed from active flow.</p>

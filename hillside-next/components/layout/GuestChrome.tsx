@@ -3,15 +3,10 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BedDouble, Bell, CalendarDays, ChevronDown, LogOut, MapPin, Mountain, Plug, RefreshCcw, Unplug, UserRound, Wallet } from "lucide-react";
-import { myProfileResponseSchema } from "../../../packages/shared/src/schemas";
-import type { MyProfileResponse } from "../../../packages/shared/src/types";
-import { apiFetch } from "../../lib/apiClient";
-import { getApiErrorMessage } from "../../lib/apiError";
+import { BedDouble, Bell, CalendarDays, ChevronDown, LogOut, MapPin, Mountain, UserRound } from "lucide-react";
 import { clearServerSessionCookie } from "../../lib/authSessionCookie";
 import { getSupabaseBrowserClient, safeGetSession } from "../../lib/supabase";
 import { resolveUserDisplayName } from "../../lib/userProfile";
-import { useToast } from "../shared/ToastProvider";
 import { HillsideLogo } from "../branding/HillsideLogo";
 import { GuestBottomNav } from "../guest/GuestBottomNav";
 
@@ -30,17 +25,13 @@ const navItems = [
 ];
 
 const guestMenuItemClass =
-  "inline-flex h-10 w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 text-sm font-medium text-[var(--color-text)] transition hover:bg-slate-50 disabled:opacity-60";
+  "inline-flex h-10 w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 text-sm font-medium text-[var(--color-text)] transition hover:bg-[var(--color-background)] disabled:opacity-60";
 
 export function GuestChrome({ children, initialName = null, initialEmail = null }: GuestChromeProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { showToast } = useToast();
   const [name, setName] = useState(initialName || "Guest");
   const [email, setEmail] = useState(initialEmail || "");
-  const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [walletBusy, setWalletBusy] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
@@ -49,7 +40,6 @@ export function GuestChrome({ children, initialName = null, initialEmail = null 
     const supabase = getSupabaseBrowserClient();
     void safeGetSession().then(({ session }) => {
       if (!mounted) return;
-      setAccessToken(session?.access_token ?? null);
       const user = session?.user;
       if (!user) return;
       if (!initialName) {
@@ -61,7 +51,6 @@ export function GuestChrome({ children, initialName = null, initialEmail = null 
     });
     const { data: authSub } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!mounted) return;
-      setAccessToken(session?.access_token ?? null);
       const user = session?.user;
       if (!user) return;
       if (!initialName) {
@@ -77,33 +66,6 @@ export function GuestChrome({ children, initialName = null, initialEmail = null 
     };
   }, [initialEmail, initialName]);
 
-  useEffect(() => {
-    if (!accessToken) {
-      setWalletAddress(null);
-      return;
-    }
-    let cancelled = false;
-    const loadWallet = async () => {
-      try {
-        const profile = await apiFetch<MyProfileResponse>(
-          "/v2/me/profile",
-          { method: "GET" },
-          accessToken,
-          myProfileResponseSchema,
-        );
-        if (cancelled) return;
-        setWalletAddress(profile.wallet_address?.trim() || null);
-      } catch {
-        if (cancelled) return;
-        setWalletAddress(null);
-      }
-    };
-    void loadWallet();
-    return () => {
-      cancelled = true;
-    };
-  }, [accessToken]);
-
   const initial = useMemo(() => name.trim().charAt(0).toUpperCase() || "G", [name]);
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
@@ -113,74 +75,6 @@ export function GuestChrome({ children, initialName = null, initialEmail = null 
     await clearServerSessionCookie().catch(() => null);
     router.replace("/login");
   };
-
-  const patchWallet = async (value: string | null) => {
-    if (!accessToken) {
-      throw new Error("Session expired. Please sign in again.");
-    }
-    const profile = await apiFetch<MyProfileResponse>(
-      "/v2/me/profile",
-      {
-        method: "PATCH",
-        body: JSON.stringify({
-          wallet_address: value,
-          wallet_chain: "evm",
-        }),
-      },
-      accessToken,
-      myProfileResponseSchema,
-    );
-    setWalletAddress(profile.wallet_address?.trim() || null);
-  };
-
-  const connectWallet = async () => {
-    const provider = (window as typeof window & { ethereum?: { request: (args: { method: string }) => Promise<string[]> } })
-      .ethereum;
-    if (!provider?.request) {
-      showToast({
-        type: "error",
-        title: "Wallet unavailable",
-        message: "Install MetaMask or another EVM wallet.",
-      });
-      return;
-    }
-    setWalletBusy(true);
-    try {
-      const accounts = await provider.request({ method: "eth_requestAccounts" });
-      const nextAddress = accounts?.[0]?.trim();
-      if (!nextAddress) throw new Error("No wallet account returned.");
-      await patchWallet(nextAddress);
-      showToast({ type: "success", title: "Wallet connected" });
-    } catch (unknownError) {
-      showToast({
-        type: "error",
-        title: "Wallet connection failed",
-        message: getApiErrorMessage(unknownError, "Unable to connect wallet."),
-      });
-    } finally {
-      setWalletBusy(false);
-    }
-  };
-
-  const disconnectWallet = async () => {
-    setWalletBusy(true);
-    try {
-      await patchWallet(null);
-      showToast({ type: "success", title: "Wallet disconnected" });
-    } catch (unknownError) {
-      showToast({
-        type: "error",
-        title: "Wallet update failed",
-        message: getApiErrorMessage(unknownError, "Unable to disconnect wallet."),
-      });
-    } finally {
-      setWalletBusy(false);
-    }
-  };
-
-  const walletDisplay = walletAddress
-    ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
-    : "Not connected";
 
   useEffect(() => {
     const onPointerDown = (event: MouseEvent) => {
@@ -259,14 +153,6 @@ export function GuestChrome({ children, initialName = null, initialEmail = null 
                     <p className="truncate text-xs text-[var(--color-muted)]">{email || "guest"}</p>
                   </div>
                   <Link
-                    href="/guest/profile"
-                    role="menuitem"
-                    className={guestMenuItemClass}
-                  >
-                    <UserRound className="h-4 w-4 text-[var(--color-muted)]" />
-                    Profile settings
-                  </Link>
-                  <Link
                     href="/guest/my-stay"
                     role="menuitem"
                     className={guestMenuItemClass}
@@ -275,45 +161,14 @@ export function GuestChrome({ children, initialName = null, initialEmail = null 
                     My stay
                   </Link>
                   <Link
-                    href="/guest/sync"
+                    href="/guest/profile"
                     role="menuitem"
                     className={guestMenuItemClass}
                   >
-                    <RefreshCcw className="h-4 w-4 text-[var(--color-muted)]" />
-                    Sync center
+                    <UserRound className="h-4 w-4 text-[var(--color-muted)]" />
+                    Profile settings
                   </Link>
-                  <div className="my-1 border-t border-[var(--color-border)] pt-2">
-                    <div className="px-3 pb-2">
-                      <p className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">
-                        <Wallet className="h-3 w-3" />
-                        Wallet
-                      </p>
-                      <p className="mt-1 font-mono text-xs text-[var(--color-text)]">{walletDisplay}</p>
-                    </div>
-                    {walletAddress ? (
-                      <button
-                        type="button"
-                        role="menuitem"
-                        disabled={walletBusy}
-                        onClick={() => void disconnectWallet()}
-                        className={guestMenuItemClass}
-                      >
-                        <Unplug className="h-4 w-4 text-[var(--color-muted)]" />
-                        {walletBusy ? "Disconnecting..." : "Disconnect wallet"}
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        role="menuitem"
-                        disabled={walletBusy}
-                        onClick={() => void connectWallet()}
-                        className={guestMenuItemClass}
-                      >
-                        <Plug className="h-4 w-4 text-[var(--color-muted)]" />
-                        {walletBusy ? "Connecting..." : "Connect wallet"}
-                      </button>
-                    )}
-                  </div>
+                  <div className="my-1 border-t border-[var(--color-border)]" />
                   <button
                     type="button"
                     role="menuitem"
