@@ -18,7 +18,7 @@ export default async function ReservePaymentPage({
   if (!auth) redirect(`/login?next=/reserve/${reservationId}/pay`);
 
   return (
-    <main className="min-h-screen bg-[var(--color-background)]">
+    <main className="flex min-h-screen flex-col bg-[var(--color-background)]">
       <SearchNav isAuthed isAdmin={isBackOffice(auth.role)} />
       <PaymentClient token={token} reservationId={reservationId} />
       <SiteFooter />

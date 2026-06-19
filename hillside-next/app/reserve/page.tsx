@@ -14,7 +14,7 @@ export default async function ReservePage() {
   if (isBackOffice(auth.role)) redirect("/admin");
 
   return (
-    <main className="min-h-screen bg-[var(--color-background)]">
+    <main className="flex min-h-screen flex-col bg-[var(--color-background)]">
       <SearchNav isAuthed isAdmin={false} />
       <ReserveClient token={token} email={auth.email ?? null} />
       <SiteFooter />

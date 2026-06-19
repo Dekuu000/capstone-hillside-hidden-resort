@@ -47,7 +47,7 @@ export default async function ConfirmationPage({
     .join(", ");
 
   return (
-    <main className="min-h-screen bg-[var(--color-background)]">
+    <main className="flex min-h-screen flex-col bg-[var(--color-background)]">
       <SearchNav isAuthed isAdmin={isBackOffice(auth.role)} />
 
       <div className="mx-auto w-full max-w-[640px] px-4 py-12 md:px-6">

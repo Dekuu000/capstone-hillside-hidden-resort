@@ -34,7 +34,7 @@ export default async function ListingDetailPage({
   const amenities = unit.amenities ?? [];
 
   return (
-    <main className="min-h-screen bg-[var(--color-background)]">
+    <main className="flex min-h-screen flex-col bg-[var(--color-background)]">
       <SearchNav isAuthed={Boolean(auth)} isAdmin={isBackOffice(auth?.role)} />
 
       <div className="mx-auto w-full max-w-[1120px] px-4 py-6 md:px-6 lg:px-8">

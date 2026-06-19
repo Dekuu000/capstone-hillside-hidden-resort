@@ -12,7 +12,7 @@ export default async function ToursPage() {
   const services = await fetchPublicServices();
 
   return (
-    <main className="min-h-screen bg-[var(--color-background)]">
+    <main className="flex min-h-screen flex-col bg-[var(--color-background)]">
       <SearchNav isAuthed={Boolean(auth)} isAdmin={isBackOffice(auth?.role)} />
 
       <section className="border-b border-[var(--color-border)] bg-[var(--color-surface)]">

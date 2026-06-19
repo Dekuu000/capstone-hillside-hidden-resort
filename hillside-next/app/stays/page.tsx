@@ -50,7 +50,7 @@ export default async function StaysPage({
   const auth = accessToken ? await getServerAuthContext(accessToken) : null;
 
   return (
-    <main className="min-h-screen bg-[var(--color-background)]">
+    <main className="flex min-h-screen flex-col bg-[var(--color-background)]">
       <SearchNav isAuthed={Boolean(auth)} isAdmin={isBackOffice(auth?.role)} />
 
       <div className="border-b border-[var(--color-border)] bg-[var(--color-surface)]">

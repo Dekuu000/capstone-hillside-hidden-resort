@@ -2,24 +2,28 @@ import Link from "next/link";
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-[var(--color-border)] bg-[var(--color-surface)]">
-      <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-4 px-4 py-8 text-sm md:flex-row md:items-center md:justify-between md:px-6 lg:px-8">
-        <div className="space-y-1">
-          <p className="font-semibold text-[var(--color-text)]">Hillside Hidden Resort</p>
-          <p className="muted-text">Prk. 7, Jupiter St, Olongapo City, Zambales</p>
+    <footer className="mt-auto border-t border-[var(--color-border)] bg-[var(--color-surface)]">
+      <div className="mx-auto w-full max-w-[1280px] px-4 py-8 md:px-6 lg:px-8">
+        <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+          <div className="space-y-1">
+            <p className="font-semibold text-[var(--color-text)]">Hillside Hidden Resort</p>
+            <p className="text-sm muted-text">Prk. 7, Jupiter St, Olongapo City, Zambales</p>
+          </div>
+          <nav className="flex flex-col gap-3 text-sm muted-text sm:flex-row sm:flex-wrap sm:gap-x-6 sm:gap-y-2">
+            <Link href="/stays" className="transition hover:text-[var(--color-text)]">
+              Browse stays
+            </Link>
+            <Link href="/privacy" className="transition hover:text-[var(--color-text)]">
+              Privacy Policy
+            </Link>
+            <Link href="/terms" className="transition hover:text-[var(--color-text)]">
+              Terms of Service
+            </Link>
+          </nav>
         </div>
-        <nav className="flex flex-wrap items-center gap-4 muted-text">
-          <Link href="/stays" className="hover:text-[var(--color-text)]">
-            Browse stays
-          </Link>
-          <Link href="/privacy" className="hover:text-[var(--color-text)]">
-            Privacy Policy
-          </Link>
-          <Link href="/terms" className="hover:text-[var(--color-text)]">
-            Terms of Service
-          </Link>
-          <span>© 2026 Hillside Hidden Resort</span>
-        </nav>
+        <p className="mt-6 border-t border-[var(--color-border)] pt-4 text-xs muted-text">
+          © 2026 Hillside Hidden Resort
+        </p>
       </div>
     </footer>
   );

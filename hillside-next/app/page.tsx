@@ -36,7 +36,7 @@ export default async function HomePage() {
   const [units, services] = await Promise.all([fetchPublicUnits({ limit: 60 }), fetchPublicServices()]);
 
   return (
-    <main className="min-h-screen bg-[var(--color-background)]">
+    <main className="flex min-h-screen flex-col bg-[var(--color-background)]">
       <SearchNav isAuthed={Boolean(auth)} isAdmin={isBackOffice(auth?.role)} />
 
       {/* Hero */}
