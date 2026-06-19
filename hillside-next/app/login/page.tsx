@@ -357,7 +357,6 @@ export default function LoginPage() {
             >
               Terms &amp; Conditions, Privacy Policy &amp; Cancellation Policy
             </button>
-            .
           </p>
         </div>
 

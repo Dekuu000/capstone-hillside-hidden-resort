@@ -256,7 +256,6 @@ export default function RegisterPage() {
             >
               Terms &amp; Conditions, Privacy Policy &amp; Cancellation Policy
             </button>
-            .
           </p>
         </div>
 
