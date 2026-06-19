@@ -1,4 +1,5 @@
-import { ExternalLink, KeyRound, ShieldCheck } from "lucide-react";
+import Link from "next/link";
+import { Bell, CalendarCheck, ExternalLink, KeyRound, MapPin, ShieldCheck, TreePalm } from "lucide-react";
 import { redirect } from "next/navigation";
 import { guestPassVerificationResponseSchema, stayDashboardResponseSchema } from "../../../../packages/shared/src/schemas";
 import type {
@@ -17,6 +18,37 @@ import { formatDateWithWeekday } from "../../../lib/dateDisplay";
 import { formatPhpPeso as toPeso } from "../../../lib/formatCurrency";
 import { fetchServerApiData } from "../../../lib/serverApi";
 import { getServerAccessToken, getServerAuthContext, getServerEmailHint } from "../../../lib/serverAuth";
+import { isBackOffice } from "../../../../packages/shared/src/types";
+
+const QUICK_ACTIONS = [
+  { href: "/stays", label: "Book a stay", desc: "Rooms, cottages & event spaces", icon: CalendarCheck },
+  { href: "/tours", label: "Tours", desc: "Day passes & experiences", icon: TreePalm },
+  { href: "/guest/map", label: "Resort map", desc: "Offline wayfinding", icon: MapPin },
+  { href: "/guest/services", label: "Services", desc: "Room service & spa", icon: Bell },
+];
+
+function QuickActions() {
+  return (
+    <section>
+      <h2 className="text-lg font-semibold text-[var(--color-text)]">Explore the resort</h2>
+      <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {QUICK_ACTIONS.map(({ href, label, desc, icon: Icon }) => (
+          <Link
+            key={href}
+            href={href}
+            className="group rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 transition hover:shadow-[var(--shadow-md)]"
+          >
+            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[color:color-mix(in_srgb,var(--color-secondary)_14%,white)] text-[var(--color-secondary)]">
+              <Icon className="h-5 w-5" />
+            </span>
+            <p className="mt-3 font-semibold text-[var(--color-text)] group-hover:underline">{label}</p>
+            <p className="text-xs muted-text">{desc}</p>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
 
 function roomFallbackDisplay(stay: ReservationListItem) {
   const units = stay.units ?? [];
@@ -63,8 +95,8 @@ export default async function GuestMyStayPage() {
   const accessToken = await getServerAccessToken();
   if (!accessToken) redirect("/login?next=/guest/my-stay");
   const auth = await getServerAuthContext(accessToken);
-  if (String(auth?.role || "").toLowerCase() === "admin") {
-    redirect("/admin/reservations");
+  if (isBackOffice(auth?.role)) {
+    redirect("/admin");
   }
 
   const emailHint = await getServerEmailHint();
@@ -91,11 +123,12 @@ export default async function GuestMyStayPage() {
         )}
       />
       <GuestSyncStatus compact />
+      <QuickActions />
       {!stay ? (
         <GuestEmptyState
           testId="guest-empty-state"
           title="No active stay yet"
-          message="Your check-in dashboard appears once a reservation becomes active."
+          message="Your check-in dashboard appears once a reservation becomes active. Book a stay or a tour above to get started."
         />
       ) : (
         <div className="space-y-3">

@@ -22,11 +22,11 @@ type GuestChromeProps = {
 };
 
 const navItems = [
-  { label: "Book Now", href: "/book", icon: CalendarDays },
+  { label: "Stays", href: "/stays", icon: CalendarDays },
   { label: "Tours", href: "/tours", icon: Mountain },
   { label: "Map", href: "/guest/map", icon: MapPin },
   { label: "Services", href: "/guest/services", icon: Bell },
-  { label: "My Bookings", href: "/my-bookings", icon: BedDouble },
+  { label: "My Trips", href: "/my-bookings", icon: BedDouble },
 ];
 
 const guestMenuItemClass =
@@ -205,9 +205,9 @@ export function GuestChrome({ children, initialName = null, initialEmail = null 
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--color-background)]">
-      <header data-testid="guest-header" className="sticky top-0 z-40 border-b border-slate-200/70 bg-white/95 backdrop-blur">
+      <header data-testid="guest-header" className="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[var(--color-surface)]/95 backdrop-blur">
         <div className="mx-auto flex h-[70px] w-full max-w-[430px] items-center justify-between px-4 md:h-20 md:max-w-[1440px] md:px-6 lg:px-8">
-          <Link href="/book" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2">
             <HillsideLogo compact className="[&_svg]:h-9 [&_svg]:w-9 min-[390px]:[&_svg]:h-10 min-[390px]:[&_svg]:w-10 [&_p:first-of-type]:text-[1.2rem] [&_p:first-of-type]:font-semibold min-[390px]:[&_p:first-of-type]:text-[1.3rem] [&_p:last-child]:text-[0.62rem] [&_p:last-child]:tracking-[0.30em] md:[&_svg]:h-11 md:[&_svg]:w-11 md:[&_p:first-of-type]:text-[1.6rem] md:[&_p:last-child]:text-[0.68rem]" />
           </Link>
 
@@ -222,7 +222,7 @@ export function GuestChrome({ children, initialName = null, initialEmail = null 
                   className={`inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm font-semibold transition ${
                     active
                       ? "bg-[var(--color-primary)] text-white shadow-sm"
-                      : "text-slate-600 hover:bg-slate-100 hover:text-[var(--color-primary)]"
+                      : "text-[var(--color-text)] hover:bg-[color:color-mix(in_srgb,var(--color-secondary)_12%,white)]"
                   }`}
                   data-active={active}
                   aria-current={active ? "page" : undefined}
@@ -239,7 +239,7 @@ export function GuestChrome({ children, initialName = null, initialEmail = null 
               <button
                 type="button"
                 onClick={() => setMenuOpen((value) => !value)}
-                className="inline-flex h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-3 text-[var(--color-text)] shadow-sm transition hover:bg-slate-50"
+                className="inline-flex h-11 items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-[var(--color-text)] shadow-sm transition hover:bg-[color:color-mix(in_srgb,var(--color-secondary)_8%,white)]"
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
                 aria-label="Open guest profile menu"

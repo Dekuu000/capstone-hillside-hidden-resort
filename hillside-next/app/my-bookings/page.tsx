@@ -4,7 +4,7 @@ import { GuestShell } from "../../components/layout/GuestShell";
 import { fetchServerApiData } from "../../lib/serverApi";
 import { getServerAccessToken, getServerAuthContext, getServerEmailHint } from "../../lib/serverAuth";
 import { myBookingsResponseSchema } from "../../../packages/shared/src/schemas";
-import type { MyBookingsResponse, MyBookingsTab } from "../../../packages/shared/src/types";
+import { isBackOffice, type MyBookingsResponse, type MyBookingsTab } from "../../../packages/shared/src/types";
 
 function normalizeTab(value?: string): MyBookingsTab {
   if (value === "pending_payment" || value === "completed" || value === "cancelled") {
@@ -40,8 +40,8 @@ export default async function MyBookingsPage({
   if (!auth) {
     redirect("/login?next=/my-bookings");
   }
-  if (String(auth.role || "").toLowerCase() === "admin") {
-    redirect("/admin/reservations");
+  if (isBackOffice(auth.role)) {
+    redirect("/admin");
   }
 
   const initialData = await fetchInitialBookings(accessToken, initialTab);
