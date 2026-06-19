@@ -348,7 +348,7 @@ export function AdminWalkInTourClient({
             type="button"
             onClick={() => void submitWalkInTour()}
             disabled={submitBusy}
-            className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-[var(--color-cta)] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[220px]"
+            className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-[var(--color-cta)] px-5 text-sm font-semibold text-white shadow-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[220px]"
           >
             {submitBusy ? "Creating..." : "Create Walk-in Tour"}
           </button>

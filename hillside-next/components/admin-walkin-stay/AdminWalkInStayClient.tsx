@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { AlertCircle, BedDouble, CheckCircle2, Loader2, Phone, User, Wallet } from "lucide-react";
+import { AlertCircle, CheckCircle2, Loader2, Phone, User, Wallet } from "lucide-react";
 import type { AvailableUnitsResponse, ReservationCreateResponse, ReservationListItem } from "../../../packages/shared/src/types";
 import { availableUnitsResponseSchema, reservationCreateResponseSchema, reservationListItemSchema } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
@@ -356,7 +356,7 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
             {canCheckInNow ? (
               <Link
                 href={`/admin/check-in?mode=code&reservation_code=${encodeURIComponent(created.reservation_code)}`}
-                className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-900 bg-slate-900 px-3 text-xs font-semibold text-white"
+                className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--color-primary)] bg-[var(--color-primary)] px-3 text-xs font-semibold text-white transition hover:brightness-110"
               >
                 Check In Now
               </Link>
@@ -365,7 +365,7 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
                 href={`/admin/payments?source=walkin&walkin_type=stay&reservation_id=${encodeURIComponent(created.reservation_id)}&amount=${encodeURIComponent(
                   String(Math.max(1, Math.round(createdBalance || createdTotal || createdSummary?.estimatedTotal || 0))),
                 )}&method=cash`}
-                className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-900 bg-slate-900 px-3 text-xs font-semibold text-white"
+                className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--color-primary)] bg-[var(--color-primary)] px-3 text-xs font-semibold text-white transition hover:brightness-110"
               >
                 Record Payment
               </Link>
@@ -411,9 +411,12 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
 
       <div className="grid gap-5 lg:grid-cols-[1.2fr_1fr]">
         <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-sm)]">
-          <div className="mb-4 flex items-center gap-2">
-            <BedDouble className="h-4 w-4 text-[var(--color-secondary)]" />
-            <h2 className="text-lg font-semibold text-[var(--color-text)]">Available Units</h2>
+          <div className="mb-4 flex items-center gap-3">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)] text-xs font-bold text-white">1</span>
+            <div>
+              <h2 className="text-lg font-semibold text-[var(--color-text)]">Dates &amp; room</h2>
+              <p className="text-xs text-[var(--color-muted)]">Pick the stay dates, then choose an available room.</p>
+            </div>
           </div>
 
           <div className="mb-4 grid gap-3 sm:grid-cols-2">
@@ -495,7 +498,13 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
         </div>
 
         <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-sm)]">
-          <h2 className="mb-4 text-lg font-semibold text-[var(--color-text)]">Walk-in Details</h2>
+          <div className="mb-4 flex items-center gap-3">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)] text-xs font-bold text-white">2</span>
+            <div>
+              <h2 className="text-lg font-semibold text-[var(--color-text)]">Guest &amp; checkout</h2>
+              <p className="text-xs text-[var(--color-muted)]">Guest info is optional — then create the booking.</p>
+            </div>
+          </div>
 
           <div className="grid gap-3">
             <label className="grid gap-1 text-sm text-[var(--color-text)]">
@@ -554,12 +563,14 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
             </label>
           </div>
 
-          <div className="mt-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-4 text-sm">
-            <p className="text-[var(--color-muted)]">Nights: <span className="font-semibold text-[var(--color-text)]">{nights}</span></p>
-            <p className="text-[var(--color-muted)]">Selected units: <span className="font-semibold text-[var(--color-text)]">{selectedUnitIds.length}</span></p>
-            <p className="mt-1 text-[var(--color-muted)]">
-              Estimated total: <span className="text-base font-bold text-[var(--color-text)]">{toPeso(estimatedTotal)}</span>
+          <div className="mt-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-4">
+            <p className="text-sm text-[var(--color-muted)]">
+              {nights} night{nights === 1 ? "" : "s"} · {selectedUnitIds.length} room{selectedUnitIds.length === 1 ? "" : "s"} selected
             </p>
+            <div className="mt-1 flex items-baseline justify-between">
+              <span className="text-sm text-[var(--color-muted)]">Estimated total</span>
+              <span className="text-xl font-bold text-[var(--color-text)]">{toPeso(estimatedTotal)}</span>
+            </div>
           </div>
 
           <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -570,7 +581,7 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
               type="button"
               onClick={() => void handleCreate()}
               disabled={submitBusy || !selectedUnitIds.length || nights <= 0}
-              className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-[var(--color-cta)] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[220px]"
+              className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-[var(--color-cta)] px-5 text-sm font-semibold text-white shadow-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[220px]"
             >
               {submitBusy ? "Creating..." : "Create Walk-in Stay"}
             </button>
