@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { ServiceListResponse } from "../../../packages/shared/src/types";
+import { AdminPageHeader } from "../layout/AdminPageHeader";
 import { AdminWalkInStayClient } from "../admin-walkin-stay/AdminWalkInStayClient";
 import { AdminWalkInTourClient } from "../admin-walkin-tour/AdminWalkInTourClient";
 
@@ -27,13 +28,10 @@ export function AdminWalkInConsoleClient({
   }, [tab]);
 
   return (
-    <section className="mx-auto w-full max-w-[1600px]">
-      <header className="mb-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-sm)]">
-        <h1 className="text-3xl font-bold text-[var(--color-text)]">Walk-in Console</h1>
-        <p className="mt-1 text-sm text-[var(--color-muted)]">{tabDescription}</p>
-      </header>
+    <section className="mx-auto w-full max-w-[1600px] space-y-5">
+      <AdminPageHeader eyebrow="Operations" title="Walk-in console" subtitle={tabDescription} />
 
-      <div className="mb-5 grid grid-cols-2 gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-2 shadow-[var(--shadow-sm)] lg:mx-auto lg:w-full lg:max-w-[560px]">
+      <div className="grid grid-cols-2 gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-2 shadow-[var(--shadow-sm)] lg:mx-auto lg:w-full lg:max-w-[560px]">
         <button
           type="button"
           onClick={() => setTab("stay")}

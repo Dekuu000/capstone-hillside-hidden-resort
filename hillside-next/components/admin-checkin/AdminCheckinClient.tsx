@@ -47,6 +47,7 @@ import { Skeleton } from "../shared/Skeleton";
 import { ResultBanner } from "../shared/ResultBanner";
 import { StatusPill } from "../shared/StatusPill";
 import { useToast } from "../shared/ToastProvider";
+import { AdminPageHeader } from "../layout/AdminPageHeader";
 import { CameraScanPanel } from "../checkin/CameraScanPanel";
 import { ScanHeader } from "../checkin/ScanHeader";
 import { ScanSegmentedControl, type ScanMode } from "../checkin/ScanSegmentedControl";
@@ -1451,25 +1452,17 @@ export function AdminCheckinClient({
           className="sticky top-2 z-20 shadow-[var(--shadow-sm)]"
         />
       ) : null}
-      <header className="surface p-4 sm:p-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-[var(--color-text)] sm:text-3xl">Check-in Console</h1>
-            <p className="mt-1 text-xs text-[var(--color-muted)] sm:text-sm">Kiosk-friendly scan flow with offline queue.</p>
-            <div className="mt-2 sm:hidden">
-              <DataFreshnessBadge />
-            </div>
+      <AdminPageHeader
+        eyebrow="Operations"
+        title="Check-in console"
+        subtitle="Kiosk-friendly scan flow with offline queue."
+        action={
+          <div className="flex flex-col items-start gap-2 sm:items-end">
+            <DataFreshnessBadge />
+            <ScanHeader onOpenSettings={() => setSettingsDrawerOpen(true)} />
           </div>
-          <div className="flex flex-col gap-2 sm:items-end">
-            <div className="hidden sm:block">
-              <DataFreshnessBadge />
-            </div>
-            <ScanHeader
-              onOpenSettings={() => setSettingsDrawerOpen(true)}
-            />
-          </div>
-        </div>
-      </header>
+        }
+      />
 
       <div className={`grid gap-3 sm:gap-4 ${tabletView ? "xl:grid-cols-[1.35fr_0.65fr]" : "xl:grid-cols-[1.15fr_0.85fr]"} xl:items-stretch`}>
         <section className="surface h-full p-3 sm:p-4">
