@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { RefreshCcw, TriangleAlert, Wifi, WifiOff } from "lucide-react";
+import { AdminPageHeader } from "../layout/AdminPageHeader";
 import { useSyncEngine } from "./SyncEngineProvider";
 import { useToast } from "./ToastProvider";
 import { env } from "../../lib/env";
@@ -282,13 +283,11 @@ export function SyncCenter({ title, description, scope }: SyncCenterProps) {
 
   return (
     <section className="space-y-4">
-      <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-5 shadow-[var(--shadow-card)] sm:p-6">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--color-secondary)]">Sync Center</p>
-            <h1 className="mt-2 text-[1.7rem] font-bold tracking-[-0.01em] text-[var(--color-text)] sm:text-[2rem]">{title}</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--color-muted)]">{description}</p>
-          </div>
+      <AdminPageHeader
+        eyebrow="Offline & Sync"
+        title={title}
+        subtitle={description}
+        action={
           <button
             type="button"
             onClick={() => void handleRunNow()}
@@ -298,8 +297,10 @@ export function SyncCenter({ title, description, scope }: SyncCenterProps) {
             <RefreshCcw className={`h-4 w-4 ${busy ? "animate-spin" : ""}`} />
             {busy ? "Syncing..." : "Run sync now"}
           </button>
-        </div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        }
+      />
+      <div className="surface p-5 sm:p-6">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <div className="guest-surface-soft p-3">
             <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-muted)]">Status</p>
             <p className={`mt-1 text-base font-semibold ${primaryStatus.tone}`}>

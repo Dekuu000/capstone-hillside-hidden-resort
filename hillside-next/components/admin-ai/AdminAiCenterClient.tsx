@@ -392,6 +392,7 @@ export function AdminAiCenterClient({ token }: AdminAiCenterClientProps) {
   return (
     <section className="mx-auto w-full max-w-[1600px]">
       <PageHeader
+        eyebrow="Smart Pricing"
         title="AI Hospitality Intelligence"
         subtitle="Defense-ready center for pricing, occupancy forecasting, and anonymized concierge recommendations."
         rightSlot={

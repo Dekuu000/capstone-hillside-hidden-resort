@@ -23,6 +23,7 @@ import {
   normalizeUnitImageUrls,
   normalizeUnitThumbUrls,
 } from "../../lib/unitMedia";
+import { AdminPageHeader } from "../layout/AdminPageHeader";
 
 type AdminUnitsClientProps = {
   initialToken?: string | null;
@@ -467,12 +468,12 @@ export function AdminUnitsClient({
 
   if (!token) {
     return (
-      <section className="mx-auto w-full max-w-[1600px]">
-        <header className="mb-4 rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-card)] sm:p-7">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--color-secondary)]">Management</p>
-          <h1 className="mt-2 text-[1.7rem] font-bold tracking-[-0.01em] text-[var(--color-text)] sm:text-[2rem]">Units</h1>
-          <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted)]">Manage rooms, cottages, and amenities.</p>
-        </header>
+      <section className="mx-auto w-full max-w-[1600px] space-y-5">
+        <AdminPageHeader
+          eyebrow="Inventory"
+          title="Units"
+          subtitle="Manage rooms, cottages, and amenities."
+        />
         <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
           No active session found. Sign in as admin first.
         </p>
@@ -481,49 +482,54 @@ export function AdminUnitsClient({
   }
 
   return (
-    <section className="mx-auto w-full max-w-[1600px]">
-      <header className="mb-6 rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)]">Inventory</p>
-            <h1 className="mt-2 text-3xl font-bold text-[var(--color-text)]">Units</h1>
-            <p className="mt-2 text-sm text-[var(--color-muted)]">Manage rooms, cottages, and amenities with operational status.</p>
-          </div>
+    <section className="mx-auto w-full max-w-[1600px] space-y-5">
+      <AdminPageHeader
+        eyebrow="Inventory"
+        title="Units"
+        subtitle="Manage rooms, cottages, and amenities with operational status."
+        action={
           <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-xs text-[var(--color-muted)]">
             <p className="font-semibold text-[var(--color-text)]">Total</p>
             <p className="mt-1">{count} unit records</p>
           </div>
+        }
+      />
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="rounded-2xl border border-[var(--color-border)] bg-white p-3">
+          <p className="inline-flex items-center gap-2 text-xs text-[var(--color-muted)]">
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[color:color-mix(in_srgb,var(--color-secondary)_14%,white)] text-[var(--color-secondary)]">
+              <Sparkles className="h-4 w-4" />
+            </span>
+            Cleaned
+          </p>
+          <p className="mt-2 text-lg font-semibold text-[var(--color-text)]">
+            {items.filter((u) => (u.operational_status || "cleaned") === "cleaned").length}
+          </p>
         </div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
-            <p className="inline-flex items-center gap-2 text-xs text-[var(--color-muted)]">
-              <Sparkles className="h-4 w-4 text-[var(--color-secondary)]" />
-              Cleaned
-            </p>
-            <p className="mt-1 text-lg font-semibold text-[var(--color-text)]">
-              {items.filter((u) => (u.operational_status || "cleaned") === "cleaned").length}
-            </p>
-          </div>
-          <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
-            <p className="inline-flex items-center gap-2 text-xs text-[var(--color-muted)]">
-              <BedDouble className="h-4 w-4 text-[var(--color-primary)]" />
-              Occupied
-            </p>
-            <p className="mt-1 text-lg font-semibold text-[var(--color-text)]">
-              {items.filter((u) => (u.operational_status || "cleaned") === "occupied").length}
-            </p>
-          </div>
-          <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
-            <p className="inline-flex items-center gap-2 text-xs text-[var(--color-muted)]">
-              <Wrench className="h-4 w-4 text-[var(--color-cta)]" />
-              Maintenance
-            </p>
-            <p className="mt-1 text-lg font-semibold text-[var(--color-text)]">
-              {items.filter((u) => (u.operational_status || "cleaned") === "maintenance").length}
-            </p>
-          </div>
+        <div className="rounded-2xl border border-[var(--color-border)] bg-white p-3">
+          <p className="inline-flex items-center gap-2 text-xs text-[var(--color-muted)]">
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-sky-50 text-[var(--color-primary)]">
+              <BedDouble className="h-4 w-4" />
+            </span>
+            Occupied
+          </p>
+          <p className="mt-2 text-lg font-semibold text-[var(--color-text)]">
+            {items.filter((u) => (u.operational_status || "cleaned") === "occupied").length}
+          </p>
         </div>
-      </header>
+        <div className="rounded-2xl border border-[var(--color-border)] bg-white p-3">
+          <p className="inline-flex items-center gap-2 text-xs text-[var(--color-muted)]">
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-orange-50 text-[var(--color-cta)]">
+              <Wrench className="h-4 w-4" />
+            </span>
+            Maintenance
+          </p>
+          <p className="mt-2 text-lg font-semibold text-[var(--color-text)]">
+            {items.filter((u) => (u.operational_status || "cleaned") === "maintenance").length}
+          </p>
+        </div>
+      </div>
 
       <div className="sticky top-[72px] z-20 mb-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-sm lg:top-4">
         <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-[160px_180px_1fr_auto_auto]">

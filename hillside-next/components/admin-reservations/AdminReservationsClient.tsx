@@ -26,6 +26,7 @@ import { getReservationStatusMeta } from "../../lib/reservationStatus";
 import { getReservationPaymentState, getReservationSource } from "../../lib/reservationView";
 import { getSupabaseBrowserClient } from "../../lib/supabase";
 import { ReservationDetailDrawer } from "./ReservationDetailDrawer";
+import { AdminPageHeader } from "../layout/AdminPageHeader";
 import { DataFreshnessBadge } from "../shared/DataFreshnessBadge";
 import { FancyDatePicker } from "../shared/FancyDatePicker";
 import { useToast } from "../shared/ToastProvider";
@@ -519,25 +520,27 @@ export function AdminReservationsClient({
   }
 
   return (
-    <section className="mx-auto w-full max-w-[1720px]">
-      <header className="relative mb-5 rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-5 shadow-[var(--shadow-card)] sm:p-6">
-        <div className="absolute right-6 top-6 hidden lg:block">
-          <DataFreshnessBadge />
-        </div>
-        <div className="flex flex-col gap-5">
-          <div className="lg:min-w-[280px]">
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)]">Reservations Console</p>
-            <h1 className="mt-2 text-3xl font-bold text-[var(--color-text)]">Admin Reservations</h1>
-            <p className="mt-2 text-sm text-[var(--color-muted)]">
-              Manage arrivals, payment state, and walk-ins from one queue.
-            </p>
-            <div className="mt-3 lg:hidden">
+    <section className="mx-auto w-full max-w-[1600px]">
+      <div className="mb-5 space-y-4">
+        <AdminPageHeader
+          eyebrow="Operations"
+          title="Admin Reservations"
+          subtitle="Manage arrivals, payment state, and walk-ins from one queue."
+          action={
+            <div className="flex flex-wrap items-center gap-2">
               <DataFreshnessBadge />
+              <Link
+                href="/admin/walk-in"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[var(--color-primary)] bg-[var(--color-primary)] px-4 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
+              >
+                <PlusCircle className="h-4 w-4" />
+                <span>Walk-in Reservation</span>
+              </Link>
             </div>
-          </div>
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-stretch lg:justify-between">
-            <div className="grid flex-1 gap-2 text-xs sm:grid-cols-2 xl:grid-cols-4">
-              {[
+          }
+        />
+        <div className="grid gap-2 text-xs sm:grid-cols-2 xl:grid-cols-4">
+          {[
                 {
                   id: "today_arrivals" as StatQuickFilter,
                   label: "Today arrivals",
@@ -590,19 +593,8 @@ export function AdminReservationsClient({
                   </button>
                 );
               })}
-            </div>
-            <div className="flex lg:min-w-[220px] lg:justify-end">
-              <Link
-                href="/admin/walk-in"
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[var(--color-primary)] bg-[var(--color-primary)] px-4 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)] lg:w-auto"
-              >
-                <PlusCircle className="h-4 w-4" />
-                <span>Walk-in Reservation</span>
-              </Link>
-            </div>
-          </div>
         </div>
-      </header>
+      </div>
 
       <div className="mb-5 rounded-2xl border border-[var(--color-border)] bg-white p-3 shadow-[var(--shadow-card)] lg:p-3.5">
         <div className="flex flex-col gap-2">

@@ -10,11 +10,14 @@ export function AdminPageHeader({
   title,
   subtitle,
   action,
+  meta,
 }: {
   eyebrow?: string;
   title: ReactNode;
   subtitle?: ReactNode;
   action?: ReactNode;
+  /** Optional status row (badges, freshness chips) rendered under the subtitle. */
+  meta?: ReactNode;
 }) {
   return (
     <header className="surface flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-7 lg:p-8">
@@ -24,6 +27,7 @@ export function AdminPageHeader({
         ) : null}
         <h1 className="mt-2 text-[1.7rem] font-bold tracking-[-0.01em] text-[var(--color-text)] sm:text-[2rem]">{title}</h1>
         {subtitle ? <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--color-muted)]">{subtitle}</p> : null}
+        {meta ? <div className="mt-3 flex flex-wrap items-center gap-2">{meta}</div> : null}
       </div>
       {action ? <div className="shrink-0">{action}</div> : null}
     </header>

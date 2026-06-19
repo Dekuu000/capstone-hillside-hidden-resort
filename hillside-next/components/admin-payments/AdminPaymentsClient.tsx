@@ -29,6 +29,7 @@ import { syncAwareMutation } from "../../lib/offlineSync/mutation";
 import { loadPaymentsSnapshot, savePaymentsSnapshot } from "../../lib/offlineSync/store";
 import { getSupabaseBrowserClient } from "../../lib/supabase";
 import { FancyDatePicker } from "../shared/FancyDatePicker";
+import { AdminPageHeader } from "../layout/AdminPageHeader";
 import { DataFreshnessBadge } from "../shared/DataFreshnessBadge";
 
 type AdminPaymentsClientProps = {
@@ -653,11 +654,12 @@ export function AdminPaymentsClient({
 
   if (!token) {
     return (
-      <section className="mx-auto w-full max-w-[1720px]">
-        <header className="mb-4 rounded-3xl border border-[var(--color-border)] bg-white p-6 shadow-[var(--shadow-card)]">
-          <h1 className="text-3xl font-bold text-[var(--color-text)]">Payments Console</h1>
-          <p className="mt-2 text-sm text-[var(--color-muted)]">Verification inbox, on-site payments, and payment history.</p>
-        </header>
+      <section className="mx-auto w-full max-w-[1600px] space-y-5">
+        <AdminPageHeader
+          eyebrow="Management"
+          title="Payments Console"
+          subtitle="Verification inbox, on-site payments, and payment history."
+        />
         <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
           No active session found. Sign in as admin first.
         </p>
@@ -666,28 +668,21 @@ export function AdminPaymentsClient({
   }
 
   return (
-    <section className="mx-auto w-full max-w-[1720px]">
-      <header className="mb-5 rounded-3xl border border-[var(--color-border)] bg-white p-5 shadow-[var(--shadow-card)] sm:p-6">
-        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)]">Payments Desk</p>
-            <h1 className="mt-2 text-3xl font-bold text-[var(--color-text)]">Payments Console</h1>
-            <p className="mt-2 text-sm text-[var(--color-muted)]">Verification inbox, on-site payments, and payment history.</p>
-            <div className="mt-2 md:hidden">
-              <DataFreshnessBadge />
-            </div>
-          </div>
-          <div className="flex flex-col gap-2 md:items-end">
-            <div className="hidden md:block">
-              <DataFreshnessBadge />
-            </div>
-            <div className="rounded-2xl border border-[var(--color-border)] bg-white/90 px-4 py-3 text-xs text-[var(--color-muted)]">
+    <section className="mx-auto w-full max-w-[1600px] space-y-5">
+      <AdminPageHeader
+        eyebrow="Management"
+        title="Payments Console"
+        subtitle="Verification inbox, on-site payments, and payment history."
+        action={
+          <div className="flex flex-wrap items-center gap-2">
+            <DataFreshnessBadge />
+            <div className="rounded-2xl border border-[var(--color-border)] bg-white px-4 py-3 text-xs text-[var(--color-muted)]">
               <p className="font-semibold text-[var(--color-text)]">Queue snapshot</p>
               <p className="mt-1">{count} total records</p>
             </div>
           </div>
-        </div>
-      </header>
+        }
+      />
 
       <div className="mb-5 rounded-2xl border border-[var(--color-border)] bg-white p-3 shadow-[var(--shadow-card)] lg:p-3.5">
         <div className="grid gap-2 xl:grid-cols-[760px_minmax(0,1fr)] xl:items-center">
