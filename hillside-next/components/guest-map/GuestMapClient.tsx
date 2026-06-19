@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeftRight, MapPinned, Route } from "lucide-react";
+import { ArrowLeftRight, Route } from "lucide-react";
 import { guestMapAmenityPackSchema } from "../../../packages/shared/src/schemas";
 import type { GuestMapAmenityPin } from "../../../packages/shared/src/types";
 import { formatCachedAt } from "../../lib/dateDisplay";
@@ -284,9 +284,9 @@ export function GuestMapClient() {
       <section className="surface p-4">
         <div className="flex flex-wrap items-start justify-between gap-2.5">
           <div>
-            <h2 className="text-xl font-semibold text-[var(--color-text)]">Resort Navigation (Offline-First)</h2>
+            <h2 className="text-xl font-semibold text-[var(--color-text)]">Getting around the resort</h2>
             <p className="mt-1 text-sm text-[var(--color-muted)]">
-              Explore interactive trails and facilities in Hillside Hidden without active GPS.
+              Pick a start and destination for walking directions between trails and facilities. Works offline — no GPS needed.
             </p>
           </div>
           <div className="flex w-full flex-wrap items-center gap-2 md:w-auto">
@@ -308,20 +308,11 @@ export function GuestMapClient() {
                   const target = document.getElementById("route-controls");
                   target?.scrollIntoView({ behavior: "smooth", block: "start" });
                 }}
-                className="inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                className="inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)]"
               >
                 <Route className="h-3.5 w-3.5" aria-hidden="true" />
                 Select route
               </button>
-              <a
-                href="https://www.google.com/maps/dir/?api=1&destination_place_id=ChIJZT_BXwBxljMRISjFCvccuhw&destination=Hillside+Hidden+Resort"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-full border border-[var(--color-secondary)] bg-teal-50 px-3 text-xs font-semibold text-[var(--color-primary)] transition hover:bg-teal-100"
-              >
-                <MapPinned className="h-3.5 w-3.5 text-[var(--color-secondary)]" aria-hidden="true" />
-                Google Maps
-              </a>
             </div>
           </div>
         </div>
@@ -338,8 +329,8 @@ export function GuestMapClient() {
             ariaLabel="Map pin filter"
             className="w-full grid-cols-3 border-none bg-transparent p-0 sm:max-w-md sm:grid-cols-3"
             tabClassName="h-11 rounded-2xl px-3 text-sm font-semibold"
-            activeClassName="border border-[var(--color-secondary)] bg-teal-50 text-[var(--color-secondary)] shadow-sm"
-            inactiveClassName="border border-[var(--color-border)] bg-white text-slate-500 hover:bg-slate-50"
+            activeClassName="border border-[var(--color-secondary)] bg-[color:color-mix(in_srgb,var(--color-secondary)_12%,white)] text-[var(--color-secondary)] shadow-sm"
+            inactiveClassName="border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-muted)] hover:bg-[var(--color-background)]"
           />
         </div>
 

@@ -53,7 +53,7 @@ export function ResortMapCanvas({
                 y1={from.y}
                 x2={to.x}
                 y2={to.y}
-                stroke="rgba(14, 165, 164, 0.35)"
+                stroke="rgba(181, 97, 58, 0.35)"
                 strokeWidth="0.8"
                 strokeLinecap="round"
               />
@@ -70,7 +70,7 @@ export function ResortMapCanvas({
                 y1={from.y}
                 x2={to.x}
                 y2={to.y}
-                stroke="rgba(11, 31, 59, 0.95)"
+                stroke="rgba(45, 74, 62, 0.95)"
                 strokeWidth="1.5"
                 strokeLinecap="round"
               />
