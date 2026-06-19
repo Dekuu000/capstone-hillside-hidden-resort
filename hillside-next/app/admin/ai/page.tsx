@@ -1,7 +1,8 @@
 ﻿import { AdminAiCenterClient } from "../../../components/admin-ai/AdminAiCenterClient";
-import { getServerAccessToken } from "../../../lib/serverAuth";
+import { getServerAccessToken, requireRoleAtLeastServer } from "../../../lib/serverAuth";
 
 export default async function AdminAiPage() {
+  await requireRoleAtLeastServer("super_admin");
   const accessToken = await getServerAccessToken();
   if (!accessToken) {
     return (

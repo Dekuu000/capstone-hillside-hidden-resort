@@ -8,25 +8,30 @@ import { clearServerSessionCookie } from "../../lib/authSessionCookie";
 import { getSupabaseBrowserClient, safeGetSession } from "../../lib/supabase";
 import { resolveUserDisplayName } from "../../lib/userProfile";
 import { HillsideLogo } from "../branding/HillsideLogo";
+import { canAccessTier, ROLE_LABELS, type NavTier, type Role } from "../../../packages/shared/src/types";
 
 type AdminChromeProps = {
   children: ReactNode;
   initialName?: string | null;
   initialEmail?: string | null;
+  role?: string | null;
 };
 
-const navigation = [
-  { name: "Dashboard", href: "/admin" },
-  { name: "Units", href: "/admin/units" },
-  { name: "Reservations", href: "/admin/reservations" },
-  { name: "Walk-in", href: "/admin/walk-in" },
-  { name: "Check-in", href: "/admin/check-in" },
-  { name: "Payments", href: "/admin/payments" },
-  { name: "Services", href: "/admin/services" },
-  { name: "Blockchain", href: "/admin/blockchain" },
-  { name: "Sync Center", href: "/admin/sync" },
-  { name: "AI Center", href: "/admin/ai" },
-  { name: "Reports", href: "/admin/reports" },
+// Each item is gated by capability tier. Front Desk sees operations only;
+// Manager adds management; System Admin adds the technical tools.
+const navigation: Array<{ name: string; href: string; tier: NavTier }> = [
+  { name: "Dashboard", href: "/admin", tier: "management" },
+  { name: "Units", href: "/admin/units", tier: "management" },
+  { name: "Reservations", href: "/admin/reservations", tier: "management" },
+  { name: "Walk-in", href: "/admin/walk-in", tier: "operations" },
+  { name: "Check-in", href: "/admin/check-in", tier: "operations" },
+  { name: "Payments", href: "/admin/payments", tier: "management" },
+  { name: "Services", href: "/admin/services", tier: "operations" },
+  { name: "Reports", href: "/admin/reports", tier: "management" },
+  // Technical tools — System Admin only, with plain-language labels.
+  { name: "Records & Security", href: "/admin/blockchain", tier: "technical" },
+  { name: "Offline & Sync", href: "/admin/sync", tier: "technical" },
+  { name: "Smart Pricing", href: "/admin/ai", tier: "technical" },
 ];
 
 const noPrefetchRoutes = new Set([
@@ -42,12 +47,18 @@ const noPrefetchRoutes = new Set([
   "/admin/units",
 ]);
 
-export function AdminChrome({ children, initialName = null, initialEmail = null }: AdminChromeProps) {
+export function AdminChrome({ children, initialName = null, initialEmail = null, role = null }: AdminChromeProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [name, setName] = useState(initialName || "Admin");
   const [email, setEmail] = useState(initialEmail || "");
+
+  const visibleNavigation = useMemo(
+    () => navigation.filter((item) => canAccessTier(role, item.tier)),
+    [role],
+  );
+  const roleLabel = ROLE_LABELS[(role || "") as Role] || "Back office";
 
   useEffect(() => {
     if (initialEmail) {
@@ -95,11 +106,11 @@ export function AdminChrome({ children, initialName = null, initialEmail = null 
               compact
               className="[&_img]:h-11 [&_img]:w-11 [&_.hillside-brand-title]:text-[1.2rem] [&_.hillside-brand-title]:font-semibold [&_.hillside-brand-subtitle]:text-[0.58rem] [&_.hillside-brand-subtitle]:tracking-[0.29em]"
             />
-            <p className="mt-2 text-sm text-teal-100">Admin Panel</p>
+            <p className="mt-2 text-sm text-teal-100">{roleLabel}</p>
           </div>
 
           <nav className="no-scrollbar flex-1 space-y-1 overflow-y-auto px-3 py-6">
-            {navigation.map((item) => {
+            {visibleNavigation.map((item) => {
               const active = pathname === item.href;
               return (
                 <Link

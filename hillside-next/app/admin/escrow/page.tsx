@@ -3,7 +3,7 @@ import {
   escrowReconciliationResponseSchema,
 } from "../../../../packages/shared/src/schemas";
 import type { EscrowReconciliationResponse } from "../../../../packages/shared/src/types";
-import { getServerAccessToken } from "../../../lib/serverAuth";
+import { getServerAccessToken, requireRoleAtLeastServer } from "../../../lib/serverAuth";
 import { fetchServerApiData } from "../../../lib/serverApi";
 import { formatDateTime } from "../../../lib/dateDisplay";
 import { AdminEscrowTableClient } from "../../../components/admin-escrow/AdminEscrowTableClient";
@@ -40,6 +40,7 @@ export default async function AdminEscrowPage({
 }: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  await requireRoleAtLeastServer("super_admin");
   const accessToken = await getServerAccessToken();
   if (!accessToken) {
     return (

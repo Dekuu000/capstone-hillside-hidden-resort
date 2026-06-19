@@ -1,6 +1,8 @@
 import { SyncCenter } from "../../../components/shared/SyncCenter";
+import { requireRoleAtLeastServer } from "../../../lib/serverAuth";
 
-export default function AdminSyncPage() {
+export default async function AdminSyncPage() {
+  await requireRoleAtLeastServer("super_admin");
   return (
     <SyncCenter
       scope="admin"

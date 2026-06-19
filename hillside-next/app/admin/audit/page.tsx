@@ -5,7 +5,7 @@ import { auditLogsResponseSchema } from "../../../../packages/shared/src/schemas
 import { Badge, statusToBadgeVariant } from "../../../components/shared/Badge";
 import { buildTxExplorerUrl } from "../../../lib/chainExplorer";
 import { formatDateTime } from "../../../lib/dateDisplay";
-import { getServerAccessToken } from "../../../lib/serverAuth";
+import { getServerAccessToken, requireRoleAtLeastServer } from "../../../lib/serverAuth";
 import { fetchServerApiData } from "../../../lib/serverApi";
 
 const PAGE_SIZE = 10;
@@ -78,6 +78,7 @@ export default async function AdminAuditPage({
 }: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  await requireRoleAtLeastServer("super_admin");
   const accessToken = await getServerAccessToken();
   if (!accessToken) {
     return (
