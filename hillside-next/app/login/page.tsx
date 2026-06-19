@@ -352,7 +352,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => setShowTerms(true)}
-              className="font-semibold text-[var(--color-secondary)] underline-offset-2 hover:underline"
+              className="text-left font-semibold text-[var(--color-secondary)] underline-offset-2 hover:underline"
             >
               Terms &amp; Conditions, Privacy Policy &amp; Cancellation Policy
             </button>
