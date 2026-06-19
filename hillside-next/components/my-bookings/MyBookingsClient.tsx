@@ -71,35 +71,31 @@ const TAB_HINTS: Record<TabKey, string> = {
   cancelled: "Cancelled reservations and policy outcomes.",
 };
 
-const TAB_CARD_ACCENT: Record<TabKey, { cardBorder: string; amountPanel: string; amountText: string }> = {
-  upcoming: {
-    cardBorder: "border-blue-200/70",
-    amountPanel: "border-blue-200 bg-blue-50/60",
-    amountText: "text-blue-700",
-  },
-  pending_payment: {
-    cardBorder: "border-orange-200/70",
-    amountPanel: "border-orange-200 bg-orange-50/60",
-    amountText: "text-orange-700",
-  },
-  completed: {
-    cardBorder: "border-emerald-200/70",
-    amountPanel: "border-emerald-200 bg-emerald-50/60",
-    amountText: "text-emerald-700",
-  },
-  cancelled: {
-    cardBorder: "border-red-200/70",
-    amountPanel: "border-red-200 bg-red-50/60",
-    amountText: "text-red-700",
-  },
-};
+const STAY_BANNERS = [
+  "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b",
+  "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4",
+  "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85",
+];
+const TOUR_BANNERS = [
+  "https://images.unsplash.com/photo-1551632811-561732d1e306",
+  "https://images.unsplash.com/photo-1533240332313-0db49b459ad6",
+  "https://images.unsplash.com/photo-1465056836041-7f43ac27dcb5",
+];
 
-const TAB_PAYMENT_PILL_CLASS: Record<TabKey, string> = {
-  upcoming: "bg-blue-100 text-blue-800",
-  pending_payment: "bg-orange-100 text-orange-800",
-  completed: "bg-emerald-100 text-emerald-800",
-  cancelled: "bg-red-100 text-red-800",
-};
+/** Photo-forward banner per booking: a real unit photo when present, else a
+ *  stable per-type Unsplash image so each trip card looks distinct. */
+function bookingBannerUrl(booking: Booking, isTour: boolean): string {
+  if (!isTour) {
+    const unit = booking.units?.find((entry) => entry.unit)?.unit;
+    const real = (unit?.image_urls || []).find((url) => /^https?:\/\//i.test(url)) || unit?.image_url || "";
+    if (/^https?:\/\//i.test(real)) return real;
+  }
+  const pool = isTour ? TOUR_BANNERS : STAY_BANNERS;
+  const key = booking.reservation_code || booking.reservation_id || "";
+  let hash = 0;
+  for (let index = 0; index < key.length; index += 1) hash = (hash * 31 + key.charCodeAt(index)) >>> 0;
+  return `${pool[hash % pool.length]}?auto=format&fit=crop&w=900&q=60`;
+}
 
 function toTitleCase(value: string) {
   return value.replace(/\b\w/g, (char) => char.toUpperCase());
@@ -946,158 +942,117 @@ export function MyBookingsClient({
           const reservationStatusLabel = toTitleCase(booking.status.replace(/_/g, " "));
           const flowHint = bookingFlowHint(booking.status);
           const showSecondaryActions = booking.status !== "pending_payment" && canCancel;
-          const accent = TAB_CARD_ACCENT[tab];
-          const paymentPillClass = tab === "pending_payment" ? paymentMeta.className : TAB_PAYMENT_PILL_CLASS[tab];
+          const banner = bookingBannerUrl(booking, isTour);
 
           return (
             <article
               key={booking.reservation_id}
               id={`booking-card-${booking.reservation_id}`}
-              className={`rounded-2xl border bg-white p-4 shadow-sm lg:p-3.5 ${accent.cardBorder}`}
+              className="overflow-hidden rounded-3xl border border-[var(--color-border)] bg-white shadow-sm"
             >
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div className="min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <h2 className="min-w-0 truncate text-[1.5rem] font-bold leading-tight text-[var(--color-text)] lg:text-[1.35rem]">
-                      {booking.reservation_code}
+              <div
+                className="relative h-36 w-full bg-[var(--color-border)] bg-cover bg-center sm:h-44"
+                style={{ backgroundImage: `url('${banner}')` }}
+                role="img"
+                aria-label={bookingTarget || `${bookingLabel} reservation`}
+              >
+                <span className="absolute left-3 top-3 inline-flex items-center rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-semibold text-[var(--color-text)] shadow-sm">
+                  {isTour ? "Tour" : "Stay"}
+                </span>
+                <span className={`absolute right-3 top-3 inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold shadow-sm ${statusMeta.className}`}>
+                  {reservationStatusLabel}
+                </span>
+                {canShowQr ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setQrFor(booking);
+                      setQrToken(null);
+                      setQrError(null);
+                      setQrSecondsLeft(0);
+                    }}
+                    className="absolute bottom-3 right-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-[var(--color-text)] shadow-[var(--shadow-md)] transition hover:scale-105"
+                    aria-label="Show check-in QR"
+                    title="Show QR"
+                  >
+                    <QrCode className="h-4 w-4 shrink-0 stroke-[2.2]" aria-hidden="true" />
+                  </button>
+                ) : null}
+              </div>
+
+              <div className="p-4 sm:p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h2 className="truncate text-lg font-semibold leading-tight text-[var(--color-text)]">
+                      {bookingTarget || `${bookingLabel} reservation`}
                     </h2>
-                    {canShowQr ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setQrFor(booking);
-                          setQrToken(null);
-                          setQrError(null);
-                          setQrSecondsLeft(0);
-                        }}
-                        className="guest-secondary-cta h-10 min-h-10 w-10 shrink-0 p-0 text-[var(--color-text)]"
-                        aria-label="Show check-in QR"
-                        title="Show QR"
-                      >
-                        <QrCode className="h-4 w-4 shrink-0 stroke-[2.2]" aria-hidden="true" />
-                      </button>
+                    <p className="mt-0.5 text-sm text-[var(--color-muted)]">
+                      {isTour
+                        ? formatDateWithWeekday(visitDate)
+                        : `${formatDateWithWeekday(booking.check_in_date)} – ${formatDateWithWeekday(booking.check_out_date)}`}
+                    </p>
+                    <p className="mt-0.5 truncate text-xs text-[var(--color-muted)]">
+                      {booking.reservation_code} · Booked {formatLocalDateTime(booking.created_at)}
+                    </p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="text-xs text-[var(--color-muted)]">{isPaymentTab ? "Amount due" : "Total"}</p>
+                    <p className="text-lg font-bold leading-tight text-[var(--color-text)]">
+                      {formatPeso(isPaymentTab ? remaining : total)}
+                    </p>
+                    {isPaymentTab && minimumPayNow > 0 ? (
+                      <p className="mt-0.5 text-[11px] text-[var(--color-muted)]">Min. now {formatPeso(minimumPayNow)}</p>
                     ) : null}
                   </div>
-                  <p className="mt-1 text-sm font-medium text-[var(--color-text)]">{bookingTarget || `${bookingLabel} reservation`}</p>
-                  <p className="text-xs text-[var(--color-muted)]">Booked on {formatLocalDateTime(booking.created_at)}</p>
-                  <div className="mt-2 flex items-center gap-2">
-                    <span
-                      className={`inline-flex max-w-fit items-center rounded-full px-2 py-1 text-[10px] font-semibold tracking-wide sm:px-2.5 sm:text-[11px] ${statusMeta.className}`}
-                    >
-                      {reservationStatusLabel}
-                    </span>
-                    <span
-                      className={`inline-flex max-w-fit items-center rounded-full px-2 py-1 text-[10px] font-semibold sm:px-2.5 sm:text-[11px] ${paymentPillClass}`}
-                    >
-                      {paymentMeta.label}
-                    </span>
-                    <span className="ml-auto inline-flex items-center rounded-full bg-[var(--color-border)] px-2.5 py-1 text-[11px] font-semibold text-[var(--color-text)]">
-                      {isTour ? "Tour booking" : "Stay booking"}
-                    </span>
-                  </div>
                 </div>
-                <div className={`rounded-xl border p-2.5 sm:min-w-[150px] ${accent.amountPanel}`}>
-                  <p className="text-xs font-medium text-[var(--color-muted)]">{isPaymentTab ? "Amount due" : "Total amount"}</p>
-                  <p className={`mt-1 text-[2rem] font-bold leading-tight lg:text-[1.8rem] ${isPaymentTab ? "text-orange-700" : accent.amountText}`}>
-                    {formatPeso(isPaymentTab ? remaining : total)}
+
+                {isPaymentTab ? (
+                  <p className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium leading-relaxed text-amber-800">
+                    Pay at least the minimum deposit and submit proof to hold this booking. The deposit is non-refundable if you cancel.
                   </p>
-                  {isPaymentTab && minimumPayNow > 0 ? (
-                    <p className="mt-1 text-[11px] font-medium text-[var(--color-muted)]">
-                      Minimum pay now: <span className="font-semibold text-[var(--color-text)]">{formatPeso(minimumPayNow)}</span>
-                    </p>
+                ) : flowHint ? (
+                  <p className="mt-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-xs font-medium leading-relaxed text-[var(--color-text)]">
+                    {flowHint}
+                  </p>
+                ) : null}
+
+                <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm">
+                  <span className="text-[var(--color-muted)]">
+                    Payment <span className="font-semibold text-[var(--color-text)]">{paymentMeta.label}</span>
+                  </span>
+                  <span className="text-[var(--color-muted)]">
+                    Paid <span className="font-semibold text-[var(--color-text)]">{formatPeso(paid)}</span>
+                  </span>
+                  {remaining > 0 ? (
+                    <span className="text-[var(--color-muted)]">
+                      Balance <span className="font-semibold text-[var(--color-secondary)]">{formatPeso(remaining)}</span>
+                    </span>
                   ) : null}
+                  <button
+                    type="button"
+                    onClick={() => void openDetails(booking.reservation_id)}
+                    className="ml-auto inline-flex items-center gap-1 font-semibold text-[var(--color-secondary)] hover:underline"
+                  >
+                    <Eye className="h-4 w-4 shrink-0 stroke-[2.2]" aria-hidden="true" />
+                    View details
+                  </button>
                 </div>
-              </div>
-              {isPaymentTab ? (
-                <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium leading-relaxed text-amber-800">
-                  To keep this reservation active, pay at least the minimum deposit first and submit proof. If you cancel this booking, the minimum deposit is non-refundable.
-                </p>
-              ) : null}
-              {flowHint ? (
-                <p className="mt-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-xs font-medium leading-relaxed text-[var(--color-text)]">
-                  {flowHint}
-                </p>
-              ) : null}
 
-              <div className="relative mt-3 grid gap-2.5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-3.5 pr-14 sm:grid-cols-2">
-                <button
-                  type="button"
-                  onClick={() => void openDetails(booking.reservation_id)}
-                  className="guest-secondary-cta absolute right-3 top-3 h-9 min-h-9 w-9 p-0 text-[var(--color-text)]"
-                  aria-label="View booking details"
-                  title="View details"
-                >
-                  <Eye className="h-4 w-4 shrink-0 stroke-[2.2]" aria-hidden="true" />
-                </button>
-                <div>
-                  <span className="block text-xs text-[var(--color-muted)]">{isTour ? "Visit date" : "Stay dates"}</span>
-                  <p className="text-sm font-medium text-[var(--color-text)]">
-                    {isTour ? formatDateWithWeekday(visitDate) : `${formatDateWithWeekday(booking.check_in_date)} to ${formatDateWithWeekday(booking.check_out_date)}`}
-                  </p>
-                </div>
-                <div>
-                  <span className="block text-xs text-[var(--color-muted)]">Payment status</span>
-                  <p className="text-sm font-semibold text-[var(--color-text)]">{paymentMeta.label}</p>
-                </div>
-                <div>
-                  <span className="block text-xs text-[var(--color-muted)]">Amount paid</span>
-                  <p className="text-sm font-semibold text-emerald-700">{formatPeso(paid)}</p>
-                </div>
-                <div>
-                  <span className="block text-xs text-[var(--color-muted)]">Outstanding balance</span>
-                  <p className={`text-sm font-semibold ${accent.amountText}`}>{formatPeso(remaining)}</p>
-                </div>
-              </div>
-
-              <div className="mt-3 flex items-center gap-2">
-                <div className="hidden lg:ml-auto lg:flex lg:items-center lg:justify-end lg:gap-2">
-                  {booking.status === "pending_payment" ? (
-                    <>
+                {booking.status === "pending_payment" || showSecondaryActions ? (
+                  <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
+                    {booking.status === "pending_payment" ? (
                       <button
                         type="button"
-                        className="guest-primary-cta min-h-10 h-10 w-[132px] px-3 text-xs"
+                        className="guest-primary-cta min-h-11 px-4 text-sm"
                         onClick={() => openPaymentSubmissionForBooking(booking)}
                       >
-                        Submit proof
+                        Submit payment proof
                       </button>
-                      {canCancel ? (
-                        <button
-                          type="button"
-                          className="guest-danger-cta min-h-10 h-10 w-[132px] px-3 text-xs"
-                          onClick={() => setCancelFor(booking)}
-                        >
-                          Cancel booking
-                        </button>
-                      ) : null}
-                    </>
-                  ) : null}
-
-                  {showSecondaryActions ? (
-                    <button
-                      type="button"
-                      className="guest-danger-cta min-h-10 h-10 w-[132px] px-3 text-xs"
-                      onClick={() => setCancelFor(booking)}
-                    >
-                      Cancel booking
-                    </button>
-                  ) : null}
-                </div>
-              </div>
-
-              <div className="mt-3 space-y-2 lg:hidden">
-                {booking.status === "pending_payment" ? (
-                  <div className={`grid w-full gap-2 ${canCancel ? "grid-cols-2" : "grid-cols-1"}`}>
-                    <button
-                      type="button"
-                      className="guest-primary-cta min-h-12 w-full px-3 text-sm"
-                      onClick={() => openPaymentSubmissionForBooking(booking)}
-                    >
-                      Submit proof
-                    </button>
+                    ) : null}
                     {canCancel ? (
                       <button
                         type="button"
-                        className="guest-danger-cta min-h-12 w-full px-3 text-sm"
+                        className="guest-danger-cta min-h-11 px-4 text-sm"
                         onClick={() => setCancelFor(booking)}
                       >
                         Cancel booking
@@ -1105,18 +1060,6 @@ export function MyBookingsClient({
                     ) : null}
                   </div>
                 ) : null}
-                {showSecondaryActions ? (
-                  <div className="grid w-full grid-cols-1 gap-2">
-                    <button
-                      type="button"
-                      className="guest-danger-cta min-h-11 w-full px-3 text-sm"
-                      onClick={() => setCancelFor(booking)}
-                    >
-                      Cancel booking
-                    </button>
-                  </div>
-                ) : null}
-
               </div>
             </article>
           );
