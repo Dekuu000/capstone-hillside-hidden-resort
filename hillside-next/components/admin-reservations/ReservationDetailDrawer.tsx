@@ -248,7 +248,7 @@ export function ReservationDetailDrawer({
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/55 p-3 backdrop-blur-[2px] lg:left-64">
-      <div className="w-full max-w-4xl overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white shadow-xl">
+      <div className="w-full max-w-4xl overflow-hidden rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white shadow-[var(--shadow-lg)]">
         <div className="max-h-[92vh] overflow-y-auto">
           <div className="sticky top-0 z-10 border-b border-[var(--color-border)] bg-white/95 px-4 py-3 backdrop-blur">
             <div className="flex items-start justify-between gap-3">
@@ -257,7 +257,7 @@ export function ReservationDetailDrawer({
                 type="button"
                 onClick={onClose}
                 aria-label="Close reservation details"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-border)] text-[var(--color-muted)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-border)] text-[var(--color-muted)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -373,7 +373,7 @@ export function ReservationDetailDrawer({
                     <button
                       type="button"
                       onClick={onRefreshPayments}
-                      className="rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                      className="rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
                     >
                       Refresh
                     </button>
@@ -449,20 +449,20 @@ export function ReservationDetailDrawer({
                     <Link href={paymentListUrl} className="rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-xs font-semibold text-[var(--color-text)]">
                       View Payments
                     </Link>
-                    <Link href={paymentRecordUrl} className="rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200">
+                    <Link href={paymentRecordUrl} className="rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]">
                       Open Payment Form
                     </Link>
                     {paymentState !== "settled" ? (
                       <Link
                         href={paymentRecordUrl}
-                        className="rounded-lg border border-slate-900 bg-slate-900 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                        className="rounded-lg border border-[var(--color-primary)] bg-[var(--color-primary)] px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_40%,white)]"
                       >
                         Record Payment
                       </Link>
                     ) : (
                       <Link
                         href={checkInActionHref}
-                        className="rounded-lg border border-slate-900 bg-slate-900 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                        className="rounded-lg border border-[var(--color-primary)] bg-[var(--color-primary)] px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_40%,white)]"
                       >
                         {checkInActionLabel}
                       </Link>
@@ -480,7 +480,7 @@ export function ReservationDetailDrawer({
                         type="button"
                         onClick={() => onVerifyPayment(firstPendingPayment.payment_id)}
                         disabled={Boolean(verifyBusy[firstPendingPayment.payment_id])}
-                        className="rounded-lg border border-slate-900 bg-slate-900 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 disabled:opacity-60"
+                        className="rounded-lg border border-[var(--color-primary)] bg-[var(--color-primary)] px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_40%,white)] disabled:opacity-60"
                       >
                         {verifyBusy[firstPendingPayment.payment_id] ? "Verifying..." : "Verify Payment"}
                       </button>
@@ -513,7 +513,7 @@ export function ReservationDetailDrawer({
                                     type="button"
                                     onClick={() => onOpenProof(payment)}
                                     disabled={Boolean(proofBusy[payment.payment_id])}
-                                    className="rounded border border-[var(--color-border)] bg-white px-2 py-1 font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 disabled:opacity-60"
+                                    className="rounded border border-[var(--color-border)] bg-white px-2 py-1 font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)] disabled:opacity-60"
                                   >
                                     {proofBusy[payment.payment_id] ? "Loading..." : "View"}
                                   </button>
@@ -546,12 +546,12 @@ export function ReservationDetailDrawer({
                       <p><span className="text-[var(--color-muted)]">Token ID:</span> {reservation.guest_pass_token_id ?? "-"}</p>
                       <p><span className="text-[var(--color-muted)]">Booking hash:</span> <span className="font-mono text-xs break-all">{reservation.guest_pass_reservation_hash || reservation.onchain_booking_id || "-"}</span></p>
                       <div className="flex flex-wrap gap-2 pt-1">
-                        <Link href="/admin/blockchain?tab=reconciliation" className="rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200">
+                        <Link href="/admin/blockchain?tab=reconciliation" className="rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]">
                           Open Reconciliation
                         </Link>
                         <Link
                           href={`/admin/blockchain?tab=audit&search=${encodeURIComponent(reservation.reservation_id)}`}
-                          className="rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                          className="rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
                         >
                           Open Audit
                         </Link>
@@ -560,7 +560,7 @@ export function ReservationDetailDrawer({
                             href={txUrl}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                            className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
                           >
                             View transaction
                             <ExternalLink className="h-3.5 w-3.5" />
@@ -595,7 +595,7 @@ export function ReservationDetailDrawer({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                  className="rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
                 >
                   Close
                 </button>
@@ -603,7 +603,7 @@ export function ReservationDetailDrawer({
                   primaryAction.type === "view_history" ? (
                     <Link
                       href={primaryAction.href}
-                      className="inline-flex items-center gap-1 rounded-lg border border-slate-900 bg-slate-900 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                      className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-primary)] bg-[var(--color-primary)] px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_40%,white)]"
                     >
                       <ShieldCheck className="h-3.5 w-3.5" />
                       {primaryAction.label}
@@ -611,7 +611,7 @@ export function ReservationDetailDrawer({
                   ) : (
                     <Link
                       href={primaryAction.href}
-                      className="rounded-lg border border-slate-900 bg-slate-900 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                      className="rounded-lg border border-[var(--color-primary)] bg-[var(--color-primary)] px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_40%,white)]"
                     >
                       {primaryAction.label}
                     </Link>

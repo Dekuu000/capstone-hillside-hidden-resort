@@ -582,7 +582,7 @@ export function AdminUnitsClient({
             aria-pressed={showInactive}
             className={`inline-flex h-10 items-center justify-center gap-2 rounded-lg border px-3 text-sm font-semibold transition ${
               showInactive
-                ? "border-slate-900 bg-slate-900 text-white"
+                ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
                 : "border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-text)]"
             }`}
           >
@@ -696,7 +696,7 @@ export function AdminUnitsClient({
                     <button
                       type="button"
                       onClick={() => void openEditor(unit.unit_id)}
-                      className="h-9 w-full rounded-lg border border-slate-900 bg-slate-900 px-3 text-sm font-semibold text-white"
+                      className="h-9 w-full rounded-lg border border-[var(--color-primary)] bg-[var(--color-primary)] px-3 text-sm font-semibold text-white"
                     >
                       Manage
                     </button>
@@ -762,9 +762,9 @@ export function AdminUnitsClient({
 
       {(editingUnitId || unitDetailLoading) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/55 p-3 md:p-4">
-          <div className="max-h-[92vh] w-full overflow-y-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 md:max-w-2xl md:p-6">
+          <div className="max-h-[92vh] w-full overflow-y-auto rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-lg)] md:max-w-2xl md:p-6">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-[var(--color-text)]">Unit details</h3>
+              <h3 className="text-xl font-bold tracking-[-0.01em] text-[var(--color-text)]">Unit details</h3>
               <button
                 type="button"
                 onClick={resetEditor}

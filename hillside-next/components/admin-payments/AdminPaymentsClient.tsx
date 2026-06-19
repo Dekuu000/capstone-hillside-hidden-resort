@@ -711,9 +711,9 @@ export function AdminPaymentsClient({
                     setTab(workflowToApiTab(filterDef.id));
                     setPage(1);
                   }}
-                  className={`inline-flex h-9 items-center justify-center gap-1 rounded-lg px-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 ${
+                  className={`inline-flex h-9 items-center justify-center gap-1 rounded-lg px-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)] ${
                     isActive
-                      ? "border border-slate-900 bg-white text-[var(--color-text)] shadow-sm"
+                      ? "border border-[var(--color-primary)] bg-white text-[var(--color-text)] shadow-sm"
                       : filterDef.id === "all"
                         ? "border border-transparent text-[var(--color-muted)] hover:bg-white hover:text-[var(--color-text)]"
                         : "border border-transparent text-[var(--color-muted)] hover:bg-white hover:text-[var(--color-text)]"
@@ -754,12 +754,12 @@ export function AdminPaymentsClient({
                   onClick={() => setFiltersOpen((prev) => !prev)}
                   aria-expanded={filtersOpen}
                   aria-controls="payments-filters-popover"
-                  className="inline-flex h-9 items-center justify-center gap-1 rounded-lg border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                  className="inline-flex h-9 items-center justify-center gap-1 rounded-lg border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
                 >
                   <SlidersHorizontal className="h-4 w-4" />
                   Filters
                   {activeFilterCount > 0 ? (
-                    <span className="rounded-full bg-slate-900 px-1.5 text-[11px] leading-5 text-white">{activeFilterCount}</span>
+                    <span className="rounded-full bg-[var(--color-primary)] px-1.5 text-[11px] leading-5 text-white">{activeFilterCount}</span>
                   ) : null}
                 </button>
                 {activeFilterCount > 0 ? (
@@ -771,7 +771,7 @@ export function AdminPaymentsClient({
                       setToDateFilter("");
                       setPage(1);
                     }}
-                    className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                    className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
                   >
                     Clear filters
                   </button>
@@ -848,14 +848,14 @@ export function AdminPaymentsClient({
             <div className="flex flex-wrap gap-2">
               <Link
                 href={walkInFlowType === "tour" ? "/admin/walk-in?tab=tour" : "/admin/walk-in?tab=stay"}
-                className="inline-flex rounded-md border border-[var(--color-border)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                className="inline-flex rounded-md border border-[var(--color-border)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
               >
                 {walkInFlowType === "tour" ? "Create another walk-in tour" : "Create another walk-in"}
               </Link>
               {reservationContext?.reservation_code ? (
                 <Link
                   href={`/admin/reservations?reservation_id=${encodeURIComponent(reservationContext.reservation_id)}`}
-                  className="inline-flex rounded-md border border-[var(--color-border)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                  className="inline-flex rounded-md border border-[var(--color-border)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
                 >
                   View reservation
                 </Link>
@@ -1064,7 +1064,7 @@ export function AdminPaymentsClient({
                   type="button"
                   onClick={() => void submitOnSitePayment()}
                   disabled={onSiteBusy}
-                  className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-slate-900 bg-slate-900 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[230px]"
+                  className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-[var(--color-primary)] bg-[var(--color-primary)] px-5 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[230px]"
                 >
                   {onSitePrimaryLabel}
                 </button>
@@ -1081,14 +1081,14 @@ export function AdminPaymentsClient({
             <div className="mt-2 flex flex-wrap gap-2">
               <Link
                 href={walkInFlowType === "tour" ? "/admin/walk-in?tab=tour" : "/admin/walk-in?tab=stay"}
-                className="inline-flex rounded-lg border border-[var(--color-border)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                className="inline-flex rounded-lg border border-[var(--color-border)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
               >
                 {walkInFlowType === "tour" ? "Create another walk-in tour" : "Create another walk-in"}
               </Link>
               {lastProcessedReservation?.reservationId ? (
                 <Link
                   href={`/admin/reservations?reservation_id=${encodeURIComponent(lastProcessedReservation.reservationId)}`}
-                  className="inline-flex rounded-lg border border-[var(--color-border)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                  className="inline-flex rounded-lg border border-[var(--color-border)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
                 >
                   View reservation
                 </Link>
@@ -1096,7 +1096,7 @@ export function AdminPaymentsClient({
               {walkInFlowType === "tour" && lastProcessedReservation?.reservationCode ? (
                 <Link
                   href={`/admin/check-in?mode=code&reservation_code=${encodeURIComponent(lastProcessedReservation.reservationCode)}`}
-                  className="inline-flex rounded-lg border border-[var(--color-border)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                  className="inline-flex rounded-lg border border-[var(--color-border)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
                 >
                   Mark arrived / Check in
                 </Link>
@@ -1129,7 +1129,7 @@ export function AdminPaymentsClient({
           {isToReview ? (
             <Link
               href="/admin/reservations?status=pending_payment"
-              className="mt-5 inline-flex rounded-lg border border-slate-900 bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
+              className="mt-5 inline-flex rounded-lg border border-[var(--color-primary)] bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:brightness-110"
             >
               View Pending Payment Reservations
             </Link>
@@ -1263,7 +1263,7 @@ export function AdminPaymentsClient({
                               type="button"
                               onClick={() => void verifyPayment(payment.payment_id)}
                               disabled={isCancelledReservation || !hasEvidence}
-                              className="rounded-lg border border-slate-900 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-40"
+                              className="rounded-lg border border-[var(--color-primary)] bg-[var(--color-primary)] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)] disabled:cursor-not-allowed disabled:opacity-40"
                             >
                               Verify
                             </button>
@@ -1345,7 +1345,7 @@ export function AdminPaymentsClient({
                   setRejectReason("");
                   setRejectError(null);
                 }}
-                className="h-8 w-8 rounded-lg border border-[var(--color-border)] text-[var(--color-muted)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                className="h-8 w-8 rounded-lg border border-[var(--color-border)] text-[var(--color-muted)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
               >
                 x
               </button>
@@ -1357,7 +1357,7 @@ export function AdminPaymentsClient({
               value={rejectReason}
               onChange={(event) => setRejectReason(event.target.value)}
               placeholder="e.g., Reference number not found in GCash records."
-              className="min-h-[120px] w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm outline-none ring-blue-200 transition focus:ring-2"
+              className="min-h-[120px] w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm outline-none ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)] transition focus:ring-2"
             />
             <p className="mt-1 text-xs text-[var(--color-muted)]">Minimum 5 characters.</p>
             {rejectError ? (
@@ -1372,7 +1372,7 @@ export function AdminPaymentsClient({
                   setRejectReason("");
                   setRejectError(null);
                 }}
-                className="rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                className="rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
                 disabled={rejectBusy}
               >
                 Cancel
