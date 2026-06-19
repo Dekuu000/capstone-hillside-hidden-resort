@@ -1481,83 +1481,62 @@ export function AdminCheckinClient({
             />
           </div>
           <ScanSegmentedControl value={mode} onChange={(value) => setMode(value as Mode)} queueCount={pendingQueueCount} showQueue={canSeeQueue} />
-          <div className="mt-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">Offline check-in data</p>
-              <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap sm:overflow-visible">
+          <details className="group mt-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)]">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-2 p-3 [&::-webkit-details-marker]:hidden">
+              <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">Offline check-in pack</span>
+              <span className="flex items-center gap-2">
+                <StatusPill
+                  label={!hasCache ? "Missing" : cacheExpired ? "Expired" : "Ready"}
+                  tone={!hasCache ? "warn" : cacheExpired ? "error" : "success"}
+                />
+                <span className="text-[11px] font-semibold text-[var(--color-secondary)] group-open:hidden">Details</span>
+                <span className="hidden text-[11px] font-semibold text-[var(--color-secondary)] group-open:inline">Hide</span>
+              </span>
+            </summary>
+            <div className="space-y-2 border-t border-[var(--color-border)] p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="shrink-0 text-xs text-[var(--color-muted)]">
                   Last refresh:{" "}
                   <span className="font-semibold text-[var(--color-text)]">
-                    {formatDateTime(cacheUpdatedAt, {
-                      locale: CHECKIN_DISPLAY_LOCALE,
-                      formatOptions: CHECKIN_TIME_FORMAT_OPTIONS,
-                    })}
+                    {formatDateTime(cacheUpdatedAt, { locale: CHECKIN_DISPLAY_LOCALE, formatOptions: CHECKIN_TIME_FORMAT_OPTIONS })}
                   </span>
                 </p>
                 <button
                   type="button"
                   onClick={() => void preloadTodayArrivals()}
                   disabled={preloadBusy || !networkOnline}
-                  className="inline-flex h-8 w-[184px] shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-white px-2.5 text-[11px] font-semibold text-[var(--color-text)] disabled:opacity-50"
+                  className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-white px-2.5 text-[11px] font-semibold text-[var(--color-text)] disabled:opacity-50"
                 >
                   {preloadBusy ? <RefreshCcw className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : null}
-                  Refresh offline pack now
+                  Refresh now
                 </button>
               </div>
+              <label className="inline-flex items-center gap-2 text-xs text-[var(--color-muted)]">
+                <input
+                  type="checkbox"
+                  checked={autoRefreshPack}
+                  onChange={(event) => setAutoRefreshPack(event.target.checked)}
+                  className="h-4 w-4 rounded border-[var(--color-border)] text-[var(--color-primary)]"
+                />
+                Auto-refresh every 30 minutes (online)
+              </label>
+              <div className="flex flex-col gap-1.5 text-xs text-[var(--color-muted)] md:flex-row md:flex-wrap md:items-center md:gap-x-4">
+                <p>Count: <span className="font-semibold text-[var(--color-text)]">{cacheCount || arrivalsCache.length}</span></p>
+                <p>Generated: <span className="font-semibold text-[var(--color-text)]">{formatDateTime(cacheGeneratedAt, { locale: CHECKIN_DISPLAY_LOCALE, formatOptions: CHECKIN_DATE_TIME_FORMAT_OPTIONS })}</span></p>
+                <p>Valid until: <span className="font-semibold text-[var(--color-text)]">{formatDateTime(cacheValidUntil, { locale: CHECKIN_DISPLAY_LOCALE, formatOptions: CHECKIN_DATE_TIME_FORMAT_OPTIONS })}</span></p>
+              </div>
+              {!networkOnline && !hasCache ? (
+                <p className="text-xs font-medium text-amber-700">
+                  You are offline and no check-in pack is cached yet. Reconnect once and refresh the pack.
+                </p>
+              ) : null}
+              {!networkOnline && hasCache && cacheExpired ? (
+                <p className="text-xs font-medium text-amber-700">
+                  Cached check-in pack is expired. Reconnect and refresh for reliable code validation.
+                </p>
+              ) : null}
             </div>
-            <label className="mt-2 inline-flex items-center gap-2 text-xs text-[var(--color-muted)]">
-              <input
-                type="checkbox"
-                checked={autoRefreshPack}
-                onChange={(event) => setAutoRefreshPack(event.target.checked)}
-                className="h-4 w-4 rounded border-[var(--color-border)] text-[var(--color-primary)]"
-              />
-              Auto-refresh offline pack every 30 minutes (online)
-            </label>
-            <div className="mt-2 grid gap-2 text-xs text-[var(--color-muted)] sm:grid-cols-1">
-              <p>Count: <span className="font-semibold text-[var(--color-text)]">{cacheCount || arrivalsCache.length}</span></p>
-            </div>
-            <div className="mt-2 flex flex-col gap-1.5 text-xs text-[var(--color-muted)] md:flex-row md:items-center md:gap-3 md:whitespace-nowrap">
-              <StatusPill
-                label={
-                  !hasCache
-                    ? "Pack missing"
-                    : cacheExpired
-                      ? "Pack expired"
-                      : "Pack ready"
-                }
-                tone={!hasCache ? "warn" : cacheExpired ? "error" : "success"}
-              />
-              <p>
-                Generated:{" "}
-                <span className="font-semibold text-[var(--color-text)]">
-                  {formatDateTime(cacheGeneratedAt, {
-                    locale: CHECKIN_DISPLAY_LOCALE,
-                    formatOptions: CHECKIN_DATE_TIME_FORMAT_OPTIONS,
-                  })}
-                </span>
-              </p>
-              <p>
-                Valid until:{" "}
-                <span className="font-semibold text-[var(--color-text)]">
-                  {formatDateTime(cacheValidUntil, {
-                    locale: CHECKIN_DISPLAY_LOCALE,
-                    formatOptions: CHECKIN_DATE_TIME_FORMAT_OPTIONS,
-                  })}
-                </span>
-              </p>
-            </div>
-            {!networkOnline && !hasCache ? (
-              <p className="mt-2 text-xs font-medium text-amber-700">
-                You are offline and no check-in pack is cached yet. Reconnect once and refresh the pack.
-              </p>
-            ) : null}
-            {!networkOnline && hasCache && cacheExpired ? (
-              <p className="mt-2 text-xs font-medium text-amber-700">
-                Cached check-in pack is expired. Reconnect and refresh for reliable code validation.
-              </p>
-            ) : null}
-          </div>
+          </details>
           <div className="mt-3 space-y-3">
             {mode === "scan" ? (
               <div className="space-y-2">
