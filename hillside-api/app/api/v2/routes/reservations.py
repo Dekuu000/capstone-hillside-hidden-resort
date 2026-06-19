@@ -2,7 +2,7 @@ from datetime import date, datetime, timedelta, timezone
 import logging
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 
 from app.api.v2.routes._http_errors import raise_http_from_runtime_error
 
@@ -375,6 +375,18 @@ def _maybe_mint_guest_pass(reservation_id: str) -> GuestPassRef | None:
     )
 
 
+def _schedule_guest_pass_mint(background_tasks: BackgroundTasks, reservation_id: str) -> None:
+    """Mint the NFT guest pass off the request's critical path.
+
+    The on-chain mint can take 10s+ waiting for a tx receipt, which would stall
+    the guest's "continue to payment" step. Defer it to a background task so the
+    reservation response returns immediately; the pass metadata is written to the
+    reservation row a moment later. Returns None so the create response carries
+    guest_pass_ref=None (the guest UI does not surface the pass)."""
+    background_tasks.add_task(_maybe_mint_guest_pass, reservation_id)
+    return None
+
+
 def _maybe_refund_escrow_on_cancel(reservation_row: dict) -> None:
     if not settings.feature_escrow_onchain_lock:
         return
@@ -745,6 +757,7 @@ def _ensure_guest_only_online_booking(auth: AuthContext) -> None:
 @router.post("", response_model=ReservationResponse)
 def create_reservation(
     payload: ReservationCreateRequest,
+    background_tasks: BackgroundTasks,
     auth: AuthContext = Depends(require_authenticated),
 ):
     _ensure_guest_only_online_booking(auth)
@@ -819,7 +832,7 @@ def create_reservation(
         status=status_enum,
         **_reservation_policy_fields(created, is_tour=False),
         escrow_ref=_maybe_apply_escrow_shadow_write(reservation_id),
-        guest_pass_ref=_maybe_mint_guest_pass(reservation_id),
+        guest_pass_ref=_schedule_guest_pass_mint(background_tasks, reservation_id),
         ai_recommendation=ai_recommendation,
     )
     _store_reservation_idempotency_receipt(
@@ -834,6 +847,7 @@ def create_reservation(
 @router.post("/tours", response_model=ReservationResponse)
 def create_tour_reservation(
     payload: TourReservationCreateRequest,
+    background_tasks: BackgroundTasks,
     auth: AuthContext = Depends(require_authenticated),
 ):
     if role_at_least(auth.role, "staff") and payload.is_advance:
@@ -903,7 +917,7 @@ def create_tour_reservation(
         status=status_enum,
         **_reservation_policy_fields(created, is_tour=True),
         escrow_ref=_maybe_apply_escrow_shadow_write(reservation_id),
-        guest_pass_ref=_maybe_mint_guest_pass(reservation_id),
+        guest_pass_ref=_schedule_guest_pass_mint(background_tasks, reservation_id),
         ai_recommendation=ai_recommendation,
     )
     _store_reservation_idempotency_receipt(
@@ -918,6 +932,7 @@ def create_tour_reservation(
 @router.post("/walk-in", response_model=ReservationResponse)
 def create_walk_in_stay_reservation(
     payload: WalkInStayCreateRequest,
+    background_tasks: BackgroundTasks,
     auth: AuthContext = Depends(require_operations),
 ):
     replayed = _try_replay_reservation_response(
@@ -988,7 +1003,7 @@ def create_walk_in_stay_reservation(
         status=status_enum,
         **_reservation_policy_fields(created, is_tour=False),
         escrow_ref=_maybe_apply_escrow_shadow_write(reservation_id),
-        guest_pass_ref=_maybe_mint_guest_pass(reservation_id),
+        guest_pass_ref=_schedule_guest_pass_mint(background_tasks, reservation_id),
         ai_recommendation=ai_recommendation,
     )
     _store_reservation_idempotency_receipt(
