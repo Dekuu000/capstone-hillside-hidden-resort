@@ -539,60 +539,35 @@ export function AdminReservationsClient({
             </div>
           }
         />
-        <div className="grid gap-2 text-xs sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 text-xs xl:grid-cols-4">
           {[
-                {
-                  id: "today_arrivals" as StatQuickFilter,
-                  label: "Today arrivals",
-                  caption: "Arrivals due today",
-                  value: quickStats.todayArrivals,
-                },
-                {
-                  id: "pending_payment" as StatQuickFilter,
-                  label: "Pending payment",
-                  caption: "Needs payment action",
-                  value: quickStats.pendingPayment,
-                },
-                {
-                  id: "walk_ins_today" as StatQuickFilter,
-                  label: "Walk-ins today",
-                  caption: "Created or arriving today",
-                  value: quickStats.walkInsToday,
-                },
-                {
-                  id: "ready_for_checkin" as StatQuickFilter,
-                  label: "Ready for check-in",
-                  caption: "Eligible now",
-                  value: quickStats.readyForCheckIn,
-                },
-              ].map((card) => {
-                const active = statQuickFilter === card.id;
-                return (
-                  <button
-                    key={card.id}
-                    type="button"
-                    aria-pressed={active}
-                    onClick={() => {
-                      const next = active ? "none" : card.id;
-                      setStatQuickFilter(next);
-                      setPage(1);
-                    }}
-                    className={`group rounded-xl border px-3 py-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)] ${
-                      active
-                        ? "border-blue-300 bg-blue-50 text-[var(--color-text)]"
-                        : "border-[var(--color-border)] bg-white/90 text-[var(--color-text)] hover:border-[var(--color-border)] hover:bg-white"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">{card.label}</p>
-                        <p className="mt-0.5 text-[11px] text-[var(--color-muted)]">{card.caption}</p>
-                      </div>
-                      <p className="text-lg font-bold text-[var(--color-text)]">{card.value}</p>
-                    </div>
-                  </button>
-                );
-              })}
+            { id: "today_arrivals" as StatQuickFilter, label: "Today arrivals", value: quickStats.todayArrivals },
+            { id: "pending_payment" as StatQuickFilter, label: "Pending payment", value: quickStats.pendingPayment },
+            { id: "walk_ins_today" as StatQuickFilter, label: "Walk-ins today", value: quickStats.walkInsToday },
+            { id: "ready_for_checkin" as StatQuickFilter, label: "Ready for check-in", value: quickStats.readyForCheckIn },
+          ].map((card) => {
+            const active = statQuickFilter === card.id;
+            return (
+              <button
+                key={card.id}
+                type="button"
+                aria-pressed={active}
+                onClick={() => {
+                  const next = active ? "none" : card.id;
+                  setStatQuickFilter(next);
+                  setPage(1);
+                }}
+                className={`rounded-xl border px-3 py-2.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)] ${
+                  active
+                    ? "border-[color:color-mix(in_srgb,var(--color-secondary)_45%,white)] bg-[color:color-mix(in_srgb,var(--color-secondary)_10%,white)]"
+                    : "border-[var(--color-border)] bg-white hover:border-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
+                }`}
+              >
+                <p className="truncate text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--color-muted)]">{card.label}</p>
+                <p className="mt-1 text-xl font-bold text-[var(--color-text)]">{card.value}</p>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -754,8 +729,46 @@ export function AdminReservationsClient({
       {notice ? <p className="mb-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">{notice}</p> : null}
       {loading ? <p className="mb-3 text-sm text-[var(--color-muted)]">Loading reservations...</p> : null}
 
-      <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white shadow-[var(--shadow-card)]">
-        <div className="overflow-x-auto">
+      <div className="space-y-3">
+        {/* Mobile: tappable reservation cards (the table overflows on small screens) */}
+        <div className="space-y-2 md:hidden">
+          {items.map((reservation) => {
+            const source = getReservationSource(reservation);
+            const statusMeta = getReservationStatusMeta(reservation.status);
+            return (
+              <button
+                key={reservation.reservation_id}
+                type="button"
+                onClick={() => void openDetails(reservation.reservation_id, reservation)}
+                className="flex w-full flex-col gap-2 rounded-2xl border border-[var(--color-border)] bg-white p-3 text-left shadow-[var(--shadow-card)] transition-colors hover:border-[color:color-mix(in_srgb,var(--color-secondary)_35%,white)]"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <p className="truncate font-semibold text-[var(--color-text)]">{reservation.reservation_code}</p>
+                  <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold tracking-wide ${statusMeta.className}`}>
+                    {statusMeta.label.toUpperCase()}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-2 text-sm">
+                  <span className="truncate text-[var(--color-text)]">{reservation.guest?.name || "Guest"}</span>
+                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${source === "walk_in" ? "bg-emerald-100 text-emerald-800" : "bg-blue-100 text-blue-800"}`}>
+                    {source === "walk_in" ? "Walk-in" : "Online"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-2 text-xs text-[var(--color-muted)]">
+                  <span className="truncate">{formatDateWithYear(reservation.check_in_date)} – {formatDateWithYear(reservation.check_out_date)}</span>
+                  <span className="shrink-0 font-semibold text-[var(--color-text)]">{formatPeso(reservation.total_amount)}</span>
+                </div>
+              </button>
+            );
+          })}
+          {!loading && items.length === 0 ? (
+            <p className="rounded-2xl border border-[var(--color-border)] bg-white p-6 text-center text-sm text-[var(--color-muted)]">No reservations found.</p>
+          ) : null}
+        </div>
+
+        {/* Desktop: full table */}
+        <div className="hidden overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white shadow-[var(--shadow-card)] md:block">
+          <div className="overflow-x-auto">
           <table className="min-w-full text-left text-[13px] leading-5">
               <thead className="bg-[var(--color-background)] text-[var(--color-muted)]">
                 <tr>
@@ -847,9 +860,10 @@ export function AdminReservationsClient({
               ) : null}
             </tbody>
           </table>
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--color-border)] px-3 py-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--color-border)] bg-white px-3 py-2.5 shadow-[var(--shadow-card)]">
           <p className="text-xs text-[var(--color-muted)]">
             Page {page} of {totalPages} | {count} total
           </p>

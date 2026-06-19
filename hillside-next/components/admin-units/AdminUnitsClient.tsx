@@ -495,39 +495,33 @@ export function AdminUnitsClient({
         }
       />
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
         <div className="rounded-2xl border border-[var(--color-border)] bg-white p-3">
-          <p className="inline-flex items-center gap-2 text-xs text-[var(--color-muted)]">
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[color:color-mix(in_srgb,var(--color-secondary)_14%,white)] text-[var(--color-secondary)]">
-              <Sparkles className="h-4 w-4" />
-            </span>
-            Cleaned
-          </p>
-          <p className="mt-2 text-lg font-semibold text-[var(--color-text)]">
+          <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[color:color-mix(in_srgb,var(--color-secondary)_14%,white)] text-[var(--color-secondary)]">
+            <Sparkles className="h-4 w-4" />
+          </span>
+          <p className="mt-2 text-xl font-bold text-[var(--color-text)]">
             {items.filter((u) => (u.operational_status || "cleaned") === "cleaned").length}
           </p>
+          <p className="text-xs text-[var(--color-muted)]">Cleaned</p>
         </div>
         <div className="rounded-2xl border border-[var(--color-border)] bg-white p-3">
-          <p className="inline-flex items-center gap-2 text-xs text-[var(--color-muted)]">
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-sky-50 text-[var(--color-primary)]">
-              <BedDouble className="h-4 w-4" />
-            </span>
-            Occupied
-          </p>
-          <p className="mt-2 text-lg font-semibold text-[var(--color-text)]">
+          <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-sky-50 text-[var(--color-primary)]">
+            <BedDouble className="h-4 w-4" />
+          </span>
+          <p className="mt-2 text-xl font-bold text-[var(--color-text)]">
             {items.filter((u) => (u.operational_status || "cleaned") === "occupied").length}
           </p>
+          <p className="text-xs text-[var(--color-muted)]">Occupied</p>
         </div>
         <div className="rounded-2xl border border-[var(--color-border)] bg-white p-3">
-          <p className="inline-flex items-center gap-2 text-xs text-[var(--color-muted)]">
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-orange-50 text-[var(--color-cta)]">
-              <Wrench className="h-4 w-4" />
-            </span>
-            Maintenance
-          </p>
-          <p className="mt-2 text-lg font-semibold text-[var(--color-text)]">
+          <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-orange-50 text-[var(--color-cta)]">
+            <Wrench className="h-4 w-4" />
+          </span>
+          <p className="mt-2 text-xl font-bold text-[var(--color-text)]">
             {items.filter((u) => (u.operational_status || "cleaned") === "maintenance").length}
           </p>
+          <p className="text-xs text-[var(--color-muted)]">Maintenance</p>
         </div>
       </div>
 
