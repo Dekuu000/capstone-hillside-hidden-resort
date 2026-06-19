@@ -239,7 +239,7 @@ export function AdminChrome({ children, initialName = null, initialEmail = null,
             <button
               type="button"
               onClick={() => setSidebarOpen((prev) => !prev)}
-              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/20 bg-white/10 text-white transition hover:bg-white/20 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-primary)]"
+              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white transition hover:bg-white/10 active:scale-95 active:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-primary)]"
               aria-label={sidebarOpen ? "Close admin navigation menu" : "Open admin navigation menu"}
               aria-expanded={sidebarOpen}
               aria-controls="admin-sidebar"
