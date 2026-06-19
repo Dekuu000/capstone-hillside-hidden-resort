@@ -9,10 +9,7 @@ export function SiteFooter() {
             <p className="font-semibold text-[var(--color-text)]">Hillside Hidden Resort</p>
             <p className="text-sm muted-text">Prk. 7, Jupiter St, Olongapo City, Zambales</p>
           </div>
-          <nav className="flex flex-col gap-3 text-sm muted-text sm:flex-row sm:flex-wrap sm:gap-x-6 sm:gap-y-2">
-            <Link href="/stays" className="transition hover:text-[var(--color-text)]">
-              Browse stays
-            </Link>
+          <nav className="flex flex-col gap-3 text-sm muted-text sm:flex-row sm:items-center sm:gap-x-6">
             <Link href="/privacy" className="transition hover:text-[var(--color-text)]">
               Privacy Policy
             </Link>
