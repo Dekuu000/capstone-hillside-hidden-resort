@@ -37,7 +37,7 @@ def test_operations_forbidden_error_has_standard_envelope(monkeypatch) -> None:
     )
     assert response.status_code == 403
     payload = response.json()
-    assert payload["detail"] == "Admin access required."
+    assert payload["detail"] == "Staff access required."
     assert payload["code"] == "forbidden"
     assert isinstance(payload["context"], dict)
 

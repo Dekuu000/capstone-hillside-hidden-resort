@@ -103,12 +103,32 @@ def get_current_auth(request: Request) -> AuthContext:
     return verify_access_token(token)
 
 
+# Nested back-office tiers: guest < staff (Front Desk) < admin (Manager) < super_admin.
+# "admin" is kept as the Manager role so existing checks keep working.
+ROLE_RANK: dict[str, int] = {"guest": 0, "staff": 1, "admin": 2, "super_admin": 3}
+
+
+def role_at_least(role: str | None, minimum: str) -> bool:
+    return ROLE_RANK.get(str(role or "").lower(), 0) >= ROLE_RANK[minimum]
+
+
 def require_authenticated(auth: AuthContext = Depends(get_current_auth)) -> AuthContext:
     return auth
 
 
+def require_operations(auth: AuthContext = Depends(get_current_auth)) -> AuthContext:
+    """Front Desk and up: check-in, walk-in, on-site payment, service queue."""
+    if not role_at_least(auth.role, "staff"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Staff access required.",
+        )
+    return auth
+
+
 def require_admin(auth: AuthContext = Depends(get_current_auth)) -> AuthContext:
-    if auth.role != "admin":
+    """Manager and up (Management tier): reservations, units, payments, reports."""
+    if not role_at_least(auth.role, "admin"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required.",
@@ -116,8 +136,19 @@ def require_admin(auth: AuthContext = Depends(get_current_auth)) -> AuthContext:
     return auth
 
 
+def require_technical(auth: AuthContext = Depends(get_current_auth)) -> AuthContext:
+    """System Admin only: blockchain/escrow, AI, audit, chains, perf-sensitive tools."""
+    if not role_at_least(auth.role, "super_admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="System Admin access required.",
+        )
+    return auth
+
+
 def ensure_reservation_access(auth: AuthContext, reservation_row: dict) -> None:
-    if auth.role == "admin":
+    # Any back-office user (Front Desk and up) may access any reservation (e.g. check-in lookup).
+    if role_at_least(auth.role, "staff"):
         return
 
     owner = reservation_row.get("guest_user_id")

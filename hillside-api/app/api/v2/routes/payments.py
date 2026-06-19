@@ -5,7 +5,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
 from app.api.v2.routes._http_errors import raise_http_from_runtime_error
 
-from app.core.auth import AuthContext, ensure_reservation_access, require_admin, require_authenticated
+from app.core.auth import (
+    AuthContext,
+    ensure_reservation_access,
+    require_admin,
+    require_authenticated,
+    require_operations,
+)
 from app.core.config import settings
 from app.integrations.supabase_client import (
     expire_pending_payment_hold_for_reservation,
@@ -333,7 +339,7 @@ def update_payment_intent(
 @router.post("/on-site", response_model=OnSitePaymentResponse)
 def record_on_site_payment(
     payload: OnSitePaymentRequest,
-    auth: AuthContext = Depends(require_admin),
+    auth: AuthContext = Depends(require_operations),
 ):
     operation_id: str | None = None
     if payload.idempotency_key:

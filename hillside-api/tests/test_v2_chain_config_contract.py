@@ -10,7 +10,7 @@ def _admin_auth(_: str) -> AuthContext:
     return AuthContext(
         user_id="admin-user",
         email="admin@example.com",
-        role="admin",
+        role="super_admin",
         access_token="admin-token",
     )
 
@@ -28,7 +28,7 @@ def test_chain_config_route_is_admin_only(monkeypatch) -> None:
     monkeypatch.setattr("app.core.auth.verify_access_token", _guest_auth)
     response = client.get("/v2/chains", headers={"Authorization": "Bearer guest-token"})
     assert response.status_code == 403
-    assert response.json()["detail"] == "Admin access required."
+    assert response.json()["detail"] == "System Admin access required."
 
 
 def test_chain_config_contract(monkeypatch) -> None:

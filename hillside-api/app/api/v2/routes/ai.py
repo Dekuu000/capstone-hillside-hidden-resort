@@ -6,7 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.core.config import settings
-from app.core.auth import AuthContext, require_admin, require_authenticated
+from app.core.auth import AuthContext, require_authenticated, require_technical
 from app.integrations.ai_pricing import (
     get_concierge_recommendation,
     get_ai_pricing_metrics_snapshot,
@@ -204,7 +204,7 @@ def predict_pricing(
 
 @router.get("/pricing/metrics", response_model=AiPricingMetricsResponse)
 def pricing_metrics(
-    _auth: AuthContext = Depends(require_admin),
+    _auth: AuthContext = Depends(require_technical),
 ):
     return get_ai_pricing_metrics_snapshot()
 
@@ -212,7 +212,7 @@ def pricing_metrics(
 @router.post("/occupancy/forecast", response_model=OccupancyForecastResponse)
 def occupancy_forecast(
     payload: OccupancyForecastRequest,
-    auth: AuthContext = Depends(require_admin),
+    auth: AuthContext = Depends(require_technical),
 ):
     start_date = payload.start_date or (date.today() + timedelta(days=1))
     ttl_seconds = max(30, int(settings.cache_ttl_seconds))
@@ -293,7 +293,7 @@ def occupancy_forecast(
 @router.post("/pricing/apply", response_model=PricingApplyResponse)
 def apply_pricing_recommendation(
     payload: PricingApplyRequest,
-    auth: AuthContext = Depends(require_admin),
+    auth: AuthContext = Depends(require_technical),
 ):
     reservation_id = payload.reservation_id or "ai_pricing_center"
     applied_at = datetime.now(timezone.utc).isoformat()

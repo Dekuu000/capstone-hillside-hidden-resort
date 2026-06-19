@@ -2,7 +2,7 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.core.auth import AuthContext, require_admin
+from app.core.auth import AuthContext, require_operations
 from app.integrations.supabase_client import (
     list_resort_service_requests,
     update_resort_service_request_status,
@@ -26,7 +26,7 @@ def list_admin_service_requests(
     date_to: str | None = Query(default=None),
     limit: int = Query(default=20, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
-    auth: AuthContext = Depends(require_admin),
+    auth: AuthContext = Depends(require_operations),
 ):
     try:
         rows, total = list_resort_service_requests(
@@ -63,7 +63,7 @@ def list_admin_service_requests(
 def patch_admin_service_request(
     request_id: str,
     payload: ResortServiceRequestStatusPatchRequest,
-    auth: AuthContext = Depends(require_admin),
+    auth: AuthContext = Depends(require_operations),
 ):
     try:
         row = update_resort_service_request_status(

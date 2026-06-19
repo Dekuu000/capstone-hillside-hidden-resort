@@ -11,6 +11,8 @@ from app.core.auth import (
     ensure_reservation_access,
     require_admin,
     require_authenticated,
+    require_operations,
+    role_at_least,
 )
 from app.core.chains import get_active_chain, get_chain_registry
 from app.core.config import settings
@@ -690,15 +692,15 @@ def _validate_tour_reservation_inputs(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="visit_date cannot be in the past.",
         )
-    if auth_role != "admin" and visit_date <= today:
+    if not role_at_least(auth_role, "staff") and visit_date <= today:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="visit_date must be in the future.",
         )
-    if auth_role != "admin" and not is_advance:
+    if not role_at_least(auth_role, "staff") and not is_advance:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only admins can create walk-in tour reservations.",
+            detail="Only resort staff can create walk-in tour reservations.",
         )
 
 
@@ -729,11 +731,11 @@ def _compute_tour_total_amount(*, service: dict, adult_qty: int, kid_qty: int) -
 
 
 def _resolve_tour_reservation_source(*, auth_role: str, is_advance: bool) -> str:
-    return "walk_in" if auth_role == "admin" and not is_advance else "online"
+    return "walk_in" if role_at_least(auth_role, "staff") and not is_advance else "online"
 
 
 def _ensure_guest_only_online_booking(auth: AuthContext) -> None:
-    if auth.role == "admin":
+    if role_at_least(auth.role, "staff"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin accounts cannot create online guest reservations. Use Walk-in flow.",
@@ -834,7 +836,7 @@ def create_tour_reservation(
     payload: TourReservationCreateRequest,
     auth: AuthContext = Depends(require_authenticated),
 ):
-    if auth.role == "admin" and payload.is_advance:
+    if role_at_least(auth.role, "staff") and payload.is_advance:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin accounts cannot create online guest reservations. Use Walk-in flow.",
@@ -916,7 +918,7 @@ def create_tour_reservation(
 @router.post("/walk-in", response_model=ReservationResponse)
 def create_walk_in_stay_reservation(
     payload: WalkInStayCreateRequest,
-    auth: AuthContext = Depends(require_admin),
+    auth: AuthContext = Depends(require_operations),
 ):
     replayed = _try_replay_reservation_response(
         route_key="reservations.walk_in.create",

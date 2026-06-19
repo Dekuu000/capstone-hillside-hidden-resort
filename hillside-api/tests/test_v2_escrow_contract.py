@@ -23,7 +23,7 @@ def _mock_admin_auth(_: str) -> AuthContext:
     return AuthContext(
         user_id="admin-user",
         email="admin@example.com",
-        role="admin",
+        role="super_admin",
         access_token="admin-token",
     )
 
@@ -55,7 +55,7 @@ def test_escrow_reconciliation_is_admin_only(monkeypatch) -> None:
 
     response = client.get("/v2/escrow/reconciliation", headers=_token_header("guest-token"))
     assert response.status_code == 403
-    assert response.json()["detail"] == "Admin access required."
+    assert response.json()["detail"] == "System Admin access required."
 
 
 def test_escrow_reconciliation_match(monkeypatch) -> None:
@@ -117,7 +117,7 @@ def test_escrow_cleanup_shadow_is_admin_only(monkeypatch) -> None:
         headers=_token_header("guest-token"),
     )
     assert response.status_code == 403
-    assert response.json()["detail"] == "Admin access required."
+    assert response.json()["detail"] == "System Admin access required."
 
 
 def test_escrow_cleanup_shadow_dry_run_and_execute(monkeypatch) -> None:
@@ -186,7 +186,7 @@ def test_escrow_reconciliation_monitor_is_admin_only(monkeypatch) -> None:
         headers=_token_header("guest-token"),
     )
     assert response.status_code == 403
-    assert response.json()["detail"] == "Admin access required."
+    assert response.json()["detail"] == "System Admin access required."
 
 
 def test_escrow_reconciliation_monitor_read_and_run(monkeypatch) -> None:

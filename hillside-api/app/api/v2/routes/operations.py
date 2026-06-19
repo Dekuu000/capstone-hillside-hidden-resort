@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.api.v2.routes._http_errors import raise_http_from_runtime_error
 
-from app.core.auth import AuthContext, require_admin
+from app.core.auth import AuthContext, require_operations, require_technical
 from app.core.chains import get_active_chain, get_chain_registry
 from app.core.config import settings
 from app.integrations.escrow_chain import release_reservation_escrow_onchain
@@ -203,7 +203,7 @@ def _maybe_release_escrow_on_checkin(reservation_row: dict) -> EscrowReleaseOutc
 
 @router.get("/chains")
 def get_chain_configuration(
-    _: AuthContext = Depends(require_admin),
+    _: AuthContext = Depends(require_technical),
 ):
     active_chain = get_active_chain()
     registry = get_chain_registry()
@@ -233,7 +233,7 @@ def get_chain_configuration(
 @router.post("/checkins", response_model=CheckOperationResponse)
 def perform_checkin(
     payload: CheckOperationRequest,
-    auth: AuthContext = Depends(require_admin),
+    auth: AuthContext = Depends(require_operations),
 ):
     operation_id: str | None = None
     if payload.idempotency_key:
@@ -341,7 +341,7 @@ def perform_checkin(
 @router.post("/checkouts", response_model=CheckOperationResponse)
 def perform_checkout(
     payload: CheckOperationRequest,
-    auth: AuthContext = Depends(require_admin),
+    auth: AuthContext = Depends(require_operations),
 ):
     operation_id: str | None = None
     if payload.idempotency_key:

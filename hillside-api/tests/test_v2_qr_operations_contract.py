@@ -36,7 +36,7 @@ def test_qr_verify_is_admin_only(monkeypatch) -> None:
         headers=_header("guest-token"),
     )
     assert response.status_code == 403
-    assert response.json()["detail"] == "Admin access required."
+    assert response.json()["detail"] == "Staff access required."
 
 
 def test_qr_verify_returns_validation_payload(monkeypatch) -> None:

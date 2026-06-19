@@ -266,7 +266,7 @@ def test_on_site_payment_is_admin_only(monkeypatch) -> None:
         },
     )
     assert response.status_code == 403
-    assert response.json()["detail"] == "Admin access required."
+    assert response.json()["detail"] == "Staff access required."
 
 
 def test_on_site_payment_contract(monkeypatch) -> None:

@@ -306,6 +306,23 @@ UNIT_LIST_SELECT = """
     updated_at
 """
 
+# Reduced projection for the PUBLIC (unauthenticated) catalog. Excludes admin/ops
+# fields (operational_status, room_number, is_active, timestamps) so anonymous
+# browsers only see marketing-safe data.
+UNIT_PUBLIC_SELECT = """
+    unit_id,
+    name,
+    unit_code,
+    type,
+    description,
+    base_price,
+    capacity,
+    image_url,
+    image_urls,
+    image_thumb_urls,
+    amenities
+"""
+
 PAYMENT_TRANSACTION_SELECT = """
     payment_id,
     amount,
@@ -1737,6 +1754,33 @@ def list_units_admin(
     return response.data or [], int(response.count or 0)
 
 
+def list_active_units_public(
+    *,
+    unit_type: str | None = None,
+    limit: int = 60,
+    offset: int = 0,
+) -> tuple[list[dict[str, Any]], int]:
+    """Active units for the PUBLIC catalog (no auth). Marketing-safe projection only."""
+    try:
+        client = get_supabase_client()
+        query = (
+            client.table("units")
+            .select(UNIT_PUBLIC_SELECT, count="exact")
+            .eq("is_active", True)
+            .order("type", desc=False)
+            .order("base_price", desc=False)
+        )
+        if unit_type:
+            query = query.eq("type", unit_type)
+        response = _timed_execute(
+            "db.units.list_public.page",
+            lambda: query.range(offset, offset + limit - 1).execute(),
+        )
+        return response.data or [], int(response.count or 0)
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
 def get_unit_by_id(*, unit_id: str) -> dict[str, Any] | None:
     try:
         client = get_supabase_client()
@@ -2307,7 +2351,7 @@ def list_resort_service_requests(
     try:
         client = get_supabase_user_scoped_client(access_token)
         query = client.table("resort_service_requests").select(RESORT_SERVICE_REQUEST_SELECT, count="exact")
-        if role != "admin":
+        if role not in ("staff", "admin", "super_admin"):
             query = query.eq("guest_user_id", user_id)
         if status_filter:
             query = query.eq("status", status_filter)
