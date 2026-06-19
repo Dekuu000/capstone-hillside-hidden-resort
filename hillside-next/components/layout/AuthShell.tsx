@@ -56,7 +56,7 @@ export function AuthShell({
       }
     >
       <div
-        className={`mx-auto w-full overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-lg)] ${
+        className={`mx-auto w-full overflow-hidden bg-[var(--color-surface)] shadow-[var(--shadow-lg)] ${
           fullScreen
             ? showSidePanel
               ? "grid min-h-dvh w-screen max-w-none rounded-none lg:grid-cols-[0.46fr_0.54fr]"
