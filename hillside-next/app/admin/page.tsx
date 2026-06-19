@@ -63,7 +63,7 @@ export default async function AdminShellPage() {
   }
 
   return (
-    <section className="mx-auto w-full max-w-[1720px] space-y-6 pb-2">
+    <section className="mx-auto w-full max-w-[1600px] space-y-5 pb-2">
       <AdminPageHeader
         eyebrow="Admin Dashboard"
         title="Resort View"

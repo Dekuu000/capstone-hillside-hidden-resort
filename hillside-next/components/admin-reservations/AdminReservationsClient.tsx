@@ -512,7 +512,7 @@ export function AdminReservationsClient({
 
   if (!token) {
     return (
-      <section className="mx-auto w-full max-w-[1720px]">
+      <section className="mx-auto w-full max-w-[1600px]">
         <h1 className="text-3xl font-bold text-[var(--color-text)]">Admin Reservations (V2)</h1>
         <p className="mt-3 text-sm text-[var(--color-muted)]">No active session found. Sign in as admin first.</p>
       </section>
