@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertCircle, Loader2, Phone, Ticket, User } from "lucide-react";
+import { AlertCircle, Loader2, Phone, User } from "lucide-react";
 import type {
   PricingRecommendation,
   ReservationCreateResponse,
@@ -233,125 +233,145 @@ export function AdminWalkInTourClient({
         </div>
       ) : null}
 
-      <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-sm)]">
-        <div className="mb-4 flex items-center gap-2">
-          <Ticket className="h-4 w-4 text-[var(--color-secondary)]" />
-          <h2 className="text-lg font-semibold text-[var(--color-text)]">Tour Reservation</h2>
-        </div>
+      <div className="grid gap-5 lg:grid-cols-[1.2fr_1fr]">
+        <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-sm)]">
+          <div className="mb-4 flex items-center gap-3">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)] text-xs font-bold text-white">1</span>
+            <div>
+              <h2 className="text-lg font-semibold text-[var(--color-text)]">Tour &amp; date</h2>
+              <p className="text-xs text-[var(--color-muted)]">Pick the tour, date, and group size.</p>
+            </div>
+          </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <label className="grid gap-1 text-sm text-[var(--color-text)]">
-            Select Tour
-            <select
-              value={serviceId}
-              onChange={(event) => setServiceId(event.target.value)}
-              disabled={servicesLoading}
-              className="rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 outline-none ring-[var(--color-secondary)]/20 transition focus:ring-2"
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="grid gap-1 text-sm text-[var(--color-text)] sm:col-span-2">
+              Select tour
+              <select
+                value={serviceId}
+                onChange={(event) => setServiceId(event.target.value)}
+                disabled={servicesLoading}
+                className="rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 outline-none ring-[var(--color-secondary)]/20 transition focus:ring-2"
+              >
+                <option value="">Select a service</option>
+                {services.map((service) => (
+                  <option key={service.service_id} value={service.service_id}>
+                    {service.service_name} ({service.start_time || "--"}-{service.end_time || "--"})
+                  </option>
+                ))}
+              </select>
+              {servicesLoading ? <span className="inline-flex items-center gap-1 text-xs text-[var(--color-muted)]"><Loader2 className="h-3 w-3 animate-spin" /> Loading active tours...</span> : null}
+              {servicesError ? <span className="text-xs text-red-600">{servicesError}</span> : null}
+            </label>
+
+            <div className="sm:col-span-2">
+              <FancyDatePicker label="Visit date" value={visitDate} onChange={setVisitDate} min={todayPlusLocalIsoDate(0)} />
+            </div>
+
+            <label className="grid gap-1 text-sm text-[var(--color-text)]">
+              Adults
+              <input
+                type="number"
+                min={0}
+                value={adultQty}
+                onChange={(event) => setAdultQty(Math.max(0, Number(event.target.value || 0)))}
+                className="rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 outline-none ring-[var(--color-secondary)]/20 transition focus:ring-2"
+              />
+            </label>
+
+            <label className="grid gap-1 text-sm text-[var(--color-text)]">
+              Kids
+              <input
+                type="number"
+                min={0}
+                value={kidQty}
+                onChange={(event) => setKidQty(Math.max(0, Number(event.target.value || 0)))}
+                className="rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 outline-none ring-[var(--color-secondary)]/20 transition focus:ring-2"
+              />
+            </label>
+          </div>
+
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setVisitDate(todayPlusLocalIsoDate(0))}
+              className="inline-flex h-8 items-center rounded-full border border-[var(--color-border)] bg-white px-3 text-xs font-semibold text-[var(--color-text)]"
             >
-              <option value="">Select a service</option>
-              {services.map((service) => (
-                <option key={service.service_id} value={service.service_id}>
-                  {service.service_name} ({service.start_time || "--"}-{service.end_time || "--"})
-                </option>
-              ))}
-            </select>
-            {servicesLoading ? <span className="inline-flex items-center gap-1 text-xs text-[var(--color-muted)]"><Loader2 className="h-3 w-3 animate-spin" /> Loading active tours...</span> : null}
-            {servicesError ? <span className="text-xs text-red-600">{servicesError}</span> : null}
-          </label>
-
-          <FancyDatePicker label="Visit Date" value={visitDate} onChange={setVisitDate} min={todayPlusLocalIsoDate(0)} />
-
-          <label className="grid gap-1 text-sm text-[var(--color-text)]">
-            Adults
-            <input
-              type="number"
-              min={0}
-              value={adultQty}
-              onChange={(event) => setAdultQty(Math.max(0, Number(event.target.value || 0)))}
-              className="rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 outline-none ring-[var(--color-secondary)]/20 transition focus:ring-2"
-            />
-          </label>
-
-          <label className="grid gap-1 text-sm text-[var(--color-text)]">
-            Kids
-            <input
-              type="number"
-              min={0}
-              value={kidQty}
-              onChange={(event) => setKidQty(Math.max(0, Number(event.target.value || 0)))}
-              className="rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 outline-none ring-[var(--color-secondary)]/20 transition focus:ring-2"
-            />
-          </label>
+              Same-day tour
+            </button>
+          </div>
         </div>
 
-        <div className="mt-4 grid gap-4 md:grid-cols-2">
-          <label className="grid gap-1 text-sm text-[var(--color-text)]">
-            Guest Name (optional)
-            <div className="relative">
-              <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-muted)]" />
-              <input
-                type="text"
-                value={guestName}
-                onChange={(event) => setGuestName(event.target.value)}
-                placeholder="Walk-in guest"
-                className="w-full rounded-xl border border-[var(--color-border)] bg-white py-2 pl-9 pr-3 outline-none ring-[var(--color-secondary)]/20 transition focus:ring-2"
-              />
+        <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-sm)]">
+          <div className="mb-4 flex items-center gap-3">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)] text-xs font-bold text-white">2</span>
+            <div>
+              <h2 className="text-lg font-semibold text-[var(--color-text)]">Guest &amp; checkout</h2>
+              <p className="text-xs text-[var(--color-muted)]">Guest info is optional — then create the booking.</p>
             </div>
-          </label>
+          </div>
 
-          <label className="grid gap-1 text-sm text-[var(--color-text)]">
-            Guest Phone (optional)
-            <div className="relative">
-              <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-muted)]" />
-              <input
-                type="text"
-                value={guestPhone}
-                onChange={(event) => setGuestPhone(event.target.value)}
-                placeholder="09XX XXX XXXX"
-                className="w-full rounded-xl border border-[var(--color-border)] bg-white py-2 pl-9 pr-3 outline-none ring-[var(--color-secondary)]/20 transition focus:ring-2"
+          <div className="grid gap-3">
+            <label className="grid gap-1 text-sm text-[var(--color-text)]">
+              Guest name (optional)
+              <div className="relative">
+                <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-muted)]" />
+                <input
+                  type="text"
+                  value={guestName}
+                  onChange={(event) => setGuestName(event.target.value)}
+                  placeholder="Walk-in guest"
+                  className="w-full rounded-xl border border-[var(--color-border)] bg-white py-2 pl-9 pr-3 outline-none ring-[var(--color-secondary)]/20 transition focus:ring-2"
+                />
+              </div>
+            </label>
+
+            <label className="grid gap-1 text-sm text-[var(--color-text)]">
+              Phone (optional)
+              <div className="relative">
+                <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-muted)]" />
+                <input
+                  type="text"
+                  value={guestPhone}
+                  onChange={(event) => setGuestPhone(event.target.value)}
+                  placeholder="09XX XXX XXXX"
+                  className="w-full rounded-xl border border-[var(--color-border)] bg-white py-2 pl-9 pr-3 outline-none ring-[var(--color-secondary)]/20 transition focus:ring-2"
+                />
+              </div>
+            </label>
+
+            <label className="grid gap-1 text-sm text-[var(--color-text)]">
+              Notes (optional)
+              <textarea
+                value={notes}
+                onChange={(event) => setNotes(event.target.value)}
+                rows={3}
+                placeholder="Front desk notes"
+                className="rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 outline-none ring-[var(--color-secondary)]/20 transition focus:ring-2"
               />
+            </label>
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-4">
+            <p className="text-sm text-[var(--color-muted)]">{adultQty} adult{adultQty === 1 ? "" : "s"}{kidQty > 0 ? ` · ${kidQty} kid${kidQty === 1 ? "" : "s"}` : ""}</p>
+            <div className="mt-1 flex items-baseline justify-between">
+              <span className="text-sm text-[var(--color-muted)]">Total</span>
+              <span className="text-xl font-bold text-[var(--color-text)]">{toPeso(totalAmount)}</span>
             </div>
-          </label>
-        </div>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => setVisitDate(todayPlusLocalIsoDate(0))}
-            className="inline-flex h-8 items-center rounded-full border border-[var(--color-border)] bg-white px-3 text-xs font-semibold text-[var(--color-text)]"
-          >
-            Same-day tour
-          </button>
-        </div>
+          </div>
 
-        <label className="mt-4 grid gap-1 text-sm text-[var(--color-text)]">
-          Notes (optional)
-          <textarea
-            value={notes}
-            onChange={(event) => setNotes(event.target.value)}
-            rows={3}
-            className="rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 outline-none ring-[var(--color-secondary)]/20 transition focus:ring-2"
-          />
-        </label>
-
-        <div className="mt-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-4">
-          <p className="text-sm text-[var(--color-muted)]">
-            Total: <strong className="text-[var(--color-text)]">{toPeso(totalAmount)}</strong>
-          </p>
-          <p className="mt-1 text-xs text-[var(--color-muted)]">After create, you will be redirected to Payments for cashier recording.</p>
-        </div>
-
-        <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs text-[var(--color-muted)]">
-            You can also open <Link href="/admin/payments" className="font-semibold text-[var(--color-secondary)] underline">Payments</Link> directly.
-          </p>
-          <button
-            type="button"
-            onClick={() => void submitWalkInTour()}
-            disabled={submitBusy}
-            className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-[var(--color-cta)] px-5 text-sm font-semibold text-white shadow-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[220px]"
-          >
-            {submitBusy ? "Creating..." : "Create Walk-in Tour"}
-          </button>
+          <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-[var(--color-muted)]">
+              After create, proceed to <Link href="/admin/payments" className="font-semibold text-[var(--color-secondary)] underline">Payments</Link> for cashier recording.
+            </p>
+            <button
+              type="button"
+              onClick={() => void submitWalkInTour()}
+              disabled={submitBusy}
+              className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-[var(--color-cta)] px-5 text-sm font-semibold text-white shadow-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[220px]"
+            >
+              {submitBusy ? "Creating..." : "Create Walk-in Tour"}
+            </button>
+          </div>
         </div>
       </div>
     </section>

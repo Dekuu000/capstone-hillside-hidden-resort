@@ -8,19 +8,28 @@ export function ScanSegmentedControl({
   value,
   onChange,
   queueCount = 0,
+  showQueue = true,
 }: {
   value: ScanMode;
   onChange: (value: ScanMode) => void;
   queueCount?: number;
+  showQueue?: boolean;
 }) {
   const items: Array<{ id: ScanMode; label: string }> = [
     { id: "scan", label: "Scan" },
     { id: "code", label: "Code" },
-    { id: "queue", label: queueCount > 0 ? `Queue (${queueCount})` : "Queue" },
+    ...(showQueue ? [{ id: "queue" as ScanMode, label: queueCount > 0 ? `Queue (${queueCount})` : "Queue" }] : []),
   ];
 
   return (
-    <div className="grid w-full grid-cols-3 gap-1 rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-1" role="tablist" aria-orientation="horizontal">
+    <div
+      className={cn(
+        "grid w-full gap-1 rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-1",
+        showQueue ? "grid-cols-3" : "grid-cols-2",
+      )}
+      role="tablist"
+      aria-orientation="horizontal"
+    >
       {items.map((item) => {
         const active = value === item.id;
         return (

@@ -21,6 +21,7 @@ import type {
   ReservationListItem as ReservationItem,
   SyncPushResult,
 } from "../../../packages/shared/src/types";
+import { roleAtLeast } from "../../../packages/shared/src/types";
 import {
   checkOperationResponseSchema,
   qrPublicKeyResponseSchema,
@@ -59,6 +60,7 @@ type Props = {
   initialMode?: ScanMode;
   tabletView?: boolean;
   initialReservationCode?: string;
+  role?: string | null;
 };
 type Mode = ScanMode;
 type Outcome = "ready" | "scanning" | "valid" | "invalid" | "queued";
@@ -346,8 +348,12 @@ export function AdminCheckinClient({
   initialMode = "scan",
   tabletView = false,
   initialReservationCode = "",
+  role = null,
 }: Props) {
   const token = initialToken;
+  // The offline Queue is a technical/sync surface — System Admin only. Staff and
+  // managers keep Scan + Code (manual code lookup is their fallback when a QR won't scan).
+  const canSeeQueue = roleAtLeast(role, "super_admin");
   const { showToast } = useToast();
   const qrScannerRef = useRef<Html5Qrcode | null>(null);
   const scanHandledRef = useRef(false);
@@ -356,7 +362,7 @@ export function AdminCheckinClient({
   const primaryActionRef = useRef<HTMLButtonElement | null>(null);
   const preloadBusyRef = useRef(false);
 
-  const [mode, setMode] = useState<Mode>(initialMode);
+  const [mode, setMode] = useState<Mode>(initialMode === "queue" && !canSeeQueue ? "scan" : initialMode);
   const [outcome, setOutcome] = useState<Outcome>("ready");
   const [scanPulse, setScanPulse] = useState(false);
   const [scanActive, setScanActive] = useState(false);
@@ -1154,7 +1160,7 @@ export function AdminCheckinClient({
       } finally {
         setQueueWriteBusy(false);
       }
-      setMode("queue");
+      if (canSeeQueue) setMode("queue");
       setOutcome("queued");
       const queuedReport: SyncReportItem = {
         id: crypto.randomUUID(),
@@ -1171,7 +1177,7 @@ export function AdminCheckinClient({
       });
       return true;
     },
-    [activeTokenJti, outcome, persistQueue, queue, result, showToast, validatedAt],
+    [activeTokenJti, canSeeQueue, outcome, persistQueue, queue, result, showToast, validatedAt],
   );
 
   const loadSyncResult = useCallback((entry: SyncReportItem) => {
@@ -1474,7 +1480,7 @@ export function AdminCheckinClient({
               icon={networkOnline ? <Wifi className="h-3.5 w-3.5" aria-hidden="true" /> : <WifiOff className="h-3.5 w-3.5" aria-hidden="true" />}
             />
           </div>
-          <ScanSegmentedControl value={mode} onChange={(value) => setMode(value as Mode)} queueCount={pendingQueueCount} />
+          <ScanSegmentedControl value={mode} onChange={(value) => setMode(value as Mode)} queueCount={pendingQueueCount} showQueue={canSeeQueue} />
           <div className="mt-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">Offline check-in data</p>
@@ -1897,13 +1903,15 @@ export function AdminCheckinClient({
                 {pendingQueuedCheckin ? (
                   <div className="flex items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
                     <p className="text-xs text-amber-700">This reservation already has a pending queued check-in.</p>
-                    <button
-                      type="button"
-                      onClick={() => setMode("queue")}
-                      className="inline-flex h-8 items-center rounded-md border border-amber-300 bg-white px-2 text-xs font-semibold text-amber-900"
-                    >
-                      View queue
-                    </button>
+                    {canSeeQueue ? (
+                      <button
+                        type="button"
+                        onClick={() => setMode("queue")}
+                        className="inline-flex h-8 items-center rounded-md border border-amber-300 bg-white px-2 text-xs font-semibold text-amber-900"
+                      >
+                        View queue
+                      </button>
+                    ) : null}
                   </div>
                 ) : null}
                 {canCheckout && hasOutstandingBalance && result?.reservation_id ? (
