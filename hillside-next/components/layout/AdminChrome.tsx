@@ -234,32 +234,25 @@ export function AdminChrome({ children, initialName = null, initialEmail = null,
       </aside>
 
       <div className={`transition-[padding] duration-300 ${collapsed ? "lg:pl-[76px]" : "lg:pl-64"}`}>
-        <header className="sticky top-0 z-30 border-b border-[var(--color-border)] bg-white/90 shadow-sm backdrop-blur lg:hidden">
-          <div className="flex h-[72px] items-center justify-between px-4">
+        <header className="sticky top-0 z-30 border-b border-white/10 bg-[var(--color-primary)] text-white shadow-sm lg:hidden">
+          <div className="flex h-[68px] items-center gap-3 px-4">
             <button
               type="button"
               onClick={() => setSidebarOpen((prev) => !prev)}
-              className={`group inline-flex h-11 items-center gap-2 rounded-2xl border px-3 text-sm font-bold shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-secondary)] focus-visible:ring-offset-2 ${
-                sidebarOpen
-                  ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
-                  : "border-[var(--color-border)] bg-white text-[var(--color-primary)] hover:border-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)] hover:bg-[color:color-mix(in_srgb,var(--color-secondary)_12%,white)] hover:text-[var(--color-secondary)]"
-              }`}
+              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/20 bg-white/10 text-white transition hover:bg-white/20 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-primary)]"
               aria-label={sidebarOpen ? "Close admin navigation menu" : "Open admin navigation menu"}
               aria-expanded={sidebarOpen}
               aria-controls="admin-sidebar"
             >
-              <span
-                className={`flex h-7 w-7 items-center justify-center rounded-xl transition ${
-                  sidebarOpen ? "bg-white/12" : "bg-[var(--color-background)] group-hover:bg-white"
-                }`}
-                aria-hidden="true"
-              >
-                {sidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-              </span>
-              <span className="hidden min-[360px]:inline">{sidebarOpen ? "Close" : "Menu"}</span>
+              {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
-            <h2 className="text-base font-semibold text-[var(--color-text)]">Hillside Hidden</h2>
-            <div className="w-[88px]" aria-hidden="true" />
+            <Link href="/admin" className="min-w-0" aria-label="Hillside Hidden Resort">
+              <HillsideLogo
+                light
+                compact
+                className="[&_img]:h-9 [&_img]:w-9 [&_.hillside-brand-title]:text-[1.05rem] [&_.hillside-brand-title]:font-semibold [&_.hillside-brand-subtitle]:text-[0.55rem] [&_.hillside-brand-subtitle]:tracking-[0.28em]"
+              />
+            </Link>
           </div>
         </header>
 
