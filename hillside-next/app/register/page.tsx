@@ -10,7 +10,7 @@ import { getSupabaseBrowserClient } from "../../lib/supabase";
 import { Button } from "../../components/shared/Button";
 import { Toast } from "../../components/shared/Toast";
 import { AuthShell } from "../../components/layout/AuthShell";
-import { GoogleIcon } from "../../components/branding/GoogleIcon";
+import { TermsModal } from "../../components/legal/TermsModal";
 
 function AuthInput({
   label,
@@ -82,6 +82,7 @@ export default function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [agree, setAgree] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const passwordTooShort = password.length > 0 && password.length < 8;
@@ -145,10 +146,6 @@ export default function RegisterPage() {
     } finally {
       setBusy(false);
     }
-  };
-
-  const onGoogleSignIn = () => {
-    setError("Google sign-up is not configured yet for this environment.");
   };
 
   return (
@@ -242,38 +239,26 @@ export default function RegisterPage() {
           }
         />
 
-        <label className="flex items-start gap-2 text-sm text-[var(--color-muted)]">
+        <div className="flex items-start gap-2 text-sm text-[var(--color-muted)]">
           <input
             type="checkbox"
             checked={agree}
             onChange={(event) => setAgree(event.target.checked)}
+            aria-label="I have read and agree to the Terms, Privacy, and Cancellation policies"
             className="mt-1 h-4 w-4 rounded border-[var(--color-border)] text-[var(--color-secondary)] focus-visible:ring-2 focus-visible:ring-teal-200"
           />
-          <span>
-            I agree to the{" "}
-            <Link
-              href="/terms"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-semibold text-[var(--color-secondary)] hover:underline"
-              aria-label="Open Terms in a new tab"
+          <p>
+            I have read and agree to the{" "}
+            <button
+              type="button"
+              onClick={() => setShowTerms(true)}
+              className="font-semibold text-[var(--color-secondary)] underline-offset-2 hover:underline"
             >
-              Terms
-            </Link>{" "}
-            and{" "}
-            <Link
-              href="/privacy"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-semibold text-[var(--color-secondary)] hover:underline"
-              aria-label="Open Privacy Policy in a new tab"
-            >
-              Privacy Policy
-            </Link>
+              Terms &amp; Conditions, Privacy Policy &amp; Cancellation Policy
+            </button>
             .
-            <span className="sr-only"> These links open in a new tab so your sign-up details stay on this page.</span>
-          </span>
-        </label>
+          </p>
+        </div>
 
         {success ? <Toast type="success" title={success} /> : null}
         {error ? <Toast type="error" title="Registration failed" message={error} /> : null}
@@ -288,27 +273,14 @@ export default function RegisterPage() {
         </Button>
       </form>
 
-      <div className="mt-5 flex items-center gap-3 text-sm text-[var(--color-muted)]">
-        <span className="h-px flex-1 bg-[var(--color-border)]" />
-        <span>or continue with</span>
-        <span className="h-px flex-1 bg-[var(--color-border)]" />
-      </div>
-
-      <button
-        type="button"
-        onClick={onGoogleSignIn}
-        className="mt-5 inline-flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-[var(--color-border)] bg-white text-sm font-semibold text-[var(--color-text)] transition hover:bg-slate-50"
-      >
-        <GoogleIcon />
-        Continue with Google
-      </button>
-
       <div className="mt-8 text-center text-sm text-[var(--color-muted)]">
         Already have an account?{" "}
         <Link href="/auth/sign-in" className="font-semibold text-[var(--color-secondary)] hover:underline">
           Sign In
         </Link>
       </div>
+
+      <TermsModal open={showTerms} onClose={() => setShowTerms(false)} onAgree={() => setAgree(true)} />
     </AuthShell>
   );
 }
