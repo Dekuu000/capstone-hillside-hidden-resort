@@ -1052,7 +1052,7 @@ export function MyBookingsClient({
                     {canCancel ? (
                       <button
                         type="button"
-                        className="guest-danger-cta min-h-11 px-4 text-sm"
+                        className="guest-danger-ghost min-h-11 px-4 text-sm"
                         onClick={() => setCancelFor(booking)}
                       >
                         Cancel booking
