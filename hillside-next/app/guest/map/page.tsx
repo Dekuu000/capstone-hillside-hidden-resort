@@ -17,12 +17,12 @@ export default async function GuestMapPage() {
         rightSlot={(
           <div className="rounded-3xl border border-white/15 bg-white/10 p-4 text-white/90 backdrop-blur">
             <div className="flex items-center gap-2 text-base font-semibold text-white">
-              <Compass className="h-4 w-4 text-teal-300" aria-hidden="true" />
+              <Compass className="h-4 w-4 text-white/80" aria-hidden="true" />
               Map status
             </div>
             <div className="mt-3 space-y-2 text-sm">
               <p className="inline-flex items-center gap-2 text-white/85">
-                <MapPinned className="h-3.5 w-3.5 text-teal-300" aria-hidden="true" />
+                <MapPinned className="h-3.5 w-3.5 text-white/80" aria-hidden="true" />
                 Interactive trails and facilities
               </p>
               <p className="text-white/75">Offline-first wayfinding with no active GPS required.</p>

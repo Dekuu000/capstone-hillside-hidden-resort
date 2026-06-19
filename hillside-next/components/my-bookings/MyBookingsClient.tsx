@@ -188,8 +188,8 @@ function getReservationStatusTone(status: string) {
     };
   }
   return {
-    dotClassName: "bg-slate-400",
-    panelClassName: "border-slate-200 bg-slate-50 text-slate-700",
+    dotClassName: "bg-[var(--color-muted)]",
+    panelClassName: "border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-text)]",
     helper: "Check the booking details below for the latest state.",
   };
 }
@@ -790,9 +790,9 @@ export function MyBookingsClient({
   if (!token) {
     return (
       <section className="mx-auto w-full max-w-5xl">
-        <header className="mb-5 rounded-3xl border border-slate-200/70 bg-gradient-to-br from-white via-slate-50 to-blue-50 p-6 shadow-sm">
-          <h1 className="text-3xl font-bold text-slate-900">My Stay</h1>
-          <p className="mt-2 text-sm text-slate-600">Track reservations, check-in QR, and payment status.</p>
+        <header className="mb-5 rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm">
+          <h1 className="text-3xl font-bold text-[var(--color-text)]">My Stay</h1>
+          <p className="mt-2 text-sm text-[var(--color-muted)]">Track reservations, check-in QR, and payment status.</p>
         </header>
         <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
           No active session found. Sign in first, then reopen this page.
@@ -838,7 +838,7 @@ export function MyBookingsClient({
         />
       </div>
 
-      <section className="rounded-[2rem] border border-slate-200/80 bg-white p-4 shadow-sm lg:p-5">
+      <section className="rounded-[2rem] border border-[var(--color-border)] bg-white p-4 shadow-sm lg:p-5">
         <div className="lg:hidden" data-testid="guest-tabs">
           <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <button
@@ -847,7 +847,7 @@ export function MyBookingsClient({
               className={`inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-2xl px-4 text-[13px] font-bold leading-none transition ${
                 tab === "upcoming"
                   ? "border border-[var(--color-secondary)] bg-teal-50 text-[var(--color-secondary)] shadow-sm"
-                  : "text-slate-500 hover:bg-slate-50"
+                  : "text-[var(--color-muted)] hover:bg-[var(--color-background)]"
               }`}
             >
               <Calendar className="h-4 w-4 shrink-0" />
@@ -859,7 +859,7 @@ export function MyBookingsClient({
               className={`inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-2xl px-4 text-[13px] font-bold leading-none transition ${
                 tab === "pending_payment"
                   ? "border border-[var(--color-secondary)] bg-teal-50 text-[var(--color-secondary)] shadow-sm"
-                  : "text-slate-500 hover:bg-slate-50"
+                  : "text-[var(--color-muted)] hover:bg-[var(--color-background)]"
               }`}
             >
               <CreditCard className="h-4 w-4 shrink-0" />
@@ -871,7 +871,7 @@ export function MyBookingsClient({
               className={`inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-2xl px-4 text-[13px] font-bold leading-none transition ${
                 tab === "completed"
                   ? "border border-[var(--color-secondary)] bg-teal-50 text-[var(--color-secondary)] shadow-sm"
-                  : "text-slate-500 hover:bg-slate-50"
+                  : "text-[var(--color-muted)] hover:bg-[var(--color-background)]"
               }`}
             >
               <CircleCheck className="h-4 w-4 shrink-0" />
@@ -883,7 +883,7 @@ export function MyBookingsClient({
               className={`inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-2xl px-4 text-[13px] font-bold leading-none transition ${
                 tab === "cancelled"
                   ? "border border-[var(--color-secondary)] bg-teal-50 text-[var(--color-secondary)] shadow-sm"
-                  : "text-slate-500 hover:bg-slate-50"
+                  : "text-[var(--color-muted)] hover:bg-[var(--color-background)]"
               }`}
             >
               <CircleX className="h-4 w-4 shrink-0" />
@@ -929,7 +929,7 @@ export function MyBookingsClient({
           />
         </div>
         <div className="mt-3 flex flex-col gap-3 lg:mt-4">
-          <p className="text-sm text-slate-500">{TAB_HINTS[tab]}</p>
+          <p className="text-sm text-[var(--color-muted)]">{TAB_HINTS[tab]}</p>
           <GuestSyncStatus compact />
         </div>
       </section>
@@ -958,7 +958,7 @@ export function MyBookingsClient({
         {loading ? (
           <div className="grid gap-3">
             {Array.from({ length: 3 }).map((_, idx) => (
-              <div key={`booking-skeleton-${idx}`} className="rounded-2xl border border-slate-200/70 bg-white p-5 shadow-sm">
+              <div key={`booking-skeleton-${idx}`} className="rounded-2xl border border-[var(--color-border)] bg-white p-5 shadow-sm">
                 <div className="skeleton h-6 w-48" />
                 <div className="mt-2 skeleton h-4 w-64" />
                 <div className="mt-4 grid gap-2 sm:grid-cols-3">
@@ -1017,7 +1017,7 @@ export function MyBookingsClient({
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
                   <div className="flex items-start justify-between gap-2">
-                    <h2 className="min-w-0 truncate text-[1.5rem] font-bold leading-tight text-slate-900 lg:text-[1.35rem]">
+                    <h2 className="min-w-0 truncate text-[1.5rem] font-bold leading-tight text-[var(--color-text)] lg:text-[1.35rem]">
                       {booking.reservation_code}
                     </h2>
                     {canShowQr ? (
@@ -1029,7 +1029,7 @@ export function MyBookingsClient({
                           setQrError(null);
                           setQrSecondsLeft(0);
                         }}
-                        className="guest-secondary-cta h-10 min-h-10 w-10 shrink-0 p-0 text-slate-700"
+                        className="guest-secondary-cta h-10 min-h-10 w-10 shrink-0 p-0 text-[var(--color-text)]"
                         aria-label="Show check-in QR"
                         title="Show QR"
                       >
@@ -1037,8 +1037,8 @@ export function MyBookingsClient({
                       </button>
                     ) : null}
                   </div>
-                  <p className="mt-1 text-sm font-medium text-slate-700">{bookingTarget || `${bookingLabel} reservation`}</p>
-                  <p className="text-xs text-slate-500">Booked on {formatLocalDateTime(booking.created_at)}</p>
+                  <p className="mt-1 text-sm font-medium text-[var(--color-text)]">{bookingTarget || `${bookingLabel} reservation`}</p>
+                  <p className="text-xs text-[var(--color-muted)]">Booked on {formatLocalDateTime(booking.created_at)}</p>
                   <div className="mt-2 flex items-center gap-2">
                     <span
                       className={`inline-flex max-w-fit items-center rounded-full px-2 py-1 text-[10px] font-semibold tracking-wide sm:px-2.5 sm:text-[11px] ${statusMeta.className}`}
@@ -1050,19 +1050,19 @@ export function MyBookingsClient({
                     >
                       {paymentMeta.label}
                     </span>
-                    <span className="ml-auto inline-flex items-center rounded-full bg-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-700">
+                    <span className="ml-auto inline-flex items-center rounded-full bg-[var(--color-border)] px-2.5 py-1 text-[11px] font-semibold text-[var(--color-text)]">
                       {isTour ? "Tour booking" : "Stay booking"}
                     </span>
                   </div>
                 </div>
                 <div className={`rounded-xl border p-2.5 sm:min-w-[150px] ${accent.amountPanel}`}>
-                  <p className="text-xs font-medium text-slate-600">{isPaymentTab ? "Amount due" : "Total amount"}</p>
+                  <p className="text-xs font-medium text-[var(--color-muted)]">{isPaymentTab ? "Amount due" : "Total amount"}</p>
                   <p className={`mt-1 text-[2rem] font-bold leading-tight lg:text-[1.8rem] ${isPaymentTab ? "text-orange-700" : accent.amountText}`}>
                     {formatPeso(isPaymentTab ? remaining : total)}
                   </p>
                   {isPaymentTab && minimumPayNow > 0 ? (
-                    <p className="mt-1 text-[11px] font-medium text-slate-600">
-                      Minimum pay now: <span className="font-semibold text-slate-800">{formatPeso(minimumPayNow)}</span>
+                    <p className="mt-1 text-[11px] font-medium text-[var(--color-muted)]">
+                      Minimum pay now: <span className="font-semibold text-[var(--color-text)]">{formatPeso(minimumPayNow)}</span>
                     </p>
                   ) : null}
                 </div>
@@ -1073,37 +1073,37 @@ export function MyBookingsClient({
                 </p>
               ) : null}
               {flowHint ? (
-                <p className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium leading-relaxed text-slate-700">
+                <p className="mt-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-xs font-medium leading-relaxed text-[var(--color-text)]">
                   {flowHint}
                 </p>
               ) : null}
 
-              <div className="relative mt-3 grid gap-2.5 rounded-2xl border border-slate-200/70 bg-slate-50/60 p-3.5 pr-14 sm:grid-cols-2">
+              <div className="relative mt-3 grid gap-2.5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-3.5 pr-14 sm:grid-cols-2">
                 <button
                   type="button"
                   onClick={() => void openDetails(booking.reservation_id)}
-                  className="guest-secondary-cta absolute right-3 top-3 h-9 min-h-9 w-9 p-0 text-slate-700"
+                  className="guest-secondary-cta absolute right-3 top-3 h-9 min-h-9 w-9 p-0 text-[var(--color-text)]"
                   aria-label="View booking details"
                   title="View details"
                 >
                   <Eye className="h-4 w-4 shrink-0 stroke-[2.2]" aria-hidden="true" />
                 </button>
                 <div>
-                  <span className="block text-xs text-slate-500">{isTour ? "Visit date" : "Stay dates"}</span>
-                  <p className="text-sm font-medium text-slate-800">
+                  <span className="block text-xs text-[var(--color-muted)]">{isTour ? "Visit date" : "Stay dates"}</span>
+                  <p className="text-sm font-medium text-[var(--color-text)]">
                     {isTour ? formatDateWithWeekday(visitDate) : `${formatDateWithWeekday(booking.check_in_date)} to ${formatDateWithWeekday(booking.check_out_date)}`}
                   </p>
                 </div>
                 <div>
-                  <span className="block text-xs text-slate-500">Payment status</span>
-                  <p className="text-sm font-semibold text-slate-800">{paymentMeta.label}</p>
+                  <span className="block text-xs text-[var(--color-muted)]">Payment status</span>
+                  <p className="text-sm font-semibold text-[var(--color-text)]">{paymentMeta.label}</p>
                 </div>
                 <div>
-                  <span className="block text-xs text-slate-500">Amount paid</span>
+                  <span className="block text-xs text-[var(--color-muted)]">Amount paid</span>
                   <p className="text-sm font-semibold text-emerald-700">{formatPeso(paid)}</p>
                 </div>
                 <div>
-                  <span className="block text-xs text-slate-500">Outstanding balance</span>
+                  <span className="block text-xs text-[var(--color-muted)]">Outstanding balance</span>
                   <p className={`text-sm font-semibold ${accent.amountText}`}>{formatPeso(remaining)}</p>
                 </div>
               </div>
@@ -1202,12 +1202,12 @@ export function MyBookingsClient({
           title={details?.reservation_code ?? "Loading..."}
           zIndexClass="z-[70]"
           maxWidthClass="md:max-w-2xl"
-          panelClassName="max-h-[calc(100dvh-0.9rem)] border-slate-200/80 bg-white pb-[calc(1rem+env(safe-area-inset-bottom))]"
+          panelClassName="max-h-[calc(100dvh-0.9rem)] border-[var(--color-border)] bg-white pb-[calc(1rem+env(safe-area-inset-bottom))]"
           onClose={() => {
             setDetails(null);
           }}
         >
-            {detailsLoading ? <p className="text-sm text-slate-600" role="status">Loading details...</p> : null}
+            {detailsLoading ? <p className="text-sm text-[var(--color-muted)]" role="status">Loading details...</p> : null}
             {detailsError ? <p className="mb-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">{detailsError}</p> : null}
 
             {details ? (
@@ -1236,9 +1236,9 @@ export function MyBookingsClient({
 
                 {detailUnits.length > 0 ? (
                   <section>
-                    <h4 className="mb-2 text-sm font-semibold text-slate-900">Units</h4>
+                    <h4 className="mb-2 text-sm font-semibold text-[var(--color-text)]">Units</h4>
                     {detailUnits.map((row) => (
-                      <div key={row.reservation_unit_id} className="mb-2 rounded-lg border border-slate-200 p-3">
+                      <div key={row.reservation_unit_id} className="mb-2 rounded-lg border border-[var(--color-border)] p-3">
                         <div>
                           <strong>
                             {(() => {
@@ -1246,10 +1246,10 @@ export function MyBookingsClient({
                               return label.subtitle ? `${label.title} (${label.subtitle})` : label.title;
                             })()}
                           </strong>
-                          <p className="text-xs text-slate-500">
+                          <p className="text-xs text-[var(--color-muted)]">
                             {row.quantity_or_nights} night(s) x {formatPeso(row.rate_snapshot)}
                           </p>
-                          {row.unit?.amenities?.length ? <p className="text-xs text-slate-500">Amenities: {row.unit.amenities.join(", ")}</p> : null}
+                          {row.unit?.amenities?.length ? <p className="text-xs text-[var(--color-muted)]">Amenities: {row.unit.amenities.join(", ")}</p> : null}
                           {normalizeUnitImageUrls(row.unit?.image_urls, row.unit?.image_url).length ? (
                             <button
                               type="button"
@@ -1260,7 +1260,7 @@ export function MyBookingsClient({
                             </button>
                           ) : null}
                         </div>
-                        <p className="mt-2 text-sm font-semibold text-slate-800">{formatPeso(row.quantity_or_nights * row.rate_snapshot)}</p>
+                        <p className="mt-2 text-sm font-semibold text-[var(--color-text)]">{formatPeso(row.quantity_or_nights * row.rate_snapshot)}</p>
                       </div>
                     ))}
                   </section>
@@ -1268,14 +1268,14 @@ export function MyBookingsClient({
 
                 {detailTours.length > 0 ? (
                   <section>
-                    <h4 className="mb-2 text-sm font-semibold text-slate-900">Tours</h4>
+                    <h4 className="mb-2 text-sm font-semibold text-[var(--color-text)]">Tours</h4>
                     {detailTours.map((row) => (
-                      <div key={row.service_booking_id} className="mb-2 rounded-lg border border-slate-200 p-3">
+                      <div key={row.service_booking_id} className="mb-2 rounded-lg border border-[var(--color-border)] p-3">
                         <div>
                           <strong>{row.service?.service_name ?? "Tour service"}</strong>
-                          <p className="text-xs text-slate-500">Date: {formatDateWithWeekday(row.visit_date)}</p>
+                          <p className="text-xs text-[var(--color-muted)]">Date: {formatDateWithWeekday(row.visit_date)}</p>
                         </div>
-                        <p className="mt-2 text-sm font-semibold text-slate-800">{formatPeso(row.total_amount)}</p>
+                        <p className="mt-2 text-sm font-semibold text-[var(--color-text)]">{formatPeso(row.total_amount)}</p>
                       </div>
                     ))}
                   </section>
@@ -1291,37 +1291,37 @@ export function MyBookingsClient({
           title="Submit payment proof"
           zIndexClass="z-[70]"
           maxWidthClass="md:max-w-xl"
-          panelClassName="max-h-[calc(100dvh-0.75rem)] border-slate-200/80 bg-white pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
+          panelClassName="max-h-[calc(100dvh-0.75rem)] border-[var(--color-border)] bg-white pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
           onClose={() => {
             if (!submitBusy) closeSubmitModal();
           }}
         >
-            <p className="mb-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+            <p className="mb-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] p-3 text-xs text-[var(--color-muted)]">
               Next step after submit: payment status changes to <strong>For verification</strong> while admin reviews your proof. You will be returned to the <strong>Upcoming</strong> tab.
             </p>
             <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-medium leading-relaxed text-amber-800">
               Minimum deposit is required first. Guest-initiated cancellation forfeits this minimum deposit.
             </p>
-            <div className="mb-3 rounded-xl border border-slate-200 bg-white p-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Payment summary</p>
+            <div className="mb-3 rounded-xl border border-[var(--color-border)] bg-white p-3">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">Payment summary</p>
               <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
-                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                  <p className="text-xs text-slate-500">Total amount</p>
-                  <p className="font-semibold text-slate-900">{formatPeso(Number(submitFor.total_amount ?? 0))}</p>
+                <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2">
+                  <p className="text-xs text-[var(--color-muted)]">Total amount</p>
+                  <p className="font-semibold text-[var(--color-text)]">{formatPeso(Number(submitFor.total_amount ?? 0))}</p>
                 </div>
-                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                  <p className="text-xs text-slate-500">Amount paid</p>
+                <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2">
+                  <p className="text-xs text-[var(--color-muted)]">Amount paid</p>
                   <p className="font-semibold text-emerald-700">{formatPeso(Number(submitFor.amount_paid_verified ?? 0))}</p>
                 </div>
-                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                  <p className="text-xs text-slate-500">Remaining balance</p>
+                <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2">
+                  <p className="text-xs text-[var(--color-muted)]">Remaining balance</p>
                   <p className="font-semibold text-orange-700">
                     {formatPeso(Math.max(0, Number(submitFor.total_amount ?? 0) - Number(submitFor.amount_paid_verified ?? 0)))}
                   </p>
                 </div>
-                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                  <p className="text-xs text-slate-500">Minimum due now</p>
-                  <p className="font-semibold text-slate-900">
+                <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2">
+                  <p className="text-xs text-[var(--color-muted)]">Minimum due now</p>
+                  <p className="font-semibold text-[var(--color-text)]">
                     {formatPeso(Number(submitFor.expected_pay_now ?? submitFor.deposit_required ?? 0))}
                   </p>
                 </div>
@@ -1339,15 +1339,15 @@ export function MyBookingsClient({
                   className="guest-field-control"
                 />
               </label>
-              <p className="guest-surface-soft px-3 py-2 text-xs text-slate-600">
+              <p className="guest-surface-soft px-3 py-2 text-xs text-[var(--color-muted)]">
                 Minimum payment now:{" "}
-                <strong className="text-slate-800">
+                <strong className="text-[var(--color-text)]">
                   {formatPeso(
                     Number(submitFor.expected_pay_now ?? submitFor.deposit_required ?? 0),
                   )}
                 </strong>
                 {submitFor.deposit_rule_applied ? (
-                  <span className="ml-1 text-slate-500">({submitFor.deposit_rule_applied})</span>
+                  <span className="ml-1 text-[var(--color-muted)]">({submitFor.deposit_rule_applied})</span>
                 ) : null}
               </p>
               <label className="guest-form-label">
@@ -1364,7 +1364,7 @@ export function MyBookingsClient({
               <GcashPaymentGuide compact onCopyMessage={(message) => pushActionMessage(message)} />
 
               <div className="grid gap-2">
-                <p className="text-sm text-slate-700">Payment proof</p>
+                <p className="text-sm text-[var(--color-text)]">Payment proof</p>
                 <div className="flex gap-2">
                   <button
                     type="button"
@@ -1388,15 +1388,15 @@ export function MyBookingsClient({
                   <div className="grid gap-2">
                     <label
                       htmlFor={submitProofInputId}
-                      className="group inline-flex min-h-14 w-full cursor-pointer items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 transition hover:border-[var(--color-secondary)] hover:bg-teal-50/20"
+                      className="group inline-flex min-h-14 w-full cursor-pointer items-center justify-between gap-3 rounded-2xl border border-[var(--color-border)] bg-white px-4 py-3 transition hover:border-[var(--color-secondary)] hover:bg-teal-50/20"
                     >
-                      <span className="min-w-0 text-sm font-semibold text-slate-700 transition group-hover:text-[var(--color-secondary)]">
+                      <span className="min-w-0 text-sm font-semibold text-[var(--color-text)] transition group-hover:text-[var(--color-secondary)]">
                         <span className="block truncate">{submitProofFile ? "Change payment proof" : "Upload payment proof"}</span>
-                        <span className="block text-xs font-medium text-slate-500 transition group-hover:text-slate-600">
+                        <span className="block text-xs font-medium text-[var(--color-muted)] transition group-hover:text-[var(--color-muted)]">
                           JPG, PNG, or PDF
                         </span>
                       </span>
-                      <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-500 transition group-hover:border-[var(--color-secondary)] group-hover:bg-teal-50 group-hover:text-[var(--color-secondary)]">
+                      <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-muted)] transition group-hover:border-[var(--color-secondary)] group-hover:bg-teal-50 group-hover:text-[var(--color-secondary)]">
                         <Upload className="h-4 w-4" />
                       </span>
                     </label>
@@ -1427,7 +1427,7 @@ export function MyBookingsClient({
                         </button>
                       </div>
                     ) : (
-                      <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                      <p className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-xs text-[var(--color-muted)]">
                         No file chosen
                       </p>
                     )}
@@ -1454,7 +1454,7 @@ export function MyBookingsClient({
                 </div>
               ) : null}
               {submitError ? <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">{submitError}</p> : null}
-              <div className="sticky bottom-0 mt-1 flex justify-end gap-2 border-t border-slate-200 bg-white/95 pt-3 backdrop-blur">
+              <div className="sticky bottom-0 mt-1 flex justify-end gap-2 border-t border-[var(--color-border)] bg-white/95 pt-3 backdrop-blur">
                 <button
                   type="button"
                   onClick={closeSubmitModal}
@@ -1481,7 +1481,7 @@ export function MyBookingsClient({
           title="Check-in QR Token"
           zIndexClass="z-[70]"
           maxWidthClass="md:max-w-2xl"
-          panelClassName="max-h-[calc(100dvh-0.9rem)] border-slate-200/80 bg-white pb-[calc(1rem+env(safe-area-inset-bottom))]"
+          panelClassName="max-h-[calc(100dvh-0.9rem)] border-[var(--color-border)] bg-white pb-[calc(1rem+env(safe-area-inset-bottom))]"
           onClose={() => {
             setQrFor(null);
             setQrToken(null);
@@ -1491,10 +1491,10 @@ export function MyBookingsClient({
           }}
         >
 
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-[var(--color-muted)]">
               Reservation: <strong>{qrFor.reservation_code}</strong>
             </p>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-[var(--color-muted)]">
               Token refreshes automatically near expiry. Share this payload with the admin scanner.
             </p>
             {!networkOnline ? (
@@ -1504,11 +1504,11 @@ export function MyBookingsClient({
             ) : null}
 
             {qrError ? <p className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">{qrError}</p> : null}
-            {qrBusy ? <p className="mt-3 text-sm text-slate-600" role="status">Generating token...</p> : null}
+            {qrBusy ? <p className="mt-3 text-sm text-[var(--color-muted)]" role="status">Generating token...</p> : null}
 
             {qrToken ? (
               <>
-                <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
+                <div className="mt-3 grid gap-2 text-xs text-[var(--color-muted)] sm:grid-cols-2">
                   <p>
                     Expires: <strong>{formatLocalDateTime(qrToken.expires_at)}</strong>
                   </p>
@@ -1521,14 +1521,14 @@ export function MyBookingsClient({
                     Cached token loaded for offline display.
                   </p>
                 ) : null}
-                <div className="mt-3 flex justify-center rounded-2xl border border-slate-200/70 bg-slate-50 p-4">
+                <div className="mt-3 flex justify-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-4">
                   <QRCodeSVG value={qrCodeValue} size={300} level="M" includeMargin />
                 </div>
 
                 <textarea
                   readOnly
                   value={qrPayload}
-                  className="mt-3 min-h-[200px] w-full rounded-lg border border-slate-300 bg-slate-50 p-3 font-mono text-xs text-slate-800"
+                  className="mt-3 min-h-[200px] w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] p-3 font-mono text-xs text-[var(--color-text)]"
                 />
               </>
             ) : null}
@@ -1561,12 +1561,12 @@ export function MyBookingsClient({
           zIndexClass="z-[70]"
           overlayClassName="bg-slate-900/55"
           maxWidthClass="md:max-w-md"
-          panelClassName="max-h-[calc(100dvh-0.75rem)] border-slate-200/80 bg-white pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
+          panelClassName="max-h-[calc(100dvh-0.75rem)] border-[var(--color-border)] bg-white pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
           closeLabel="Close cancel booking dialog"
-          closeButtonClassName="h-10 w-10 rounded-full border-2 border-teal-200 bg-white text-slate-500"
+          closeButtonClassName="h-10 w-10 rounded-full border-2 border-teal-200 bg-white text-[var(--color-muted)]"
           onClose={() => setCancelFor(null)}
         >
-            <p className="text-sm text-slate-600">This booking will be cancelled and removed from active flow.</p>
+            <p className="text-sm text-[var(--color-muted)]">This booking will be cancelled and removed from active flow.</p>
             <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
               {cancellationConsequenceText(cancelFor)}
             </p>

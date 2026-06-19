@@ -1,9 +1,8 @@
-import { Settings } from "lucide-react";
+import { ShieldCheck, Wallet } from "lucide-react";
 import { redirect } from "next/navigation";
 import { GuestProfileClient } from "../../../components/guest-profile/GuestProfileClient";
+import { GuestHero } from "../../../components/guest/GuestHero";
 import { GuestShell } from "../../../components/layout/GuestShell";
-import { PageHeader } from "../../../components/layout/PageHeader";
-import { Badge } from "../../../components/shared/Badge";
 import { getServerAccessToken, getServerEmailHint } from "../../../lib/serverAuth";
 
 export default async function GuestProfilePage() {
@@ -13,22 +12,31 @@ export default async function GuestProfilePage() {
 
   return (
     <GuestShell initialEmail={emailHint}>
-      <PageHeader
-        title="Profile & Settings"
-        subtitle="Manage guest profile, account security, and optional wallet connection."
-        className="mb-0 rounded-[2rem] p-5 sm:p-6"
-        statusSlot={
-          <>
-            <Badge label="Guest account" variant="info" />
-            <Badge label="Wallet optional" variant="neutral" />
-          </>
-        }
-        rightSlot={
-          <span className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--color-muted)]">
-            <Settings className="h-3.5 w-3.5" />
-            Settings
-          </span>
-        }
+      <GuestHero
+        dark
+        eyebrow="Guest Portal"
+        title="Profile &amp; Settings"
+        contentClassName="lg:p-7"
+        rightSlot={(
+          <div className="rounded-3xl border border-white/15 bg-white/10 p-4 text-white/90 backdrop-blur">
+            <div className="flex items-center gap-2 text-base font-semibold text-white">
+              <ShieldCheck className="h-4 w-4 text-white/80" aria-hidden="true" />
+              Account &amp; security
+            </div>
+            <p className="mt-2 text-sm text-white/75">
+              Manage your guest profile, login details, and an optional wallet connection.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <span className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white/90">
+                Guest account
+              </span>
+              <span className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white/90">
+                <Wallet className="h-3 w-3" aria-hidden="true" />
+                Wallet optional
+              </span>
+            </div>
+          </div>
+        )}
       />
       <GuestProfileClient accessToken={accessToken} initialEmail={emailHint} />
     </GuestShell>
