@@ -40,10 +40,10 @@ export function ResortSnapshotPanel({
     : "--";
 
   return (
-    <section className="surface p-4 shadow-[0_10px_24px_rgba(15,23,42,0.08)] transition-[box-shadow,border-color] duration-200 hover:shadow-[0_14px_30px_rgba(15,23,42,0.12)] sm:p-5 lg:p-6">
+    <section className="surface p-5 sm:p-6 lg:p-7">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-muted)]">Resort Snapshot</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--color-secondary)]">Resort Snapshot</p>
           <h2 className="mt-2 text-xl font-bold text-[var(--color-text)] lg:text-2xl">Current occupancy, revenue, and demand</h2>
           <p className="mt-1 text-sm text-[var(--color-muted)]">
             As of{" "}
@@ -68,61 +68,61 @@ export function ResortSnapshotPanel({
         <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-4 text-sm text-red-700">{error}</div>
       ) : null}
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <article className="h-full min-h-[138px] rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50 to-emerald-100/40 p-4 shadow-[0_8px_16px_rgba(16,185,129,0.10)] transition-[box-shadow,border-color,transform] duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_22px_rgba(16,185,129,0.16)]">
-          <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-emerald-800">
-            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100">
-              <Coins className="h-3.5 w-3.5 text-emerald-700" />
+      <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <article className="group h-full min-h-[132px] rounded-2xl border border-[var(--color-border)] bg-white p-4 transition-colors duration-200 hover:border-[color:color-mix(in_srgb,var(--color-secondary)_35%,white)]">
+          <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+              <Coins className="h-4 w-4" />
             </span>
-            Cash Revenue (7d)
+            Cash revenue · 7d
           </p>
-          <p className="mt-3 text-3xl font-bold text-[var(--color-text)]">{snapshot ? formatPeso(snapshot.revenue.fiat_php_7d) : "--"}</p>
-          <p className="mt-1 text-xs font-medium text-emerald-800">Settled in 7d ({compactPeso})</p>
+          <p className="mt-3 text-3xl font-bold tracking-[-0.01em] text-[var(--color-text)]">{snapshot ? formatPeso(snapshot.revenue.fiat_php_7d) : "--"}</p>
+          <p className="mt-1 text-xs text-[var(--color-muted)]">Settled in 7d ({compactPeso})</p>
         </article>
 
-        <article className="h-full min-h-[138px] rounded-2xl border border-sky-200/80 bg-gradient-to-br from-sky-50 to-white p-4 shadow-[0_6px_14px_rgba(15,23,42,0.04)] transition-[box-shadow,border-color,transform] duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_20px_rgba(15,23,42,0.10)]">
-          <p className="inline-flex items-center gap-2 text-xs text-[var(--color-muted)]">
-            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-sky-100">
-              <Hotel className="h-3.5 w-3.5 text-[var(--color-primary)]" />
+        <article className="group h-full min-h-[132px] rounded-2xl border border-[var(--color-border)] bg-white p-4 transition-colors duration-200 hover:border-[color:color-mix(in_srgb,var(--color-secondary)_35%,white)]">
+          <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-sky-50 text-[var(--color-primary)]">
+              <Hotel className="h-4 w-4" />
             </span>
             Occupancy now
           </p>
-          <p className="mt-3 text-3xl font-bold text-[var(--color-text)]">
+          <p className="mt-3 text-3xl font-bold tracking-[-0.01em] text-[var(--color-text)]">
             {occupancyPercent !== null ? `${occupancyPercent}%` : "--"}
           </p>
-          <p className="text-xs text-[var(--color-muted)]">
+          <p className="mt-1 text-xs text-[var(--color-muted)]">
             {snapshot
               ? `${snapshot.occupancy.occupied_units}/${snapshot.occupancy.active_units} occupied`
               : "No live occupancy data"}
           </p>
         </article>
 
-        <article className="h-full min-h-[138px] rounded-2xl border border-orange-200/80 bg-gradient-to-br from-orange-50 to-white p-4 shadow-[0_6px_14px_rgba(15,23,42,0.04)] transition-[box-shadow,border-color,transform] duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_20px_rgba(15,23,42,0.10)]">
-          <p className="inline-flex items-center gap-2 text-xs text-[var(--color-muted)]">
-            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-orange-100">
-              <Activity className="h-3.5 w-3.5 text-[var(--color-cta)]" />
+        <article className="group h-full min-h-[132px] rounded-2xl border border-[var(--color-border)] bg-white p-4 transition-colors duration-200 hover:border-[color:color-mix(in_srgb,var(--color-secondary)_35%,white)]">
+          <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-orange-50 text-[var(--color-cta)]">
+              <Activity className="h-4 w-4" />
             </span>
             Crypto revenue
           </p>
-          <p className="mt-3 text-3xl font-bold text-[var(--color-text)]">
+          <p className="mt-3 text-3xl font-bold tracking-[-0.01em] text-[var(--color-text)]">
             {snapshot ? `${snapshot.revenue.crypto_native_total.toFixed(4)} ${snapshot.revenue.crypto_unit}` : "--"}
           </p>
-          <p className="text-xs text-[var(--color-muted)]">
+          <p className="mt-1 text-xs text-[var(--color-muted)]">
             {snapshot ? `${snapshot.revenue.crypto_tx_count} tx · ${snapshot.revenue.crypto_chain_key.toUpperCase()}` : "No chain activity"}
           </p>
         </article>
 
-        <article className="h-full min-h-[138px] rounded-2xl border border-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)] bg-gradient-to-br from-teal-50 to-white p-4 shadow-[0_6px_14px_rgba(15,23,42,0.04)] transition-[box-shadow,border-color,transform] duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_20px_rgba(15,23,42,0.10)]">
-          <p className="inline-flex items-center gap-2 text-xs text-[var(--color-muted)]">
-            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[color:color-mix(in_srgb,var(--color-secondary)_18%,white)]">
-              <BrainCircuit className="h-3.5 w-3.5 text-[var(--color-secondary)]" />
+        <article className="group h-full min-h-[132px] rounded-2xl border border-[var(--color-border)] bg-white p-4 transition-colors duration-200 hover:border-[color:color-mix(in_srgb,var(--color-secondary)_35%,white)]">
+          <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[color:color-mix(in_srgb,var(--color-secondary)_14%,white)] text-[var(--color-secondary)]">
+              <BrainCircuit className="h-4 w-4" />
             </span>
-            AI demand (7d)
+            AI demand · 7d
           </p>
-          <p className="mt-3 text-3xl font-bold text-[var(--color-text)]">
+          <p className="mt-3 text-3xl font-bold tracking-[-0.01em] text-[var(--color-text)]">
             {snapshot ? `${snapshot.ai_demand_7d.avg_occupancy_pct}%` : "--"}
           </p>
-          <p className="text-xs text-[var(--color-muted)]">
+          <p className="mt-1 text-xs text-[var(--color-muted)]">
             {snapshot?.ai_demand_7d.peak_date
               ? `Peak ${snapshot.ai_demand_7d.peak_occupancy_pct}% · ${snapshot.ai_demand_7d.peak_date}`
               : "No forecast generated yet"}
