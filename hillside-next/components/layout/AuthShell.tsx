@@ -161,7 +161,7 @@ export function AuthShell({
             <div
               className={
                 showSidePanel
-                  ? `rounded-none border-0 bg-white ${mobileTightContentTop ? "px-6 pb-6 pt-0" : "p-6"} shadow-none sm:rounded-2xl sm:border sm:border-[var(--color-border)] sm:p-8 sm:shadow-[var(--shadow-md)]`
+                  ? `w-full ${mobileTightContentTop ? "px-6 pb-6 pt-0" : "p-6"} sm:p-0`
                   : ""
               }
             >

@@ -291,7 +291,6 @@ export default function LoginPage() {
       sideTitle="Welcome Back!"
       sideSubtitle=""
       sideDescription="Sign in to manage your bookings and enjoy your stay."
-      sideProof="Protected by industry-standard security and encrypted connections."
       mobileBrandLine="Welcome back"
       formIntro="Sign in"
       formTitle="Sign In"
@@ -366,7 +365,7 @@ export default function LoginPage() {
           type="submit"
           className="h-12 w-full rounded-xl border-0 bg-[var(--color-cta)] text-base font-semibold text-white hover:brightness-95"
           loading={busy}
-          disabled={!agree || !email.trim() || !password}
+          disabled={busy}
         >
           {busy ? "Signing in..." : "Sign In"}
         </Button>

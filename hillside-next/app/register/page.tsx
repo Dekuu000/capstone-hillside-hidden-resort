@@ -266,7 +266,7 @@ export default function RegisterPage() {
           type="submit"
           className="h-12 w-full rounded-xl border-0 bg-[var(--color-cta)] text-base font-semibold text-white hover:brightness-95"
           loading={busy}
-          disabled={!firstName.trim() || !lastName.trim() || !email.trim() || !password || !confirmPassword || passwordTooShort || passwordMismatch || !agree}
+          disabled={busy}
         >
           {busy ? "Creating account..." : "Create Account"}
         </Button>
