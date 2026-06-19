@@ -53,9 +53,9 @@ export default async function AdminReportsPage({
   if (!accessToken) {
     return (
       <section className="mx-auto w-full max-w-[1600px]">
-        <header className="mb-4 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
-          <h1 className="text-3xl font-bold text-slate-900">Reports</h1>
-          <p className="mt-2 text-sm text-slate-600">Daily, monthly, and summary analytics via V2 API.</p>
+        <header className="mb-4 rounded-3xl border border-[var(--color-border)] bg-white p-6 shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
+          <h1 className="text-3xl font-bold text-[var(--color-text)]">Reports</h1>
+          <p className="mt-2 text-sm text-[var(--color-muted)]">Daily, monthly, and summary analytics via V2 API.</p>
         </header>
         <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
           No active session found. Sign in as admin first.
@@ -79,19 +79,19 @@ export default async function AdminReportsPage({
 
   return (
     <section className="mx-auto w-full max-w-[1600px]">
-      <header className="mb-5 rounded-3xl border border-slate-200/80 bg-white p-5 shadow-[0_10px_24px_rgba(15,23,42,0.08)] sm:p-6">
+      <header className="mb-5 rounded-3xl border border-[var(--color-border)] bg-white p-5 shadow-[0_10px_24px_rgba(15,23,42,0.08)] sm:p-6">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Analytics</p>
-            <h1 className="mt-2 text-3xl font-bold text-slate-900">Reports</h1>
-            <p className="mt-2 text-sm text-slate-600">Daily, monthly, and summary analytics via V2 API.</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)]">Analytics</p>
+            <h1 className="mt-2 text-3xl font-bold text-[var(--color-text)]">Reports</h1>
+            <p className="mt-2 text-sm text-[var(--color-muted)]">Daily, monthly, and summary analytics via V2 API.</p>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-xs text-slate-600">
-            <p className="font-semibold text-slate-900">Range</p>
+          <div className="rounded-2xl border border-[var(--color-border)] bg-white/90 px-4 py-3 text-xs text-[var(--color-muted)]">
+            <p className="font-semibold text-[var(--color-text)]">Range</p>
             <p className="mt-1">
               {formatDisplayDate(fromDate)} to {formatDisplayDate(toDate)}
             </p>
-            <p className="mt-1 text-[11px] text-slate-500">
+            <p className="mt-1 text-[11px] text-[var(--color-muted)]">
               Last updated: {formatDateTime(new Date().toISOString(), { formatOptions: { hour: "numeric", minute: "2-digit" } })}
             </p>
           </div>
@@ -114,56 +114,56 @@ export default async function AdminReportsPage({
           <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <div className="rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50 to-emerald-100/40 p-4 shadow-sm xl:col-span-2">
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">Cash Collected</p>
-              <p className="mt-2 text-3xl font-bold text-slate-900">{formatPeso(overview.summary.cash_collected)}</p>
+              <p className="mt-2 text-3xl font-bold text-[var(--color-text)]">{formatPeso(overview.summary.cash_collected)}</p>
               <p className="mt-2 text-xs font-medium text-emerald-800">Primary KPI for the selected period</p>
             </div>
-            <div className="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm">
-              <p className="text-xs text-slate-500">Bookings</p>
-              <p className="mt-1 text-2xl font-bold text-slate-900">{overview.summary.bookings}</p>
+            <div className="rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-sm">
+              <p className="text-xs text-[var(--color-muted)]">Bookings</p>
+              <p className="mt-1 text-2xl font-bold text-[var(--color-text)]">{overview.summary.bookings}</p>
             </div>
-            <div className="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm">
-              <p className="text-xs text-slate-500">Occupancy Rate</p>
-              <p className="mt-1 text-2xl font-bold text-slate-900">{formatPercent(overview.summary.occupancy_rate)}</p>
+            <div className="rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-sm">
+              <p className="text-xs text-[var(--color-muted)]">Occupancy Rate</p>
+              <p className="mt-1 text-2xl font-bold text-[var(--color-text)]">{formatPercent(overview.summary.occupancy_rate)}</p>
             </div>
-            <div className="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm">
-              <p className="text-xs text-slate-500">Net Bookings</p>
-              <p className="mt-1 text-2xl font-bold text-slate-900">{netBookings}</p>
+            <div className="rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-sm">
+              <p className="text-xs text-[var(--color-muted)]">Net Bookings</p>
+              <p className="mt-1 text-2xl font-bold text-[var(--color-text)]">{netBookings}</p>
             </div>
             <div className="rounded-2xl border border-rose-200/70 bg-rose-50/40 p-4 shadow-sm">
               <p className="text-xs text-rose-700">Cancellations</p>
               <p className="mt-1 text-2xl font-bold text-rose-700">{overview.summary.cancellations}</p>
             </div>
-            <div className="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm">
-              <p className="text-xs text-slate-500">Unit Booked Value</p>
-              <p className="mt-1 text-2xl font-bold text-slate-900">{formatPeso(overview.summary.unit_booked_value)}</p>
+            <div className="rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-sm">
+              <p className="text-xs text-[var(--color-muted)]">Unit Booked Value</p>
+              <p className="mt-1 text-2xl font-bold text-[var(--color-text)]">{formatPeso(overview.summary.unit_booked_value)}</p>
             </div>
-            <div className="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm">
-              <p className="text-xs text-slate-500">Tour Booked Value</p>
-              <p className="mt-1 text-2xl font-bold text-slate-900">{formatPeso(overview.summary.tour_booked_value)}</p>
+            <div className="rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-sm">
+              <p className="text-xs text-[var(--color-muted)]">Tour Booked Value</p>
+              <p className="mt-1 text-2xl font-bold text-[var(--color-text)]">{formatPeso(overview.summary.tour_booked_value)}</p>
             </div>
           </div>
 
-          <div className="mb-5 flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200/70 bg-white px-4 py-3 shadow-sm">
-            <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700">
+          <div className="mb-5 flex flex-wrap items-center gap-2 rounded-2xl border border-[var(--color-border)] bg-white px-4 py-3 shadow-sm">
+            <span className="inline-flex items-center rounded-full border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-1 text-xs font-semibold text-[var(--color-text)]">
               Net bookings: {netBookings}
             </span>
-            <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700">
+            <span className="inline-flex items-center rounded-full border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-1 text-xs font-semibold text-[var(--color-text)]">
               Cancellation rate: {Math.round(cancellationRate * 100)}%
             </span>
-            <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700">
+            <span className="inline-flex items-center rounded-full border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-1 text-xs font-semibold text-[var(--color-text)]">
               Range: {formatDisplayDate(fromDate)} - {formatDisplayDate(toDate)}
             </span>
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
-            <section className="overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-sm">
-              <header className="border-b border-slate-100 px-4 py-3">
-                <h2 className="text-sm font-semibold text-slate-900">Daily</h2>
-                <p className="mt-1 text-xs text-slate-500">Performance breakdown by day</p>
+            <section className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white shadow-sm">
+              <header className="border-b border-[var(--color-border)] px-4 py-3">
+                <h2 className="text-sm font-semibold text-[var(--color-text)]">Daily</h2>
+                <p className="mt-1 text-xs text-[var(--color-muted)]">Performance breakdown by day</p>
               </header>
               <div className="max-h-[420px] overflow-auto">
                 <table className="min-w-full text-sm">
-                  <thead className="sticky top-0 z-10 bg-slate-50 text-slate-600">
+                  <thead className="sticky top-0 z-10 bg-[var(--color-background)] text-[var(--color-muted)]">
                     <tr>
                       <th className="px-4 py-2 text-left">Date</th>
                       <th className="px-4 py-2 text-center">Bookings</th>
@@ -172,7 +172,7 @@ export default async function AdminReportsPage({
                   </thead>
                   <tbody>
                     {overview.daily.map((row) => (
-                      <tr key={row.report_date} className="border-t border-slate-100 hover:bg-slate-50/80">
+                      <tr key={row.report_date} className="border-t border-[var(--color-border)] hover:bg-[var(--color-background)]">
                         <td className="px-4 py-2">{formatDisplayDate(row.report_date)}</td>
                         <td className="px-4 py-2 text-center">{row.bookings}</td>
                         <td className="px-4 py-2 text-right font-semibold">{formatPeso(row.cash_collected)}</td>
@@ -183,14 +183,14 @@ export default async function AdminReportsPage({
               </div>
             </section>
 
-            <section className="overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-sm">
-              <header className="border-b border-slate-100 px-4 py-3">
-                <h2 className="text-sm font-semibold text-slate-900">Monthly</h2>
-                <p className="mt-1 text-xs text-slate-500">Aggregated summary by month</p>
+            <section className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white shadow-sm">
+              <header className="border-b border-[var(--color-border)] px-4 py-3">
+                <h2 className="text-sm font-semibold text-[var(--color-text)]">Monthly</h2>
+                <p className="mt-1 text-xs text-[var(--color-muted)]">Aggregated summary by month</p>
               </header>
               <div className="max-h-[420px] overflow-auto">
                 <table className="min-w-full text-sm">
-                  <thead className="sticky top-0 z-10 bg-slate-50 text-slate-600">
+                  <thead className="sticky top-0 z-10 bg-[var(--color-background)] text-[var(--color-muted)]">
                     <tr>
                       <th className="px-4 py-2 text-left">Month</th>
                       <th className="px-4 py-2 text-center">Bookings</th>
@@ -199,7 +199,7 @@ export default async function AdminReportsPage({
                   </thead>
                   <tbody>
                     {overview.monthly.map((row) => (
-                      <tr key={row.report_month} className="border-t border-slate-100 hover:bg-slate-50/80">
+                      <tr key={row.report_month} className="border-t border-[var(--color-border)] hover:bg-[var(--color-background)]">
                         <td className="px-4 py-2">{formatDisplayMonth(row.report_month)}</td>
                         <td className="px-4 py-2 text-center">{row.bookings}</td>
                         <td className="px-4 py-2 text-right font-semibold">{formatPeso(row.cash_collected)}</td>

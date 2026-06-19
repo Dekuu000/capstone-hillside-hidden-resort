@@ -59,9 +59,9 @@ function getServiceCategoryBadge(category?: string | null) {
     return { label: "Spa", className: "bg-purple-100 text-purple-800" };
   }
   if (category === "room_service") {
-    return { label: "Room Service", className: "bg-teal-100 text-teal-800" };
+    return { label: "Room Service", className: "bg-[color:color-mix(in_srgb,var(--color-secondary)_18%,white)] text-[var(--color-secondary)]" };
   }
-  return { label: "Service", className: "bg-slate-100 text-slate-700" };
+  return { label: "Service", className: "bg-[var(--color-background)] text-[var(--color-text)]" };
 }
 
 export function AdminServicesClient({ accessToken }: Props) {
@@ -274,7 +274,7 @@ export function AdminServicesClient({ accessToken }: Props) {
                     {getServiceCategoryBadge(row.service_item?.category).label}
                   </span>
                   <span
-                    className={`rounded-full px-2 py-1 text-xs font-semibold ${STATUS_STYLE[row.status] || "bg-slate-100 text-slate-700"}`}
+                    className={`rounded-full px-2 py-1 text-xs font-semibold ${STATUS_STYLE[row.status] || "bg-[var(--color-background)] text-[var(--color-text)]"}`}
                   >
                     {row.status.replaceAll("_", " ")}
                   </span>
@@ -300,30 +300,30 @@ export function AdminServicesClient({ accessToken }: Props) {
       >
         {activeRow ? (
           <div className="space-y-4">
-            <section className="rounded-xl border border-[var(--color-border)] bg-slate-50 p-3 text-sm text-[var(--color-text)]">
+            <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3 text-sm text-[var(--color-text)]">
               <div className="grid gap-2 sm:grid-cols-2">
                 <div className="inline-flex items-start gap-2">
-                  <UserRound className="mt-0.5 h-4 w-4 text-slate-500" />
+                  <UserRound className="mt-0.5 h-4 w-4 text-[var(--color-muted)]" />
                   <p><strong>Guest:</strong> {activeRow.guest?.name || activeRow.guest?.email || "-"}</p>
                 </div>
                 <div className="inline-flex items-start gap-2">
-                  <Hash className="mt-0.5 h-4 w-4 text-slate-500" />
+                  <Hash className="mt-0.5 h-4 w-4 text-[var(--color-muted)]" />
                   <p><strong>Reservation:</strong> {activeRow.reservation?.reservation_code || "-"}</p>
                 </div>
                 <div className="inline-flex items-start gap-2">
-                  <Package className="mt-0.5 h-4 w-4 text-slate-500" />
+                  <Package className="mt-0.5 h-4 w-4 text-[var(--color-muted)]" />
                   <p><strong>Quantity:</strong> {activeRow.quantity}</p>
                 </div>
                 <div className="inline-flex items-start gap-2">
-                  <ReceiptText className="mt-0.5 h-4 w-4 text-slate-500" />
+                  <ReceiptText className="mt-0.5 h-4 w-4 text-[var(--color-muted)]" />
                   <p><strong>Price:</strong> {toPeso(Number(activeRow.service_item?.price || 0))}</p>
                 </div>
                 <div className="inline-flex items-start gap-2 sm:col-span-2">
-                  <CalendarClock className="mt-0.5 h-4 w-4 text-slate-500" />
+                  <CalendarClock className="mt-0.5 h-4 w-4 text-[var(--color-muted)]" />
                   <p><strong>Requested:</strong> {formatDateTime(activeRow.requested_at)}</p>
                 </div>
                 <div className="inline-flex items-start gap-2 sm:col-span-2">
-                  <Wrench className="mt-0.5 h-4 w-4 text-slate-500" />
+                  <Wrench className="mt-0.5 h-4 w-4 text-[var(--color-muted)]" />
                   <p>
                     <strong>Preferred time:</strong>{" "}
                     {activeRow.preferred_time ? formatDateTime(activeRow.preferred_time) : "-"}
@@ -345,7 +345,7 @@ export function AdminServicesClient({ accessToken }: Props) {
                 type="button"
                 disabled={actionBusy || activeRow.status === "in_progress"}
                 onClick={() => void updateStatus(activeRow.request_id, "in_progress")}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)] shadow-sm transition hover:bg-slate-50 disabled:opacity-50"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)] shadow-sm transition hover:bg-[var(--color-background)] disabled:opacity-50"
               >
                 <PlayCircle className="h-4 w-4 text-amber-600" />
                 Start

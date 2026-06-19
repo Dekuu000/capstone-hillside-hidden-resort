@@ -1293,7 +1293,7 @@ export function AdminCheckinClient({
               detail: "text-red-700",
             }
           : {
-              box: "border-[var(--color-border)] bg-slate-50",
+              box: "border-[var(--color-border)] bg-[var(--color-background)]",
               title: "text-[var(--color-text)]",
               detail: "text-[var(--color-muted)]",
             };
@@ -1482,7 +1482,7 @@ export function AdminCheckinClient({
             />
           </div>
           <ScanSegmentedControl value={mode} onChange={(value) => setMode(value as Mode)} queueCount={pendingQueueCount} />
-          <div className="mt-3 rounded-xl border border-[var(--color-border)] bg-slate-50 p-3">
+          <div className="mt-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">Offline check-in data</p>
               <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap sm:overflow-visible">
@@ -1583,7 +1583,7 @@ export function AdminCheckinClient({
                   hint={SCAN_HINTS[scanHintIndex] || SCAN_HINTS[0]}
                   cameraHeightClassName={tabletView ? "h-[320px] sm:h-[440px] md:h-[520px]" : undefined}
                 />
-                <div className="rounded-lg border border-[var(--color-border)] bg-slate-50 px-3 py-2 text-xs text-[var(--color-muted)]">
+                <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-xs text-[var(--color-muted)]">
                   QR token rotates by server policy. Rescan if expired.
                   {tokenSecondsLeft != null ? (
                     <span className="ml-2 font-semibold text-[var(--color-text)]">Expires in {tokenSecondsLeft}s</span>
@@ -1675,7 +1675,7 @@ export function AdminCheckinClient({
             ) : null}
 
             {mode === "queue" ? (
-              <div className="rounded-xl border border-[var(--color-border)] bg-slate-50 p-3">
+              <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-sm font-semibold text-[var(--color-text)]">Offline Queue</p>
                   <StatusPill label={networkOnline ? "Online" : "Offline"} tone={networkOnline ? "success" : "warn"} />
@@ -1697,7 +1697,7 @@ export function AdminCheckinClient({
                 {queue.length > 0 ? (
                   <div className="mt-3 max-h-40 space-y-2 overflow-y-auto rounded-lg border border-[var(--color-border)] bg-white p-2">
                     {queue.slice(0, 8).map((item) => (
-                      <article key={item.id} className="rounded-md border border-[var(--color-border)] bg-slate-50 px-2 py-1.5">
+                      <article key={item.id} className="rounded-md border border-[var(--color-border)] bg-[var(--color-background)] px-2 py-1.5">
                         <div className="flex items-center justify-between gap-2">
                           <p className="text-[11px] font-semibold text-[var(--color-text)]">{item.reservationCode}</p>
                           <StatusPill
@@ -1763,7 +1763,7 @@ export function AdminCheckinClient({
                     </div>
                     <div className="max-h-44 space-y-1.5 overflow-y-auto pr-1">
                       {syncReport.slice(0, 12).map((entry) => (
-                        <article key={entry.id} className="rounded-md border border-[var(--color-border)] bg-slate-50 px-2 py-1.5">
+                        <article key={entry.id} className="rounded-md border border-[var(--color-border)] bg-[var(--color-background)] px-2 py-1.5">
                           <div className="flex items-center justify-between gap-2">
                             <p className="text-[11px] font-semibold text-[var(--color-text)]">{entry.label}</p>
                             <div className="flex items-center gap-1.5">
@@ -1817,10 +1817,10 @@ export function AdminCheckinClient({
 
           <section ref={resultCardRef} className={`surface flex-1 p-3 sm:p-4 xl:sticky ${tabletView ? "xl:top-2" : "xl:top-4"}`}>
             <p className="text-sm font-semibold text-[var(--color-text)] sm:text-base">Result Card</p>
-            {!result ? <p className="mt-2 rounded-xl border border-dashed border-[var(--color-border)] bg-slate-50 p-3 text-sm text-[var(--color-muted)]">No validated reservation yet.</p> : (
+            {!result ? <p className="mt-2 rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-background)] p-3 text-sm text-[var(--color-muted)]">No validated reservation yet.</p> : (
               <div className="mt-3 space-y-3">
-                <div className="grid gap-2 sm:grid-cols-2"><div className="rounded-xl border border-[var(--color-border)] bg-slate-50 p-3"><p className="text-xs text-[var(--color-muted)]">Reservation</p><p className="font-semibold">{result.reservation_code}</p></div><div className="rounded-xl border border-[var(--color-border)] bg-slate-50 p-3"><p className="text-xs text-[var(--color-muted)]">Reservation status</p><p className="font-semibold">{resultStatusLabel}</p></div></div>
-                <div className="rounded-xl border border-[var(--color-border)] bg-slate-50 p-3"><p className="text-xs text-[var(--color-muted)]">Stay dates</p>{detailLoading ? <div className="mt-1 space-y-1"><Skeleton className="h-4 w-36" /><Skeleton className="h-4 w-28" /></div> : <p className="font-semibold">{formatDateWithYear(detail?.check_in_date)} - {formatDateWithYear(detail?.check_out_date)}</p>}</div>
+                <div className="grid gap-2 sm:grid-cols-2"><div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3"><p className="text-xs text-[var(--color-muted)]">Reservation</p><p className="font-semibold">{result.reservation_code}</p></div><div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3"><p className="text-xs text-[var(--color-muted)]">Reservation status</p><p className="font-semibold">{resultStatusLabel}</p></div></div>
+                <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3"><p className="text-xs text-[var(--color-muted)]">Stay dates</p>{detailLoading ? <div className="mt-1 space-y-1"><Skeleton className="h-4 w-36" /><Skeleton className="h-4 w-28" /></div> : <p className="font-semibold">{formatDateWithYear(detail?.check_in_date)} - {formatDateWithYear(detail?.check_out_date)}</p>}</div>
                 <div className={`rounded-xl border p-3 ${flowToneClasses.box}`}>
                   <p className={`text-sm font-semibold ${flowToneClasses.title}`}>{flowStatus.label}</p>
                   <p className={`mt-1 text-xs ${flowToneClasses.detail}`}>{flowStatus.detail}</p>

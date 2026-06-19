@@ -654,9 +654,9 @@ export function AdminPaymentsClient({
   if (!token) {
     return (
       <section className="mx-auto w-full max-w-[1720px]">
-        <header className="mb-4 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
-          <h1 className="text-3xl font-bold text-slate-900">Payments Console</h1>
-          <p className="mt-2 text-sm text-slate-600">Verification inbox, on-site payments, and payment history.</p>
+        <header className="mb-4 rounded-3xl border border-[var(--color-border)] bg-white p-6 shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
+          <h1 className="text-3xl font-bold text-[var(--color-text)]">Payments Console</h1>
+          <p className="mt-2 text-sm text-[var(--color-muted)]">Verification inbox, on-site payments, and payment history.</p>
         </header>
         <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
           No active session found. Sign in as admin first.
@@ -667,12 +667,12 @@ export function AdminPaymentsClient({
 
   return (
     <section className="mx-auto w-full max-w-[1720px]">
-      <header className="mb-5 rounded-3xl border border-slate-200/80 bg-white p-5 shadow-[0_10px_24px_rgba(15,23,42,0.08)] sm:p-6">
+      <header className="mb-5 rounded-3xl border border-[var(--color-border)] bg-white p-5 shadow-[0_10px_24px_rgba(15,23,42,0.08)] sm:p-6">
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Payments Desk</p>
-            <h1 className="mt-2 text-3xl font-bold text-slate-900">Payments Console</h1>
-            <p className="mt-2 text-sm text-slate-600">Verification inbox, on-site payments, and payment history.</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)]">Payments Desk</p>
+            <h1 className="mt-2 text-3xl font-bold text-[var(--color-text)]">Payments Console</h1>
+            <p className="mt-2 text-sm text-[var(--color-muted)]">Verification inbox, on-site payments, and payment history.</p>
             <div className="mt-2 md:hidden">
               <DataFreshnessBadge />
             </div>
@@ -681,18 +681,18 @@ export function AdminPaymentsClient({
             <div className="hidden md:block">
               <DataFreshnessBadge />
             </div>
-            <div className="rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-xs text-slate-600">
-              <p className="font-semibold text-slate-900">Queue snapshot</p>
+            <div className="rounded-2xl border border-[var(--color-border)] bg-white/90 px-4 py-3 text-xs text-[var(--color-muted)]">
+              <p className="font-semibold text-[var(--color-text)]">Queue snapshot</p>
               <p className="mt-1">{count} total records</p>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="mb-5 rounded-2xl border border-slate-200/80 bg-white p-3 shadow-[0_8px_20px_rgba(15,23,42,0.06)] lg:p-3.5">
+      <div className="mb-5 rounded-2xl border border-[var(--color-border)] bg-white p-3 shadow-[0_8px_20px_rgba(15,23,42,0.06)] lg:p-3.5">
         <div className="grid gap-2 xl:grid-cols-[760px_minmax(0,1fr)] xl:items-center">
           <div
-            className="grid grid-cols-2 gap-1 rounded-xl border border-slate-200/80 bg-slate-50 p-1 sm:grid-cols-4 md:grid-cols-7 xl:min-w-[760px]"
+            className="grid grid-cols-2 gap-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-1 sm:grid-cols-4 md:grid-cols-7 xl:min-w-[760px]"
             role="tablist"
             aria-label="Payment workflow filters"
           >
@@ -713,10 +713,10 @@ export function AdminPaymentsClient({
                   }}
                   className={`inline-flex h-9 items-center justify-center gap-1 rounded-lg px-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 ${
                     isActive
-                      ? "border border-slate-900 bg-white text-slate-900 shadow-sm"
+                      ? "border border-slate-900 bg-white text-[var(--color-text)] shadow-sm"
                       : filterDef.id === "all"
-                        ? "border border-transparent text-slate-500 hover:bg-white hover:text-slate-700"
-                        : "border border-transparent text-slate-600 hover:bg-white hover:text-slate-900"
+                        ? "border border-transparent text-[var(--color-muted)] hover:bg-white hover:text-[var(--color-text)]"
+                        : "border border-transparent text-[var(--color-muted)] hover:bg-white hover:text-[var(--color-text)]"
                   }`}
                 >
                   <span>{filterDef.label}</span>
@@ -725,22 +725,22 @@ export function AdminPaymentsClient({
             })}
           </div>
 
-          <div className="relative flex-1 rounded-xl border border-slate-200/80 bg-slate-50 p-1.5">
+          <div className="relative flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-1.5">
             <div className="flex flex-col gap-2 sm:flex-row">
-              <div className="flex h-9 flex-1 items-center rounded-lg border border-slate-300 bg-white px-2">
+              <div className="flex h-9 flex-1 items-center rounded-lg border border-[var(--color-border)] bg-white px-2">
                 <Search className="h-4 w-4 text-slate-400" />
                 <input
                   type="text"
                   value={searchInput}
                   onChange={(event) => setSearchInput(event.target.value)}
                   placeholder="Search reservation, guest, or reference"
-                  className="h-full flex-1 border-0 bg-transparent px-2 text-sm text-slate-700 outline-none"
+                  className="h-full flex-1 border-0 bg-transparent px-2 text-sm text-[var(--color-text)] outline-none"
                 />
                 {searchInput ? (
                   <button
                     type="button"
                     onClick={() => setSearchInput("")}
-                    className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100"
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[var(--color-muted)] hover:bg-[var(--color-background)]"
                     aria-label="Clear search"
                   >
                     <X className="h-4 w-4" />
@@ -754,7 +754,7 @@ export function AdminPaymentsClient({
                   onClick={() => setFiltersOpen((prev) => !prev)}
                   aria-expanded={filtersOpen}
                   aria-controls="payments-filters-popover"
-                  className="inline-flex h-9 items-center justify-center gap-1 rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                  className="inline-flex h-9 items-center justify-center gap-1 rounded-lg border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
                 >
                   <SlidersHorizontal className="h-4 w-4" />
                   Filters
@@ -771,7 +771,7 @@ export function AdminPaymentsClient({
                       setToDateFilter("");
                       setPage(1);
                     }}
-                    className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                    className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
                   >
                     Clear filters
                   </button>
@@ -782,11 +782,11 @@ export function AdminPaymentsClient({
             {filtersOpen ? (
               <div
                 id="payments-filters-popover"
-                className="absolute right-2 top-[calc(100%+6px)] z-30 w-full max-w-[360px] rounded-xl border border-slate-200 bg-white p-3 shadow-lg"
+                className="absolute right-2 top-[calc(100%+6px)] z-30 w-full max-w-[360px] rounded-xl border border-[var(--color-border)] bg-white p-3 shadow-lg"
               >
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Filters</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">Filters</p>
                 <div className="mt-2 grid gap-2">
-                  <label className="grid gap-1 text-xs text-slate-600">
+                  <label className="grid gap-1 text-xs text-[var(--color-muted)]">
                     Payment method
                     <select
                       value={methodFilter}
@@ -794,7 +794,7 @@ export function AdminPaymentsClient({
                         setMethodFilter(event.target.value);
                         setPage(1);
                       }}
-                      className="h-9 rounded-lg border border-slate-300 bg-slate-50 px-2 text-sm text-slate-700"
+                      className="h-9 rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-2 text-sm text-[var(--color-text)]"
                     >
                       <option value="">All methods</option>
                       <option value="cash">Cash</option>
@@ -848,14 +848,14 @@ export function AdminPaymentsClient({
             <div className="flex flex-wrap gap-2">
               <Link
                 href={walkInFlowType === "tour" ? "/admin/walk-in?tab=tour" : "/admin/walk-in?tab=stay"}
-                className="inline-flex rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                className="inline-flex rounded-md border border-[var(--color-border)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
               >
                 {walkInFlowType === "tour" ? "Create another walk-in tour" : "Create another walk-in"}
               </Link>
               {reservationContext?.reservation_code ? (
                 <Link
                   href={`/admin/reservations?reservation_id=${encodeURIComponent(reservationContext.reservation_id)}`}
-                  className="inline-flex rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                  className="inline-flex rounded-md border border-[var(--color-border)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
                 >
                   View reservation
                 </Link>
@@ -869,56 +869,56 @@ export function AdminPaymentsClient({
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-600">Walk-in</p>
-            <h3 className="text-sm font-semibold text-slate-900">Record On-site Payment</h3>
+            <h3 className="text-sm font-semibold text-[var(--color-text)]">Record On-site Payment</h3>
           </div>
-          <p className="text-xs text-slate-500">Front-desk payment capture for walk-ins and manual collections.</p>
+          <p className="text-xs text-[var(--color-muted)]">Front-desk payment capture for walk-ins and manual collections.</p>
         </div>
 
         <div className="grid gap-3 lg:grid-cols-5">
-          <aside className="order-1 rounded-xl border border-slate-200 bg-slate-50 p-3 lg:order-2 lg:col-span-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Payment Summary</p>
+          <aside className="order-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3 lg:order-2 lg:col-span-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-muted)]">Payment Summary</p>
             {reservationContextLoading ? (
-              <p className="mt-2 text-xs text-slate-500">Loading reservation details...</p>
+              <p className="mt-2 text-xs text-[var(--color-muted)]">Loading reservation details...</p>
             ) : (
               <div className="mt-2 space-y-2 text-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-600">Reservation code</span>
-                  <span className="font-semibold text-slate-900">{reservationContext?.reservation_code ?? "-"}</span>
+                  <span className="text-[var(--color-muted)]">Reservation code</span>
+                  <span className="font-semibold text-[var(--color-text)]">{reservationContext?.reservation_code ?? "-"}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-600">Reservation status</span>
-                  <span className="font-semibold text-slate-900">
+                  <span className="text-[var(--color-muted)]">Reservation status</span>
+                  <span className="font-semibold text-[var(--color-text)]">
                     {(reservationContext?.status ?? "pending_payment").replaceAll("_", " ")}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-600">Total due</span>
-                  <span className="font-semibold text-slate-900">{formatPeso(reservationTotal)}</span>
+                  <span className="text-[var(--color-muted)]">Total due</span>
+                  <span className="font-semibold text-[var(--color-text)]">{formatPeso(reservationTotal)}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-600">Total paid</span>
-                  <span className="font-semibold text-slate-900">{formatPeso(reservationPaidVerified)}</span>
+                  <span className="text-[var(--color-muted)]">Total paid</span>
+                  <span className="font-semibold text-[var(--color-text)]">{formatPeso(reservationPaidVerified)}</span>
                 </div>
-                <div className="flex items-center justify-between border-t border-slate-200 pt-2">
-                  <span className="text-slate-700">Remaining balance</span>
+                <div className="flex items-center justify-between border-t border-[var(--color-border)] pt-2">
+                  <span className="text-[var(--color-text)]">Remaining balance</span>
                   <span className={`font-semibold ${hasOutstandingBalance ? "text-amber-700" : "text-emerald-700"}`}>
                     {formatPeso(reservationBalance)}
                   </span>
                 </div>
                 {reservationContext?.policy_outcome ? (
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-600">Policy outcome</span>
-                    <span className="font-semibold text-slate-900">
+                    <span className="text-[var(--color-muted)]">Policy outcome</span>
+                    <span className="font-semibold text-[var(--color-text)]">
                       {policyOutcomeMeta(reservationContext.policy_outcome)?.label ?? reservationContext.policy_outcome}
                     </span>
                   </div>
                 ) : null}
                 {reservationContext?.deposit_rule_applied ? (
-                  <p className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-600">
+                  <p className="rounded-lg border border-[var(--color-border)] bg-white px-2 py-1.5 text-xs text-[var(--color-muted)]">
                     Deposit rule: {policyRuleLabel(reservationContext.deposit_rule_applied) ?? reservationContext.deposit_rule_applied}
                   </p>
                 ) : null}
-                <p className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-600">
+                <p className="rounded-lg border border-[var(--color-border)] bg-white px-2 py-1.5 text-xs text-[var(--color-muted)]">
                   Recording payment updates reservation balance immediately and moves eligible reservations toward check-in.
                 </p>
                 {Number.isFinite(enteredAmount) && enteredAmount > 0 ? (
@@ -944,7 +944,7 @@ export function AdminPaymentsClient({
 
           <div className="order-2 lg:order-1 lg:col-span-3">
             <div className="grid gap-3">
-              <label className="grid gap-1 text-xs text-slate-600">
+              <label className="grid gap-1 text-xs text-[var(--color-muted)]">
                 Reservation Code
                 <input
                   type="text"
@@ -954,15 +954,15 @@ export function AdminPaymentsClient({
                     setReservationContext(null);
                   }}
                   placeholder="HR-20260309-ABCD"
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+                  className="rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm"
                 />
-                <span className="text-[11px] text-slate-500">Use the reservation code from booking, QR, or front-desk slip.</span>
+                <span className="text-[11px] text-[var(--color-muted)]">Use the reservation code from booking, QR, or front-desk slip.</span>
               </label>
 
-              <label className="grid gap-1 text-xs text-slate-600">
+              <label className="grid gap-1 text-xs text-[var(--color-muted)]">
                 Amount Received
                 <div className="relative">
-                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">&#8369;</span>
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-[var(--color-muted)]">&#8369;</span>
                   <input
                     ref={amountInputRef}
                     type="number"
@@ -972,7 +972,7 @@ export function AdminPaymentsClient({
                       setOnSiteAmount(event.target.value);
                       setAmountPreset("custom");
                     }}
-                    className="w-full rounded-lg border border-slate-300 bg-white py-2 pl-7 pr-3 text-sm"
+                    className="w-full rounded-lg border border-[var(--color-border)] bg-white py-2 pl-7 pr-3 text-sm"
                   />
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -986,7 +986,7 @@ export function AdminPaymentsClient({
                     className={`inline-flex h-7 items-center rounded-full border px-2.5 text-xs font-semibold disabled:opacity-50 ${
                       amountPreset === "full"
                         ? "border-emerald-700 bg-emerald-700 text-white"
-                        : "border-slate-300 bg-white text-slate-700"
+                        : "border-[var(--color-border)] bg-white text-[var(--color-text)]"
                     }`}
                   >
                     Full
@@ -1001,7 +1001,7 @@ export function AdminPaymentsClient({
                     className={`inline-flex h-7 items-center rounded-full border px-2.5 text-xs font-semibold disabled:opacity-50 ${
                       amountPreset === "half"
                         ? "border-emerald-700 bg-emerald-700 text-white"
-                        : "border-slate-300 bg-white text-slate-700"
+                        : "border-[var(--color-border)] bg-white text-[var(--color-text)]"
                     }`}
                   >
                     Half
@@ -1015,7 +1015,7 @@ export function AdminPaymentsClient({
                     className={`inline-flex h-7 items-center rounded-full border px-2.5 text-xs font-semibold ${
                       amountPreset === "custom"
                         ? "border-emerald-700 bg-emerald-700 text-white"
-                        : "border-slate-300 bg-white text-slate-700"
+                        : "border-[var(--color-border)] bg-white text-[var(--color-text)]"
                     }`}
                   >
                     Custom
@@ -1023,7 +1023,7 @@ export function AdminPaymentsClient({
                 </div>
               </label>
 
-              <label className="grid gap-1 text-xs text-slate-600">
+              <label className="grid gap-1 text-xs text-[var(--color-muted)]">
                 Payment Method
                 <select
                   value={onSiteMethod}
@@ -1034,7 +1034,7 @@ export function AdminPaymentsClient({
                       setOnSiteReferenceNo("");
                     }
                   }}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+                  className="rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm"
                 >
                   <option value="cash">Cash</option>
                   <option value="gcash">GCash</option>
@@ -1042,19 +1042,19 @@ export function AdminPaymentsClient({
                   <option value="card">Card</option>
                 </select>
                 {requiresReference ? (
-                  <span className="text-[11px] text-slate-500">Reference number is required for this payment method.</span>
+                  <span className="text-[11px] text-[var(--color-muted)]">Reference number is required for this payment method.</span>
                 ) : null}
               </label>
 
               {requiresReference ? (
-                <label className="grid gap-1 text-xs text-slate-600">
+                <label className="grid gap-1 text-xs text-[var(--color-muted)]">
                   Reference Number
                   <input
                     type="text"
                     value={onSiteReferenceNo}
                     onChange={(event) => setOnSiteReferenceNo(event.target.value)}
                     placeholder="Receipt / transfer reference"
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+                    className="rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm"
                   />
                 </label>
               ) : null}
@@ -1081,14 +1081,14 @@ export function AdminPaymentsClient({
             <div className="mt-2 flex flex-wrap gap-2">
               <Link
                 href={walkInFlowType === "tour" ? "/admin/walk-in?tab=tour" : "/admin/walk-in?tab=stay"}
-                className="inline-flex rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                className="inline-flex rounded-lg border border-[var(--color-border)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
               >
                 {walkInFlowType === "tour" ? "Create another walk-in tour" : "Create another walk-in"}
               </Link>
               {lastProcessedReservation?.reservationId ? (
                 <Link
                   href={`/admin/reservations?reservation_id=${encodeURIComponent(lastProcessedReservation.reservationId)}`}
-                  className="inline-flex rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                  className="inline-flex rounded-lg border border-[var(--color-border)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
                 >
                   View reservation
                 </Link>
@@ -1096,7 +1096,7 @@ export function AdminPaymentsClient({
               {walkInFlowType === "tour" && lastProcessedReservation?.reservationCode ? (
                 <Link
                   href={`/admin/check-in?mode=code&reservation_code=${encodeURIComponent(lastProcessedReservation.reservationCode)}`}
-                  className="inline-flex rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                  className="inline-flex rounded-lg border border-[var(--color-border)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
                 >
                   Mark arrived / Check in
                 </Link>
@@ -1116,14 +1116,14 @@ export function AdminPaymentsClient({
           <span>{error}</span>
         </div>
       ) : null}
-      {loading ? <p className="mb-3 text-sm text-slate-600">Loading payments...</p> : null}
+      {loading ? <p className="mb-3 text-sm text-[var(--color-muted)]">Loading payments...</p> : null}
 
       {!loading && count === 0 ? (
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-8 text-center shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
-          <h3 className="text-lg font-semibold text-slate-900">
+        <div className="rounded-2xl border border-[var(--color-border)] bg-white p-8 text-center shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
+          <h3 className="text-lg font-semibold text-[var(--color-text)]">
             {isToReview ? "No payment submissions to review" : "No payment history in this tab"}
           </h3>
-          <p className="mt-2 text-sm text-slate-600">
+          <p className="mt-2 text-sm text-[var(--color-muted)]">
             {isToReview ? "Only pending submissions with proof/reference appear here." : "Try another tab or search."}
           </p>
           {isToReview ? (
@@ -1138,10 +1138,10 @@ export function AdminPaymentsClient({
       ) : null}
 
       {count > 0 ? (
-        <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
+        <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-[13px] leading-5">
-              <thead className="bg-slate-50/90 text-slate-600">
+              <thead className="bg-[var(--color-background)] text-[var(--color-muted)]">
                 <tr>
                   <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em]">Reservation</th>
                   <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em]">Source</th>
@@ -1164,24 +1164,24 @@ export function AdminPaymentsClient({
                   const resMeta = getReservationStatusMeta(reservationStatus, "payments");
                   const outcomeMeta = policyOutcomeMeta(payment.reservation?.policy_outcome);
                   return (
-                    <tr key={payment.payment_id} className="border-t border-slate-100 hover:bg-slate-50/80 even:bg-slate-50/30">
+                    <tr key={payment.payment_id} className="border-t border-[var(--color-border)] hover:bg-[var(--color-background)] even:bg-[var(--color-background)]">
                       <td className="px-3 py-2.5 align-top">
-                        <p className="font-mono font-semibold text-slate-900">{payment.reservation?.reservation_code ?? "-"}</p>
-                        <p className="text-xs text-slate-500">{formatDateTime(payment.created_at)}</p>
+                        <p className="font-mono font-semibold text-[var(--color-text)]">{payment.reservation?.reservation_code ?? "-"}</p>
+                        <p className="text-xs text-[var(--color-muted)]">{formatDateTime(payment.created_at)}</p>
                         {payment.webhook_audit ? (
-                          <div className="mt-1.5 rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] leading-4 text-slate-600">
+                          <div className="mt-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-background)] px-2 py-1 text-[11px] leading-4 text-[var(--color-muted)]">
                             <p>
-                              <span className="font-semibold text-slate-700">Webhook:</span>{" "}
+                              <span className="font-semibold text-[var(--color-text)]">Webhook:</span>{" "}
                               {payment.webhook_audit.event_type || "-"} · {payment.webhook_audit.dedupe_result || "-"}
                             </p>
                             <p>
-                              <span className="font-semibold text-slate-700">Link:</span>{" "}
+                              <span className="font-semibold text-[var(--color-text)]">Link:</span>{" "}
                               {shortHash(payment.webhook_audit.linked_payment_id || payment.payment_id)} /{" "}
                               {shortHash(payment.webhook_audit.linked_reservation_id || payment.reservation_id)}
                             </p>
                             {payment.webhook_audit.chain_proof_reference ? (
                               <p>
-                                <span className="font-semibold text-slate-700">Chain proof:</span>{" "}
+                                <span className="font-semibold text-[var(--color-text)]">Chain proof:</span>{" "}
                                 {shortHash(payment.webhook_audit.chain_proof_reference)}
                               </p>
                             ) : null}
@@ -1212,18 +1212,18 @@ export function AdminPaymentsClient({
                           ) : null}
                         </div>
                         {payment.reservation?.deposit_rule_applied ? (
-                          <p className="mt-1 text-[11px] text-slate-500">
+                          <p className="mt-1 text-[11px] text-[var(--color-muted)]">
                             {policyRuleLabel(payment.reservation.deposit_rule_applied) ?? payment.reservation.deposit_rule_applied}
                           </p>
                         ) : null}
                       </td>
                       <td className="px-3 py-2.5 align-top">
-                        <p className="font-medium text-slate-900">{payment.reservation?.guest?.name || payment.reservation?.guest?.email || "-"}</p>
-                        <p className="text-xs text-slate-500">{payment.reservation?.guest?.email || "-"}</p>
+                        <p className="font-medium text-[var(--color-text)]">{payment.reservation?.guest?.name || payment.reservation?.guest?.email || "-"}</p>
+                        <p className="text-xs text-[var(--color-muted)]">{payment.reservation?.guest?.email || "-"}</p>
                       </td>
-                      <td className="px-3 py-2.5 align-top font-semibold text-slate-900">{formatPeso(payment.amount)}</td>
-                      <td className="px-3 py-2.5 align-top capitalize text-slate-700">{payment.method}</td>
-                      <td className="px-3 py-2.5 align-top text-slate-700">{payment.reference_no || "-"}</td>
+                      <td className="px-3 py-2.5 align-top font-semibold text-[var(--color-text)]">{formatPeso(payment.amount)}</td>
+                      <td className="px-3 py-2.5 align-top capitalize text-[var(--color-text)]">{payment.method}</td>
+                      <td className="px-3 py-2.5 align-top text-[var(--color-text)]">{payment.reference_no || "-"}</td>
                       <td className="px-3 py-2.5 align-top">
                         {payment.proof_url ? (
                           <button
@@ -1239,19 +1239,19 @@ export function AdminPaymentsClient({
                         )}
                       </td>
                       {showVerifiedCols ? (
-                        <td className="px-3 py-2.5 align-top text-slate-700">
+                        <td className="px-3 py-2.5 align-top text-[var(--color-text)]">
                           {formatDateTime(payment.verified_at)}
                           <br />
-                          <span className="text-xs text-slate-500">
+                          <span className="text-xs text-[var(--color-muted)]">
                             {payment.verified_admin?.name || payment.verified_admin?.email || "-"}
                           </span>
                         </td>
                       ) : null}
                       {showRejectedCols ? (
-                        <td className="px-3 py-2.5 align-top text-slate-700">
+                        <td className="px-3 py-2.5 align-top text-[var(--color-text)]">
                           {payment.rejected_reason || "-"}
                           <br />
-                          <span className="text-xs text-slate-500">
+                          <span className="text-xs text-[var(--color-muted)]">
                             {formatDateTime(payment.rejected_at)} by {payment.rejected_admin?.name || payment.rejected_admin?.email || "-"}
                           </span>
                         </td>
@@ -1289,16 +1289,16 @@ export function AdminPaymentsClient({
             </table>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 px-3 py-2.5">
-            <p className="text-xs text-slate-500">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--color-border)] px-3 py-2.5">
+            <p className="text-xs text-[var(--color-muted)]">
               Page {page} of {totalPages} | {count} total
             </p>
-            <div className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white p-1 shadow-sm">
+            <div className="inline-flex items-center gap-1 rounded-full border border-[var(--color-border)] bg-white p-1 shadow-sm">
               <button
                 type="button"
                 onClick={() => setPage(1)}
                 disabled={!canPrev}
-                className="rounded-full px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-45"
+                className="rounded-full px-3 py-1.5 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] disabled:opacity-45"
               >
                 First
               </button>
@@ -1306,7 +1306,7 @@ export function AdminPaymentsClient({
                 type="button"
                 onClick={() => setPage((prev) => Math.max(1, prev - 1))}
                 disabled={!canPrev}
-                className="rounded-full px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-45"
+                className="rounded-full px-3 py-1.5 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] disabled:opacity-45"
               >
                 Previous
               </button>
@@ -1314,7 +1314,7 @@ export function AdminPaymentsClient({
                 type="button"
                 onClick={() => setPage((prev) => prev + 1)}
                 disabled={!canNext}
-                className="rounded-full px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-45"
+                className="rounded-full px-3 py-1.5 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] disabled:opacity-45"
               >
                 Next
               </button>
@@ -1322,7 +1322,7 @@ export function AdminPaymentsClient({
                 type="button"
                 onClick={() => setPage(totalPages)}
                 disabled={!canNext}
-                className="rounded-full px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-45"
+                className="rounded-full px-3 py-1.5 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] disabled:opacity-45"
               >
                 Last
               </button>
@@ -1333,9 +1333,9 @@ export function AdminPaymentsClient({
 
       {rejectTarget ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-3 md:p-4">
-          <div className="w-full rounded-2xl border border-slate-200/70 bg-white p-4 md:max-w-xl">
+          <div className="w-full rounded-2xl border border-[var(--color-border)] bg-white p-4 md:max-w-xl">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-slate-900">Reject payment submission</h3>
+              <h3 className="text-lg font-semibold text-[var(--color-text)]">Reject payment submission</h3>
               <button
                 type="button"
                 aria-label="Close"
@@ -1345,21 +1345,21 @@ export function AdminPaymentsClient({
                   setRejectReason("");
                   setRejectError(null);
                 }}
-                className="h-8 w-8 rounded-lg border border-slate-300 text-slate-600 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                className="h-8 w-8 rounded-lg border border-[var(--color-border)] text-[var(--color-muted)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
               >
                 x
               </button>
             </div>
-            <p className="mb-3 text-sm text-slate-600">
+            <p className="mb-3 text-sm text-[var(--color-muted)]">
               This will notify the guest that the submitted proof/reference could not be verified. They can resubmit payment proof.
             </p>
             <textarea
               value={rejectReason}
               onChange={(event) => setRejectReason(event.target.value)}
               placeholder="e.g., Reference number not found in GCash records."
-              className="min-h-[120px] w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm outline-none ring-blue-200 transition focus:ring-2"
+              className="min-h-[120px] w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm outline-none ring-blue-200 transition focus:ring-2"
             />
-            <p className="mt-1 text-xs text-slate-500">Minimum 5 characters.</p>
+            <p className="mt-1 text-xs text-[var(--color-muted)]">Minimum 5 characters.</p>
             {rejectError ? (
               <p className="mt-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{rejectError}</p>
             ) : null}
@@ -1372,7 +1372,7 @@ export function AdminPaymentsClient({
                   setRejectReason("");
                   setRejectError(null);
                 }}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                className="rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
                 disabled={rejectBusy}
               >
                 Cancel

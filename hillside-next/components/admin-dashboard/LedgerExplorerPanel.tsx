@@ -45,7 +45,7 @@ export function LedgerExplorerPanel({
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
-              <thead className="bg-slate-50 text-[var(--color-muted)]">
+              <thead className="bg-[var(--color-background)] text-[var(--color-muted)]">
                 <tr>
                   <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.08em]">Reservation</th>
                   <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.08em]">State</th>
@@ -73,7 +73,7 @@ export function LedgerExplorerPanel({
                               className="group inline-flex items-center gap-1 text-[var(--color-secondary)]"
                               aria-label={normalizedHash || row.chain_tx_hash}
                             >
-                              <span className="rounded border border-slate-300 bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-700">
+                              <span className="rounded border border-[var(--color-border)] bg-[var(--color-background)] px-1.5 py-0.5 font-mono text-xs text-[var(--color-text)]">
                                 {shortHash(normalizedHash || row.chain_tx_hash || "--")}
                               </span>
                               <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />

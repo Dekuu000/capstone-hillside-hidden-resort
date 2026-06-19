@@ -162,7 +162,7 @@ export function ContractStatusPanel({
       </div>
 
       <div className="mt-4 overflow-hidden rounded-xl border border-[var(--color-border)]">
-        <div className="flex flex-col gap-2 border-b border-[var(--color-border)] bg-slate-50 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-2 border-b border-[var(--color-border)] bg-[var(--color-background)] px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-semibold text-[var(--color-text)]">Recent successful escrow transactions</p>
             <p className="text-xs text-[var(--color-muted)]">

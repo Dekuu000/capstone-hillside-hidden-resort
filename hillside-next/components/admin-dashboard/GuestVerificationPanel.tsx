@@ -21,14 +21,14 @@ export function GuestVerificationPanel() {
           </Link>
           <Link
             href="/admin/check-in?mode=code"
-            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-white px-4 text-sm font-semibold text-[var(--color-text)] transition hover:bg-slate-50 lg:w-auto lg:min-w-[150px]"
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-white px-4 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] lg:w-auto lg:min-w-[150px]"
           >
             <QrCode className="h-4 w-4" />
             Code fallback
           </Link>
           <Link
             href="/admin/check-in?view=tablet&mode=scan"
-            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-white px-4 text-sm font-semibold text-[var(--color-text)] transition hover:bg-slate-50 lg:w-auto lg:min-w-[140px]"
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-white px-4 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] lg:w-auto lg:min-w-[140px]"
           >
             <TabletSmartphone className="h-4 w-4" />
             Tablet view

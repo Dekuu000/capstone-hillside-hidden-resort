@@ -48,9 +48,9 @@ export function RoomInventorySyncPanel({ units }: { units: UnitItem[] }) {
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3">
-        <article className="rounded-xl border border-teal-200/70 bg-gradient-to-br from-teal-50 to-teal-100/40 p-3 shadow-[0_8px_16px_rgba(20,184,166,0.10)] transition-[box-shadow,border-color,transform] duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_22px_rgba(20,184,166,0.16)]">
+        <article className="rounded-xl border border-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)] bg-gradient-to-br from-teal-50 to-teal-100/40 p-3 shadow-[0_8px_16px_rgba(20,184,166,0.10)] transition-[box-shadow,border-color,transform] duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_22px_rgba(20,184,166,0.16)]">
           <p className="inline-flex items-center gap-2 text-sm text-[var(--color-muted)]">
-            <Sparkles className="h-4 w-4 text-teal-600" />
+            <Sparkles className="h-4 w-4 text-[var(--color-secondary)]" />
             Cleaned
           </p>
           <p className="mt-1 text-3xl font-bold text-[var(--color-text)]">{cleaned}</p>
@@ -79,7 +79,7 @@ export function RoomInventorySyncPanel({ units }: { units: UnitItem[] }) {
       </div>
 
       <div className="mt-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
-        <div className="h-3 overflow-hidden rounded-full bg-slate-200">
+        <div className="h-3 overflow-hidden rounded-full bg-[var(--color-border)]">
           <div className="flex h-full">
             <div className="bg-[var(--color-secondary)]" style={{ width: `${cleanedPct}%` }} />
             <div className="bg-[var(--color-primary)]" style={{ width: `${occupiedPct}%` }} />

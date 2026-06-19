@@ -318,30 +318,30 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
             </div>
           </div>
 
-          <div className="mt-3 grid gap-2 rounded-lg border border-emerald-200/80 bg-white p-3 text-xs text-slate-700 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="mt-3 grid gap-2 rounded-lg border border-emerald-200/80 bg-white p-3 text-xs text-[var(--color-text)] sm:grid-cols-2 lg:grid-cols-5">
             <div>
-              <p className="font-semibold text-slate-500">Reservation code</p>
-              <p className="mt-0.5 text-sm font-semibold text-slate-900">{created.reservation_code}</p>
+              <p className="font-semibold text-[var(--color-muted)]">Reservation code</p>
+              <p className="mt-0.5 text-sm font-semibold text-[var(--color-text)]">{created.reservation_code}</p>
             </div>
             <div>
-              <p className="font-semibold text-slate-500">Selected unit</p>
-              <p className="mt-0.5 text-sm font-semibold text-slate-900">
+              <p className="font-semibold text-[var(--color-muted)]">Selected unit</p>
+              <p className="mt-0.5 text-sm font-semibold text-[var(--color-text)]">
                 {createdSummary?.unitNames?.length ? createdSummary.unitNames.join(", ") : "-"}
               </p>
             </div>
             <div>
-              <p className="font-semibold text-slate-500">Stay dates</p>
-              <p className="mt-0.5 text-sm font-semibold text-slate-900">
+              <p className="font-semibold text-[var(--color-muted)]">Stay dates</p>
+              <p className="mt-0.5 text-sm font-semibold text-[var(--color-text)]">
                 {createdSummary?.checkInDate || "-"} to {createdSummary?.checkOutDate || "-"}
               </p>
             </div>
             <div>
-              <p className="font-semibold text-slate-500">Payment status</p>
-              <p className="mt-0.5 text-sm font-semibold text-slate-900 capitalize">{createdPaymentState}</p>
+              <p className="font-semibold text-[var(--color-muted)]">Payment status</p>
+              <p className="mt-0.5 text-sm font-semibold text-[var(--color-text)] capitalize">{createdPaymentState}</p>
             </div>
             <div>
-              <p className="font-semibold text-slate-500">Amount due</p>
-              <p className="mt-0.5 text-sm font-semibold text-slate-900">{toPeso(Math.max(0, createdBalance))}</p>
+              <p className="font-semibold text-[var(--color-muted)]">Amount due</p>
+              <p className="mt-0.5 text-sm font-semibold text-[var(--color-text)]">{toPeso(Math.max(0, createdBalance))}</p>
             </div>
           </div>
 
@@ -379,13 +379,13 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
                 setCreatedReservationError(null);
                 setCreatedSummary(null);
               }}
-              className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700"
+              className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--color-border)] bg-white px-3 text-xs font-semibold text-[var(--color-text)]"
             >
               Create Another Walk-in
             </button>
             <Link
               href={`/admin/reservations?reservation_id=${encodeURIComponent(created.reservation_id)}`}
-              className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700"
+              className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--color-border)] bg-white px-3 text-xs font-semibold text-[var(--color-text)]"
             >
               View in Reservations
             </Link>
@@ -393,7 +393,7 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
             {!canCheckInNow ? (
               <Link
                 href={`/admin/check-in?mode=code&reservation_code=${encodeURIComponent(created.reservation_code)}`}
-                className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-slate-100 px-3 text-xs font-semibold text-slate-500"
+                className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 text-xs font-semibold text-[var(--color-muted)]"
                 aria-disabled
                 tabIndex={-1}
               >
@@ -402,7 +402,7 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
             ) : null}
           </div>
           {!canCheckInNow ? (
-            <p className="mt-2 text-xs text-slate-600">
+            <p className="mt-2 text-xs text-[var(--color-muted)]">
               Check-in becomes primary after payment is fully settled and arrival date is today.
             </p>
           ) : null}
@@ -465,7 +465,7 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
                     key={unit.unit_id}
                     className={`flex cursor-pointer items-start justify-between gap-3 rounded-xl border p-3 transition ${
                       checked
-                        ? "border-[var(--color-secondary)] bg-teal-50"
+                        ? "border-[var(--color-secondary)] bg-[color:color-mix(in_srgb,var(--color-secondary)_12%,white)]"
                         : "border-[var(--color-border)] bg-white hover:border-[var(--color-secondary)]/45"
                     }`}
                   >

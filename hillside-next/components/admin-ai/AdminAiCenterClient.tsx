@@ -528,7 +528,7 @@ export function AdminAiCenterClient({ token }: AdminAiCenterClientProps) {
             }
           />
           {pricingActionMessage ? (
-            <p className="rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-slate-50 p-3 text-sm text-[var(--color-text)]">
+            <p className="rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-background)] p-3 text-sm text-[var(--color-text)]">
               {pricingActionMessage}
             </p>
           ) : null}
@@ -610,7 +610,7 @@ export function AdminAiCenterClient({ token }: AdminAiCenterClientProps) {
                 <p className="mt-1 text-xs text-[var(--color-muted)]">
                   Last forecast run: {formatDateTime(forecast.generated_at)}
                 </p>
-                <div className="mt-3 overflow-x-auto rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-slate-50 p-3">
+                <div className="mt-3 overflow-x-auto rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-background)] p-3">
                   <svg viewBox="0 0 640 180" className="h-48 w-full min-w-[500px]" role="img" aria-label="Occupancy forecast line chart">
                     <polyline
                       fill="none"
@@ -762,7 +762,7 @@ export function AdminAiCenterClient({ token }: AdminAiCenterClientProps) {
                   >
                     <p className="text-sm font-semibold text-[var(--color-text)]">{item.title}</p>
                     <p className="mt-1 text-sm text-[var(--color-muted)]">{item.description}</p>
-                    <div className="mt-3 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-slate-50 p-3">
+                    <div className="mt-3 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-background)] p-3">
                       <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">
                         Why suggested
                       </p>
@@ -790,7 +790,7 @@ export function AdminAiCenterClient({ token }: AdminAiCenterClientProps) {
                 ))}
               </div>
               {concierge.notes.length > 0 ? (
-                <section className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-slate-50 p-4">
+                <section className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-background)] p-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">Model notes</p>
                   <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-[var(--color-text)]">
                     {concierge.notes.map((note) => (

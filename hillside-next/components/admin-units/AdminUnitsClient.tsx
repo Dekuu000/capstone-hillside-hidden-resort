@@ -468,9 +468,9 @@ export function AdminUnitsClient({
   if (!token) {
     return (
       <section className="mx-auto w-full max-w-[1600px]">
-        <header className="mb-4 rounded-3xl border border-slate-200/70 bg-gradient-to-br from-white via-slate-50 to-blue-50 p-6 shadow-sm">
-          <h1 className="text-3xl font-bold text-slate-900">Units</h1>
-          <p className="mt-2 text-sm text-slate-600">Manage rooms, cottages, and amenities.</p>
+        <header className="mb-4 rounded-3xl border border-[var(--color-border)] bg-gradient-to-br from-white via-slate-50 to-blue-50 p-6 shadow-sm">
+          <h1 className="text-3xl font-bold text-[var(--color-text)]">Units</h1>
+          <p className="mt-2 text-sm text-[var(--color-muted)]">Manage rooms, cottages, and amenities.</p>
         </header>
         <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
           No active session found. Sign in as admin first.
@@ -614,7 +614,7 @@ export function AdminUnitsClient({
       {loading ? (
         <div className="mb-3 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-64 animate-pulse rounded-2xl border border-slate-200 bg-slate-100" />
+            <div key={i} className="h-64 animate-pulse rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)]" />
           ))}
         </div>
       ) : null}
@@ -656,7 +656,7 @@ export function AdminUnitsClient({
                     className="h-36 w-full object-cover"
                   />
                 ) : (
-                  <div className="h-36 bg-slate-100" />
+                  <div className="h-36 bg-[var(--color-background)]" />
                 )}
                 <div className="p-3">
                   <div className="flex items-start justify-between gap-3">
@@ -720,15 +720,15 @@ export function AdminUnitsClient({
       ) : null}
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-[var(--color-muted)]">
           Page {page} of {totalPages} • {count} total
         </p>
-        <div className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white p-1 shadow-sm">
+        <div className="inline-flex items-center gap-1 rounded-full border border-[var(--color-border)] bg-white p-1 shadow-sm">
           <button
             type="button"
             onClick={() => setPage(1)}
             disabled={!canPrev}
-            className="rounded-full px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-45"
+            className="rounded-full px-3 py-1.5 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] disabled:opacity-45"
           >
             First
           </button>
@@ -736,7 +736,7 @@ export function AdminUnitsClient({
             type="button"
             onClick={() => setPage((prev) => Math.max(1, prev - 1))}
             disabled={!canPrev}
-            className="rounded-full px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-45"
+            className="rounded-full px-3 py-1.5 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] disabled:opacity-45"
           >
             Previous
           </button>
@@ -744,7 +744,7 @@ export function AdminUnitsClient({
             type="button"
             onClick={() => setPage((prev) => prev + 1)}
             disabled={!canNext}
-            className="rounded-full px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-45"
+            className="rounded-full px-3 py-1.5 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] disabled:opacity-45"
           >
             Next
           </button>
@@ -752,7 +752,7 @@ export function AdminUnitsClient({
             type="button"
             onClick={() => setPage(totalPages)}
             disabled={!canNext}
-            className="rounded-full px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-45"
+            className="rounded-full px-3 py-1.5 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] disabled:opacity-45"
           >
             Last
           </button>
@@ -774,59 +774,59 @@ export function AdminUnitsClient({
               </button>
             </div>
 
-            {unitDetailLoading ? <p className="text-sm text-slate-600">Loading unit details...</p> : null}
+            {unitDetailLoading ? <p className="text-sm text-[var(--color-muted)]">Loading unit details...</p> : null}
 
             {editingUnitId && !unitDetailLoading ? (
               <div className="space-y-4">
-                <label className="grid gap-1 text-xs text-slate-600">
+                <label className="grid gap-1 text-xs text-[var(--color-muted)]">
                   Name
                   <input
                     type="text"
                     value={editName}
                     onChange={(event) => setEditName(event.target.value)}
-                    className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm"
+                    className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm"
                   />
                 </label>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <label className="grid gap-1 text-xs text-slate-600">
+                  <label className="grid gap-1 text-xs text-[var(--color-muted)]">
                     Unit code
                     <input
                       type="text"
                       value={editUnitCode}
                       onChange={(event) => setEditUnitCode(event.target.value)}
-                      className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm"
+                      className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm"
                     />
                   </label>
-                  <label className="grid gap-1 text-xs text-slate-600">
+                  <label className="grid gap-1 text-xs text-[var(--color-muted)]">
                     Room number (optional)
                     <input
                       type="text"
                       value={editRoomNumber}
                       onChange={(event) => setEditRoomNumber(event.target.value)}
                       placeholder="e.g. 203"
-                      className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm"
+                      className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm"
                     />
                   </label>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <label className="grid gap-1 text-xs text-slate-600">
+                  <label className="grid gap-1 text-xs text-[var(--color-muted)]">
                     Type
                     <select
                       value={editType}
                       onChange={(event) => setEditType(event.target.value as "room" | "cottage" | "amenity")}
-                      className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm"
+                      className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm"
                     >
                       <option value="room">Room</option>
                       <option value="cottage">Cottage</option>
                       <option value="amenity">Amenity</option>
                     </select>
                   </label>
-                  <label className="grid gap-1 text-xs text-slate-600">
+                  <label className="grid gap-1 text-xs text-[var(--color-muted)]">
                     Room status
                     <select
                       value={editOperationalStatus}
                       onChange={(event) => setEditOperationalStatus(event.target.value as UnitOperationalStatus)}
-                      className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm"
+                      className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm"
                     >
                       <option value="cleaned">Cleaned</option>
                       <option value="occupied">Occupied</option>
@@ -834,33 +834,33 @@ export function AdminUnitsClient({
                       <option value="dirty">Dirty</option>
                     </select>
                   </label>
-                  <label className="grid gap-1 text-xs text-slate-600">
+                  <label className="grid gap-1 text-xs text-[var(--color-muted)]">
                     Capacity
                     <input
                       type="number"
                       min={1}
                       value={editCapacity}
                       onChange={(event) => setEditCapacity(event.target.value)}
-                      className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm"
+                      className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm"
                     />
                   </label>
-                  <label className="grid gap-1 text-xs text-slate-600">
+                  <label className="grid gap-1 text-xs text-[var(--color-muted)]">
                     Base price
                     <input
                       type="number"
                       min={0}
                       value={editBasePrice}
                       onChange={(event) => setEditBasePrice(event.target.value)}
-                      className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm"
+                      className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm"
                     />
                   </label>
                 </div>
-                <label className="grid gap-1 text-xs text-slate-600">
+                <label className="grid gap-1 text-xs text-[var(--color-muted)]">
                   Description
                   <textarea
                     value={editDescription}
                     onChange={(event) => setEditDescription(event.target.value)}
-                    className="min-h-24 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm"
+                    className="min-h-24 rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm"
                   />
                 </label>
                 <section className="space-y-3">
@@ -923,7 +923,7 @@ export function AdminUnitsClient({
                   <button
                     type="button"
                     onClick={resetEditor}
-                    className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+                    className="rounded-lg border border-[var(--color-border)] bg-white px-4 py-2 text-sm font-semibold text-[var(--color-text)]"
                     disabled={editorBusy}
                   >
                     Cancel

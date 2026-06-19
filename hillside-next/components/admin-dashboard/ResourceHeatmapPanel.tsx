@@ -26,11 +26,11 @@ function formatShortDate(value: string) {
 }
 
 function toneForValue(value: number) {
-  if (value >= 80) return "bg-teal-500 text-white";
-  if (value >= 60) return "bg-teal-200 text-teal-900";
+  if (value >= 80) return "bg-[color:color-mix(in_srgb,var(--color-secondary)_12%,white)]0 text-white";
+  if (value >= 60) return "bg-teal-200 text-[var(--color-secondary)]";
   if (value >= 40) return "bg-cyan-100 text-cyan-900";
-  if (value >= 20) return "bg-slate-200 text-slate-700";
-  return "bg-slate-100 text-slate-600";
+  if (value >= 20) return "bg-[var(--color-border)] text-[var(--color-text)]";
+  return "bg-[var(--color-background)] text-[var(--color-muted)]";
 }
 
 function computeTeamLoad(occupancyPct: number, factor: number) {
@@ -73,7 +73,7 @@ export function ResourceHeatmapPanel({ snapshot }: { snapshot: ResortSnapshotRes
         <>
           <div className="mt-4 overflow-x-auto rounded-xl border border-[var(--color-border)]">
             <table className="min-w-full text-sm">
-              <thead className="bg-slate-50 text-[var(--color-muted)]">
+              <thead className="bg-[var(--color-background)] text-[var(--color-muted)]">
                 <tr>
                   <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.08em]">Team</th>
                   {demandRows.map((row) => (

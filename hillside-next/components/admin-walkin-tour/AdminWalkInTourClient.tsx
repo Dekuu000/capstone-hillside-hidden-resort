@@ -184,7 +184,7 @@ export function AdminWalkInTourClient({
   if (!token) {
     return (
       <section className="mx-auto w-full max-w-3xl">
-        <h1 className="text-3xl font-bold text-slate-900">Walk-in Tour</h1>
+        <h1 className="text-3xl font-bold text-[var(--color-text)]">Walk-in Tour</h1>
         <p className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
           No active admin session found. Sign in first.
         </p>
@@ -240,7 +240,7 @@ export function AdminWalkInTourClient({
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
-          <label className="grid gap-1 text-sm text-slate-700">
+          <label className="grid gap-1 text-sm text-[var(--color-text)]">
             Select Tour
             <select
               value={serviceId}
@@ -261,7 +261,7 @@ export function AdminWalkInTourClient({
 
           <FancyDatePicker label="Visit Date" value={visitDate} onChange={setVisitDate} min={todayPlusLocalIsoDate(0)} />
 
-          <label className="grid gap-1 text-sm text-slate-700">
+          <label className="grid gap-1 text-sm text-[var(--color-text)]">
             Adults
             <input
               type="number"
@@ -272,7 +272,7 @@ export function AdminWalkInTourClient({
             />
           </label>
 
-          <label className="grid gap-1 text-sm text-slate-700">
+          <label className="grid gap-1 text-sm text-[var(--color-text)]">
             Kids
             <input
               type="number"
@@ -285,7 +285,7 @@ export function AdminWalkInTourClient({
         </div>
 
         <div className="mt-4 grid gap-4 md:grid-cols-2">
-          <label className="grid gap-1 text-sm text-slate-700">
+          <label className="grid gap-1 text-sm text-[var(--color-text)]">
             Guest Name (optional)
             <div className="relative">
               <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-muted)]" />
@@ -299,7 +299,7 @@ export function AdminWalkInTourClient({
             </div>
           </label>
 
-          <label className="grid gap-1 text-sm text-slate-700">
+          <label className="grid gap-1 text-sm text-[var(--color-text)]">
             Guest Phone (optional)
             <div className="relative">
               <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-muted)]" />
@@ -323,7 +323,7 @@ export function AdminWalkInTourClient({
           </button>
         </div>
 
-        <label className="mt-4 grid gap-1 text-sm text-slate-700">
+        <label className="mt-4 grid gap-1 text-sm text-[var(--color-text)]">
           Notes (optional)
           <textarea
             value={notes}
@@ -334,10 +334,10 @@ export function AdminWalkInTourClient({
         </label>
 
         <div className="mt-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-4">
-          <p className="text-sm text-slate-600">
-            Total: <strong className="text-slate-900">{toPeso(totalAmount)}</strong>
+          <p className="text-sm text-[var(--color-muted)]">
+            Total: <strong className="text-[var(--color-text)]">{toPeso(totalAmount)}</strong>
           </p>
-          <p className="mt-1 text-xs text-slate-500">After create, you will be redirected to Payments for cashier recording.</p>
+          <p className="mt-1 text-xs text-[var(--color-muted)]">After create, you will be redirected to Payments for cashier recording.</p>
         </div>
 
         <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

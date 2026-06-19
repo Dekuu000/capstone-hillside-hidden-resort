@@ -156,7 +156,7 @@ export function AdminChrome({ children, initialName = null, initialEmail = null,
               className={`group inline-flex h-11 items-center gap-2 rounded-2xl border px-3 text-sm font-bold shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-secondary)] focus-visible:ring-offset-2 ${
                 sidebarOpen
                   ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
-                  : "border-slate-200 bg-white text-[var(--color-primary)] hover:border-teal-200 hover:bg-teal-50 hover:text-[var(--color-secondary)]"
+                  : "border-[var(--color-border)] bg-white text-[var(--color-primary)] hover:border-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)] hover:bg-[color:color-mix(in_srgb,var(--color-secondary)_12%,white)] hover:text-[var(--color-secondary)]"
               }`}
               aria-label={sidebarOpen ? "Close admin navigation menu" : "Open admin navigation menu"}
               aria-expanded={sidebarOpen}
@@ -164,7 +164,7 @@ export function AdminChrome({ children, initialName = null, initialEmail = null,
             >
               <span
                 className={`flex h-7 w-7 items-center justify-center rounded-xl transition ${
-                  sidebarOpen ? "bg-white/12" : "bg-slate-100 group-hover:bg-white"
+                  sidebarOpen ? "bg-white/12" : "bg-[var(--color-background)] group-hover:bg-white"
                 }`}
                 aria-hidden="true"
               >

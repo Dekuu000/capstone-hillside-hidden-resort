@@ -112,9 +112,9 @@ export function ResortSnapshotPanel({
           </p>
         </article>
 
-        <article className="h-full min-h-[138px] rounded-2xl border border-teal-200/80 bg-gradient-to-br from-teal-50 to-white p-4 shadow-[0_6px_14px_rgba(15,23,42,0.04)] transition-[box-shadow,border-color,transform] duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_20px_rgba(15,23,42,0.10)]">
+        <article className="h-full min-h-[138px] rounded-2xl border border-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)] bg-gradient-to-br from-teal-50 to-white p-4 shadow-[0_6px_14px_rgba(15,23,42,0.04)] transition-[box-shadow,border-color,transform] duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_20px_rgba(15,23,42,0.10)]">
           <p className="inline-flex items-center gap-2 text-xs text-[var(--color-muted)]">
-            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-teal-100">
+            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[color:color-mix(in_srgb,var(--color-secondary)_18%,white)]">
               <BrainCircuit className="h-3.5 w-3.5 text-[var(--color-secondary)]" />
             </span>
             AI demand (7d)
@@ -131,13 +131,13 @@ export function ResortSnapshotPanel({
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-[var(--color-border)] bg-white p-3 text-xs text-[var(--color-muted)]">
-        <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 font-semibold text-slate-700">
+        <span className="inline-flex items-center rounded-full border border-[var(--color-border)] bg-[var(--color-background)] px-2.5 py-1 font-semibold text-[var(--color-text)]">
           Active units: {snapshot?.occupancy.active_units ?? "--"}
         </span>
-        <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 font-semibold text-slate-700">
+        <span className="inline-flex items-center rounded-full border border-[var(--color-border)] bg-[var(--color-background)] px-2.5 py-1 font-semibold text-[var(--color-text)]">
           Vacant now: {remainingCleanable ?? "--"}
         </span>
-        <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 font-semibold text-slate-700">
+        <span className="inline-flex items-center rounded-full border border-[var(--color-border)] bg-[var(--color-background)] px-2.5 py-1 font-semibold text-[var(--color-text)]">
           Chain: {snapshot?.revenue.crypto_chain_key ?? "sepolia"}
         </span>
       </div>

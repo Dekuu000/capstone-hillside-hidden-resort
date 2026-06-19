@@ -7,6 +7,7 @@ import { getServerAccessToken, requireRoleAtLeastServer } from "../../../lib/ser
 import { fetchServerApiData } from "../../../lib/serverApi";
 import { formatDateTime } from "../../../lib/dateDisplay";
 import { AdminEscrowTableClient } from "../../../components/admin-escrow/AdminEscrowTableClient";
+import { AdminPageHeader } from "../../../components/layout/AdminPageHeader";
 
 const PAGE_SIZE = 10;
 
@@ -45,7 +46,7 @@ export default async function AdminEscrowPage({
   if (!accessToken) {
     return (
       <section className="mx-auto w-full max-w-[1600px]">
-        <h1 className="text-3xl font-bold text-slate-900">Escrow Reconciliation</h1>
+        <h1 className="text-3xl font-bold text-[var(--color-text)]">Escrow Reconciliation</h1>
         <p className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
           No active session found. Sign in as admin first.
         </p>
@@ -61,12 +62,13 @@ export default async function AdminEscrowPage({
 
   return (
     <section className="mx-auto w-full max-w-[1600px]">
-      <header className="mb-5">
-        <h1 className="text-3xl font-bold text-slate-900">Escrow Reconciliation</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Compare reservation escrow metadata in Supabase vs on-chain escrow state.
-        </p>
-      </header>
+      <div className="mb-5">
+        <AdminPageHeader
+          eyebrow="Records & Security"
+          title="Escrow Reconciliation"
+          subtitle="Compare reservation escrow metadata in Supabase vs on-chain escrow state."
+        />
+      </div>
 
       {!data ? (
         <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
@@ -79,7 +81,7 @@ export default async function AdminEscrowPage({
               Reconciliation cache is warming up. Results may be partial while the background run is in progress.
             </p>
           ) : data.last_reconciled_at ? (
-            <p className="mb-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+            <p className="mb-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-xs text-[var(--color-muted)]">
               Last reconciled at: {formatDateTime(data.last_reconciled_at)}
             </p>
           ) : null}
@@ -98,14 +100,14 @@ export default async function AdminEscrowPage({
           </div>
 
           {data.items.length === 0 ? (
-            <div className="rounded-xl border border-blue-100 bg-white p-6 text-sm text-slate-600 shadow-sm">
+            <div className="rounded-xl border border-blue-100 bg-white p-6 text-sm text-[var(--color-muted)] shadow-sm">
               No reservations found for reconciliation.
             </div>
           ) : (
             <div className="space-y-4">
               <AdminEscrowTableClient items={data.items} lastReconciledAt={data.last_reconciled_at} />
-              <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3">
-                <p className="text-xs text-slate-500">
+              <div className="flex items-center justify-between border-t border-[var(--color-border)] px-4 py-3">
+                <p className="text-xs text-[var(--color-muted)]">
                   Page {page} of {totalPages} | {totalCount} total
                 </p>
                 <div className="flex gap-2">
@@ -113,12 +115,12 @@ export default async function AdminEscrowPage({
                     <Link
                       href={buildPageQuery(page - 1)}
                       prefetch={false}
-                      className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700"
+                      className="rounded-lg border border-[var(--color-border)] bg-white px-3 py-1.5 text-sm font-semibold text-[var(--color-text)]"
                     >
                       Previous
                     </Link>
                   ) : (
-                    <span className="rounded-lg border border-slate-200 bg-slate-100 px-3 py-1.5 text-sm text-slate-400">
+                    <span className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-1.5 text-sm text-slate-400">
                       Previous
                     </span>
                   )}
@@ -131,7 +133,7 @@ export default async function AdminEscrowPage({
                       Next
                     </Link>
                   ) : (
-                    <span className="rounded-lg border border-slate-200 bg-slate-100 px-3 py-1.5 text-sm text-slate-400">
+                    <span className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-1.5 text-sm text-slate-400">
                       Next
                     </span>
                   )}
@@ -155,7 +157,7 @@ function MetricCard({
   tone: "slate" | "emerald" | "amber" | "rose";
 }) {
   const toneMap = {
-    slate: "border-slate-200 bg-white text-slate-900",
+    slate: "border-[var(--color-border)] bg-white text-[var(--color-text)]",
     emerald: "border-emerald-200 bg-emerald-50 text-emerald-900",
     amber: "border-amber-200 bg-amber-50 text-amber-900",
     rose: "border-rose-200 bg-rose-50 text-rose-900",

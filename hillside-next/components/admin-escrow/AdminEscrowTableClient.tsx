@@ -11,7 +11,7 @@ function resultClass(value: EscrowReconciliationItem["result"]) {
   if (value === "match") return "bg-emerald-100 text-emerald-700";
   if (value === "mismatch") return "bg-amber-100 text-amber-800";
   if (value === "missing_onchain") return "bg-rose-100 text-rose-700";
-  return "bg-slate-200 text-slate-700";
+  return "bg-[var(--color-border)] text-[var(--color-text)]";
 }
 
 export function AdminEscrowTableClient({
@@ -79,7 +79,7 @@ export function AdminEscrowTableClient({
         <div className="overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm">
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-sm">
-              <thead className="bg-slate-50 text-[var(--color-muted)]">
+              <thead className="bg-[var(--color-background)] text-[var(--color-muted)]">
                 <tr>
                   <th className="px-4 py-3 font-semibold">Reservation Code</th>
                   <th className="px-4 py-3 font-semibold">DB State</th>
@@ -97,7 +97,7 @@ export function AdminEscrowTableClient({
                   return (
                     <tr
                       key={item.reservation_id}
-                      className="cursor-pointer border-t border-slate-100 hover:bg-slate-50"
+                      className="cursor-pointer border-t border-[var(--color-border)] hover:bg-[var(--color-background)]"
                       onClick={() => setSelectedItem(item)}
                     >
                       <td className="px-4 py-3">

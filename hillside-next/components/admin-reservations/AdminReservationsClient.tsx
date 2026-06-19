@@ -59,7 +59,7 @@ function getPaymentStateMeta(state: "unpaid" | "partial" | "settled") {
   if (state === "partial") {
     return { label: "Partially Paid", className: "bg-amber-100 text-amber-800" };
   }
-  return { label: "Unpaid", className: "bg-slate-200 text-slate-700" };
+  return { label: "Unpaid", className: "bg-[var(--color-border)] text-[var(--color-text)]" };
 }
 
 function matchesPaymentFilter(reservation: ReservationItem, filter: PaymentStatusFilter) {
@@ -512,23 +512,23 @@ export function AdminReservationsClient({
   if (!token) {
     return (
       <section className="mx-auto w-full max-w-[1720px]">
-        <h1 className="text-3xl font-bold text-slate-900">Admin Reservations (V2)</h1>
-        <p className="mt-3 text-sm text-slate-600">No active session found. Sign in as admin first.</p>
+        <h1 className="text-3xl font-bold text-[var(--color-text)]">Admin Reservations (V2)</h1>
+        <p className="mt-3 text-sm text-[var(--color-muted)]">No active session found. Sign in as admin first.</p>
       </section>
     );
   }
 
   return (
     <section className="mx-auto w-full max-w-[1720px]">
-      <header className="relative mb-5 rounded-3xl border border-slate-200/80 bg-white p-5 shadow-[0_10px_24px_rgba(15,23,42,0.08)] sm:p-6">
+      <header className="relative mb-5 rounded-3xl border border-[var(--color-border)] bg-white p-5 shadow-[0_10px_24px_rgba(15,23,42,0.08)] sm:p-6">
         <div className="absolute right-6 top-6 hidden lg:block">
           <DataFreshnessBadge />
         </div>
         <div className="flex flex-col gap-5">
           <div className="lg:min-w-[280px]">
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Reservations Console</p>
-            <h1 className="mt-2 text-3xl font-bold text-slate-900">Admin Reservations</h1>
-            <p className="mt-2 text-sm text-slate-600">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)]">Reservations Console</p>
+            <h1 className="mt-2 text-3xl font-bold text-[var(--color-text)]">Admin Reservations</h1>
+            <p className="mt-2 text-sm text-[var(--color-muted)]">
               Manage arrivals, payment state, and walk-ins from one queue.
             </p>
             <div className="mt-3 lg:hidden">
@@ -576,16 +576,16 @@ export function AdminReservationsClient({
                     }}
                     className={`group rounded-xl border px-3 py-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 ${
                       active
-                        ? "border-blue-300 bg-blue-50 text-slate-900"
-                        : "border-slate-200 bg-white/90 text-slate-900 hover:border-slate-300 hover:bg-white"
+                        ? "border-blue-300 bg-blue-50 text-[var(--color-text)]"
+                        : "border-[var(--color-border)] bg-white/90 text-[var(--color-text)] hover:border-[var(--color-border)] hover:bg-white"
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{card.label}</p>
-                        <p className="mt-0.5 text-[11px] text-slate-600">{card.caption}</p>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">{card.label}</p>
+                        <p className="mt-0.5 text-[11px] text-[var(--color-muted)]">{card.caption}</p>
                       </div>
-                      <p className="text-lg font-bold text-slate-900">{card.value}</p>
+                      <p className="text-lg font-bold text-[var(--color-text)]">{card.value}</p>
                     </div>
                   </button>
                 );
@@ -604,7 +604,7 @@ export function AdminReservationsClient({
         </div>
       </header>
 
-      <div className="mb-5 rounded-2xl border border-slate-200/80 bg-white p-3 shadow-[0_8px_20px_rgba(15,23,42,0.06)] lg:p-3.5">
+      <div className="mb-5 rounded-2xl border border-[var(--color-border)] bg-white p-3 shadow-[0_8px_20px_rgba(15,23,42,0.06)] lg:p-3.5">
         <div className="flex flex-col gap-2">
           {statQuickFilterLabel ? (
             <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs text-blue-800">
@@ -617,14 +617,14 @@ export function AdminReservationsClient({
                   setStatQuickFilter("none");
                   setPage(1);
                 }}
-                className="rounded-md border border-slate-300 bg-white px-2 py-1 font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                className="rounded-md border border-[var(--color-border)] bg-white px-2 py-1 font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
               >
                 Reset quick filter
               </button>
             </div>
           ) : null}
           <div className="grid gap-2 lg:grid-cols-[420px_minmax(0,1fr)] lg:items-center">
-            <div className="grid grid-cols-3 gap-1 rounded-xl border border-slate-200/80 bg-slate-50 p-1">
+            <div className="grid grid-cols-3 gap-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-1">
               {QUICK_FILTERS.map((filter) => {
                 const active = quickFilter === filter.id;
                 return (
@@ -637,14 +637,14 @@ export function AdminReservationsClient({
                     }}
                     className={`inline-flex h-9 items-center justify-center rounded-lg px-2 text-xs font-semibold transition ${
                       active
-                        ? "border border-slate-900 bg-white text-slate-900 shadow-sm"
-                        : "text-slate-600 hover:bg-white hover:text-slate-900"
+                        ? "border border-slate-900 bg-white text-[var(--color-text)] shadow-sm"
+                        : "text-[var(--color-muted)] hover:bg-white hover:text-[var(--color-text)]"
                     }`}
                   >
                     <span>{filter.label}</span>
                     <span
                       className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] ${
-                        active ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-700"
+                        active ? "bg-slate-900 text-white" : "bg-[var(--color-border)] text-[var(--color-text)]"
                       }`}
                     >
                       {quickFilterCounts[filter.id] ?? 0}
@@ -660,7 +660,7 @@ export function AdminReservationsClient({
                 value={searchInput}
                 onChange={(event) => setSearchInput(event.target.value)}
                 placeholder="Search code, guest, unit, or phone"
-                className="h-9 w-full rounded-lg border border-slate-300 pl-9 pr-9 text-sm outline-none ring-blue-200 focus:ring-2"
+                className="h-9 w-full rounded-lg border border-[var(--color-border)] pl-9 pr-9 text-sm outline-none ring-blue-200 focus:ring-2"
               />
               {searchInput ? (
                 <button
@@ -670,7 +670,7 @@ export function AdminReservationsClient({
                     setSearchValue("");
                     setPage(1);
                   }}
-                  className="absolute right-2 top-1/2 inline-flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+                  className="absolute right-2 top-1/2 inline-flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-[var(--color-muted)] transition hover:bg-[var(--color-background)] hover:text-[var(--color-text)]"
                   aria-label="Clear search"
                 >
                   <X className="h-4 w-4" />
@@ -679,7 +679,7 @@ export function AdminReservationsClient({
             </div>
           </div>
           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-[1.1fr_1fr_0.9fr_0.8fr]">
-            <label className="grid gap-1 text-xs text-slate-600">
+            <label className="grid gap-1 text-xs text-[var(--color-muted)]">
               Reservation status
               <select
                 value={reservationStatusFilter}
@@ -687,7 +687,7 @@ export function AdminReservationsClient({
                   setReservationStatusFilter(event.target.value as ReservationStatus | "all");
                   setPage(1);
                 }}
-                className="h-9 rounded-lg border border-slate-300 px-3 text-sm text-slate-700"
+                className="h-9 rounded-lg border border-[var(--color-border)] px-3 text-sm text-[var(--color-text)]"
               >
                 <option value="all">All statuses</option>
                 <option value="pending_payment">Pending Payment</option>
@@ -700,7 +700,7 @@ export function AdminReservationsClient({
               </select>
             </label>
 
-            <label className="grid gap-1 text-xs text-slate-600">
+            <label className="grid gap-1 text-xs text-[var(--color-muted)]">
               Payment status
               <select
                 value={paymentStatusFilter}
@@ -708,7 +708,7 @@ export function AdminReservationsClient({
                   setPaymentStatusFilter(event.target.value as PaymentStatusFilter);
                   setPage(1);
                 }}
-                className="h-9 rounded-lg border border-slate-300 px-3 text-sm text-slate-700"
+                className="h-9 rounded-lg border border-[var(--color-border)] px-3 text-sm text-[var(--color-text)]"
               >
                 <option value="all">All payments</option>
                 <option value="unpaid">Unpaid</option>
@@ -717,7 +717,7 @@ export function AdminReservationsClient({
               </select>
             </label>
 
-            <div className="grid gap-1 text-xs text-slate-600">
+            <div className="grid gap-1 text-xs text-[var(--color-muted)]">
               <FancyDatePicker
                 label="Date"
                 value={arrivalDateFilter}
@@ -727,7 +727,7 @@ export function AdminReservationsClient({
                 }}
                 allowClear
                 popoverAlign="end"
-                labelClassName="text-xs text-slate-600"
+                labelClassName="text-xs text-[var(--color-muted)]"
               />
             </div>
 
@@ -743,7 +743,7 @@ export function AdminReservationsClient({
                   setSearchValue("");
                   setPage(1);
                 }}
-                className="inline-flex h-9 w-full items-center justify-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                className="inline-flex h-9 w-full items-center justify-center rounded-lg border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
               >
                 Clear filters
               </button>
@@ -760,12 +760,12 @@ export function AdminReservationsClient({
       ) : null}
       {error && !headerLabel ? <p className="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
       {notice ? <p className="mb-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">{notice}</p> : null}
-      {loading ? <p className="mb-3 text-sm text-slate-600">Loading reservations...</p> : null}
+      {loading ? <p className="mb-3 text-sm text-[var(--color-muted)]">Loading reservations...</p> : null}
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
+      <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-[13px] leading-5">
-              <thead className="bg-slate-50/90 text-slate-600">
+              <thead className="bg-[var(--color-background)] text-[var(--color-muted)]">
                 <tr>
                   <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em]">Code</th>
                   <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em]">Source</th>
@@ -789,11 +789,11 @@ export function AdminReservationsClient({
                         void openDetails(reservation.reservation_id, reservation);
                       }
                     }}
-                    className="cursor-pointer border-t border-slate-100 transition hover:bg-slate-50/90 focus-within:bg-slate-50/90 even:bg-slate-50/30"
+                    className="cursor-pointer border-t border-[var(--color-border)] transition hover:bg-[var(--color-background)] focus-within:bg-[var(--color-background)] even:bg-[var(--color-background)]"
                   >
                     <td className="px-3 py-2.5 align-top">
-                      <p className="font-semibold text-slate-900">{reservation.reservation_code}</p>
-                      <p className="text-xs text-slate-500">{formatDateTime(reservation.created_at)}</p>
+                      <p className="font-semibold text-[var(--color-text)]">{reservation.reservation_code}</p>
+                      <p className="text-xs text-[var(--color-muted)]">{formatDateTime(reservation.created_at)}</p>
                     </td>
                     <td className="px-3 py-2.5 align-top">
                       {(() => {
@@ -810,11 +810,11 @@ export function AdminReservationsClient({
                       })()}
                     </td>
                     <td className="px-3 py-2.5 align-top">
-                      <p className="font-medium text-slate-800">{reservation.guest?.name || "-"}</p>
-                      <p className="text-xs text-slate-500">{reservation.guest?.email || "-"}</p>
+                      <p className="font-medium text-[var(--color-text)]">{reservation.guest?.name || "-"}</p>
+                      <p className="text-xs text-[var(--color-muted)]">{reservation.guest?.email || "-"}</p>
                     </td>
                   <td className="px-3 py-2.5 align-top">
-                    <p className="text-sm text-slate-700">
+                    <p className="text-sm text-[var(--color-text)]">
                       {formatDateWithYear(reservation.check_in_date)} to {formatDateWithYear(reservation.check_out_date)}
                     </p>
                   </td>
@@ -841,14 +841,14 @@ export function AdminReservationsClient({
                       })()}
                     </td>
                     <td className="px-3 py-2.5 align-top">
-                      <p className="font-semibold text-slate-900">{formatPeso(reservation.total_amount)}</p>
-                      <p className="text-xs text-slate-500">Paid: {formatPeso(reservation.amount_paid_verified)}</p>
+                      <p className="font-semibold text-[var(--color-text)]">{formatPeso(reservation.total_amount)}</p>
+                      <p className="text-xs text-[var(--color-muted)]">Paid: {formatPeso(reservation.amount_paid_verified)}</p>
                     </td>
                 </tr>
               ))}
               {!loading && items.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-3 py-6 text-center text-sm text-slate-600">
+                  <td colSpan={7} className="px-3 py-6 text-center text-sm text-[var(--color-muted)]">
                     No reservations found.
                   </td>
                 </tr>
@@ -857,16 +857,16 @@ export function AdminReservationsClient({
           </table>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 px-3 py-2.5">
-          <p className="text-xs text-slate-500">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--color-border)] px-3 py-2.5">
+          <p className="text-xs text-[var(--color-muted)]">
             Page {page} of {totalPages} | {count} total
           </p>
-          <div className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white p-1 shadow-sm">
+          <div className="inline-flex items-center gap-1 rounded-full border border-[var(--color-border)] bg-white p-1 shadow-sm">
             <button
               type="button"
               onClick={() => setPage(1)}
               disabled={!canPrev}
-              className="rounded-full px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-45"
+              className="rounded-full px-3 py-1.5 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] disabled:opacity-45"
             >
               First
             </button>
@@ -874,7 +874,7 @@ export function AdminReservationsClient({
               type="button"
               onClick={() => setPage((prev) => Math.max(1, prev - 1))}
               disabled={!canPrev}
-              className="rounded-full px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-45"
+              className="rounded-full px-3 py-1.5 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] disabled:opacity-45"
             >
               Previous
             </button>
@@ -882,7 +882,7 @@ export function AdminReservationsClient({
               type="button"
               onClick={() => setPage((prev) => prev + 1)}
               disabled={!canNext}
-              className="rounded-full px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-45"
+              className="rounded-full px-3 py-1.5 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] disabled:opacity-45"
             >
               Next
             </button>
@@ -890,7 +890,7 @@ export function AdminReservationsClient({
               type="button"
               onClick={() => setPage(totalPages)}
               disabled={!canNext}
-              className="rounded-full px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-45"
+              className="rounded-full px-3 py-1.5 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] disabled:opacity-45"
             >
               Last
             </button>

@@ -20,7 +20,7 @@ export function ScanSegmentedControl({
   ];
 
   return (
-    <div className="grid w-full grid-cols-3 gap-1 rounded-2xl border border-[var(--color-border)] bg-slate-50 p-1" role="tablist" aria-orientation="horizontal">
+    <div className="grid w-full grid-cols-3 gap-1 rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-1" role="tablist" aria-orientation="horizontal">
       {items.map((item) => {
         const active = value === item.id;
         return (
@@ -35,7 +35,7 @@ export function ScanSegmentedControl({
               "h-10 rounded-xl text-xs font-semibold transition sm:h-11 sm:text-sm",
               active
                 ? "border border-[var(--color-border)] bg-white text-[var(--color-text)] shadow-sm"
-                : "text-[var(--color-muted)] hover:bg-slate-100",
+                : "text-[var(--color-muted)] hover:bg-[var(--color-background)]",
             )}
           >
             {item.label}

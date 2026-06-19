@@ -41,7 +41,7 @@ type PrimaryActionType = "record_payment" | "check_in" | "check_out" | "view_his
 function getPaymentStateMeta(state: ReservationPaymentState) {
   if (state === "settled") return { label: "Paid", className: "bg-emerald-100 text-emerald-800" };
   if (state === "partial") return { label: "Partial", className: "bg-amber-100 text-amber-800" };
-  return { label: "Unpaid", className: "bg-slate-200 text-slate-700" };
+  return { label: "Unpaid", className: "bg-[var(--color-border)] text-[var(--color-text)]" };
 }
 
 function readinessMeta(state: ReadinessState) {
@@ -74,7 +74,7 @@ function readinessMeta(state: ReadinessState) {
     completed: {
       label: "Completed",
       detail: "Reservation is already completed/cancelled/no-show.",
-      className: "border-slate-200 bg-slate-100 text-slate-700",
+      className: "border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-text)]",
     },
   };
   return map[state];
@@ -248,16 +248,16 @@ export function ReservationDetailDrawer({
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/55 p-3 backdrop-blur-[2px] lg:left-64">
-      <div className="w-full max-w-4xl overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xl">
+      <div className="w-full max-w-4xl overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white shadow-xl">
         <div className="max-h-[92vh] overflow-y-auto">
-          <div className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur">
+          <div className="sticky top-0 z-10 border-b border-[var(--color-border)] bg-white/95 px-4 py-3 backdrop-blur">
             <div className="flex items-start justify-between gap-3">
-              <h3 className="text-lg font-bold text-slate-900">{reservation?.reservation_code ?? "Reservation details"}</h3>
+              <h3 className="text-lg font-bold text-[var(--color-text)]">{reservation?.reservation_code ?? "Reservation details"}</h3>
               <button
                 type="button"
                 onClick={onClose}
                 aria-label="Close reservation details"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-300 text-slate-600 transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-border)] text-[var(--color-muted)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -272,7 +272,7 @@ export function ReservationDetailDrawer({
                   {isSameDay ? <span className="rounded-full bg-amber-100 px-2 py-0.5 text-amber-800">Arriving today</span> : null}
                 </div>
                 {reservation.created_at ? (
-                  <span className="shrink-0 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+                  <span className="shrink-0 rounded-full border border-[var(--color-border)] bg-[var(--color-background)] px-2 py-0.5 text-[11px] font-semibold text-[var(--color-muted)]">
                     Created {formatDateTime(reservation.created_at)}
                   </span>
                 ) : null}
@@ -281,7 +281,7 @@ export function ReservationDetailDrawer({
           </div>
 
           <div className="space-y-3 p-4">
-            {loading ? <p className="text-sm text-slate-600">Loading details...</p> : null}
+            {loading ? <p className="text-sm text-[var(--color-muted)]">Loading details...</p> : null}
             {error ? (
               <div className="inline-flex w-full items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
@@ -304,19 +304,19 @@ export function ReservationDetailDrawer({
                   </div>
                 </section>
 
-                <section className="rounded-2xl border border-slate-200 p-3">
-                  <h4 className="text-sm font-semibold text-slate-900">Reservation Summary</h4>
+                <section className="rounded-2xl border border-[var(--color-border)] p-3">
+                  <h4 className="text-sm font-semibold text-[var(--color-text)]">Reservation Summary</h4>
                   <div className="mt-2 grid gap-3 md:grid-cols-2">
-                    <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-2.5">
+                    <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-2.5">
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-sm">
-                          <span className="text-slate-500">Reservation:</span>{" "}
-                          <span className="font-semibold text-slate-900">{reservation.reservation_code}</span>
+                          <span className="text-[var(--color-muted)]">Reservation:</span>{" "}
+                          <span className="font-semibold text-[var(--color-text)]">{reservation.reservation_code}</span>
                         </p>
                         <button
                           type="button"
                           onClick={() => handleCopy("reservation_code", reservation.reservation_code, "Reservation code")}
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50"
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[var(--color-border)] bg-white text-[var(--color-muted)] transition hover:bg-[var(--color-background)]"
                           aria-label="Copy reservation code"
                           title="Copy reservation code"
                         >
@@ -324,12 +324,12 @@ export function ReservationDetailDrawer({
                         </button>
                       </div>
                       <p className="mt-1 text-sm">
-                        <span className="text-slate-500">Guest:</span>{" "}
-                        <span className="font-semibold text-slate-900">{reservation.guest?.name || "-"}</span>
+                        <span className="text-[var(--color-muted)]">Guest:</span>{" "}
+                        <span className="font-semibold text-[var(--color-text)]">{reservation.guest?.name || "-"}</span>
                       </p>
                       <p className="mt-1 text-sm">
-                        <span className="text-slate-500">{isTour ? "Tour" : "Unit"}:</span>{" "}
-                        <span className="font-semibold text-slate-900">
+                        <span className="text-[var(--color-muted)]">{isTour ? "Tour" : "Unit"}:</span>{" "}
+                        <span className="font-semibold text-[var(--color-text)]">
                           {isTour
                             ? (reservation.service_bookings?.map((item) => item.service?.service_name || "Tour").join(", ") || "-")
                             : (
@@ -340,59 +340,59 @@ export function ReservationDetailDrawer({
                               )}
                         </span>
                       </p>
-                      <p className="mt-1 text-sm"><span className="text-slate-500">Pax:</span> {reservation.guest_count ?? "-"}</p>
+                      <p className="mt-1 text-sm"><span className="text-[var(--color-muted)]">Pax:</span> {reservation.guest_count ?? "-"}</p>
                     </div>
 
-                    <div className="rounded-xl border border-slate-200 bg-white p-2.5">
+                    <div className="rounded-xl border border-[var(--color-border)] bg-white p-2.5">
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-sm">
-                          <span className="text-slate-500">Contact:</span>{" "}
-                          <span className="font-semibold text-slate-900">{reservation.guest?.phone || reservation.guest?.email || "-"}</span>
+                          <span className="text-[var(--color-muted)]">Contact:</span>{" "}
+                          <span className="font-semibold text-[var(--color-text)]">{reservation.guest?.phone || reservation.guest?.email || "-"}</span>
                         </p>
                         <button
                           type="button"
                           onClick={() => handleCopy("contact", reservation.guest?.phone || reservation.guest?.email, "Contact")}
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50"
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[var(--color-border)] bg-white text-[var(--color-muted)] transition hover:bg-[var(--color-background)]"
                           aria-label="Copy contact"
                           title="Copy contact"
                         >
                           {copiedField === "contact" ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
                         </button>
                       </div>
-                      <p className="mt-1 text-sm"><span className="text-slate-500">{isTour ? "Visit date:" : "Stay dates:"}</span> {isTour ? formatDateWithYear(arrivalDate) : `${formatDateWithYear(reservation.check_in_date)} to ${formatDateWithYear(reservation.check_out_date)}`}</p>
-                      <p className="mt-1 text-sm"><span className="text-slate-500">Created at:</span> {formatDateTime(reservation.created_at)}</p>
-                      <p className="mt-1 text-sm"><span className="text-slate-500">Booking source:</span> {source === "walk_in" ? "Walk-in front desk" : "Online guest portal"}</p>
-                      <p className="mt-1 text-sm"><span className="text-slate-500">Created by:</span> {source === "walk_in" ? "Front desk admin" : "Guest account"}</p>
+                      <p className="mt-1 text-sm"><span className="text-[var(--color-muted)]">{isTour ? "Visit date:" : "Stay dates:"}</span> {isTour ? formatDateWithYear(arrivalDate) : `${formatDateWithYear(reservation.check_in_date)} to ${formatDateWithYear(reservation.check_out_date)}`}</p>
+                      <p className="mt-1 text-sm"><span className="text-[var(--color-muted)]">Created at:</span> {formatDateTime(reservation.created_at)}</p>
+                      <p className="mt-1 text-sm"><span className="text-[var(--color-muted)]">Booking source:</span> {source === "walk_in" ? "Walk-in front desk" : "Online guest portal"}</p>
+                      <p className="mt-1 text-sm"><span className="text-[var(--color-muted)]">Created by:</span> {source === "walk_in" ? "Front desk admin" : "Guest account"}</p>
                     </div>
                   </div>
                 </section>
 
-                <section className="rounded-2xl border border-slate-200 p-3">
+                <section className="rounded-2xl border border-[var(--color-border)] p-3">
                   <div className="mb-2 flex items-center justify-between">
-                    <h4 className="text-sm font-semibold text-slate-900">Payment Summary</h4>
+                    <h4 className="text-sm font-semibold text-[var(--color-text)]">Payment Summary</h4>
                     <button
                       type="button"
                       onClick={onRefreshPayments}
-                      className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                      className="rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
                     >
                       Refresh
                     </button>
                   </div>
                   <div className="mb-3 grid gap-2 sm:grid-cols-3">
-                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                    <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Total due</p>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">Total due</p>
                         <button
                           type="button"
                           onClick={() => handleCopyMoney("total_due", Number(reservation.total_amount), "Total due")}
-                          className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-100"
+                          className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-[var(--color-border)] bg-white text-[var(--color-muted)] transition hover:bg-[var(--color-background)]"
                           aria-label="Copy total due"
                           title="Copy total due"
                         >
                           {copiedField === "total_due" ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
                         </button>
                       </div>
-                      <p className="mt-1 text-lg font-semibold text-slate-900">{formatPeso(reservation.total_amount)}</p>
+                      <p className="mt-1 text-lg font-semibold text-[var(--color-text)]">{formatPeso(reservation.total_amount)}</p>
                     </div>
                     <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 px-3 py-2">
                       <div className="flex items-center justify-between gap-2">
@@ -431,10 +431,10 @@ export function ReservationDetailDrawer({
                     </div>
                   </div>
                   <div className="grid gap-2 text-sm md:grid-cols-3">
-                    <p><span className="text-slate-500">Payment method:</span> {latestPayment?.method?.toUpperCase() || "-"}</p>
-                    <p><span className="text-slate-500">Latest payment:</span> {formatDateTime(latestPayment?.created_at)}</p>
+                    <p><span className="text-[var(--color-muted)]">Payment method:</span> {latestPayment?.method?.toUpperCase() || "-"}</p>
+                    <p><span className="text-[var(--color-muted)]">Latest payment:</span> {formatDateTime(latestPayment?.created_at)}</p>
                     <p>
-                      <span className="text-slate-500">Verification:</span>{" "}
+                      <span className="text-[var(--color-muted)]">Verification:</span>{" "}
                       {firstPendingPayment ? (
                         <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">Pending verification</span>
                       ) : (
@@ -442,14 +442,14 @@ export function ReservationDetailDrawer({
                       )}
                     </p>
                   </div>
-                  <p className="mt-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700">
+                  <p className="mt-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-2.5 py-2 text-xs text-[var(--color-text)]">
                     {paymentDynamicNote}
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
-                    <Link href={paymentListUrl} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+                    <Link href={paymentListUrl} className="rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-xs font-semibold text-[var(--color-text)]">
                       View Payments
                     </Link>
-                    <Link href={paymentRecordUrl} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200">
+                    <Link href={paymentRecordUrl} className="rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200">
                       Open Payment Form
                     </Link>
                     {paymentState !== "settled" ? (
@@ -486,12 +486,12 @@ export function ReservationDetailDrawer({
                       </button>
                     ) : null}
                   </div>
-                  {paymentsLoading ? <p className="mt-2 text-xs text-slate-500">Loading payments...</p> : null}
+                  {paymentsLoading ? <p className="mt-2 text-xs text-[var(--color-muted)]">Loading payments...</p> : null}
                   {paymentsError ? <p className="mt-2 rounded-lg border border-red-200 bg-red-50 p-2 text-xs text-red-700">{paymentsError}</p> : null}
                   {!paymentsLoading && payments.length > 0 ? (
                     <div className="mt-3 overflow-x-auto">
                       <table className="min-w-full text-left text-xs">
-                        <thead className="text-slate-500">
+                        <thead className="text-[var(--color-muted)]">
                           <tr>
                             <th className="px-2 py-1">When</th>
                             <th className="px-2 py-1">Method</th>
@@ -502,7 +502,7 @@ export function ReservationDetailDrawer({
                         </thead>
                         <tbody>
                           {payments.slice(0, 5).map((payment) => (
-                            <tr key={payment.payment_id} className="border-t border-slate-100">
+                            <tr key={payment.payment_id} className="border-t border-[var(--color-border)]">
                               <td className="px-2 py-1">{formatDateTime(payment.created_at)}</td>
                               <td className="px-2 py-1">{payment.method.toUpperCase()}</td>
                               <td className="px-2 py-1 font-semibold">{formatPeso(payment.amount)}</td>
@@ -513,7 +513,7 @@ export function ReservationDetailDrawer({
                                     type="button"
                                     onClick={() => onOpenProof(payment)}
                                     disabled={Boolean(proofBusy[payment.payment_id])}
-                                    className="rounded border border-slate-300 bg-white px-2 py-1 font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 disabled:opacity-60"
+                                    className="rounded border border-[var(--color-border)] bg-white px-2 py-1 font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 disabled:opacity-60"
                                   >
                                     {proofBusy[payment.payment_id] ? "Loading..." : "View"}
                                   </button>
@@ -529,29 +529,29 @@ export function ReservationDetailDrawer({
                   ) : null}
                 </section>
 
-                <section className="rounded-2xl border border-slate-200 p-3">
+                <section className="rounded-2xl border border-[var(--color-border)] p-3">
                   <button
                     type="button"
                     onClick={() => setLedgerOpen((prev) => !prev)}
                     className="flex w-full items-center justify-between text-left"
                   >
-                    <h4 className="text-sm font-semibold text-slate-900">Blockchain / Ledger</h4>
-                    <ChevronDown className={`h-4 w-4 text-slate-500 transition ${ledgerOpen ? "rotate-180" : ""}`} />
+                    <h4 className="text-sm font-semibold text-[var(--color-text)]">Blockchain / Ledger</h4>
+                    <ChevronDown className={`h-4 w-4 text-[var(--color-muted)] transition ${ledgerOpen ? "rotate-180" : ""}`} />
                   </button>
                   {ledgerOpen ? (
                     <div className="mt-3 space-y-2 text-sm">
-                      <p><span className="text-slate-500">Escrow state:</span> {reservation.escrow_state || "-"}</p>
-                      <p><span className="text-slate-500">NFT guest pass:</span> {reservation.guest_pass_token_id ? "Minted" : "Not minted"}</p>
-                      <p><span className="text-slate-500">Tx hash:</span> <span className="font-mono text-xs break-all">{reservation.chain_tx_hash || "-"}</span></p>
-                      <p><span className="text-slate-500">Token ID:</span> {reservation.guest_pass_token_id ?? "-"}</p>
-                      <p><span className="text-slate-500">Booking hash:</span> <span className="font-mono text-xs break-all">{reservation.guest_pass_reservation_hash || reservation.onchain_booking_id || "-"}</span></p>
+                      <p><span className="text-[var(--color-muted)]">Escrow state:</span> {reservation.escrow_state || "-"}</p>
+                      <p><span className="text-[var(--color-muted)]">NFT guest pass:</span> {reservation.guest_pass_token_id ? "Minted" : "Not minted"}</p>
+                      <p><span className="text-[var(--color-muted)]">Tx hash:</span> <span className="font-mono text-xs break-all">{reservation.chain_tx_hash || "-"}</span></p>
+                      <p><span className="text-[var(--color-muted)]">Token ID:</span> {reservation.guest_pass_token_id ?? "-"}</p>
+                      <p><span className="text-[var(--color-muted)]">Booking hash:</span> <span className="font-mono text-xs break-all">{reservation.guest_pass_reservation_hash || reservation.onchain_booking_id || "-"}</span></p>
                       <div className="flex flex-wrap gap-2 pt-1">
-                        <Link href="/admin/blockchain?tab=reconciliation" className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200">
+                        <Link href="/admin/blockchain?tab=reconciliation" className="rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200">
                           Open Reconciliation
                         </Link>
                         <Link
                           href={`/admin/blockchain?tab=audit&search=${encodeURIComponent(reservation.reservation_id)}`}
-                          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                          className="rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
                         >
                           Open Audit
                         </Link>
@@ -560,7 +560,7 @@ export function ReservationDetailDrawer({
                             href={txUrl}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                            className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
                           >
                             View transaction
                             <ExternalLink className="h-3.5 w-3.5" />
@@ -575,7 +575,7 @@ export function ReservationDetailDrawer({
           </div>
 
           {reservation ? (
-            <div className="sticky bottom-0 z-10 border-t border-slate-200 bg-white/95 p-3 backdrop-blur">
+            <div className="sticky bottom-0 z-10 border-t border-[var(--color-border)] bg-white/95 p-3 backdrop-blur">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex min-h-7 items-center gap-2" aria-live="polite">
                   <span
@@ -595,7 +595,7 @@ export function ReservationDetailDrawer({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                  className="rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
                 >
                   Close
                 </button>

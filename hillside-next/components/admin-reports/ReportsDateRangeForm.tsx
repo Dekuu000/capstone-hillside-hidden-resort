@@ -51,9 +51,9 @@ export function ReportsDateRangeForm({ fromDate, toDate, daily, monthly }: Props
   };
 
   return (
-    <form method="get" className="mb-5 grid gap-3 rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm lg:grid-cols-12 lg:gap-4">
+    <form method="get" className="mb-5 grid gap-3 rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-sm lg:grid-cols-12 lg:gap-4">
       <div className="lg:col-span-12">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Quick range</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">Quick range</p>
         <div className="mt-2 flex flex-wrap gap-2">
           {[
             { id: "today", label: "Today" },
@@ -67,7 +67,7 @@ export function ReportsDateRangeForm({ fromDate, toDate, daily, monthly }: Props
               className={`inline-flex h-8 items-center rounded-full border px-3 text-xs font-semibold transition ${
                 activePreset === preset.id
                   ? "border-slate-900 bg-slate-900 text-white"
-                  : "border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:bg-slate-50"
+                  : "border-[var(--color-border)] bg-white text-[var(--color-text)] hover:border-slate-400 hover:bg-[var(--color-background)]"
               }`}
             >
               {preset.label}
@@ -103,7 +103,7 @@ export function ReportsDateRangeForm({ fromDate, toDate, daily, monthly }: Props
       <input type="hidden" name="to" value={to} />
 
       <div className="flex items-end lg:col-span-2">
-        <Button type="submit" variant="secondary" className="h-10 w-full rounded-xl border-slate-300 bg-slate-900 px-5 text-white hover:bg-slate-800 sm:w-auto sm:min-w-[170px]">
+        <Button type="submit" variant="secondary" className="h-10 w-full rounded-xl border-[var(--color-border)] bg-slate-900 px-5 text-white hover:bg-slate-800 sm:w-auto sm:min-w-[170px]">
           Apply range
         </Button>
       </div>

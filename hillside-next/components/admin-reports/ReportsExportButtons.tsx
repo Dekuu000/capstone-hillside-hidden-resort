@@ -121,7 +121,7 @@ export function ReportsExportButtons({ daily, monthly, compact = false }: Props)
               type="button"
               onClick={exportDaily}
               disabled={!daily.length}
-              className="block w-full rounded-lg px-3 py-2 text-left text-xs font-semibold text-[var(--color-text)] hover:bg-slate-50 disabled:opacity-50"
+              className="block w-full rounded-lg px-3 py-2 text-left text-xs font-semibold text-[var(--color-text)] hover:bg-[var(--color-background)] disabled:opacity-50"
             >
               Export Daily CSV
             </button>
@@ -129,7 +129,7 @@ export function ReportsExportButtons({ daily, monthly, compact = false }: Props)
               type="button"
               onClick={exportMonthly}
               disabled={!monthly.length}
-              className="block w-full rounded-lg px-3 py-2 text-left text-xs font-semibold text-[var(--color-text)] hover:bg-slate-50 disabled:opacity-50"
+              className="block w-full rounded-lg px-3 py-2 text-left text-xs font-semibold text-[var(--color-text)] hover:bg-[var(--color-background)] disabled:opacity-50"
             >
               Export Monthly CSV
             </button>
