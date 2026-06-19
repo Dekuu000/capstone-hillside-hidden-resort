@@ -1,30 +1,26 @@
 import Link from "next/link";
-import { CircleUserRound, LayoutDashboard } from "lucide-react";
+import { LayoutDashboard } from "lucide-react";
 import { HillsideLogo } from "../branding/HillsideLogo";
+import { PrimaryNavTabs } from "../guest/PrimaryNavTabs";
+import { ProfilePill } from "../guest/ProfilePill";
 
 type SearchNavProps = {
   isAuthed?: boolean;
   isAdmin?: boolean;
 };
 
-/** Sticky, Airbnb-style top bar for the public browse + booking funnel. */
+/** Sticky top bar for the public funnel — matches the logged-in guest header. */
 export function SearchNav({ isAuthed = false, isAdmin = false }: SearchNavProps) {
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[var(--color-surface)]/95 backdrop-blur">
-      <div className="mx-auto flex h-16 w-full max-w-[1280px] items-center justify-between gap-3 px-4 md:px-6 lg:px-8">
+      <div className="mx-auto flex h-[70px] w-full max-w-[1440px] items-center justify-between gap-3 px-4 md:h-20 md:px-6 lg:px-8">
         <Link href="/" className="flex min-w-0 items-center" aria-label="Hillside Hidden Resort home">
-          {/* Show the wordmark on every size (smaller on mobile), matching the guest header. */}
-          <HillsideLogo compact className="[&_img]:h-9 [&_img]:w-9 min-[390px]:[&_img]:h-10 min-[390px]:[&_img]:w-10 [&_p:first-of-type]:text-[1.2rem] [&_p:first-of-type]:font-semibold min-[390px]:[&_p:first-of-type]:text-[1.3rem] [&_p:last-child]:text-[0.62rem] [&_p:last-child]:tracking-[0.30em] md:[&_img]:h-11 md:[&_img]:w-11 md:[&_p:first-of-type]:text-[1.6rem] md:[&_p:last-child]:text-[0.68rem]" />
+          <HillsideLogo compact className="[&_svg]:h-9 [&_svg]:w-9 min-[390px]:[&_svg]:h-10 min-[390px]:[&_svg]:w-10 [&_p:first-of-type]:text-[1.2rem] [&_p:first-of-type]:font-semibold min-[390px]:[&_p:first-of-type]:text-[1.3rem] [&_p:last-child]:text-[0.62rem] [&_p:last-child]:tracking-[0.30em] md:[&_svg]:h-11 md:[&_svg]:w-11 md:[&_p:first-of-type]:text-[1.6rem] md:[&_p:last-child]:text-[0.68rem]" />
         </Link>
 
-        <nav className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-sm font-semibold text-[var(--color-text)]">
-          <Link
-            href="/stays"
-            className="hidden rounded-full px-3.5 py-2 transition hover:bg-[color:color-mix(in_srgb,var(--color-secondary)_12%,white)] sm:inline-flex"
-          >
-            Browse stays
-          </Link>
+        {isAuthed ? <PrimaryNavTabs /> : null}
 
+        <nav className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-sm font-semibold text-[var(--color-text)]">
           {isAdmin ? (
             <Link
               href="/admin"
@@ -36,17 +32,15 @@ export function SearchNav({ isAuthed = false, isAdmin = false }: SearchNavProps)
           ) : null}
 
           {isAuthed ? (
-            // On mobile the persistent bottom tab bar covers Trips/Profile, so hide this.
-            <Link
-              href="/guest/account"
-              aria-label="Profile and account"
-              className="hidden items-center gap-2 rounded-full border border-[var(--color-border)] py-2 pl-3 pr-2 transition hover:shadow-[var(--shadow-sm)] sm:inline-flex"
-            >
-              <span>Profile</span>
-              <CircleUserRound className="h-6 w-6 text-[var(--color-muted)]" />
-            </Link>
+            <ProfilePill />
           ) : (
             <>
+              <Link
+                href="/stays"
+                className="hidden rounded-full px-3.5 py-2 transition hover:bg-[color:color-mix(in_srgb,var(--color-secondary)_12%,white)] sm:inline-flex"
+              >
+                Browse stays
+              </Link>
               <Link
                 href="/login"
                 className="rounded-full px-3.5 py-2 transition hover:bg-[color:color-mix(in_srgb,var(--color-secondary)_12%,white)]"
