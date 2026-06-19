@@ -36,13 +36,28 @@ export const escrowStateSchema = z.enum([
   "failed",
 ]);
 
+// The escrow_ref returned by the API carries the on-chain ref state, which uses
+// "pending" (see hillside-api EscrowRef), while escrowStateSchema above is the
+// DB-column state ("none"/"pending_lock"/...). Accept the union of both so the
+// reservation-create response always parses regardless of escrow mode.
+export const escrowRefStateSchema = z.enum([
+  "none",
+  "pending",
+  "pending_lock",
+  "locked",
+  "pending_release",
+  "released",
+  "refunded",
+  "failed",
+]);
+
 export const escrowRefSchema = z.object({
   chain_key: z.enum(CHAIN_KEYS).optional(),
   chain_id: z.number().int().positive(),
   contract_address: z.string().min(3),
   tx_hash: z.string().min(3),
   event_index: z.number().int().min(0),
-  state: escrowStateSchema,
+  state: escrowRefStateSchema,
 });
 
 export const qrTokenSchema = z.object({

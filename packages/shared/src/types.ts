@@ -110,13 +110,17 @@ export type EscrowState =
   | "refunded"
   | "failed";
 
+// The API's escrow_ref uses the on-chain ref state ("pending"); EscrowState above
+// is the DB-column state ("pending_lock"). Accept the union so responses parse.
+export type EscrowRefState = EscrowState | "pending";
+
 export type EscrowRef = {
   chain_key?: ChainKey;
   chain_id: number;
   contract_address: string;
   tx_hash: string;
   event_index: number;
-  state: EscrowState;
+  state: EscrowRefState;
 };
 
 export type QrToken = {
