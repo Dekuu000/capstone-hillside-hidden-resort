@@ -19,7 +19,7 @@ import { ResortMapCanvas } from "../guest/map/ResortMapCanvas";
 
 const MAP_IMAGE_URL = "/images/resort-map.svg";
 const AMENITY_DATA_URL = "/data/guest-map-amenities.json";
-const MAP_CACHE_NAME = "guest-map-v2";
+const MAP_CACHE_NAME = "guest-map-v3";
 
 const FALLBACK_AMENITIES: GuestMapAmenityPin[] = guestMapLocations;
 // Resort is compact; keep ETA estimates short and practical for on-site walking.
