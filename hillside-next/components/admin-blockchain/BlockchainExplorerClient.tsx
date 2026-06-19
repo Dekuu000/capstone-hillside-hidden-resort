@@ -182,9 +182,9 @@ export function BlockchainExplorerClient({
   return (
     <section className="mx-auto w-full max-w-[1600px] space-y-4">
       <header className="surface p-4 sm:p-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[var(--color-muted)]">Blockchain Explorer</p>
-        <h1 className="mt-2 text-2xl font-bold text-[var(--color-text)] sm:text-3xl">Contract Status + Audit Logs</h1>
-        <p className="mt-2 text-sm text-[var(--color-muted)]">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--color-secondary)]">Records &amp; Security</p>
+        <h1 className="mt-2 text-[1.7rem] font-bold tracking-[-0.01em] text-[var(--color-text)] sm:text-[2rem]">Contract status &amp; audit logs</h1>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--color-muted)]">
           Internal observability for escrow chain health, successful transactions, and reservation audit history.
         </p>
       </header>

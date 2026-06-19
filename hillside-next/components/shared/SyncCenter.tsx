@@ -282,12 +282,12 @@ export function SyncCenter({ title, description, scope }: SyncCenterProps) {
 
   return (
     <section className="space-y-4">
-      <div className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-white p-4 sm:p-5">
+      <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-5 shadow-[var(--shadow-card)] sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">Sync Center</p>
-            <h1 className="mt-1 text-2xl font-bold text-[var(--color-text)]">{title}</h1>
-            <p className="mt-1 text-sm text-[var(--color-muted)]">{description}</p>
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--color-secondary)]">Sync Center</p>
+            <h1 className="mt-2 text-[1.7rem] font-bold tracking-[-0.01em] text-[var(--color-text)] sm:text-[2rem]">{title}</h1>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--color-muted)]">{description}</p>
           </div>
           <button
             type="button"
