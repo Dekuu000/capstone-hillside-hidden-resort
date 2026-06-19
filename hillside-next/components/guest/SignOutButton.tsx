@@ -23,16 +23,16 @@ export function SignOutButton() {
   };
 
   return (
-    <button
-      type="button"
-      onClick={() => void handleSignOut()}
-      disabled={busy}
-      className="flex w-full items-center justify-between rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-4 text-left transition hover:shadow-[var(--shadow-md)] disabled:opacity-60"
-    >
-      <span className="flex items-center gap-3 font-semibold text-[var(--color-error)]">
-        <LogOut className="h-5 w-5" />
+    <div className="border-t border-[var(--color-border)] pt-4">
+      <button
+        type="button"
+        onClick={() => void handleSignOut()}
+        disabled={busy}
+        className="inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold text-[var(--color-error)] underline-offset-4 transition hover:bg-[color:color-mix(in_srgb,var(--color-error)_8%,white)] hover:underline disabled:opacity-60"
+      >
+        <LogOut className="h-4 w-4" />
         {busy ? "Signing out…" : "Sign out"}
-      </span>
-    </button>
+      </button>
+    </div>
   );
 }
