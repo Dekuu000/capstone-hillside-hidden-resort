@@ -2,19 +2,19 @@
 
 :root {
   color-scheme: light;
-  /* Warm mountain/nature palette: deep forest green + terracotta accent on warm neutrals */
-  --color-primary: #2d4a3e;
-  --color-secondary: #b5613a;
-  --color-cta: #c2562f;
-  --color-background: #faf7f2;
+  /* Brand palette from the logo: navy wordmark + teal accent + sun-orange action */
+  --color-primary: #13304c;
+  --color-secondary: #0f8a7e;
+  --color-cta: #d56a24;
+  --color-background: #f5f7f8;
   --color-surface: #ffffff;
-  --color-text: #2b2622;
-  --color-muted: #7a7166;
-  --color-border: #e9e2d8;
-  --color-success: #2f7d56;
-  --color-warn: #b45309;
-  --color-error: #b91c1c;
-  --color-info: #2f6d6a;
+  --color-text: #15222e;
+  --color-muted: #5c6b78;
+  --color-border: #e2e8ec;
+  --color-success: #1f8f63;
+  --color-warn: #c06a16;
+  --color-error: #c0392b;
+  --color-info: #0f8a7e;
   --space-xs: 4px;
   --space-sm: 8px;
   --space-md: 16px;
