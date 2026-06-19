@@ -398,6 +398,7 @@ export function GuestMapClient() {
         pins={filteredAmenities}
         routePins={amenities}
         selectedPinId={activeAmenityId}
+        originPinId={originAmenityId}
         trailEdges={guestTrailEdges}
         routePinIds={pathPinIds}
         onSelectPin={setActiveAmenityId}
