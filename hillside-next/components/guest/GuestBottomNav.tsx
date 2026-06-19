@@ -1,25 +1,34 @@
 "use client";
 
 import Link from "next/link";
-import type { LucideIcon } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { BedDouble, CalendarDays, TreePalm, UserRound } from "lucide-react";
 import { cn } from "../../lib/cn";
 
-type Item = {
-  label: string;
-  href: string;
-  icon: LucideIcon;
-};
+const TABS = [
+  { label: "Stays", href: "/stays", icon: CalendarDays },
+  { label: "Tours", href: "/tours", icon: TreePalm },
+  { label: "Trips", href: "/my-bookings", icon: BedDouble },
+  { label: "Profile", href: "/guest/account", icon: UserRound },
+];
 
-type GuestBottomNavProps = {
-  items: Item[];
-  isActive: (href: string) => boolean;
-};
+/**
+ * Airbnb-style mobile tab bar. Self-contained so it can sit on both the
+ * logged-in guest shell and the public browse pages for a consistent nav.
+ */
+export function GuestBottomNav() {
+  const pathname = usePathname();
+  const isActive = (href: string) => {
+    if (href === "/guest/account") {
+      return pathname.startsWith("/guest/account") || pathname.startsWith("/guest/profile");
+    }
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
 
-export function GuestBottomNav({ items, isActive }: GuestBottomNavProps) {
   return (
     <nav data-testid="guest-bottom-nav" className="fixed inset-x-0 bottom-0 z-50 border-t border-[var(--color-border)] bg-[var(--color-surface)]/90 px-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur md:hidden">
       <div className="mx-auto flex h-[72px] w-full max-w-[430px] items-center justify-around gap-1 rounded-[2rem] bg-[var(--color-surface)] px-2 shadow-[var(--shadow-md)]">
-        {items.map((item) => {
+        {TABS.map((item) => {
           const active = isActive(item.href);
           const Icon = item.icon;
           return (

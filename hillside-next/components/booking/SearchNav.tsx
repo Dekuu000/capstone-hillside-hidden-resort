@@ -13,8 +13,8 @@ export function SearchNav({ isAuthed = false, isAdmin = false }: SearchNavProps)
     <header className="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[var(--color-surface)]/95 backdrop-blur">
       <div className="mx-auto flex h-16 w-full max-w-[1280px] items-center justify-between gap-3 px-4 md:px-6 lg:px-8">
         <Link href="/" className="flex min-w-0 items-center" aria-label="Hillside Hidden Resort home">
-          {/* Emblem-only on mobile, full wordmark from sm+ so the nav never overflows. */}
-          <HillsideLogo className="[&>div]:hidden sm:[&>div]:block" />
+          {/* Show the wordmark on every size (smaller on mobile), matching the guest header. */}
+          <HillsideLogo compact className="[&_img]:h-9 [&_img]:w-9 min-[390px]:[&_img]:h-10 min-[390px]:[&_img]:w-10 [&_p:first-of-type]:text-[1.2rem] [&_p:first-of-type]:font-semibold min-[390px]:[&_p:first-of-type]:text-[1.3rem] [&_p:last-child]:text-[0.62rem] [&_p:last-child]:tracking-[0.30em] md:[&_img]:h-11 md:[&_img]:w-11 md:[&_p:first-of-type]:text-[1.6rem] md:[&_p:last-child]:text-[0.68rem]" />
         </Link>
 
         <nav className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-sm font-semibold text-[var(--color-text)]">
@@ -36,11 +36,13 @@ export function SearchNav({ isAuthed = false, isAdmin = false }: SearchNavProps)
           ) : null}
 
           {isAuthed ? (
+            // On mobile the persistent bottom tab bar covers Trips/Profile, so hide this.
             <Link
-              href="/my-bookings"
-              className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] py-2 pl-3 pr-2 transition hover:shadow-[var(--shadow-sm)]"
+              href="/guest/account"
+              aria-label="Profile and account"
+              className="hidden items-center gap-2 rounded-full border border-[var(--color-border)] py-2 pl-3 pr-2 transition hover:shadow-[var(--shadow-sm)] sm:inline-flex"
             >
-              <span className="hidden sm:inline">My trips</span>
+              <span>Profile</span>
               <CircleUserRound className="h-6 w-6 text-[var(--color-muted)]" />
             </Link>
           ) : (

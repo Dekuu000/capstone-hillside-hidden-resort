@@ -24,7 +24,6 @@ const primaryNav = [
 
 // The avatar / Profile entry is its own destination (Airbnb-style account hub).
 const profileNav = { label: "Profile", href: "/guest/account", icon: UserRound };
-const bottomNav = [...primaryNav, profileNav];
 
 export function GuestChrome({ children, initialName = null }: GuestChromeProps) {
   const pathname = usePathname();
@@ -53,7 +52,7 @@ export function GuestChrome({ children, initialName = null }: GuestChromeProps) 
   const profileActive = isActive(profileNav.href) || isActive("/guest/profile");
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[var(--color-background)]">
+    <div className="min-h-screen bg-[var(--color-background)]">
       <header data-testid="guest-header" className="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[var(--color-surface)]/95 backdrop-blur">
         <div className="mx-auto flex h-[70px] w-full max-w-[430px] items-center justify-between px-4 md:h-20 md:max-w-[1440px] md:px-6 lg:px-8">
           <Link href="/" className="flex items-center gap-2">
@@ -99,11 +98,11 @@ export function GuestChrome({ children, initialName = null }: GuestChromeProps) 
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-[430px] flex-col gap-5 overflow-x-hidden px-4 pb-40 pt-5 md:max-w-[1280px] md:gap-6 md:px-6 md:pb-8 md:pt-6 lg:px-8">
+      <main className="mx-auto flex w-full max-w-[430px] flex-col gap-5 px-4 pb-40 pt-5 md:max-w-[1280px] md:gap-6 md:px-6 md:pb-8 md:pt-6 lg:px-8">
         {children}
       </main>
 
-      <GuestBottomNav items={bottomNav} isActive={isActive} />
+      <GuestBottomNav />
     </div>
   );
 }

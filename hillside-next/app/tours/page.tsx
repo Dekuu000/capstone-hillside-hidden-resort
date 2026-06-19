@@ -4,6 +4,7 @@ import { fetchPublicServices } from "../../lib/catalog";
 import { isBackOffice } from "../../../packages/shared/src/types";
 import { SearchNav } from "../../components/booking/SearchNav";
 import { SiteFooter } from "../../components/booking/SiteFooter";
+import { GuestBottomNav } from "../../components/guest/GuestBottomNav";
 import { TourCard } from "../../components/booking/TourCard";
 
 export default async function ToursPage() {
@@ -12,7 +13,7 @@ export default async function ToursPage() {
   const services = await fetchPublicServices();
 
   return (
-    <main className="flex min-h-screen flex-col bg-[var(--color-background)]">
+    <main className={`flex min-h-screen flex-col bg-[var(--color-background)]${auth ? " pb-24 md:pb-0" : ""}`}>
       <SearchNav isAuthed={Boolean(auth)} isAdmin={isBackOffice(auth?.role)} />
 
       <section className="border-b border-[var(--color-border)] bg-[var(--color-surface)]">
@@ -45,6 +46,7 @@ export default async function ToursPage() {
       </section>
 
       <SiteFooter />
+      {auth ? <GuestBottomNav /> : null}
     </main>
   );
 }

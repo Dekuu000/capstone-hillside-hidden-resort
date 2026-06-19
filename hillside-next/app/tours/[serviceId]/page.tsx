@@ -6,6 +6,7 @@ import { fetchPublicServiceById, tourGalleryImages, tourSchedule } from "../../.
 import { isBackOffice } from "../../../../packages/shared/src/types";
 import { SearchNav } from "../../../components/booking/SearchNav";
 import { SiteFooter } from "../../../components/booking/SiteFooter";
+import { GuestBottomNav } from "../../../components/guest/GuestBottomNav";
 import { ListingGallery } from "../../../components/booking/ListingGallery";
 import { MapPlaceholder } from "../../../components/booking/MapPlaceholder";
 import { TourBookingCard } from "../../../components/booking/TourBookingCard";
@@ -25,7 +26,7 @@ export default async function TourDetailPage({
   const schedule = tourSchedule(service);
 
   return (
-    <main className="flex min-h-screen flex-col bg-[var(--color-background)]">
+    <main className={`flex min-h-screen flex-col bg-[var(--color-background)]${auth ? " pb-24 md:pb-0" : ""}`}>
       <SearchNav isAuthed={Boolean(auth)} isAdmin={isBackOffice(auth?.role)} />
 
       <div className="mx-auto w-full max-w-[1120px] px-4 py-6 md:px-6 lg:px-8">
@@ -99,6 +100,7 @@ export default async function TourDetailPage({
       </div>
 
       <SiteFooter />
+      {auth ? <GuestBottomNav /> : null}
     </main>
   );
 }

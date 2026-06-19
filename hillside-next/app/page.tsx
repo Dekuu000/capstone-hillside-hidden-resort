@@ -8,6 +8,7 @@ import { SearchWidget } from "../components/booking/SearchWidget";
 import { HomeListings } from "../components/booking/HomeListings";
 import { TourCard } from "../components/booking/TourCard";
 import { SiteFooter } from "../components/booking/SiteFooter";
+import { GuestBottomNav } from "../components/guest/GuestBottomNav";
 
 const HERO_IMAGE =
   "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=2000&q=80";
@@ -36,7 +37,7 @@ export default async function HomePage() {
   const [units, services] = await Promise.all([fetchPublicUnits({ limit: 60 }), fetchPublicServices()]);
 
   return (
-    <main className="flex min-h-screen flex-col bg-[var(--color-background)]">
+    <main className={`flex min-h-screen flex-col bg-[var(--color-background)]${auth ? " pb-24 md:pb-0" : ""}`}>
       <SearchNav isAuthed={Boolean(auth)} isAdmin={isBackOffice(auth?.role)} />
 
       {/* Hero */}
@@ -107,6 +108,7 @@ export default async function HomePage() {
       </section>
 
       <SiteFooter />
+      {auth ? <GuestBottomNav /> : null}
     </main>
   );
 }

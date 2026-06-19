@@ -5,6 +5,7 @@ import { isBackOffice } from "../../../packages/shared/src/types";
 import { SearchWidget } from "../../components/booking/SearchWidget";
 import { StaysResults } from "../../components/booking/StaysResults";
 import { SiteFooter } from "../../components/booking/SiteFooter";
+import { GuestBottomNav } from "../../components/guest/GuestBottomNav";
 import type { CategoryKey } from "../../components/booking/CategoryFilterRow";
 
 function toCategory(type?: string): CategoryKey {
@@ -50,7 +51,7 @@ export default async function StaysPage({
   const auth = accessToken ? await getServerAuthContext(accessToken) : null;
 
   return (
-    <main className="flex min-h-screen flex-col bg-[var(--color-background)]">
+    <main className={`flex min-h-screen flex-col bg-[var(--color-background)]${auth ? " pb-24 md:pb-0" : ""}`}>
       <SearchNav isAuthed={Boolean(auth)} isAdmin={isBackOffice(auth?.role)} />
 
       <div className="border-b border-[var(--color-border)] bg-[var(--color-surface)]">
@@ -80,6 +81,7 @@ export default async function StaysPage({
       />
 
       <SiteFooter />
+      {auth ? <GuestBottomNav /> : null}
     </main>
   );
 }
