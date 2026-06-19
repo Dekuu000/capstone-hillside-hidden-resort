@@ -1,4 +1,5 @@
-﻿import type { ReportsOverviewResponse } from "../../../../packages/shared/src/types";
+﻿import { Coins } from "lucide-react";
+import type { ReportsOverviewResponse } from "../../../../packages/shared/src/types";
 import { reportsOverviewResponseSchema } from "../../../../packages/shared/src/schemas";
 import { ReportsDateRangeForm } from "../../../components/admin-reports/ReportsDateRangeForm";
 import { todayPlusLocalIsoDate } from "../../../lib/dateIso";
@@ -53,7 +54,7 @@ export default async function AdminReportsPage({
   if (!accessToken) {
     return (
       <section className="mx-auto w-full max-w-[1600px]">
-        <header className="mb-4 rounded-3xl border border-[var(--color-border)] bg-white p-6 shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
+        <header className="mb-4 rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-6 shadow-[var(--shadow-card)]">
           <h1 className="text-3xl font-bold text-[var(--color-text)]">Reports</h1>
           <p className="mt-2 text-sm text-[var(--color-muted)]">Daily, monthly, and summary analytics via V2 API.</p>
         </header>
@@ -79,11 +80,11 @@ export default async function AdminReportsPage({
 
   return (
     <section className="mx-auto w-full max-w-[1600px]">
-      <header className="mb-5 rounded-3xl border border-[var(--color-border)] bg-white p-5 shadow-[0_10px_24px_rgba(15,23,42,0.08)] sm:p-6">
+      <header className="mb-5 rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-5 shadow-[var(--shadow-card)] sm:p-7">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)]">Analytics</p>
-            <h1 className="mt-2 text-3xl font-bold text-[var(--color-text)]">Reports</h1>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--color-secondary)]">Analytics</p>
+            <h1 className="mt-2 text-[1.7rem] font-bold tracking-[-0.01em] text-[var(--color-text)] sm:text-[2rem]">Reports</h1>
             <p className="mt-2 text-sm text-[var(--color-muted)]">Daily, monthly, and summary analytics via V2 API.</p>
           </div>
           <div className="rounded-2xl border border-[var(--color-border)] bg-white/90 px-4 py-3 text-xs text-[var(--color-muted)]">
@@ -112,10 +113,15 @@ export default async function AdminReportsPage({
       ) : (
         <>
           <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <div className="rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50 to-emerald-100/40 p-4 shadow-sm xl:col-span-2">
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">Cash Collected</p>
-              <p className="mt-2 text-3xl font-bold text-[var(--color-text)]">{formatPeso(overview.summary.cash_collected)}</p>
-              <p className="mt-2 text-xs font-medium text-emerald-800">Primary KPI for the selected period</p>
+            <div className="rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-[var(--shadow-card)] xl:col-span-2">
+              <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+                  <Coins className="h-4 w-4" />
+                </span>
+                Cash Collected
+              </p>
+              <p className="mt-3 text-3xl font-bold tracking-[-0.01em] text-[var(--color-text)]">{formatPeso(overview.summary.cash_collected)}</p>
+              <p className="mt-1 text-xs text-[var(--color-muted)]">Primary KPI for the selected period</p>
             </div>
             <div className="rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-sm">
               <p className="text-xs text-[var(--color-muted)]">Bookings</p>

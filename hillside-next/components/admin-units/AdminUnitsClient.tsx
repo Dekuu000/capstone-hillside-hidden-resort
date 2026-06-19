@@ -468,9 +468,10 @@ export function AdminUnitsClient({
   if (!token) {
     return (
       <section className="mx-auto w-full max-w-[1600px]">
-        <header className="mb-4 rounded-3xl border border-[var(--color-border)] bg-gradient-to-br from-white via-slate-50 to-blue-50 p-6 shadow-sm">
-          <h1 className="text-3xl font-bold text-[var(--color-text)]">Units</h1>
-          <p className="mt-2 text-sm text-[var(--color-muted)]">Manage rooms, cottages, and amenities.</p>
+        <header className="mb-4 rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-card)] sm:p-7">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--color-secondary)]">Management</p>
+          <h1 className="mt-2 text-[1.7rem] font-bold tracking-[-0.01em] text-[var(--color-text)] sm:text-[2rem]">Units</h1>
+          <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted)]">Manage rooms, cottages, and amenities.</p>
         </header>
         <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
           No active session found. Sign in as admin first.
@@ -642,8 +643,8 @@ export function AdminUnitsClient({
             return (
               <article
                 key={unit.unit_id}
-                className={`overflow-hidden rounded-2xl border bg-[var(--color-surface)] shadow-[0_8px_20px_rgba(15,23,42,0.06)] transition ${
-                  unit.is_active ? "border-[var(--color-border)] hover:shadow-[0_12px_26px_rgba(15,23,42,0.1)]" : "border-[var(--color-border)] opacity-85"
+                className={`overflow-hidden rounded-2xl border bg-[var(--color-surface)] shadow-[var(--shadow-card)] transition-colors duration-200 ${
+                  unit.is_active ? "border-[var(--color-border)] hover:border-[color:color-mix(in_srgb,var(--color-secondary)_35%,white)]" : "border-[var(--color-border)] opacity-85"
                 }`}
               >
                 {cover ? (

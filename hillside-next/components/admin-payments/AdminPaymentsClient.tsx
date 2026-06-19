@@ -654,7 +654,7 @@ export function AdminPaymentsClient({
   if (!token) {
     return (
       <section className="mx-auto w-full max-w-[1720px]">
-        <header className="mb-4 rounded-3xl border border-[var(--color-border)] bg-white p-6 shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
+        <header className="mb-4 rounded-3xl border border-[var(--color-border)] bg-white p-6 shadow-[var(--shadow-card)]">
           <h1 className="text-3xl font-bold text-[var(--color-text)]">Payments Console</h1>
           <p className="mt-2 text-sm text-[var(--color-muted)]">Verification inbox, on-site payments, and payment history.</p>
         </header>
@@ -667,7 +667,7 @@ export function AdminPaymentsClient({
 
   return (
     <section className="mx-auto w-full max-w-[1720px]">
-      <header className="mb-5 rounded-3xl border border-[var(--color-border)] bg-white p-5 shadow-[0_10px_24px_rgba(15,23,42,0.08)] sm:p-6">
+      <header className="mb-5 rounded-3xl border border-[var(--color-border)] bg-white p-5 shadow-[var(--shadow-card)] sm:p-6">
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)]">Payments Desk</p>
@@ -689,7 +689,7 @@ export function AdminPaymentsClient({
         </div>
       </header>
 
-      <div className="mb-5 rounded-2xl border border-[var(--color-border)] bg-white p-3 shadow-[0_8px_20px_rgba(15,23,42,0.06)] lg:p-3.5">
+      <div className="mb-5 rounded-2xl border border-[var(--color-border)] bg-white p-3 shadow-[var(--shadow-card)] lg:p-3.5">
         <div className="grid gap-2 xl:grid-cols-[760px_minmax(0,1fr)] xl:items-center">
           <div
             className="grid grid-cols-2 gap-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-1 sm:grid-cols-4 md:grid-cols-7 xl:min-w-[760px]"
@@ -865,7 +865,7 @@ export function AdminPaymentsClient({
         </div>
       ) : null}
 
-      <div className="mb-4 rounded-2xl border border-emerald-100 bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.06)]">
+      <div className="mb-4 rounded-2xl border border-emerald-100 bg-white p-4 shadow-[var(--shadow-card)]">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-600">Walk-in</p>
@@ -1119,7 +1119,7 @@ export function AdminPaymentsClient({
       {loading ? <p className="mb-3 text-sm text-[var(--color-muted)]">Loading payments...</p> : null}
 
       {!loading && count === 0 ? (
-        <div className="rounded-2xl border border-[var(--color-border)] bg-white p-8 text-center shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
+        <div className="rounded-2xl border border-[var(--color-border)] bg-white p-8 text-center shadow-[var(--shadow-card)]">
           <h3 className="text-lg font-semibold text-[var(--color-text)]">
             {isToReview ? "No payment submissions to review" : "No payment history in this tab"}
           </h3>
@@ -1138,7 +1138,7 @@ export function AdminPaymentsClient({
       ) : null}
 
       {count > 0 ? (
-        <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
+        <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white shadow-[var(--shadow-card)]">
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-[13px] leading-5">
               <thead className="bg-[var(--color-background)] text-[var(--color-muted)]">

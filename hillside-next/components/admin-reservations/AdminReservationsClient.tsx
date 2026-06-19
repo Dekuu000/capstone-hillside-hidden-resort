@@ -520,7 +520,7 @@ export function AdminReservationsClient({
 
   return (
     <section className="mx-auto w-full max-w-[1720px]">
-      <header className="relative mb-5 rounded-3xl border border-[var(--color-border)] bg-white p-5 shadow-[0_10px_24px_rgba(15,23,42,0.08)] sm:p-6">
+      <header className="relative mb-5 rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-5 shadow-[var(--shadow-card)] sm:p-6">
         <div className="absolute right-6 top-6 hidden lg:block">
           <DataFreshnessBadge />
         </div>
@@ -604,7 +604,7 @@ export function AdminReservationsClient({
         </div>
       </header>
 
-      <div className="mb-5 rounded-2xl border border-[var(--color-border)] bg-white p-3 shadow-[0_8px_20px_rgba(15,23,42,0.06)] lg:p-3.5">
+      <div className="mb-5 rounded-2xl border border-[var(--color-border)] bg-white p-3 shadow-[var(--shadow-card)] lg:p-3.5">
         <div className="flex flex-col gap-2">
           {statQuickFilterLabel ? (
             <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs text-blue-800">
@@ -762,7 +762,7 @@ export function AdminReservationsClient({
       {notice ? <p className="mb-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">{notice}</p> : null}
       {loading ? <p className="mb-3 text-sm text-[var(--color-muted)]">Loading reservations...</p> : null}
 
-      <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
+      <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white shadow-[var(--shadow-card)]">
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-[13px] leading-5">
               <thead className="bg-[var(--color-background)] text-[var(--color-muted)]">
