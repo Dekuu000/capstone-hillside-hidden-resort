@@ -1642,7 +1642,7 @@ export function AdminCheckinClient({
                       type="button"
                       onClick={() => void validateManual()}
                       disabled={busy || (reservationCode.trim().length === 0 && tokenFallbackInput.trim().length === 0)}
-                      className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-60 sm:w-auto sm:min-w-[180px]"
+                      className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] px-5 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 disabled:opacity-60 sm:w-auto sm:min-w-[180px]"
                     >
                       <ShieldCheck className="h-4 w-4" />
                       {busy ? "Validating..." : "Validate"}

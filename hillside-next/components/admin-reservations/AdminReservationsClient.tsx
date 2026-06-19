@@ -574,7 +574,7 @@ export function AdminReservationsClient({
                       setStatQuickFilter(next);
                       setPage(1);
                     }}
-                    className={`group rounded-xl border px-3 py-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 ${
+                    className={`group rounded-xl border px-3 py-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)] ${
                       active
                         ? "border-blue-300 bg-blue-50 text-[var(--color-text)]"
                         : "border-[var(--color-border)] bg-white/90 text-[var(--color-text)] hover:border-[var(--color-border)] hover:bg-white"
@@ -594,7 +594,7 @@ export function AdminReservationsClient({
             <div className="flex lg:min-w-[220px] lg:justify-end">
               <Link
                 href="/admin/walk-in"
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-900 bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 lg:w-auto"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[var(--color-primary)] bg-[var(--color-primary)] px-4 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)] lg:w-auto"
               >
                 <PlusCircle className="h-4 w-4" />
                 <span>Walk-in Reservation</span>
@@ -617,7 +617,7 @@ export function AdminReservationsClient({
                   setStatQuickFilter("none");
                   setPage(1);
                 }}
-                className="rounded-md border border-[var(--color-border)] bg-white px-2 py-1 font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                className="rounded-md border border-[var(--color-border)] bg-white px-2 py-1 font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
               >
                 Reset quick filter
               </button>
@@ -637,14 +637,14 @@ export function AdminReservationsClient({
                     }}
                     className={`inline-flex h-9 items-center justify-center rounded-lg px-2 text-xs font-semibold transition ${
                       active
-                        ? "border border-slate-900 bg-white text-[var(--color-text)] shadow-sm"
+                        ? "border border-[var(--color-primary)] bg-white text-[var(--color-text)] shadow-sm"
                         : "text-[var(--color-muted)] hover:bg-white hover:text-[var(--color-text)]"
                     }`}
                   >
                     <span>{filter.label}</span>
                     <span
                       className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] ${
-                        active ? "bg-slate-900 text-white" : "bg-[var(--color-border)] text-[var(--color-text)]"
+                        active ? "bg-[var(--color-primary)] text-white" : "bg-[var(--color-border)] text-[var(--color-text)]"
                       }`}
                     >
                       {quickFilterCounts[filter.id] ?? 0}
@@ -660,7 +660,7 @@ export function AdminReservationsClient({
                 value={searchInput}
                 onChange={(event) => setSearchInput(event.target.value)}
                 placeholder="Search code, guest, unit, or phone"
-                className="h-9 w-full rounded-lg border border-[var(--color-border)] pl-9 pr-9 text-sm outline-none ring-blue-200 focus:ring-2"
+                className="h-9 w-full rounded-lg border border-[var(--color-border)] pl-9 pr-9 text-sm outline-none ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)] focus:ring-2"
               />
               {searchInput ? (
                 <button
@@ -743,7 +743,7 @@ export function AdminReservationsClient({
                   setSearchValue("");
                   setPage(1);
                 }}
-                className="inline-flex h-9 w-full items-center justify-center rounded-lg border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                className="inline-flex h-9 w-full items-center justify-center rounded-lg border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
               >
                 Clear filters
               </button>

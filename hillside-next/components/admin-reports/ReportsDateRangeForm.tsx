@@ -66,8 +66,8 @@ export function ReportsDateRangeForm({ fromDate, toDate, daily, monthly }: Props
               onClick={() => applyPreset(preset.id as "today" | "7d" | "month")}
               className={`inline-flex h-8 items-center rounded-full border px-3 text-xs font-semibold transition ${
                 activePreset === preset.id
-                  ? "border-slate-900 bg-slate-900 text-white"
-                  : "border-[var(--color-border)] bg-white text-[var(--color-text)] hover:border-slate-400 hover:bg-[var(--color-background)]"
+                  ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
+                  : "border-[var(--color-border)] bg-white text-[var(--color-text)] hover:border-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)] hover:bg-[var(--color-background)]"
               }`}
             >
               {preset.label}
@@ -103,7 +103,7 @@ export function ReportsDateRangeForm({ fromDate, toDate, daily, monthly }: Props
       <input type="hidden" name="to" value={to} />
 
       <div className="flex items-end lg:col-span-2">
-        <Button type="submit" variant="secondary" className="h-10 w-full rounded-xl border-[var(--color-border)] bg-slate-900 px-5 text-white hover:bg-slate-800 sm:w-auto sm:min-w-[170px]">
+        <Button type="submit" variant="secondary" className="h-10 w-full rounded-xl border-[var(--color-primary)] bg-[var(--color-primary)] px-5 text-white hover:brightness-110 sm:w-auto sm:min-w-[170px]">
           Apply range
         </Button>
       </div>
