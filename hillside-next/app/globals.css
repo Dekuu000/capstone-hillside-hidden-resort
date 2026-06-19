@@ -2,18 +2,19 @@
 
 :root {
   color-scheme: light;
-  --color-primary: #0b1f3b;
-  --color-secondary: #0ea5a4;
-  --color-cta: #f97316;
-  --color-background: #f7fafc;
+  /* Warm mountain/nature palette: deep forest green + terracotta accent on warm neutrals */
+  --color-primary: #2d4a3e;
+  --color-secondary: #b5613a;
+  --color-cta: #c2562f;
+  --color-background: #faf7f2;
   --color-surface: #ffffff;
-  --color-text: #0f172a;
-  --color-muted: #64748b;
-  --color-border: #e2e8f0;
-  --color-success: #15803d;
+  --color-text: #2b2622;
+  --color-muted: #7a7166;
+  --color-border: #e9e2d8;
+  --color-success: #2f7d56;
   --color-warn: #b45309;
   --color-error: #b91c1c;
-  --color-info: #0369a1;
+  --color-info: #2f6d6a;
   --space-xs: 4px;
   --space-sm: 8px;
   --space-md: 16px;
@@ -50,6 +51,7 @@ html {
 body {
   background: var(--color-background);
   color: var(--color-text);
+  font-family: var(--font-sans), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
 h1,

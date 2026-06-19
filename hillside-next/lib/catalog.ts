@@ -1,0 +1,198 @@
+import { z } from "zod";
+import { serviceListResponseSchema } from "../../packages/shared/src/schemas";
+import type { ServiceItem } from "../../packages/shared/src/types";
+
+/**
+ * Public catalog access (no auth) + presentation helpers for the Airbnb-style
+ * browse experience. Backed by GET /v2/catalog/units, /units/available, /services.
+ */
+
+const apiBase = (process.env.NEXT_PUBLIC_API_BASE_URL || "").trim().replace(/\/+$/, "");
+
+export const publicUnitSchema = z.object({
+  unit_id: z.string(),
+  name: z.string(),
+  unit_code: z.string().nullable().optional(),
+  type: z.string(),
+  description: z.string().nullable().optional(),
+  base_price: z.number(),
+  capacity: z.number(),
+  image_url: z.string().nullable().optional(),
+  image_urls: z.array(z.string()).nullable().optional(),
+  image_thumb_urls: z.array(z.string()).nullable().optional(),
+  amenities: z.array(z.string()).nullable().optional(),
+});
+
+export type PublicUnit = z.infer<typeof publicUnitSchema>;
+
+const publicUnitsResponseSchema = z.object({
+  items: z.array(publicUnitSchema),
+  count: z.number(),
+  limit: z.number().optional(),
+  offset: z.number().optional(),
+  has_more: z.boolean().optional(),
+});
+
+const availableUnitsResponseSchema = z.object({
+  items: z.array(publicUnitSchema),
+  count: z.number(),
+  check_in_date: z.string().optional(),
+  check_out_date: z.string().optional(),
+});
+
+/** Server-side fetch of the public catalog. Returns [] on any failure (page degrades gracefully). */
+export async function fetchPublicUnits(params?: {
+  unitType?: string;
+  limit?: number;
+}): Promise<PublicUnit[]> {
+  if (!apiBase) return [];
+  const search = new URLSearchParams();
+  if (params?.unitType) search.set("unit_type", params.unitType);
+  search.set("limit", String(params?.limit ?? 60));
+  try {
+    const res = await fetch(`${apiBase}/v2/catalog/units?${search.toString()}`, {
+      next: { revalidate: 60 },
+    });
+    if (!res.ok) return [];
+    const parsed = publicUnitsResponseSchema.safeParse(await res.json());
+    return parsed.success ? parsed.data.items : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Server-side availability check for a date range. Returns null on failure. */
+export async function fetchAvailableUnits(params: {
+  checkInDate: string;
+  checkOutDate: string;
+  unitType?: string;
+}): Promise<PublicUnit[] | null> {
+  if (!apiBase) return null;
+  const search = new URLSearchParams({
+    check_in_date: params.checkInDate,
+    check_out_date: params.checkOutDate,
+  });
+  if (params.unitType) search.set("unit_type", params.unitType);
+  try {
+    const res = await fetch(`${apiBase}/v2/catalog/units/available?${search.toString()}`, {
+      next: { revalidate: 30 },
+    });
+    if (!res.ok) return null;
+    const parsed = availableUnitsResponseSchema.safeParse(await res.json());
+    return parsed.success ? parsed.data.items : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchPublicUnitById(unitId: string): Promise<PublicUnit | null> {
+  const units = await fetchPublicUnits({ limit: 100 });
+  return units.find((unit) => unit.unit_id === unitId) ?? null;
+}
+
+// --- Presentation helpers ---
+
+export function unitTypeLabel(type: string): string {
+  switch (type) {
+    case "room":
+      return "Room";
+    case "cottage":
+      return "Cottage";
+    case "amenity":
+      return "Event space";
+    default:
+      return type ? type[0].toUpperCase() + type.slice(1) : "Stay";
+  }
+}
+
+const IMAGES_BY_TYPE: Record<string, string[]> = {
+  room: [
+    "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85",
+    "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267",
+    "https://images.unsplash.com/photo-1611892440504-42a792e24d32",
+  ],
+  cottage: [
+    "https://images.unsplash.com/photo-1449158743715-0a90ebb6d2d8",
+    "https://images.unsplash.com/photo-1518780664697-55e3ad937233",
+    "https://images.unsplash.com/photo-1542718610-a1d656d1884c",
+  ],
+  amenity: [
+    "https://images.unsplash.com/photo-1530541930197-ff16ac917b0e",
+    "https://images.unsplash.com/photo-1519225421980-715cb0215aed",
+    "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3",
+  ],
+};
+
+const FALLBACK_IMAGES = [
+  "https://images.unsplash.com/photo-1470770841072-f978cf4d019e",
+  "https://images.unsplash.com/photo-1501785888041-af3ef285b470",
+];
+
+function stableIndex(seed: string, mod: number): number {
+  let h = 0;
+  for (let i = 0; i < seed.length; i += 1) {
+    h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  }
+  return mod > 0 ? h % mod : 0;
+}
+
+/** A real photo if the unit has one, else a deterministic nature/cabin placeholder. */
+export function unitImageUrl(unit: Pick<PublicUnit, "unit_id" | "type" | "image_url" | "image_urls">): string {
+  const candidate = (unit.image_urls || []).find(Boolean) || unit.image_url || "";
+  if (/^https?:\/\//i.test(candidate)) return candidate;
+  const pool = IMAGES_BY_TYPE[unit.type] || FALLBACK_IMAGES;
+  const base = pool[stableIndex(unit.unit_id, pool.length)];
+  return `${base}?auto=format&fit=crop&w=1200&q=80`;
+}
+
+/** A small gallery set: real photos if present, else the unit-type placeholder pool. */
+export function unitGalleryImages(unit: PublicUnit): string[] {
+  const real = (unit.image_urls || []).filter((u) => /^https?:\/\//i.test(u));
+  if (real.length > 0) return real;
+  const pool = IMAGES_BY_TYPE[unit.type] || FALLBACK_IMAGES;
+  return [...pool, ...FALLBACK_IMAGES].map((base) => `${base}?auto=format&fit=crop&w=1200&q=80`);
+}
+
+// --- Tours (public day-pass / activity catalog) ---
+
+/** Public list of active tour/day-pass services. Returns [] on failure. */
+export async function fetchPublicServices(): Promise<ServiceItem[]> {
+  if (!apiBase) return [];
+  try {
+    const res = await fetch(`${apiBase}/v2/catalog/services`, { next: { revalidate: 60 } });
+    if (!res.ok) return [];
+    const parsed = serviceListResponseSchema.safeParse(await res.json());
+    return parsed.success ? parsed.data.items : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchPublicServiceById(serviceId: string): Promise<ServiceItem | null> {
+  const items = await fetchPublicServices();
+  return items.find((service) => service.service_id === serviceId) ?? null;
+}
+
+const TOUR_IMAGES = [
+  "https://images.unsplash.com/photo-1551632811-561732d1e306",
+  "https://images.unsplash.com/photo-1533240332313-0db49b459ad6",
+  "https://images.unsplash.com/photo-1473773508845-188df298d2d1",
+  "https://images.unsplash.com/photo-1510312305653-8ed496efae75",
+  "https://images.unsplash.com/photo-1501555088652-021faa106b9b",
+];
+
+export function tourImageUrl(service: Pick<ServiceItem, "service_id">): string {
+  const base = TOUR_IMAGES[stableIndex(service.service_id, TOUR_IMAGES.length)];
+  return `${base}?auto=format&fit=crop&w=1200&q=80`;
+}
+
+export function tourGalleryImages(): string[] {
+  return TOUR_IMAGES.map((base) => `${base}?auto=format&fit=crop&w=1200&q=80`);
+}
+
+/** "08:00 – 17:00" from "HH:MM:SS" times, or a friendly fallback. */
+export function tourSchedule(service: Pick<ServiceItem, "start_time" | "end_time">): string {
+  const start = service.start_time ? service.start_time.slice(0, 5) : "";
+  const end = service.end_time ? service.end_time.slice(0, 5) : "";
+  return start && end ? `${start} – ${end}` : "Flexible schedule";
+}

@@ -6,7 +6,13 @@ export function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   const hasAccessToken = Boolean(request.cookies.get(ACCESS_TOKEN_COOKIE)?.value);
 
-  if ((pathname.startsWith("/admin") || pathname.startsWith("/my-bookings")) && !hasAccessToken) {
+  if (
+    (pathname.startsWith("/admin") ||
+      pathname.startsWith("/my-bookings") ||
+      pathname.startsWith("/reserve") ||
+      pathname.startsWith("/tours/reserve")) &&
+    !hasAccessToken
+  ) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
     loginUrl.searchParams.set("next", `${pathname}${search}`);
@@ -17,6 +23,6 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/my-bookings"],
+  matcher: ["/admin/:path*", "/my-bookings", "/reserve", "/reserve/:path*", "/tours/reserve"],
 };
 

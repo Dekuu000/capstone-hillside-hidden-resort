@@ -1,7 +1,7 @@
 import { BookNowClient } from "../../components/book/BookNowClient";
 import { GuestShell } from "../../components/layout/GuestShell";
 import { availableUnitsResponseSchema } from "../../../packages/shared/src/schemas";
-import type { AvailableUnitsResponse } from "../../../packages/shared/src/types";
+import { isBackOffice, type AvailableUnitsResponse } from "../../../packages/shared/src/types";
 import { fetchServerApiData } from "../../lib/serverApi";
 import { getServerAccessToken, getServerAuthContext, getServerEmailHint } from "../../lib/serverAuth";
 import { redirect } from "next/navigation";
@@ -38,8 +38,8 @@ export default async function BookPage() {
 
   const accessToken = await getServerAccessToken();
   const auth = accessToken ? await getServerAuthContext(accessToken) : null;
-  if (String(auth?.role || "").toLowerCase() === "admin") {
-    redirect("/admin/reservations");
+  if (isBackOffice(auth?.role)) {
+    redirect("/admin");
   }
   const emailHint = auth?.email || (await getServerEmailHint());
   const initialUnitsData = accessToken

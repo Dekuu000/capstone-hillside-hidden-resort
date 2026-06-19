@@ -50,6 +50,8 @@ const scriptSrc = ["'self'", "'unsafe-inline'", isDev ? "'unsafe-eval'" : ""]
   .join(" ");
 
 const imageRemotePatterns: RemotePattern[] = [
+  // Curated stock imagery for listing placeholders until units have real photos.
+  { protocol: "https", hostname: "images.unsplash.com", pathname: "/**" },
   ...(supabaseUrl
     ? [
         {
@@ -109,6 +111,8 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
+      // Old multi-unit booking entry now flows through the Airbnb-style browse.
+      { source: "/book", destination: "/stays", permanent: false },
       { source: "/admin/checkin", destination: "/admin/check-in", permanent: false },
       { source: "/admin/scan", destination: "/admin/check-in", permanent: false },
       { source: "/admin/tours/new", destination: "/admin/walk-in?tab=tour", permanent: false },

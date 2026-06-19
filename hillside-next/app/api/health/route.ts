@@ -4,7 +4,7 @@ export async function GET() {
   return NextResponse.json({
     ok: true,
     service: "hillside-next",
-    mode: "foundation-shell",
+    mode: "active",
     timestamp: new Date().toISOString(),
   });
 }

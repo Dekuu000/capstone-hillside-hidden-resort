@@ -1,9 +1,16 @@
 import type { Metadata, Viewport } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { ServiceWorkerRegister } from "../components/shared/ServiceWorkerRegister";
 import { SyncEngineProvider } from "../components/shared/SyncEngineProvider";
 import { ToastProvider } from "../components/shared/ToastProvider";
 import { OfflineStatusBanner } from "../components/shared/OfflineStatusBanner";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Hillside Hidden Resort",
@@ -22,14 +29,14 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0E1F33",
+  themeColor: "#2d4a3e",
 };
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={inter.variable}>
       <body>
         <ToastProvider>
           <SyncEngineProvider>
