@@ -6,9 +6,11 @@ import {
   MY_BOOKINGS_TABS,
   RESERVATION_CANCELLATION_ACTORS,
   RESERVATION_POLICY_OUTCOMES,
+  ROLES,
   UNIT_OPERATIONAL_STATUSES,
 } from "./types";
 
+export const roleSchema = z.enum(ROLES);
 export const bookingStatusSchema = z.enum(BOOKING_STATUSES);
 export const reservationCancellationActorSchema = z.enum(RESERVATION_CANCELLATION_ACTORS);
 export const reservationPolicyOutcomeSchema = z.enum(RESERVATION_POLICY_OUTCOMES);

@@ -12,6 +12,54 @@ export const BOOKING_STATUSES = [
 
 export type BookingStatus = (typeof BOOKING_STATUSES)[number];
 export type ReservationStatus = BookingStatus;
+
+// ── Back-office roles ────────────────────────────────────────────────
+// Nested tiers: guest < staff (Front Desk) < admin (Manager) < super_admin (System Admin).
+// "admin" is intentionally kept as the Manager role so existing checks keep working.
+export const ROLES = ["guest", "staff", "admin", "super_admin"] as const;
+export type Role = (typeof ROLES)[number];
+
+export const ROLE_RANK: Record<Role, number> = {
+  guest: 0,
+  staff: 1,
+  admin: 2,
+  super_admin: 3,
+};
+
+/** Human-friendly labels for the back-office roles. */
+export const ROLE_LABELS: Record<Role, string> = {
+  guest: "Guest",
+  staff: "Front Desk",
+  admin: "Manager",
+  super_admin: "System Admin",
+};
+
+function normalizeRole(role: string | null | undefined): Role {
+  const value = String(role || "").toLowerCase();
+  return (ROLES as readonly string[]).includes(value) ? (value as Role) : "guest";
+}
+
+export function roleAtLeast(role: string | null | undefined, min: Role): boolean {
+  return ROLE_RANK[normalizeRole(role)] >= ROLE_RANK[min];
+}
+
+/** Any back-office user (Front Desk and up). */
+export function isBackOffice(role: string | null | undefined): boolean {
+  return roleAtLeast(role, "staff");
+}
+
+/** Capability tiers used to gate back-office features. */
+export type NavTier = "operations" | "management" | "technical";
+
+const TIER_MIN_ROLE: Record<NavTier, Role> = {
+  operations: "staff",
+  management: "admin",
+  technical: "super_admin",
+};
+
+export function canAccessTier(role: string | null | undefined, tier: NavTier): boolean {
+  return roleAtLeast(role, TIER_MIN_ROLE[tier]);
+}
 export const RESERVATION_CANCELLATION_ACTORS = ["guest", "admin"] as const;
 export const RESERVATION_POLICY_OUTCOMES = ["released", "refunded", "forfeited"] as const;
 export type ReservationCancellationActor = (typeof RESERVATION_CANCELLATION_ACTORS)[number];
