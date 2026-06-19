@@ -4,7 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import {
   CalendarClock,
   CheckCircle2,
+  ChevronRight,
   ClipboardList,
+  ConciergeBell,
   Hash,
   Loader2,
   NotebookText,
@@ -13,6 +15,7 @@ import {
   PlayCircle,
   ReceiptText,
   Search,
+  Sparkles,
   UserRound,
   Wrench,
 } from "lucide-react";
@@ -54,15 +57,22 @@ const STATUS_STYLE: Record<string, string> = {
   cancelled: "bg-rose-100 text-rose-800",
 };
 
-function getServiceCategoryBadge(category?: string | null) {
+function getCategoryAvatar(category?: string | null) {
   if (category === "spa") {
-    return { label: "Spa", className: "bg-purple-100 text-purple-800" };
+    return { Icon: Sparkles, className: "bg-purple-50 text-purple-600" };
   }
   if (category === "room_service") {
-    return { label: "Room Service", className: "bg-[color:color-mix(in_srgb,var(--color-secondary)_18%,white)] text-[var(--color-secondary)]" };
+    return { Icon: ConciergeBell, className: "bg-[color:color-mix(in_srgb,var(--color-secondary)_14%,white)] text-[var(--color-secondary)]" };
   }
-  return { label: "Service", className: "bg-[var(--color-background)] text-[var(--color-text)]" };
+  return { Icon: Wrench, className: "bg-[var(--color-background)] text-[var(--color-muted)]" };
 }
+
+const QUEUE_TIME_FORMAT: Intl.DateTimeFormatOptions = {
+  month: "short",
+  day: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+};
 
 export function AdminServicesClient({ accessToken }: Props) {
   const { showToast } = useToast();
@@ -256,39 +266,52 @@ export function AdminServicesClient({ accessToken }: Props) {
         ) : null}
 
         <div className="space-y-2">
-          {filteredRows.map((row) => (
-            <button
-              key={row.request_id}
-              type="button"
-              onClick={() => setActiveRow(row)}
-              className="w-full rounded-xl border border-[var(--color-border)] bg-white p-3 text-left"
-            >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="font-semibold text-[var(--color-text)]">
-                  {row.service_item?.service_name || "Service request"}
-                </p>
-                <div className="flex items-center gap-1.5">
-                  <span
-                    className={`rounded-full px-2 py-1 text-xs font-semibold ${getServiceCategoryBadge(row.service_item?.category).className}`}
-                  >
-                    {getServiceCategoryBadge(row.service_item?.category).label}
+          {filteredRows.map((row) => {
+            const avatar = getCategoryAvatar(row.service_item?.category);
+            const requestedAt = formatDateTime(row.requested_at, {
+              locale: "en-PH",
+              formatOptions: QUEUE_TIME_FORMAT,
+              fallback: "",
+            });
+            return (
+              <button
+                key={row.request_id}
+                type="button"
+                onClick={() => setActiveRow(row)}
+                className="group flex w-full items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-white p-3 text-left transition-colors duration-200 hover:border-[color:color-mix(in_srgb,var(--color-secondary)_35%,white)] hover:bg-[var(--color-background)]"
+              >
+                <span className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${avatar.className}`}>
+                  <avatar.Icon className="h-5 w-5" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span className="truncate font-semibold text-[var(--color-text)]">
+                      {row.service_item?.service_name || "Service request"}
+                    </span>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[11px] font-semibold capitalize ${STATUS_STYLE[row.status] || "bg-[var(--color-background)] text-[var(--color-text)]"}`}
+                    >
+                      {row.status.replaceAll("_", " ")}
+                    </span>
                   </span>
-                  <span
-                    className={`rounded-full px-2 py-1 text-xs font-semibold ${STATUS_STYLE[row.status] || "bg-[var(--color-background)] text-[var(--color-text)]"}`}
-                  >
-                    {row.status.replaceAll("_", " ")}
+                  <span className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-sm text-[var(--color-muted)]">
+                    <span className="truncate font-medium text-[var(--color-text)]">{row.guest?.name || row.guest?.email || "Guest"}</span>
+                    <span aria-hidden="true">·</span>
+                    <span>{row.reservation?.reservation_code || "No reservation"}</span>
+                    <span aria-hidden="true">·</span>
+                    <span>Qty {row.quantity}</span>
+                    {requestedAt ? (
+                      <>
+                        <span aria-hidden="true">·</span>
+                        <span>{requestedAt}</span>
+                      </>
+                    ) : null}
                   </span>
-                </div>
-              </div>
-              <div className="mt-1 text-sm text-[var(--color-muted)]">
-                <span>{row.guest?.name || row.guest?.email || "Guest"}</span>
-                <span className="mx-1">|</span>
-                <span>{row.reservation?.reservation_code || "No reservation linked"}</span>
-                <span className="mx-1">|</span>
-                <span>Qty {row.quantity}</span>
-              </div>
-            </button>
-          ))}
+                </span>
+                <ChevronRight className="h-5 w-5 shrink-0 text-[var(--color-muted)] transition-transform duration-200 group-hover:translate-x-0.5" />
+              </button>
+            );
+          })}
         </div>
       </section>
 
