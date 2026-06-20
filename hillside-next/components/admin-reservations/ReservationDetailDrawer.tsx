@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { AlertCircle, Check, ChevronDown, Copy, ExternalLink, ShieldCheck, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { AdminPaymentItem, ReservationListItem } from "../../../packages/shared/src/types";
 import { buildTxExplorerUrl } from "../../lib/chainExplorer";
 import { formatDateTime, formatDateWithYear } from "../../lib/dateDisplay";
@@ -244,15 +244,29 @@ export function ReservationDetailDrawer({
     }
   };
 
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open, onClose]);
+
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/55 p-3 backdrop-blur-[2px] lg:left-64">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-3 backdrop-blur-[2px] sm:p-4">
       <div className="w-full max-w-4xl overflow-hidden rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white shadow-[var(--shadow-lg)]">
         <div className="max-h-[92vh] overflow-y-auto">
           <div className="sticky top-0 z-10 border-b border-[var(--color-border)] bg-white/95 px-4 py-3 backdrop-blur">
             <div className="flex items-start justify-between gap-3">
-              <h3 className="text-lg font-bold text-[var(--color-text)]">{reservation?.reservation_code ?? "Reservation details"}</h3>
+              <h3 className="text-xl font-bold tracking-[-0.01em] text-[var(--color-text)]">{reservation?.reservation_code ?? "Reservation details"}</h3>
               <button
                 type="button"
                 onClick={onClose}
