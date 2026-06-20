@@ -775,6 +775,27 @@ export function AdminCheckinClient({
   }, [cacheValidUntil, localValidateFromCacheByToken, markResult, networkOnline, qrPublicKey, scannerId, showToast, token]);
 
   const startCamera = useCallback(async (requestedCameraId?: string) => {
+    // Camera capture requires a secure context (HTTPS or localhost). A phone
+    // opening the dev server over http://<lan-ip> is by far the most common
+    // reason the scanner "errors" on mobile: the browser hides
+    // navigator.mediaDevices entirely. Detect that up front and give an
+    // actionable message instead of a cryptic html5-qrcode failure.
+    const mediaUnavailable =
+      typeof navigator === "undefined" ||
+      !navigator.mediaDevices ||
+      typeof navigator.mediaDevices.getUserMedia !== "function";
+    const insecureContext = typeof window !== "undefined" && window.isSecureContext === false;
+    if (insecureContext || mediaUnavailable) {
+      setScanActive(false);
+      setScanLoading(false);
+      setOutcome("invalid");
+      setCameraPermissionError(
+        insecureContext
+          ? "Camera scanning needs a secure (HTTPS) connection. On a phone you're usually on http://<ip>, which browsers block. Open the site over HTTPS on this device, or use the Code tab to paste the guest's QR token instead."
+          : "This browser doesn't expose a camera here. Use a supported browser over HTTPS, or use the Code tab to paste the guest's QR token instead.",
+      );
+      return;
+    }
     setScanLoading(true);
     setOutcome("scanning");
     setCameraPermissionError(null);

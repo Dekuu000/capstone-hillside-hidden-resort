@@ -137,7 +137,7 @@ export function CameraScanPanel({
 
       {permissionError ? (
         <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3">
-          <p className="text-xs font-semibold text-red-700">Camera permission required</p>
+          <p className="text-xs font-semibold text-red-700">Camera unavailable</p>
           <p className="mt-1 text-xs text-red-700">{permissionError}</p>
           <button
             type="button"
