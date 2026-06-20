@@ -1,11 +1,13 @@
 ﻿import { Coins } from "lucide-react";
-import type { ReportsOverviewResponse } from "../../../../packages/shared/src/types";
+import type { ReportsOverviewResponse, Role } from "../../../../packages/shared/src/types";
+import { ROLE_LABELS } from "../../../../packages/shared/src/types";
 import { reportsOverviewResponseSchema } from "../../../../packages/shared/src/schemas";
+import { ReportDocument } from "../../../components/admin-reports/ReportDocument";
 import { ReportsDateRangeForm } from "../../../components/admin-reports/ReportsDateRangeForm";
 import { todayPlusLocalIsoDate } from "../../../lib/dateIso";
 import { formatDateOnly, formatDateTime } from "../../../lib/dateDisplay";
 import { formatPhpPeso as formatPeso } from "../../../lib/formatCurrency";
-import { getServerAccessToken } from "../../../lib/serverAuth";
+import { getServerAccessToken, getServerAuthContext } from "../../../lib/serverAuth";
 import { fetchServerApiData } from "../../../lib/serverApi";
 
 function formatPercent(value: number) {
@@ -68,7 +70,14 @@ export default async function AdminReportsPage({
   const resolved = (await searchParams) ?? {};
   const fromDate = (Array.isArray(resolved.from) ? resolved.from[0] : resolved.from) || todayPlusLocalIsoDate(-7);
   const toDate = (Array.isArray(resolved.to) ? resolved.to[0] : resolved.to) || todayPlusLocalIsoDate(0);
-  const overview = await fetchOverview(accessToken, fromDate, toDate);
+  const [overview, auth] = await Promise.all([
+    fetchOverview(accessToken, fromDate, toDate),
+    getServerAuthContext(accessToken),
+  ]);
+  const preparedBy = auth
+    ? `${ROLE_LABELS[(auth.role || "") as Role] || "Back office"}${auth.email ? ` (${auth.email})` : ""}`
+    : "Back office";
+  const generatedAt = new Date().toISOString();
   const netBookings = overview
     ? Math.max(overview.summary.bookings - overview.summary.cancellations, 0)
     : 0;
@@ -218,6 +227,10 @@ export default async function AdminReportsPage({
           </div>
         </>
       )}
+
+      {overview ? (
+        <ReportDocument overview={overview} preparedBy={preparedBy} generatedAt={generatedAt} />
+      ) : null}
     </section>
   );
 }

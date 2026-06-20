@@ -516,3 +516,34 @@ a:focus-visible {
     scroll-behavior: auto !important;
   }
 }
+
+/* Printing: only the report document prints; everything else is hidden.
+   Used by the printable A4 report (#printable-report). */
+@page {
+  size: A4;
+  margin: 14mm;
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
+  body * {
+    visibility: hidden !important;
+  }
+  #printable-report,
+  #printable-report * {
+    visibility: visible !important;
+  }
+  #printable-report {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+  /* Ensure tinted blocks/borders render on paper. */
+  #printable-report * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

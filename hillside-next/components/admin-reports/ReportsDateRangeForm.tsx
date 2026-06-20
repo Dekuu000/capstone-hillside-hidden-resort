@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { FancyDatePicker } from "../shared/FancyDatePicker";
+import { PrintReportButton } from "./PrintReportButton";
 import { ReportsExportButtons } from "./ReportsExportButtons";
 import type { ReportDailyItem, ReportMonthlyItem } from "../../../packages/shared/src/types";
 
@@ -109,7 +110,10 @@ export function ReportsDateRangeForm({ fromDate, toDate, daily, monthly }: Props
             Apply range
           </button>
         </div>
-        <ReportsExportButtons daily={daily} monthly={monthly} fullWidthMobile />
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center lg:shrink-0">
+          <PrintReportButton />
+          <ReportsExportButtons daily={daily} monthly={monthly} fullWidthMobile />
+        </div>
       </div>
 
       {hasChanges ? (
