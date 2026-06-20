@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { SlidersHorizontal } from "lucide-react";
 import type { PublicUnit } from "../../lib/catalog";
 import { getUnitNightlyRate } from "../../lib/booking/pricing";
+import { Select } from "../shared/Select";
 import { CategoryFilterRow, type CategoryKey } from "./CategoryFilterRow";
 import { ListingCard } from "./ListingCard";
 import { MapPlaceholder } from "./MapPlaceholder";
@@ -68,21 +69,17 @@ export function StaysResults({
               {visible.length} {visible.length === 1 ? "stay" : "stays"}
               {datesApplied ? " available" : ""}
             </p>
-            <label className="flex items-center gap-2 text-sm">
-              <SlidersHorizontal className="h-4 w-4 text-[var(--color-muted)]" />
-              <span className="sr-only">Sort by</span>
-              <select
-                value={sort}
-                onChange={(event) => setSort(event.target.value as SortKey)}
-                className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-sm font-semibold text-[var(--color-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
-              >
-                {(Object.keys(SORT_LABELS) as SortKey[]).map((key) => (
-                  <option key={key} value={key}>
-                    {SORT_LABELS[key]}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <div className="flex items-center gap-2 text-sm">
+              <SlidersHorizontal className="h-4 w-4 shrink-0 text-[var(--color-muted)]" />
+              <div className="w-[190px]">
+                <Select
+                  ariaLabel="Sort by"
+                  value={sort}
+                  onChange={(next) => setSort(next as SortKey)}
+                  options={(Object.keys(SORT_LABELS) as SortKey[]).map((key) => ({ value: key, label: SORT_LABELS[key] }))}
+                />
+              </div>
+            </div>
           </div>
 
           {visible.length === 0 ? (

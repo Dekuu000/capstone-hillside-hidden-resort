@@ -7,6 +7,7 @@ import type { GuestMapAmenityPin } from "../../../packages/shared/src/types";
 import { formatCachedAt } from "../../lib/dateDisplay";
 import { useNetworkOnline } from "../../lib/hooks/useNetworkOnline";
 import { NetworkStatusBadge } from "../shared/NetworkStatusBadge";
+import { Select } from "../shared/Select";
 import { Skeleton } from "../shared/Skeleton";
 import { StatusPill } from "../shared/StatusPill";
 import { SyncAlertBanner } from "../shared/SyncAlertBanner";
@@ -337,17 +338,12 @@ export function GuestMapClient() {
         <div className="mt-3 grid gap-2.5 sm:grid-cols-[1fr_auto_1fr] sm:items-end">
           <label className="guest-form-label">
             I am here
-            <select
+            <Select
+              ariaLabel="Starting point"
               value={originAmenityId || ""}
-              onChange={(event) => setOriginAmenityId(event.target.value)}
-              className="guest-field-control"
-            >
-              {filteredAmenities.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
+              onChange={setOriginAmenityId}
+              options={filteredAmenities.map((item) => ({ value: item.id, label: item.name }))}
+            />
           </label>
           <button
             type="button"
@@ -360,17 +356,12 @@ export function GuestMapClient() {
           </button>
           <label className="guest-form-label">
             Take me to
-            <select
+            <Select
+              ariaLabel="Destination"
               value={activeAmenityId || ""}
-              onChange={(event) => setActiveAmenityId(event.target.value)}
-              className="guest-field-control"
-            >
-              {filteredAmenities.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
+              onChange={setActiveAmenityId}
+              options={filteredAmenities.map((item) => ({ value: item.id, label: item.name }))}
+            />
           </label>
         </div>
 
