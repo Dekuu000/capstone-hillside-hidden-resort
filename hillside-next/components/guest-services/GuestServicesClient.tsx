@@ -267,10 +267,6 @@ export function GuestServicesClient({ accessToken }: Props) {
     () => requests.filter((item) => item.service_item?.category === category),
     [category, requests],
   );
-  const syncSummaryText = networkOnline
-    ? "Online · requests sync automatically."
-    : "Offline · requests queue and sync automatically.";
-
   return (
     <div className="space-y-4">
       <section className="surface p-4">
@@ -283,15 +279,6 @@ export function GuestServicesClient({ accessToken }: Props) {
           activeClassName="border border-[var(--color-secondary)] bg-teal-50 text-[var(--color-secondary)] shadow-sm"
           inactiveClassName="border border-[var(--color-border)] bg-white text-slate-500 hover:bg-slate-50"
         />
-        <div className="mt-2.5 flex items-center justify-between gap-2 rounded-xl border border-slate-200/80 bg-slate-50 px-3 py-2">
-          <p className="text-xs font-medium text-slate-600">{syncSummaryText}</p>
-          <Link
-            href="/guest/sync"
-            className="inline-flex h-8 items-center rounded-full border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
-          >
-            Details
-          </Link>
-        </div>
       </section>
       <div>
         {actionMessage ? (
@@ -481,7 +468,7 @@ export function GuestServicesClient({ accessToken }: Props) {
                       const raw = event.currentTarget.value.replace(/\D/g, "");
                       applyQuantity(raw === "" ? 1 : Number(raw));
                     }}
-                    className="guest-field-control flex-1 text-center sm:w-24 sm:flex-none"
+                    className="guest-field-control min-w-0 flex-1 text-center"
                   />
                   <button
                     type="button"
