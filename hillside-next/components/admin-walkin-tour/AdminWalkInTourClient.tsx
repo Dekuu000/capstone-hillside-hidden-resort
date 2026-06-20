@@ -20,6 +20,7 @@ import { todayPlusLocalIsoDate } from "../../lib/dateIso";
 import { formatPhpPeso as toPeso } from "../../lib/formatCurrency";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
 import { FancyDatePicker } from "../shared/FancyDatePicker";
+import { Select } from "../shared/Select";
 import { useToast } from "../shared/ToastProvider";
 
 type AdminWalkInTourClientProps = {
@@ -246,19 +247,17 @@ export function AdminWalkInTourClient({
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="grid gap-1 text-sm text-[var(--color-text)] sm:col-span-2">
               Select tour
-              <select
+              <Select
+                ariaLabel="Select tour"
                 value={serviceId}
-                onChange={(event) => setServiceId(event.target.value)}
+                onChange={(next) => setServiceId(next)}
                 disabled={servicesLoading}
-                className="rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 outline-none ring-[var(--color-secondary)]/20 transition focus:ring-2"
-              >
-                <option value="">Select a service</option>
-                {services.map((service) => (
-                  <option key={service.service_id} value={service.service_id}>
-                    {service.service_name} ({service.start_time || "--"}-{service.end_time || "--"})
-                  </option>
-                ))}
-              </select>
+                placeholder="Select a service"
+                options={services.map((service) => ({
+                  value: service.service_id,
+                  label: `${service.service_name} (${service.start_time || "--"}-${service.end_time || "--"})`,
+                }))}
+              />
               {servicesLoading ? <span className="inline-flex items-center gap-1 text-xs text-[var(--color-muted)]"><Loader2 className="h-3 w-3 animate-spin" /> Loading active tours...</span> : null}
               {servicesError ? <span className="text-xs text-red-600">{servicesError}</span> : null}
             </label>

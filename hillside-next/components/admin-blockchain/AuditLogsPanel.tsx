@@ -9,6 +9,7 @@ import { Badge, statusToBadgeVariant } from "../shared/Badge";
 import { Button } from "../shared/Button";
 import { DetailDrawer } from "../shared/DetailDrawer";
 import { FancyDatePicker } from "../shared/FancyDatePicker";
+import { Select } from "../shared/Select";
 
 export type AuditFilterState = {
   search: string;
@@ -97,21 +98,22 @@ export function AuditLogsPanel({
 
         <label className="grid min-w-0 gap-1 text-xs text-[var(--color-muted)] md:col-span-2 2xl:col-span-2">
           Action
-          <select
+          <Select
+            ariaLabel="Action"
             value={filters.action}
-            onChange={(event) => onChangeFilters({ action: event.target.value })}
-            className="h-10 rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-text)]"
-          >
-            <option value="">All</option>
-            <option value="create">create</option>
-            <option value="update">update</option>
-            <option value="cancel">cancel</option>
-            <option value="checkin">checkin</option>
-            <option value="checkout">checkout</option>
-            <option value="verify">verify</option>
-            <option value="reject">reject</option>
-            <option value="override_checkin">override_checkin</option>
-          </select>
+            onChange={(next) => onChangeFilters({ action: next })}
+            options={[
+              { value: "", label: "All" },
+              { value: "create", label: "create" },
+              { value: "update", label: "update" },
+              { value: "cancel", label: "cancel" },
+              { value: "checkin", label: "checkin" },
+              { value: "checkout", label: "checkout" },
+              { value: "verify", label: "verify" },
+              { value: "reject", label: "reject" },
+              { value: "override_checkin", label: "override_checkin" },
+            ]}
+          />
         </label>
 
         <div className="min-w-0 md:col-span-2 2xl:col-span-2">

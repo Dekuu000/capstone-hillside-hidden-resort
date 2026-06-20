@@ -7,6 +7,7 @@ import { buildTxExplorerUrlFromBase, normalizeTxHash, shortHash } from "../../li
 import { formatDateTime } from "../../lib/dateDisplay";
 import { Badge, statusToBadgeVariant } from "../shared/Badge";
 import { Button } from "../shared/Button";
+import { Select } from "../shared/Select";
 import { StatCard } from "../shared/StatCard";
 
 type Props = {
@@ -87,41 +88,38 @@ export function ContractStatusPanel({
           <p className="text-sm text-[var(--color-muted)]">Escrow chain health and recent successful on-chain settlements.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <label className="sr-only" htmlFor="contract-chain-key">Chain</label>
-          <select
-            id="contract-chain-key"
-            value={chainKey}
-            onChange={(event) => onChangeChain(event.target.value as ChainKey)}
-            className="h-11 min-w-[120px] rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)]"
-          >
-            {enabledChains.map((chain) => (
-              <option key={chain} value={chain}>
-                {chain}
-              </option>
-            ))}
-          </select>
-          <label className="sr-only" htmlFor="contract-window-days">Window</label>
-          <select
-            id="contract-window-days"
-            value={windowDays}
-            onChange={(event) => onChangeWindow(Number(event.target.value) as 7 | 14 | 30)}
-            className="h-11 min-w-[120px] rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)]"
-          >
-            <option value={7}>Last 7 days</option>
-            <option value={14}>Last 14 days</option>
-            <option value={30}>Last 30 days</option>
-          </select>
-          <label className="sr-only" htmlFor="contract-page-size">Rows</label>
-          <select
-            id="contract-page-size"
-            value={contractLimit}
-            onChange={(event) => onChangeLimit(Number(event.target.value) as 5 | 10 | 20)}
-            className="h-11 min-w-[96px] rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)]"
-          >
-            <option value={5}>5 rows</option>
-            <option value={10}>10 rows</option>
-            <option value={20}>20 rows</option>
-          </select>
+          <div className="min-w-[130px]">
+            <Select
+              ariaLabel="Chain"
+              value={chainKey}
+              onChange={(next) => onChangeChain(next as ChainKey)}
+              options={enabledChains.map((chain) => ({ value: chain, label: chain }))}
+            />
+          </div>
+          <div className="min-w-[140px]">
+            <Select
+              ariaLabel="Window"
+              value={String(windowDays)}
+              onChange={(next) => onChangeWindow(Number(next) as 7 | 14 | 30)}
+              options={[
+                { value: "7", label: "Last 7 days" },
+                { value: "14", label: "Last 14 days" },
+                { value: "30", label: "Last 30 days" },
+              ]}
+            />
+          </div>
+          <div className="min-w-[110px]">
+            <Select
+              ariaLabel="Rows"
+              value={String(contractLimit)}
+              onChange={(next) => onChangeLimit(Number(next) as 5 | 10 | 20)}
+              options={[
+                { value: "5", label: "5 rows" },
+                { value: "10", label: "10 rows" },
+                { value: "20", label: "20 rows" },
+              ]}
+            />
+          </div>
           <Button variant="secondary" size="md" onClick={onRefresh} loading={loading} leftSlot={<RefreshCw className="h-4 w-4" />}>
             Refresh
           </Button>

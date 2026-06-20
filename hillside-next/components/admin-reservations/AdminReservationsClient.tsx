@@ -28,6 +28,7 @@ import { getSupabaseBrowserClient } from "../../lib/supabase";
 import { ReservationDetailDrawer } from "./ReservationDetailDrawer";
 import { AdminPageHeader } from "../layout/AdminPageHeader";
 import { DataFreshnessBadge } from "../shared/DataFreshnessBadge";
+import { Select } from "../shared/Select";
 import { FancyDatePicker } from "../shared/FancyDatePicker";
 import { useToast } from "../shared/ToastProvider";
 import { loadReservationsSnapshot, saveReservationsSnapshot } from "../../lib/offlineSync/store";
@@ -648,40 +649,42 @@ export function AdminReservationsClient({
           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-[1.1fr_1fr_0.9fr_0.8fr]">
             <label className="grid gap-1 text-xs text-[var(--color-muted)]">
               Reservation status
-              <select
+              <Select
+                ariaLabel="Reservation status"
                 value={reservationStatusFilter}
-                onChange={(event) => {
-                  setReservationStatusFilter(event.target.value as ReservationStatus | "all");
+                onChange={(next) => {
+                  setReservationStatusFilter(next as ReservationStatus | "all");
                   setPage(1);
                 }}
-                className="h-9 rounded-lg border border-[var(--color-border)] px-3 text-sm text-[var(--color-text)]"
-              >
-                <option value="all">All statuses</option>
-                <option value="pending_payment">Pending Payment</option>
-                <option value="for_verification">For Verification</option>
-                <option value="confirmed">Confirmed</option>
-                <option value="checked_in">Checked In</option>
-                <option value="checked_out">Checked Out</option>
-                <option value="cancelled">Cancelled</option>
-                <option value="no_show">No Show</option>
-              </select>
+                options={[
+                  { value: "all", label: "All statuses" },
+                  { value: "pending_payment", label: "Pending Payment" },
+                  { value: "for_verification", label: "For Verification" },
+                  { value: "confirmed", label: "Confirmed" },
+                  { value: "checked_in", label: "Checked In" },
+                  { value: "checked_out", label: "Checked Out" },
+                  { value: "cancelled", label: "Cancelled" },
+                  { value: "no_show", label: "No Show" },
+                ]}
+              />
             </label>
 
             <label className="grid gap-1 text-xs text-[var(--color-muted)]">
               Payment status
-              <select
+              <Select
+                ariaLabel="Payment status"
                 value={paymentStatusFilter}
-                onChange={(event) => {
-                  setPaymentStatusFilter(event.target.value as PaymentStatusFilter);
+                onChange={(next) => {
+                  setPaymentStatusFilter(next as PaymentStatusFilter);
                   setPage(1);
                 }}
-                className="h-9 rounded-lg border border-[var(--color-border)] px-3 text-sm text-[var(--color-text)]"
-              >
-                <option value="all">All payments</option>
-                <option value="unpaid">Unpaid</option>
-                <option value="partial">Partial</option>
-                <option value="settled">Paid</option>
-              </select>
+                options={[
+                  { value: "all", label: "All payments" },
+                  { value: "unpaid", label: "Unpaid" },
+                  { value: "partial", label: "Partial" },
+                  { value: "settled", label: "Paid" },
+                ]}
+              />
             </label>
 
             <div className="grid gap-1 text-xs text-[var(--color-muted)]">

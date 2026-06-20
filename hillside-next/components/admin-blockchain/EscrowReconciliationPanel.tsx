@@ -5,6 +5,7 @@ import type { ChainKey, EscrowReconciliationResponse } from "../../../packages/s
 import { formatDateTime } from "../../lib/dateDisplay";
 import { AdminEscrowTableClient } from "../admin-escrow/AdminEscrowTableClient";
 import { Button } from "../shared/Button";
+import { Select } from "../shared/Select";
 import { StatCard } from "../shared/StatCard";
 
 type Props = {
@@ -50,19 +51,14 @@ export function EscrowReconciliationPanel({
           <p className="text-sm text-[var(--color-muted)]">Exception-first view for escrow mismatches and missing on-chain rows.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <label className="sr-only" htmlFor="reconciliation-chain-key">Chain</label>
-          <select
-            id="reconciliation-chain-key"
-            value={chainKey}
-            onChange={(event) => onChangeChain(event.target.value as ChainKey)}
-            className="h-11 min-w-[120px] rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)]"
-          >
-            {enabledChains.map((chain) => (
-              <option key={chain} value={chain}>
-                {chain}
-              </option>
-            ))}
-          </select>
+          <div className="min-w-[130px]">
+            <Select
+              ariaLabel="Chain"
+              value={chainKey}
+              onChange={(next) => onChangeChain(next as ChainKey)}
+              options={enabledChains.map((chain) => ({ value: chain, label: chain }))}
+            />
+          </div>
           <Button variant="secondary" size="md" onClick={onRefresh} loading={loading} leftSlot={<RefreshCw className="h-4 w-4" />}>
             Refresh
           </Button>

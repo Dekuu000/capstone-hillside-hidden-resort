@@ -24,6 +24,7 @@ import {
   normalizeUnitThumbUrls,
 } from "../../lib/unitMedia";
 import { AdminPageHeader } from "../layout/AdminPageHeader";
+import { Select } from "../shared/Select";
 
 type AdminUnitsClientProps = {
   initialToken?: string | null;
@@ -527,40 +528,36 @@ export function AdminUnitsClient({
 
       <div className="sticky top-[72px] z-20 mb-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-sm lg:top-4">
         <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-[160px_180px_1fr_auto_auto]">
-          <label className="grid">
-            <span className="sr-only">Filter by unit type</span>
-            <select
-              value={unitType}
-              onChange={(event) => {
-                setUnitType(event.target.value);
-                setPage(1);
-              }}
-              className="h-10 rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
-            >
-              <option value="">All types</option>
-              <option value="room">Room</option>
-              <option value="cottage">Cottage</option>
-              <option value="amenity">Amenity</option>
-            </select>
-          </label>
+          <Select
+            ariaLabel="Filter by unit type"
+            value={unitType}
+            onChange={(next) => {
+              setUnitType(next);
+              setPage(1);
+            }}
+            options={[
+              { value: "", label: "All types" },
+              { value: "room", label: "Room" },
+              { value: "cottage", label: "Cottage" },
+              { value: "amenity", label: "Amenity" },
+            ]}
+          />
 
-          <label className="grid">
-            <span className="sr-only">Filter by room status</span>
-            <select
-              value={operationalStatus}
-              onChange={(event) => {
-                setOperationalStatus(event.target.value as UnitOperationalStatus | "");
-                setPage(1);
-              }}
-              className="h-10 rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
-            >
-              <option value="">All statuses</option>
-              <option value="cleaned">Cleaned</option>
-              <option value="occupied">Occupied</option>
-              <option value="maintenance">Maintenance</option>
-              <option value="dirty">Dirty</option>
-            </select>
-          </label>
+          <Select
+            ariaLabel="Filter by room status"
+            value={operationalStatus}
+            onChange={(next) => {
+              setOperationalStatus(next as UnitOperationalStatus | "");
+              setPage(1);
+            }}
+            options={[
+              { value: "", label: "All statuses" },
+              { value: "cleaned", label: "Cleaned" },
+              { value: "occupied", label: "Occupied" },
+              { value: "maintenance", label: "Maintenance" },
+              { value: "dirty", label: "Dirty" },
+            ]}
+          />
 
           <label className="grid">
             <span className="sr-only">Search unit</span>
@@ -812,28 +809,30 @@ export function AdminUnitsClient({
                 <div className="grid gap-3 sm:grid-cols-2">
                   <label className="grid gap-1 text-xs text-[var(--color-muted)]">
                     Type
-                    <select
+                    <Select
+                      ariaLabel="Unit type"
                       value={editType}
-                      onChange={(event) => setEditType(event.target.value as "room" | "cottage" | "amenity")}
-                      className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm"
-                    >
-                      <option value="room">Room</option>
-                      <option value="cottage">Cottage</option>
-                      <option value="amenity">Amenity</option>
-                    </select>
+                      onChange={(next) => setEditType(next as "room" | "cottage" | "amenity")}
+                      options={[
+                        { value: "room", label: "Room" },
+                        { value: "cottage", label: "Cottage" },
+                        { value: "amenity", label: "Amenity" },
+                      ]}
+                    />
                   </label>
                   <label className="grid gap-1 text-xs text-[var(--color-muted)]">
                     Room status
-                    <select
+                    <Select
+                      ariaLabel="Room status"
                       value={editOperationalStatus}
-                      onChange={(event) => setEditOperationalStatus(event.target.value as UnitOperationalStatus)}
-                      className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm"
-                    >
-                      <option value="cleaned">Cleaned</option>
-                      <option value="occupied">Occupied</option>
-                      <option value="maintenance">Maintenance</option>
-                      <option value="dirty">Dirty</option>
-                    </select>
+                      onChange={(next) => setEditOperationalStatus(next as UnitOperationalStatus)}
+                      options={[
+                        { value: "cleaned", label: "Cleaned" },
+                        { value: "occupied", label: "Occupied" },
+                        { value: "maintenance", label: "Maintenance" },
+                        { value: "dirty", label: "Dirty" },
+                      ]}
+                    />
                   </label>
                   <label className="grid gap-1 text-xs text-[var(--color-muted)]">
                     Capacity

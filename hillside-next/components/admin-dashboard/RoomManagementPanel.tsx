@@ -7,6 +7,7 @@ import { unitListResponseSchema, unitWriteResponseSchema } from "../../../packag
 import type { UnitItem } from "../../../packages/shared/src/types";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
+import { Select } from "../shared/Select";
 import { useToast } from "../shared/ToastProvider";
 
 type UnitOperationalStatus = "cleaned" | "occupied" | "dirty" | "maintenance";
@@ -219,18 +220,13 @@ export function RoomManagementPanel({
 
           <label className="block">
             <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">Unit</span>
-            <select
+            <Select
+              ariaLabel="Unit"
               value={selectedUnitId}
-              onChange={(event) => setSelectedUnitId(event.target.value)}
-              className="h-11 w-full rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-text)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-secondary)]/30"
-            >
-              {filteredUnits.length === 0 ? <option value="">No units found</option> : null}
-              {filteredUnits.map((unit) => (
-                <option key={unit.unit_id} value={unit.unit_id}>
-                  {unitLabel(unit)}
-                </option>
-              ))}
-            </select>
+              onChange={(next) => setSelectedUnitId(next)}
+              placeholder={filteredUnits.length === 0 ? "No units found" : "Select unit"}
+              options={filteredUnits.map((unit) => ({ value: unit.unit_id, label: unitLabel(unit) }))}
+            />
           </label>
 
           {loading ? <p className="text-xs text-[var(--color-muted)]">Loading units...</p> : null}
@@ -264,28 +260,24 @@ export function RoomManagementPanel({
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block">
               <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">Availability</span>
-              <select
+              <Select
+                ariaLabel="Availability"
                 value={isActive ? "active" : "inactive"}
-                onChange={(event) => setIsActive(event.target.value === "active")}
-                className="h-11 w-full rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-text)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-secondary)]/30"
-              >
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
+                onChange={(next) => setIsActive(next === "active")}
+                options={[
+                  { value: "active", label: "Active" },
+                  { value: "inactive", label: "Inactive" },
+                ]}
+              />
             </label>
             <label className="block">
               <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">Operational status</span>
-              <select
+              <Select
+                ariaLabel="Operational status"
                 value={operationalStatus}
-                onChange={(event) => setOperationalStatus(event.target.value as UnitOperationalStatus)}
-                className="h-11 w-full rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-text)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-secondary)]/30"
-              >
-                {OPERATIONAL_STATUS_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+                onChange={(next) => setOperationalStatus(next as UnitOperationalStatus)}
+                options={OPERATIONAL_STATUS_OPTIONS.map((option) => ({ value: option.value, label: option.label }))}
+              />
             </label>
           </div>
 

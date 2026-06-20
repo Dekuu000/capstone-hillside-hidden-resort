@@ -6,6 +6,7 @@ import type { EscrowReconciliationItem } from "../../../packages/shared/src/type
 import { buildTxExplorerUrl, shortHash } from "../../lib/chainExplorer";
 import { formatDateTime } from "../../lib/dateDisplay";
 import { DetailDrawer } from "../shared/DetailDrawer";
+import { Select } from "../shared/Select";
 
 function resultClass(value: EscrowReconciliationItem["result"]) {
   if (value === "match") return "bg-emerald-100 text-emerald-700";
@@ -42,32 +43,34 @@ export function AdminEscrowTableClient({
       <div className="mb-4 grid gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm sm:grid-cols-2">
         <label className="grid gap-1 text-xs text-[var(--color-muted)]">
           State
-          <select
+          <Select
+            ariaLabel="State"
             value={selectedState}
-            onChange={(event) => setSelectedState(event.target.value)}
-            className="rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm text-[var(--color-text)]"
-          >
-            <option value="all">All</option>
-            <option value="pending_lock">pending_lock</option>
-            <option value="locked">locked</option>
-            <option value="released">released</option>
-            <option value="refunded">refunded</option>
-            <option value="failed">failed</option>
-          </select>
+            onChange={(next) => setSelectedState(next)}
+            options={[
+              { value: "all", label: "All" },
+              { value: "pending_lock", label: "pending_lock" },
+              { value: "locked", label: "locked" },
+              { value: "released", label: "released" },
+              { value: "refunded", label: "refunded" },
+              { value: "failed", label: "failed" },
+            ]}
+          />
         </label>
         <label className="grid gap-1 text-xs text-[var(--color-muted)]">
           Result
-          <select
+          <Select
+            ariaLabel="Result"
             value={selectedResult}
-            onChange={(event) => setSelectedResult(event.target.value)}
-            className="rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm text-[var(--color-text)]"
-          >
-            <option value="all">All</option>
-            <option value="match">match</option>
-            <option value="mismatch">mismatch</option>
-            <option value="missing_onchain">missing_onchain</option>
-            <option value="skipped">skipped</option>
-          </select>
+            onChange={(next) => setSelectedResult(next)}
+            options={[
+              { value: "all", label: "All" },
+              { value: "match", label: "match" },
+              { value: "mismatch", label: "mismatch" },
+              { value: "missing_onchain", label: "missing_onchain" },
+              { value: "skipped", label: "skipped" },
+            ]}
+          />
         </label>
       </div>
 

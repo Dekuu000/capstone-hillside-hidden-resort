@@ -32,6 +32,7 @@ import { formatDateTime } from "../../lib/dateDisplay";
 import { formatPhpPeso as formatPeso } from "../../lib/formatCurrency";
 import { AIPricingInsightCard } from "../ai/AIPricingInsightCard";
 import { PageHeader } from "../layout/PageHeader";
+import { Select } from "../shared/Select";
 import { Badge } from "../shared/Badge";
 import { Button } from "../shared/Button";
 import { EmptyState } from "../shared/EmptyState";
@@ -693,27 +694,29 @@ export function AdminAiCenterClient({ token }: AdminAiCenterClientProps) {
             <div className="grid gap-3 md:grid-cols-3">
               <label className="grid gap-1 text-sm text-[var(--color-text)]">
                 Segment key
-                <select
+                <Select
+                  ariaLabel="Segment key"
                   value={segmentKey}
-                  onChange={(event) => setSegmentKey(event.target.value)}
-                  className="h-10 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3"
-                >
-                  <option value="family_weekend">family_weekend</option>
-                  <option value="couple_escape">couple_escape</option>
-                  <option value="barkada_daytrip">barkada_daytrip</option>
-                </select>
+                  onChange={(next) => setSegmentKey(next)}
+                  options={[
+                    { value: "family_weekend", label: "family_weekend" },
+                    { value: "couple_escape", label: "couple_escape" },
+                    { value: "barkada_daytrip", label: "barkada_daytrip" },
+                  ]}
+                />
               </label>
               <label className="grid gap-1 text-sm text-[var(--color-text)]">
                 Stay type
-                <select
+                <Select
+                  ariaLabel="Stay type"
                   value={stayType}
-                  onChange={(event) => setStayType(event.target.value)}
-                  className="h-10 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3"
-                >
-                  <option value="stay">stay</option>
-                  <option value="day_tour">day_tour</option>
-                  <option value="advance_booking">advance_booking</option>
-                </select>
+                  onChange={(next) => setStayType(next)}
+                  options={[
+                    { value: "stay", label: "stay" },
+                    { value: "day_tour", label: "day_tour" },
+                    { value: "advance_booking", label: "advance_booking" },
+                  ]}
+                />
               </label>
               <div className="flex items-end">
                 <Button
