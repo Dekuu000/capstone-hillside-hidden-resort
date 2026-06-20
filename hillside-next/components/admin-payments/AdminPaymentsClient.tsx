@@ -685,39 +685,26 @@ export function AdminPaymentsClient({
       />
 
       <div className="mb-5 rounded-2xl border border-[var(--color-border)] bg-white p-3 shadow-[var(--shadow-card)] lg:p-3.5">
-        <div className="grid gap-2 xl:grid-cols-[760px_minmax(0,1fr)] xl:items-center">
-          <div
-            className="grid grid-cols-2 gap-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-1 sm:grid-cols-4 md:grid-cols-7 xl:min-w-[760px]"
-            role="tablist"
-            aria-label="Payment workflow filters"
-          >
-            {WORKFLOW_FILTERS.map((filterDef) => {
-              const isActive = workflowFilter === filterDef.id;
-              return (
-                <button
-                  key={filterDef.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={isActive}
-                  aria-controls={`payments-panel-${filterDef.id}`}
-                  id={`payments-tab-${filterDef.id}`}
-                  onClick={() => {
-                    setWorkflowFilter(filterDef.id);
-                    setTab(workflowToApiTab(filterDef.id));
-                    setPage(1);
-                  }}
-                  className={`inline-flex h-9 items-center justify-center gap-1 rounded-lg px-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)] ${
-                    isActive
-                      ? "border border-[var(--color-primary)] bg-white text-[var(--color-text)] shadow-sm"
-                      : filterDef.id === "all"
-                        ? "border border-transparent text-[var(--color-muted)] hover:bg-white hover:text-[var(--color-text)]"
-                        : "border border-transparent text-[var(--color-muted)] hover:bg-white hover:text-[var(--color-text)]"
-                  }`}
-                >
-                  <span>{filterDef.label}</span>
-                </button>
-              );
-            })}
+        <div className="grid gap-2 sm:grid-cols-[minmax(0,210px)_minmax(0,1fr)] sm:items-center">
+          <div>
+            <label htmlFor="payments-view" className="sr-only">Filter payments</label>
+            <select
+              id="payments-view"
+              value={workflowFilter}
+              onChange={(event) => {
+                const next = event.target.value as PaymentWorkflowFilter;
+                setWorkflowFilter(next);
+                setTab(workflowToApiTab(next));
+                setPage(1);
+              }}
+              className="h-10 w-full rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)] outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
+            >
+              {WORKFLOW_FILTERS.map((filterDef) => (
+                <option key={filterDef.id} value={filterDef.id}>
+                  {filterDef.id === "all" ? "All payments" : filterDef.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="relative flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-1.5">
@@ -1133,8 +1120,73 @@ export function AdminPaymentsClient({
       ) : null}
 
       {count > 0 ? (
-        <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white shadow-[var(--shadow-card)]">
-          <div className="overflow-x-auto">
+        <div className="space-y-3">
+          {/* Mobile: payment cards (the table overflows on small screens) */}
+          <div className="space-y-2 md:hidden">
+            {items.map((payment) => {
+              const reservationStatus = payment.reservation?.status ?? null;
+              const isCancelledReservation = reservationStatus ? CANCELLED_STATUSES.has(reservationStatus) : false;
+              const hasEvidence = Boolean(payment.proof_url || payment.reference_no);
+              const resMeta = getReservationStatusMeta(reservationStatus, "payments");
+              const source = getPaymentSource(payment);
+              return (
+                <div key={payment.payment_id} className="space-y-2 rounded-2xl border border-[var(--color-border)] bg-white p-3 shadow-[var(--shadow-card)]">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="truncate font-mono text-sm font-semibold text-[var(--color-text)]">{payment.reservation?.reservation_code ?? "-"}</p>
+                    <p className="shrink-0 font-semibold text-[var(--color-text)]">{formatPeso(payment.amount)}</p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${source === "walk_in" ? "bg-emerald-100 text-emerald-800" : "bg-blue-100 text-blue-800"}`}>
+                      {source === "walk_in" ? "Walk-in" : "Online"}
+                    </span>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${resMeta.className}`}>{resMeta.label}</span>
+                    <span className="rounded-full bg-[var(--color-background)] px-2 py-0.5 text-[10px] font-semibold capitalize text-[var(--color-muted)]">{payment.method}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2 text-xs text-[var(--color-muted)]">
+                    <span className="truncate">{payment.reservation?.guest?.name || payment.reservation?.guest?.email || "Guest"}</span>
+                    {payment.proof_url ? (
+                      <button
+                        type="button"
+                        onClick={() => void openProof(payment)}
+                        disabled={Boolean(proofBusy[payment.payment_id])}
+                        className="shrink-0 font-semibold text-blue-700 hover:underline disabled:opacity-60"
+                      >
+                        {proofBusy[payment.payment_id] ? "Loading..." : "View proof"}
+                      </button>
+                    ) : null}
+                  </div>
+                  {isToReview ? (
+                    <div className="flex gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => void verifyPayment(payment.payment_id)}
+                        disabled={isCancelledReservation || !hasEvidence}
+                        className="flex-1 rounded-lg border border-[var(--color-primary)] bg-[var(--color-primary)] px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        Verify
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRejectTarget(payment);
+                          setRejectReason("");
+                          setRejectError(null);
+                        }}
+                        disabled={isCancelledReservation || !hasEvidence}
+                        className="flex-1 rounded-lg border border-red-600 bg-red-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop: full table */}
+          <div className="hidden overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white shadow-[var(--shadow-card)] md:block">
+            <div className="overflow-x-auto">
             <table className="min-w-full text-left text-[13px] leading-5">
               <thead className="bg-[var(--color-background)] text-[var(--color-muted)]">
                 <tr>
@@ -1282,9 +1334,10 @@ export function AdminPaymentsClient({
                 })}
               </tbody>
             </table>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--color-border)] px-3 py-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--color-border)] bg-white px-3 py-2.5 shadow-[var(--shadow-card)]">
             <p className="text-xs text-[var(--color-muted)]">
               Page {page} of {totalPages} | {count} total
             </p>
