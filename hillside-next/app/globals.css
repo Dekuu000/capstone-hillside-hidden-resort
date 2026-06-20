@@ -521,7 +521,7 @@ a:focus-visible {
    just set the page size + keep colours, and hide any .no-print controls. */
 @page {
   size: A4;
-  margin: 14mm;
+  margin: 12mm;
 }
 
 @media print {

@@ -20,7 +20,7 @@ function displayDate(value: string) {
 /** A receipt-style row with a dotted leader between label and value. */
 function LeaderLine({ label, value, strong = false }: { label: string; value: string; strong?: boolean }) {
   return (
-    <div className="flex items-baseline gap-2 py-1 text-[13px]">
+    <div className="flex items-baseline gap-2 py-0.5 text-[13px]">
       <span className={strong ? "font-semibold text-black" : "text-black"}>{label}</span>
       <span className="mb-[3px] flex-1 border-b border-dotted border-gray-400" aria-hidden="true" />
       <span className={`tabular-nums ${strong ? "text-[15px] font-bold text-black" : "font-semibold text-black"}`}>{value}</span>
@@ -49,7 +49,7 @@ export function ReportDocument({
 
   return (
     <div className="bg-white text-black">
-      <div className="mx-auto max-w-[760px] px-6 py-4 font-sans">
+      <div className="mx-auto max-w-[720px] px-6 py-2 font-sans">
         {/* Letterhead */}
         <header className="flex items-start justify-between gap-4 border-b-2 border-black pb-4">
           <div className="flex items-center gap-3">
@@ -79,7 +79,7 @@ export function ReportDocument({
         </div>
 
         {/* Receipt-style summary */}
-        <section className="mt-5">
+        <section className="mt-4">
           <h2 className="mb-1 text-[11px] font-bold uppercase tracking-[0.18em] text-gray-600">Summary</h2>
           <div className="border-t border-black pt-1">
             <LeaderLine label="Bookings" value={String(summary.bookings)} />
@@ -96,7 +96,7 @@ export function ReportDocument({
 
         {/* Daily breakdown */}
         {daily.length ? (
-          <section className="mt-5">
+          <section className="mt-4">
             <h2 className="mb-1 text-[11px] font-bold uppercase tracking-[0.18em] text-gray-600">Daily breakdown</h2>
             <table className="w-full border-collapse text-[12px]">
               <thead>
@@ -131,7 +131,7 @@ export function ReportDocument({
 
         {/* Monthly breakdown */}
         {monthly.length ? (
-          <section className="mt-5">
+          <section className="mt-4">
             <h2 className="mb-1 text-[11px] font-bold uppercase tracking-[0.18em] text-gray-600">Monthly breakdown</h2>
             <table className="w-full border-collapse text-[12px]">
               <thead>
@@ -157,7 +157,7 @@ export function ReportDocument({
         ) : null}
 
         {/* Signatures */}
-        <section className="mt-10 grid grid-cols-2 gap-8 text-[12px]">
+        <section className="mt-7 grid grid-cols-2 gap-8 text-[12px]">
           <div>
             <div className="border-t border-black pt-1 text-center font-semibold">Prepared by</div>
             <p className="mt-1 text-center text-gray-600">{preparedBy}</p>
@@ -169,7 +169,7 @@ export function ReportDocument({
         </section>
 
         {/* Footer */}
-        <footer className="mt-6 border-t border-gray-300 pt-2 text-center text-[10px] text-gray-500">
+        <footer className="mt-4 border-t border-gray-300 pt-2 text-center text-[10px] text-gray-500">
           <p>This is a system-generated report from Hillside Hidden Resort. Ref {reportRef}.</p>
           <p>Generated {formatDateTime(generatedAt, { locale: "en-PH", fallback: "-" })}.</p>
         </footer>
