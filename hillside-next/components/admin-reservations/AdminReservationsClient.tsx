@@ -38,6 +38,7 @@ type AdminReservationsClientProps = {
   initialSessionEmail?: string | null;
   initialData?: ReservationsResponse | null;
   initialOpenReservationId?: string | null;
+  role?: string | null;
 };
 
 type ReservationQuickFilter =
@@ -112,6 +113,7 @@ export function AdminReservationsClient({
   initialToken = null,
   initialData = null,
   initialOpenReservationId = null,
+  role = null,
 }: AdminReservationsClientProps) {
   const token = initialToken;
   const { showToast } = useToast();
@@ -908,6 +910,7 @@ export function AdminReservationsClient({
       </div>
 
       <ReservationDetailDrawer
+        role={role}
         open={Boolean(detailsLoading || details || detailsError)}
         loading={detailsLoading}
         error={detailsError}

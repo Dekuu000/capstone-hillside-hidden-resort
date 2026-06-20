@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { AdminReservationsClient } from "../../../components/admin-reservations/AdminReservationsClient";
-import { getServerAccessToken, getServerEmailHint } from "../../../lib/serverAuth";
+import { getServerAccessToken, getServerAuthContext, getServerEmailHint } from "../../../lib/serverAuth";
 import { fetchServerApiData } from "../../../lib/serverApi";
 import { reservationListResponseSchema } from "../../../../packages/shared/src/schemas";
 import type { ReservationListResponse } from "../../../../packages/shared/src/types";
@@ -29,8 +29,11 @@ export default async function AdminReservationsPage({
     ? resolved.reservation_id[0]
     : resolved.reservation_id || null;
 
-  const initialData = await fetchInitialReservations(accessToken);
-  const emailHint = await getServerEmailHint();
+  const [initialData, emailHint, auth] = await Promise.all([
+    fetchInitialReservations(accessToken),
+    getServerEmailHint(),
+    getServerAuthContext(accessToken),
+  ]);
 
   return (
     <AdminReservationsClient
@@ -38,6 +41,7 @@ export default async function AdminReservationsPage({
       initialSessionEmail={emailHint}
       initialData={initialData}
       initialOpenReservationId={initialOpenReservationId}
+      role={auth?.role ?? null}
     />
   );
 }

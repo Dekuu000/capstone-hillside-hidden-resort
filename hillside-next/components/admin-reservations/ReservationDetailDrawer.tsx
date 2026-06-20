@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AlertCircle, Check, ChevronDown, Copy, ExternalLink, ShieldCheck, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { AdminPaymentItem, ReservationListItem } from "../../../packages/shared/src/types";
+import { roleAtLeast } from "../../../packages/shared/src/types";
 import { buildTxExplorerUrl } from "../../lib/chainExplorer";
 import { formatDateTime, formatDateWithYear } from "../../lib/dateDisplay";
 import { todayPlusLocalIsoDate } from "../../lib/dateIso";
@@ -26,6 +27,7 @@ type ReservationDetailDrawerProps = {
   onRefreshPayments: () => void;
   onOpenProof: (payment: AdminPaymentItem) => void;
   onVerifyPayment: (paymentId: string) => void;
+  role?: string | null;
 };
 
 type ReadinessState =
@@ -94,8 +96,11 @@ export function ReservationDetailDrawer({
   onRefreshPayments,
   onOpenProof,
   onVerifyPayment,
+  role = null,
 }: ReservationDetailDrawerProps) {
   const [ledgerOpen, setLedgerOpen] = useState(false);
+  // Blockchain/ledger internals are a System Admin tool — hidden from Front Desk and Manager.
+  const canSeeLedger = roleAtLeast(role, "super_admin");
   const [copiedField, setCopiedField] = useState<
     "reservation_code" | "contact" | "total_due" | "total_paid" | "remaining" | null
   >(null);
@@ -374,7 +379,6 @@ export function ReservationDetailDrawer({
                         </button>
                       </div>
                       <p className="mt-1 text-sm"><span className="text-[var(--color-muted)]">{isTour ? "Visit date:" : "Stay dates:"}</span> {isTour ? formatDateWithYear(arrivalDate) : `${formatDateWithYear(reservation.check_in_date)} to ${formatDateWithYear(reservation.check_out_date)}`}</p>
-                      <p className="mt-1 text-sm"><span className="text-[var(--color-muted)]">Created at:</span> {formatDateTime(reservation.created_at)}</p>
                       <p className="mt-1 text-sm"><span className="text-[var(--color-muted)]">Booking source:</span> {source === "walk_in" ? "Walk-in front desk" : "Online guest portal"}</p>
                       <p className="mt-1 text-sm"><span className="text-[var(--color-muted)]">Created by:</span> {source === "walk_in" ? "Front desk admin" : "Guest account"}</p>
                     </div>
@@ -543,6 +547,7 @@ export function ReservationDetailDrawer({
                   ) : null}
                 </section>
 
+                {canSeeLedger ? (
                 <section className="rounded-2xl border border-[var(--color-border)] p-3">
                   <button
                     type="button"
@@ -584,6 +589,7 @@ export function ReservationDetailDrawer({
                     </div>
                   ) : null}
                 </section>
+                ) : null}
               </>
             ) : null}
           </div>
