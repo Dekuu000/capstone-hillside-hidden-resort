@@ -70,12 +70,12 @@ export default async function AdminShellPage() {
         subtitle="Snapshot, room operations, and guest verification in one unified workspace."
       />
 
-      <div className="grid gap-5 xl:grid-cols-[1.45fr_1fr] 2xl:grid-cols-[1.55fr_1fr]">
+      <div className="grid gap-5 [&>*]:min-w-0 xl:grid-cols-[1.45fr_1fr] 2xl:grid-cols-[1.55fr_1fr]">
         <ResortSnapshotPanel snapshot={snapshot} error={snapshotError} />
         <GuestVerificationPanel />
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[1fr_1.15fr] 2xl:grid-cols-[1fr_1.2fr]">
+      <div className="grid gap-5 [&>*]:min-w-0 xl:grid-cols-[1fr_1.15fr] 2xl:grid-cols-[1fr_1.2fr]">
         <RoomInventorySyncPanel units={initialUnits} />
         <ResourceHeatmapPanel snapshot={snapshot} />
       </div>

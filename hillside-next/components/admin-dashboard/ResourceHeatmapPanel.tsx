@@ -77,7 +77,7 @@ export function ResourceHeatmapPanel({ snapshot }: { snapshot: ResortSnapshotRes
                 <tr>
                   <th className="sticky left-0 z-10 bg-[var(--color-background)] px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.08em]">Team</th>
                   {demandRows.map((row) => (
-                    <th key={row.date} className="px-2 py-2 text-center text-xs font-semibold uppercase tracking-[0.08em]">
+                    <th key={row.date} className="whitespace-nowrap px-1.5 py-2 text-center text-[11px] font-semibold uppercase tracking-[0.06em]">
                       {formatShortDate(row.date)}
                     </th>
                   ))}
@@ -97,8 +97,8 @@ export function ResourceHeatmapPanel({ snapshot }: { snapshot: ResortSnapshotRes
                       {demandRows.map((row) => {
                         const loadPct = computeTeamLoad(row.occupancy_pct, team.factor);
                         return (
-                          <td key={`${team.key}-${row.date}`} className="px-2 py-2 text-center">
-                            <span className={`inline-flex min-w-[52px] items-center justify-center rounded-full px-2 py-1 text-xs font-semibold ${toneForValue(loadPct)}`}>
+                          <td key={`${team.key}-${row.date}`} className="px-1.5 py-2 text-center">
+                            <span className={`inline-flex min-w-[40px] items-center justify-center rounded-full px-1.5 py-1 text-[11px] font-semibold ${toneForValue(loadPct)}`}>
                               {loadPct}%
                             </span>
                           </td>

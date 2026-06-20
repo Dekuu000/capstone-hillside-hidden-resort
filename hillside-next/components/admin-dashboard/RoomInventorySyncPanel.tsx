@@ -47,7 +47,7 @@ export function RoomInventorySyncPanel({ units }: { units: UnitItem[] }) {
         </p>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-3">
+      <div className="mt-4 grid grid-cols-2 gap-2 sm:gap-3">
         <article className="rounded-2xl border border-[var(--color-border)] bg-white p-3 transition-colors duration-200 hover:border-[color:color-mix(in_srgb,var(--color-secondary)_35%,white)]">
           <p className="inline-flex items-center gap-2 text-sm text-[var(--color-muted)]">
             <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[color:color-mix(in_srgb,var(--color-secondary)_14%,white)] text-[var(--color-secondary)]">
@@ -55,7 +55,7 @@ export function RoomInventorySyncPanel({ units }: { units: UnitItem[] }) {
             </span>
             Cleaned
           </p>
-          <p className="mt-2 text-3xl font-bold text-[var(--color-text)]">{cleaned}</p>
+          <p className="mt-1 text-2xl font-bold text-[var(--color-text)] sm:text-3xl">{cleaned}</p>
         </article>
         <article className="rounded-2xl border border-[var(--color-border)] bg-white p-3 transition-colors duration-200 hover:border-[color:color-mix(in_srgb,var(--color-secondary)_35%,white)]">
           <p className="inline-flex items-center gap-2 text-sm text-[var(--color-muted)]">
@@ -64,7 +64,7 @@ export function RoomInventorySyncPanel({ units }: { units: UnitItem[] }) {
             </span>
             Occupied
           </p>
-          <p className="mt-2 text-3xl font-bold text-[var(--color-text)]">{occupied}</p>
+          <p className="mt-1 text-2xl font-bold text-[var(--color-text)] sm:text-3xl">{occupied}</p>
         </article>
         <article className="rounded-2xl border border-[var(--color-border)] bg-white p-3 transition-colors duration-200 hover:border-[color:color-mix(in_srgb,var(--color-secondary)_35%,white)]">
           <p className="inline-flex items-center gap-2 text-sm text-[var(--color-muted)]">
@@ -73,7 +73,7 @@ export function RoomInventorySyncPanel({ units }: { units: UnitItem[] }) {
             </span>
             Maintenance
           </p>
-          <p className="mt-2 text-3xl font-bold text-[var(--color-text)]">{maintenance}</p>
+          <p className="mt-1 text-2xl font-bold text-[var(--color-text)] sm:text-3xl">{maintenance}</p>
         </article>
         <article className="rounded-2xl border border-[var(--color-border)] bg-white p-3 transition-colors duration-200 hover:border-[color:color-mix(in_srgb,var(--color-secondary)_35%,white)]">
           <p className="inline-flex items-center gap-2 text-sm text-[var(--color-muted)]">
@@ -82,7 +82,7 @@ export function RoomInventorySyncPanel({ units }: { units: UnitItem[] }) {
             </span>
             Dirty
           </p>
-          <p className="mt-2 text-3xl font-bold text-[var(--color-text)]">{dirty}</p>
+          <p className="mt-1 text-2xl font-bold text-[var(--color-text)] sm:text-3xl">{dirty}</p>
         </article>
       </div>
 
