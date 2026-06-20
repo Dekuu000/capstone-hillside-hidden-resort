@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import { FancyDatePicker } from "../shared/FancyDatePicker";
-import { Button } from "../shared/Button";
 import { ReportsExportButtons } from "./ReportsExportButtons";
 import type { ReportDailyItem, ReportMonthlyItem } from "../../../packages/shared/src/types";
 
@@ -51,8 +50,8 @@ export function ReportsDateRangeForm({ fromDate, toDate, daily, monthly }: Props
   };
 
   return (
-    <form method="get" className="mb-5 grid gap-3 rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-sm lg:grid-cols-12 lg:gap-4">
-      <div className="lg:col-span-12">
+    <form method="get" className="mb-5 space-y-3 rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-[var(--shadow-card)]">
+      <div>
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">Quick range</p>
         <div className="mt-2 flex flex-wrap gap-2">
           {[
@@ -64,7 +63,7 @@ export function ReportsDateRangeForm({ fromDate, toDate, daily, monthly }: Props
               key={preset.id}
               type="button"
               onClick={() => applyPreset(preset.id as "today" | "7d" | "month")}
-              className={`inline-flex h-8 items-center rounded-full border px-3 text-xs font-semibold transition ${
+              className={`inline-flex h-9 items-center rounded-full border px-4 text-xs font-semibold transition ${
                 activePreset === preset.id
                   ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
                   : "border-[var(--color-border)] bg-white text-[var(--color-text)] hover:border-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)] hover:bg-[var(--color-background)]"
@@ -76,7 +75,7 @@ export function ReportsDateRangeForm({ fromDate, toDate, daily, monthly }: Props
         </div>
       </div>
 
-      <div className="lg:col-span-3">
+      <div className="grid gap-3 sm:grid-cols-2">
         <FancyDatePicker
           label="From"
           value={from}
@@ -86,8 +85,6 @@ export function ReportsDateRangeForm({ fromDate, toDate, daily, monthly }: Props
           }}
           max={to || undefined}
         />
-      </div>
-      <div className="lg:col-span-3">
         <FancyDatePicker
           label="To"
           value={to}
@@ -102,20 +99,18 @@ export function ReportsDateRangeForm({ fromDate, toDate, daily, monthly }: Props
       <input type="hidden" name="from" value={from} />
       <input type="hidden" name="to" value={to} />
 
-      <div className="flex items-end lg:col-span-2">
-        <Button type="submit" variant="secondary" className="h-10 w-full rounded-xl border-[var(--color-primary)] bg-[var(--color-primary)] px-5 text-white hover:brightness-110 sm:w-auto sm:min-w-[170px]">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <button
+          type="submit"
+          className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-[var(--color-primary)] px-5 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)] sm:w-auto sm:min-w-[160px]"
+        >
           Apply range
-        </Button>
-      </div>
-
-      <div className="flex items-end justify-start lg:col-span-4 lg:justify-end">
+        </button>
         <ReportsExportButtons daily={daily} monthly={monthly} compact />
       </div>
 
       {hasChanges ? (
-        <div className="lg:col-span-12">
-          <p className="text-xs font-semibold text-amber-700">Date range changed. Click Apply range to refresh reports.</p>
-        </div>
+        <p className="text-xs font-semibold text-amber-700">Date range changed. Click Apply range to refresh reports.</p>
       ) : null}
     </form>
   );
