@@ -684,90 +684,87 @@ export function AdminPaymentsClient({
         }
       />
 
-      <div className="mb-5 rounded-2xl border border-[var(--color-border)] bg-white p-3 shadow-[var(--shadow-card)] lg:p-3.5">
-        <div className="grid gap-2 sm:grid-cols-[minmax(0,210px)_minmax(0,1fr)] sm:items-center">
-          <div>
-            <label htmlFor="payments-view" className="sr-only">Filter payments</label>
-            <select
-              id="payments-view"
-              value={workflowFilter}
-              onChange={(event) => {
-                const next = event.target.value as PaymentWorkflowFilter;
-                setWorkflowFilter(next);
-                setTab(workflowToApiTab(next));
-                setPage(1);
-              }}
-              className="h-10 w-full rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)] outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
-            >
-              {WORKFLOW_FILTERS.map((filterDef) => (
-                <option key={filterDef.id} value={filterDef.id}>
-                  {filterDef.id === "all" ? "All payments" : filterDef.label}
-                </option>
-              ))}
-            </select>
-          </div>
+      <div className="mb-5 rounded-2xl border border-[var(--color-border)] bg-white p-3 shadow-[var(--shadow-card)]">
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
+          <label htmlFor="payments-view" className="sr-only">Filter payments</label>
+          <select
+            id="payments-view"
+            value={workflowFilter}
+            onChange={(event) => {
+              const next = event.target.value as PaymentWorkflowFilter;
+              setWorkflowFilter(next);
+              setTab(workflowToApiTab(next));
+              setPage(1);
+            }}
+            className="h-11 w-full shrink-0 rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)] outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)] lg:w-[200px]"
+          >
+            {WORKFLOW_FILTERS.map((filterDef) => (
+              <option key={filterDef.id} value={filterDef.id}>
+                {filterDef.id === "all" ? "All payments" : filterDef.label}
+              </option>
+            ))}
+          </select>
 
-          <div className="relative flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-1.5">
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <div className="flex h-9 flex-1 items-center rounded-lg border border-[var(--color-border)] bg-white px-2">
-                <Search className="h-4 w-4 text-slate-400" />
-                <input
-                  type="text"
-                  value={searchInput}
-                  onChange={(event) => setSearchInput(event.target.value)}
-                  placeholder="Search reservation, guest, or reference"
-                  className="h-full flex-1 border-0 bg-transparent px-2 text-sm text-[var(--color-text)] outline-none"
-                />
-                {searchInput ? (
-                  <button
-                    type="button"
-                    onClick={() => setSearchInput("")}
-                    className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[var(--color-muted)] hover:bg-[var(--color-background)]"
-                    aria-label="Clear search"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                ) : null}
-              </div>
-
-              <div className="flex items-center gap-2">
+          <div className="flex flex-1 items-center gap-2">
+            <div className="flex h-11 flex-1 items-center gap-2 rounded-xl border border-[var(--color-border)] bg-white px-3">
+              <Search className="h-4 w-4 shrink-0 text-[var(--color-muted)]" />
+              <input
+                type="text"
+                value={searchInput}
+                onChange={(event) => setSearchInput(event.target.value)}
+                placeholder="Search reservation, guest, or reference"
+                className="h-full w-full border-0 bg-transparent text-sm text-[var(--color-text)] outline-none"
+              />
+              {searchInput ? (
                 <button
                   type="button"
-                  onClick={() => setFiltersOpen((prev) => !prev)}
-                  aria-expanded={filtersOpen}
-                  aria-controls="payments-filters-popover"
-                  className="inline-flex h-9 items-center justify-center gap-1 rounded-lg border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
+                  onClick={() => setSearchInput("")}
+                  className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[var(--color-muted)] hover:bg-[var(--color-background)]"
+                  aria-label="Clear search"
                 >
-                  <SlidersHorizontal className="h-4 w-4" />
-                  Filters
-                  {activeFilterCount > 0 ? (
-                    <span className="rounded-full bg-[var(--color-primary)] px-1.5 text-[11px] leading-5 text-white">{activeFilterCount}</span>
-                  ) : null}
+                  <X className="h-4 w-4" />
                 </button>
-                {activeFilterCount > 0 ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMethodFilter("");
-                      setFromDateFilter("");
-                      setToDateFilter("");
-                      setPage(1);
-                    }}
-                    className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
-                  >
-                    Clear filters
-                  </button>
-                ) : null}
-              </div>
+              ) : null}
             </div>
 
-            {filtersOpen ? (
-              <div
-                id="payments-filters-popover"
-                className="absolute right-2 top-[calc(100%+6px)] z-30 w-full max-w-[360px] rounded-xl border border-[var(--color-border)] bg-white p-3 shadow-lg"
+            <div className="relative shrink-0">
+              <button
+                type="button"
+                onClick={() => setFiltersOpen((prev) => !prev)}
+                aria-expanded={filtersOpen}
+                aria-controls="payments-filters-popover"
+                className="inline-flex h-11 items-center justify-center gap-1.5 rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
               >
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">Filters</p>
-                <div className="mt-2 grid gap-2">
+                <SlidersHorizontal className="h-4 w-4" />
+                <span>Filters</span>
+                {activeFilterCount > 0 ? (
+                  <span className="rounded-full bg-[var(--color-primary)] px-1.5 text-[11px] leading-5 text-white">{activeFilterCount}</span>
+                ) : null}
+              </button>
+
+              {filtersOpen ? (
+                <div
+                  id="payments-filters-popover"
+                  className="absolute right-0 top-[calc(100%+8px)] z-30 w-[min(340px,calc(100vw-2.5rem))] rounded-xl border border-[var(--color-border)] bg-white p-3 shadow-lg"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">Filters</p>
+                    {activeFilterCount > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMethodFilter("");
+                          setFromDateFilter("");
+                          setToDateFilter("");
+                          setPage(1);
+                        }}
+                        className="text-xs font-semibold text-[var(--color-secondary)] hover:underline"
+                      >
+                        Clear all
+                      </button>
+                    ) : null}
+                  </div>
+                  <div className="mt-2 grid gap-2">
                   <label className="grid gap-1 text-xs text-[var(--color-muted)]">
                     Payment method
                     <select
@@ -818,7 +815,8 @@ export function AdminPaymentsClient({
                   </div>
                 </div>
               </div>
-            ) : null}
+              ) : null}
+            </div>
           </div>
         </div>
       </div>
