@@ -75,38 +75,41 @@ export function ReportsDateRangeForm({ fromDate, toDate, daily, monthly }: Props
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <FancyDatePicker
-          label="From"
-          value={from}
-          onChange={(next) => {
-            setFrom(next);
-            setActivePreset("custom");
-          }}
-          max={to || undefined}
-        />
-        <FancyDatePicker
-          label="To"
-          value={to}
-          onChange={(next) => {
-            setTo(next);
-            setActivePreset("custom");
-          }}
-          min={from || undefined}
-        />
-      </div>
-
       <input type="hidden" name="from" value={from} />
       <input type="hidden" name="to" value={to} />
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <button
-          type="submit"
-          className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-[var(--color-primary)] px-5 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)] sm:w-auto sm:min-w-[160px]"
-        >
-          Apply range
-        </button>
-        <ReportsExportButtons daily={daily} monthly={monthly} compact />
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div className="grid gap-3 sm:grid-cols-2 lg:flex lg:items-end lg:gap-3">
+          <div className="lg:w-[190px]">
+            <FancyDatePicker
+              label="From"
+              value={from}
+              onChange={(next) => {
+                setFrom(next);
+                setActivePreset("custom");
+              }}
+              max={to || undefined}
+            />
+          </div>
+          <div className="lg:w-[190px]">
+            <FancyDatePicker
+              label="To"
+              value={to}
+              onChange={(next) => {
+                setTo(next);
+                setActivePreset("custom");
+              }}
+              min={from || undefined}
+            />
+          </div>
+          <button
+            type="submit"
+            className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-[var(--color-primary)] px-5 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)] sm:col-span-2 lg:col-span-1 lg:w-auto lg:min-w-[150px]"
+          >
+            Apply range
+          </button>
+        </div>
+        <ReportsExportButtons daily={daily} monthly={monthly} fullWidthMobile />
       </div>
 
       {hasChanges ? (

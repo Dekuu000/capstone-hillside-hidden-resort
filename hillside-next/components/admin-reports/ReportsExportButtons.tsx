@@ -1,14 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Download } from "lucide-react";
+import { ChevronDown, Download } from "lucide-react";
 import type { ReportDailyItem, ReportMonthlyItem } from "../../../packages/shared/src/types";
-import { Button } from "../shared/Button";
 
 type Props = {
   daily: ReportDailyItem[];
   monthly: ReportMonthlyItem[];
-  compact?: boolean;
+  fullWidthMobile?: boolean;
 };
 
 function toCsv(rows: Array<Record<string, string | number>>) {
@@ -40,9 +39,9 @@ function downloadCsv(filename: string, csv: string) {
   URL.revokeObjectURL(url);
 }
 
-export function ReportsExportButtons({ daily, monthly, compact = false }: Props) {
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const mobileMenuRef = useRef<HTMLDivElement | null>(null);
+export function ReportsExportButtons({ daily, monthly, fullWidthMobile = false }: Props) {
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
 
   const exportDaily = () => {
     downloadCsv(
@@ -59,7 +58,7 @@ export function ReportsExportButtons({ daily, monthly, compact = false }: Props)
         })),
       ),
     );
-    setMobileOpen(false);
+    setOpen(false);
   };
 
   const exportMonthly = () => {
@@ -77,21 +76,21 @@ export function ReportsExportButtons({ daily, monthly, compact = false }: Props)
         })),
       ),
     );
-    setMobileOpen(false);
+    setOpen(false);
   };
 
   const disableAll = !daily.length && !monthly.length;
 
   useEffect(() => {
-    if (!mobileOpen) return;
+    if (!open) return;
     const onPointerDown = (event: MouseEvent) => {
-      if (!mobileMenuRef.current) return;
-      if (!mobileMenuRef.current.contains(event.target as Node)) {
-        setMobileOpen(false);
+      if (!menuRef.current) return;
+      if (!menuRef.current.contains(event.target as Node)) {
+        setOpen(false);
       }
     };
     const onEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setMobileOpen(false);
+      if (event.key === "Escape") setOpen(false);
     };
     document.addEventListener("mousedown", onPointerDown);
     document.addEventListener("keydown", onEscape);
@@ -99,68 +98,49 @@ export function ReportsExportButtons({ daily, monthly, compact = false }: Props)
       document.removeEventListener("mousedown", onPointerDown);
       document.removeEventListener("keydown", onEscape);
     };
-  }, [mobileOpen]);
+  }, [open]);
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <div ref={mobileMenuRef} className="relative sm:hidden">
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          className={compact ? "h-8 px-2.5 text-xs" : undefined}
-          disabled={disableAll}
-          leftSlot={<Download className="h-4 w-4" />}
-          onClick={() => setMobileOpen((prev) => !prev)}
+    <div ref={menuRef} className={`relative ${fullWidthMobile ? "w-full lg:w-auto" : ""}`}>
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        disabled={disableAll}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className={`inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-white px-4 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)] disabled:opacity-50 ${
+          fullWidthMobile ? "w-full lg:w-auto" : ""
+        }`}
+      >
+        <Download className="h-4 w-4" />
+        <span>Export</span>
+        <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open ? (
+        <div
+          role="menu"
+          className="absolute right-0 top-full z-40 mt-2 min-w-[190px] rounded-xl border border-[var(--color-border)] bg-white p-1.5 shadow-[var(--shadow-md)]"
         >
-          Export
-        </Button>
-        {mobileOpen ? (
-          <div className="absolute left-0 top-full z-40 mt-2 min-w-[170px] rounded-xl border border-[var(--color-border)] bg-white p-1.5 shadow-[var(--shadow-md)]">
-            <button
-              type="button"
-              onClick={exportDaily}
-              disabled={!daily.length}
-              className="block w-full rounded-lg px-3 py-2 text-left text-xs font-semibold text-[var(--color-text)] hover:bg-[var(--color-background)] disabled:opacity-50"
-            >
-              Export Daily CSV
-            </button>
-            <button
-              type="button"
-              onClick={exportMonthly}
-              disabled={!monthly.length}
-              className="block w-full rounded-lg px-3 py-2 text-left text-xs font-semibold text-[var(--color-text)] hover:bg-[var(--color-background)] disabled:opacity-50"
-            >
-              Export Monthly CSV
-            </button>
-          </div>
-        ) : null}
-      </div>
-
-      <div className="hidden sm:flex sm:flex-wrap sm:items-center sm:gap-2">
-      <Button
-        type="button"
-        variant="secondary"
-        size="sm"
-        className={compact ? "h-8 px-2.5 text-xs" : undefined}
-        onClick={exportDaily}
-        disabled={!daily.length}
-        leftSlot={<Download className="h-4 w-4" />}
-      >
-        {compact ? "Daily CSV" : "Export Daily CSV"}
-      </Button>
-      <Button
-        type="button"
-        variant="secondary"
-        size="sm"
-        className={compact ? "h-8 px-2.5 text-xs" : undefined}
-        onClick={exportMonthly}
-        disabled={!monthly.length}
-        leftSlot={<Download className="h-4 w-4" />}
-      >
-        {compact ? "Monthly CSV" : "Export Monthly CSV"}
-      </Button>
-      </div>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={exportDaily}
+            disabled={!daily.length}
+            className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-background)] disabled:opacity-50"
+          >
+            Daily CSV
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={exportMonthly}
+            disabled={!monthly.length}
+            className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-background)] disabled:opacity-50"
+          >
+            Monthly CSV
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }
