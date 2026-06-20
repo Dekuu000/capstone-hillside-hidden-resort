@@ -31,6 +31,7 @@ import { getSupabaseBrowserClient } from "../../lib/supabase";
 import { FancyDatePicker } from "../shared/FancyDatePicker";
 import { AdminPageHeader } from "../layout/AdminPageHeader";
 import { DataFreshnessBadge } from "../shared/DataFreshnessBadge";
+import { Select } from "../shared/Select";
 
 type AdminPaymentsClientProps = {
   initialToken?: string | null;
@@ -686,24 +687,22 @@ export function AdminPaymentsClient({
 
       <div className="mb-5 rounded-2xl border border-[var(--color-border)] bg-white p-3 shadow-[var(--shadow-card)]">
         <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
-          <label htmlFor="payments-view" className="sr-only">Filter payments</label>
-          <select
-            id="payments-view"
-            value={workflowFilter}
-            onChange={(event) => {
-              const next = event.target.value as PaymentWorkflowFilter;
-              setWorkflowFilter(next);
-              setTab(workflowToApiTab(next));
-              setPage(1);
-            }}
-            className="h-11 w-full shrink-0 rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)] outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)] lg:w-[200px]"
-          >
-            {WORKFLOW_FILTERS.map((filterDef) => (
-              <option key={filterDef.id} value={filterDef.id}>
-                {filterDef.id === "all" ? "All payments" : filterDef.label}
-              </option>
-            ))}
-          </select>
+          <div className="w-full shrink-0 lg:w-[200px]">
+            <Select
+              ariaLabel="Filter payments"
+              value={workflowFilter}
+              onChange={(next) => {
+                const value = next as PaymentWorkflowFilter;
+                setWorkflowFilter(value);
+                setTab(workflowToApiTab(value));
+                setPage(1);
+              }}
+              options={WORKFLOW_FILTERS.map((filterDef) => ({
+                value: filterDef.id,
+                label: filterDef.id === "all" ? "All payments" : filterDef.label,
+              }))}
+            />
+          </div>
 
           <div className="flex flex-1 items-center gap-2">
             <div className="flex h-11 flex-1 items-center gap-2 rounded-xl border border-[var(--color-border)] bg-white px-3">
@@ -767,20 +766,21 @@ export function AdminPaymentsClient({
                   <div className="mt-2 grid gap-2">
                   <label className="grid gap-1 text-xs text-[var(--color-muted)]">
                     Payment method
-                    <select
+                    <Select
+                      ariaLabel="Payment method"
                       value={methodFilter}
-                      onChange={(event) => {
-                        setMethodFilter(event.target.value);
+                      onChange={(next) => {
+                        setMethodFilter(next);
                         setPage(1);
                       }}
-                      className="h-9 rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-2 text-sm text-[var(--color-text)]"
-                    >
-                      <option value="">All methods</option>
-                      <option value="cash">Cash</option>
-                      <option value="gcash">GCash</option>
-                      <option value="bank">Bank</option>
-                      <option value="card">Card</option>
-                    </select>
+                      options={[
+                        { value: "", label: "All methods" },
+                        { value: "cash", label: "Cash" },
+                        { value: "gcash", label: "GCash" },
+                        { value: "bank", label: "Bank" },
+                        { value: "card", label: "Card" },
+                      ]}
+                    />
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     <FancyDatePicker
@@ -1005,22 +1005,22 @@ export function AdminPaymentsClient({
 
               <label className="grid gap-1 text-xs text-[var(--color-muted)]">
                 Payment Method
-                <select
+                <Select
+                  ariaLabel="Payment method"
                   value={onSiteMethod}
-                  onChange={(event) => {
-                    const nextMethod = event.target.value;
+                  onChange={(nextMethod) => {
                     setOnSiteMethod(nextMethod);
                     if (nextMethod === "cash") {
                       setOnSiteReferenceNo("");
                     }
                   }}
-                  className="rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm"
-                >
-                  <option value="cash">Cash</option>
-                  <option value="gcash">GCash</option>
-                  <option value="bank">Bank Transfer</option>
-                  <option value="card">Card</option>
-                </select>
+                  options={[
+                    { value: "cash", label: "Cash" },
+                    { value: "gcash", label: "GCash" },
+                    { value: "bank", label: "Bank Transfer" },
+                    { value: "card", label: "Card" },
+                  ]}
+                />
                 {requiresReference ? (
                   <span className="text-[11px] text-[var(--color-muted)]">Reference number is required for this payment method.</span>
                 ) : null}

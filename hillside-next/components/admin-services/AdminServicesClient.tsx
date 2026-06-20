@@ -34,6 +34,7 @@ import { formatPhpPeso as toPeso } from "../../lib/formatCurrency";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
 import { DetailDrawer } from "../shared/DetailDrawer";
 import { EmptyState } from "../shared/EmptyState";
+import { Select } from "../shared/Select";
 import { Skeleton } from "../shared/Skeleton";
 import { useToast } from "../shared/ToastProvider";
 
@@ -203,29 +204,22 @@ export function AdminServicesClient({ accessToken }: Props) {
     <div className="space-y-4">
       <section className="surface p-3 sm:p-4">
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-[minmax(0,190px)_minmax(0,190px)_minmax(0,1fr)]">
-          <label className="grid gap-1">
-            <span className="sr-only">Filter by status</span>
-            <select
-              value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value as "all" | ResortServiceRequestStatus)}
-              className="h-11 w-full rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)] outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
-            >
-              {STATUS_TABS.map((tab) => (
-                <option key={tab.id} value={tab.id}>
-                  {tab.id === "all" ? "All requests" : tab.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <select
+          <Select
+            ariaLabel="Filter by status"
+            value={statusFilter}
+            onChange={(next) => setStatusFilter(next as "all" | ResortServiceRequestStatus)}
+            options={STATUS_TABS.map((tab) => ({ value: tab.id, label: tab.id === "all" ? "All requests" : tab.label }))}
+          />
+          <Select
+            ariaLabel="Filter by category"
             value={categoryFilter}
-            onChange={(event) => setCategoryFilter(event.target.value as "all" | "room_service" | "spa")}
-            className="h-11 w-full rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-text)] outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
-          >
-            <option value="all">All categories</option>
-            <option value="room_service">Room Service</option>
-            <option value="spa">Spa</option>
-          </select>
+            onChange={(next) => setCategoryFilter(next as "all" | "room_service" | "spa")}
+            options={[
+              { value: "all", label: "All categories" },
+              { value: "room_service", label: "Room Service" },
+              { value: "spa", label: "Spa" },
+            ]}
+          />
           <label className="inline-flex h-11 items-center gap-2 rounded-xl border border-[var(--color-border)] bg-white px-3 sm:col-span-2 lg:col-span-1">
             <Search className="h-4 w-4 text-[var(--color-muted)]" />
             <input
