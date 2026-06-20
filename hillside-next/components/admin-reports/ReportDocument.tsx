@@ -48,7 +48,7 @@ export function ReportDocument({
   const dailyCashTotal = daily.reduce((sum, row) => sum + (row.cash_collected || 0), 0);
 
   return (
-    <div id="printable-report" className="hidden bg-white text-black print:block">
+    <div className="bg-white text-black">
       <div className="mx-auto max-w-[760px] px-6 py-4 font-sans">
         {/* Letterhead */}
         <header className="flex items-start justify-between gap-4 border-b-2 border-black pb-4">

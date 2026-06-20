@@ -7,23 +7,42 @@ import type { ReportDailyItem, ReportMonthlyItem } from "../../../packages/share
 type Props = {
   daily: ReportDailyItem[];
   monthly: ReportMonthlyItem[];
+  fromDate: string;
+  toDate: string;
   fullWidthMobile?: boolean;
 };
 
-function toCsv(rows: Array<Record<string, string | number>>) {
-  if (!rows.length) return "";
-  const headers = Object.keys(rows[0]);
-  const escapeValue = (value: string | number) => {
-    const text = String(value ?? "");
-    if (text.includes(",") || text.includes("\"") || text.includes("\n")) {
-      return `"${text.replace(/"/g, "\"\"")}"`;
-    }
-    return text;
-  };
-  const lines = [
-    headers.join(","),
-    ...rows.map((row) => headers.map((key) => escapeValue(row[key] ?? "")).join(",")),
+const RESORT_ADDRESS = "Prk. 7, Jupiter St, Olongapo City, 2200 Zambales";
+
+function csvCell(value: string | number) {
+  const text = String(value ?? "");
+  return /[",\n]/.test(text) ? `"${text.replace(/"/g, "\"\"")}"` : text;
+}
+
+function csvLine(cells: Array<string | number>) {
+  return cells.map(csvCell).join(",");
+}
+
+/** Build a templated report CSV: letterhead + meta, then headers, rows, totals. */
+function buildReportCsv(opts: {
+  title: string;
+  fromDate: string;
+  toDate: string;
+  columns: string[];
+  rows: Array<Array<string | number>>;
+  totals?: Array<string | number>;
+}) {
+  const lines: string[] = [
+    csvLine(["Hillside Hidden Resort"]),
+    csvLine([RESORT_ADDRESS]),
+    csvLine([opts.title]),
+    csvLine(["Period", `${opts.fromDate} to ${opts.toDate}`]),
+    csvLine(["Generated", new Date().toLocaleString("en-PH")]),
+    "",
+    csvLine(opts.columns),
+    ...opts.rows.map((row) => csvLine(row)),
   ];
+  if (opts.totals) lines.push(csvLine(opts.totals));
   return lines.join("\n");
 }
 
@@ -39,24 +58,49 @@ function downloadCsv(filename: string, csv: string) {
   URL.revokeObjectURL(url);
 }
 
-export function ReportsExportButtons({ daily, monthly, fullWidthMobile = false }: Props) {
+function sum<T>(rows: T[], pick: (row: T) => number) {
+  return rows.reduce((total, row) => total + (pick(row) || 0), 0);
+}
+
+export function ReportsExportButtons({ daily, monthly, fromDate, toDate, fullWidthMobile = false }: Props) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
   const exportDaily = () => {
     downloadCsv(
       "reports-daily.csv",
-      toCsv(
-        daily.map((row) => ({
-          date: row.report_date,
-          bookings: row.bookings,
-          cancellations: row.cancellations,
-          cash_collected_php: row.cash_collected,
-          occupancy_rate: row.occupancy_rate,
-          unit_booked_value_php: row.unit_booked_value,
-          tour_booked_value_php: row.tour_booked_value,
-        })),
-      ),
+      buildReportCsv({
+        title: "Sales & Occupancy Report — Daily",
+        fromDate,
+        toDate,
+        columns: [
+          "date",
+          "bookings",
+          "cancellations",
+          "cash_collected_php",
+          "occupancy_rate",
+          "unit_booked_value_php",
+          "tour_booked_value_php",
+        ],
+        rows: daily.map((row) => [
+          row.report_date,
+          row.bookings,
+          row.cancellations,
+          row.cash_collected,
+          row.occupancy_rate,
+          row.unit_booked_value,
+          row.tour_booked_value,
+        ]),
+        totals: [
+          "Total",
+          sum(daily, (r) => r.bookings),
+          sum(daily, (r) => r.cancellations),
+          sum(daily, (r) => r.cash_collected),
+          "",
+          sum(daily, (r) => r.unit_booked_value),
+          sum(daily, (r) => r.tour_booked_value),
+        ],
+      }),
     );
     setOpen(false);
   };
@@ -64,17 +108,38 @@ export function ReportsExportButtons({ daily, monthly, fullWidthMobile = false }
   const exportMonthly = () => {
     downloadCsv(
       "reports-monthly.csv",
-      toCsv(
-        monthly.map((row) => ({
-          month: row.report_month,
-          bookings: row.bookings,
-          cancellations: row.cancellations,
-          cash_collected_php: row.cash_collected,
-          occupancy_rate: row.occupancy_rate,
-          unit_booked_value_php: row.unit_booked_value,
-          tour_booked_value_php: row.tour_booked_value,
-        })),
-      ),
+      buildReportCsv({
+        title: "Sales & Occupancy Report — Monthly",
+        fromDate,
+        toDate,
+        columns: [
+          "month",
+          "bookings",
+          "cancellations",
+          "cash_collected_php",
+          "occupancy_rate",
+          "unit_booked_value_php",
+          "tour_booked_value_php",
+        ],
+        rows: monthly.map((row) => [
+          row.report_month,
+          row.bookings,
+          row.cancellations,
+          row.cash_collected,
+          row.occupancy_rate,
+          row.unit_booked_value,
+          row.tour_booked_value,
+        ]),
+        totals: [
+          "Total",
+          sum(monthly, (r) => r.bookings),
+          sum(monthly, (r) => r.cancellations),
+          sum(monthly, (r) => r.cash_collected),
+          "",
+          sum(monthly, (r) => r.unit_booked_value),
+          sum(monthly, (r) => r.tour_booked_value),
+        ],
+      }),
     );
     setOpen(false);
   };

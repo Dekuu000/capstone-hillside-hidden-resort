@@ -517,32 +517,18 @@ a:focus-visible {
   }
 }
 
-/* Printing: only the report document prints; everything else is hidden.
-   Used by the printable A4 report (#printable-report). */
+/* The standalone /reports-print page renders only the report document, so we
+   just set the page size + keep colours, and hide any .no-print controls. */
 @page {
   size: A4;
   margin: 14mm;
 }
 
 @media print {
-  body {
-    background: #fff;
+  .no-print {
+    display: none !important;
   }
-  body * {
-    visibility: hidden !important;
-  }
-  #printable-report,
-  #printable-report * {
-    visibility: visible !important;
-  }
-  #printable-report {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-  }
-  /* Ensure tinted blocks/borders render on paper. */
-  #printable-report * {
+  * {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
