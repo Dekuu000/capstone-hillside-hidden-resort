@@ -269,20 +269,33 @@ export function ReservationDetailDrawer({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-3 backdrop-blur-[2px] sm:p-4">
       <div className="w-full max-w-4xl overflow-hidden rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white shadow-[var(--shadow-lg)]">
         <div className="max-h-[92vh] overflow-y-auto">
-          <div className="sticky top-0 z-10 border-b border-[var(--color-border)] bg-white/95 px-4 py-3 backdrop-blur">
+          <div className="sticky top-0 z-10 border-b border-[var(--color-border)] bg-white/95 px-4 py-3.5 backdrop-blur sm:px-6">
             <div className="flex items-start justify-between gap-3">
-              <h3 className="text-xl font-bold tracking-[-0.01em] text-[var(--color-text)]">{reservation?.reservation_code ?? "Reservation details"}</h3>
+              <div className="flex min-w-0 items-center gap-2">
+                <h3 className="truncate text-xl font-bold tracking-[-0.01em] text-[var(--color-text)]">{reservation?.reservation_code ?? "Reservation details"}</h3>
+                {reservation?.reservation_code ? (
+                  <button
+                    type="button"
+                    onClick={() => handleCopy("reservation_code", reservation.reservation_code, "Reservation code")}
+                    aria-label="Copy reservation code"
+                    title="Copy reservation code"
+                    className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[var(--color-border)] bg-white text-[var(--color-muted)] transition hover:bg-[var(--color-background)]"
+                  >
+                    {copiedField === "reservation_code" ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+                  </button>
+                ) : null}
+              </div>
               <button
                 type="button"
                 onClick={onClose}
                 aria-label="Close reservation details"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-border)] text-[var(--color-muted)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--color-border)] text-[var(--color-muted)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
             {reservation ? (
-              <div className="mt-2 flex items-center justify-between gap-2">
+              <div className="mt-2.5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-wrap gap-1.5 text-[11px] font-semibold">
                   <span className={`rounded-full px-2 py-0.5 ${source === "walk_in" ? "bg-emerald-100 text-emerald-800" : "bg-blue-100 text-blue-800"}`}>
                     {source === "walk_in" ? "Walk-in" : "Online"}
@@ -291,7 +304,7 @@ export function ReservationDetailDrawer({
                   {isSameDay ? <span className="rounded-full bg-amber-100 px-2 py-0.5 text-amber-800">Arriving today</span> : null}
                 </div>
                 {reservation.created_at ? (
-                  <span className="shrink-0 rounded-full border border-[var(--color-border)] bg-[var(--color-background)] px-2 py-0.5 text-[11px] font-semibold text-[var(--color-muted)]">
+                  <span className="self-start rounded-full border border-[var(--color-border)] bg-[var(--color-background)] px-2 py-0.5 text-[11px] font-semibold text-[var(--color-muted)] sm:self-auto sm:shrink-0">
                     Created {formatDateTime(reservation.created_at)}
                   </span>
                 ) : null}
@@ -327,22 +340,7 @@ export function ReservationDetailDrawer({
                   <h4 className="text-sm font-semibold text-[var(--color-text)]">Reservation Summary</h4>
                   <div className="mt-2 grid gap-3 md:grid-cols-2">
                     <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-2.5">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm">
-                          <span className="text-[var(--color-muted)]">Reservation:</span>{" "}
-                          <span className="font-semibold text-[var(--color-text)]">{reservation.reservation_code}</span>
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => handleCopy("reservation_code", reservation.reservation_code, "Reservation code")}
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[var(--color-border)] bg-white text-[var(--color-muted)] transition hover:bg-[var(--color-background)]"
-                          aria-label="Copy reservation code"
-                          title="Copy reservation code"
-                        >
-                          {copiedField === "reservation_code" ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
-                        </button>
-                      </div>
-                      <p className="mt-1 text-sm">
+                      <p className="text-sm">
                         <span className="text-[var(--color-muted)]">Guest:</span>{" "}
                         <span className="font-semibold text-[var(--color-text)]">{reservation.guest?.name || "-"}</span>
                       </p>
@@ -470,21 +468,14 @@ export function ReservationDetailDrawer({
                     <Link href={paymentRecordUrl} className="rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]">
                       Open Payment Form
                     </Link>
-                    {paymentState !== "settled" ? (
-                      <Link
-                        href={paymentRecordUrl}
-                        className="rounded-lg border border-[var(--color-primary)] bg-[var(--color-primary)] px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_40%,white)]"
-                      >
-                        Record Payment
-                      </Link>
-                    ) : (
+                    {paymentState === "settled" ? (
                       <Link
                         href={checkInActionHref}
                         className="rounded-lg border border-[var(--color-primary)] bg-[var(--color-primary)] px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_40%,white)]"
                       >
                         {checkInActionLabel}
                       </Link>
-                    )}
+                    ) : null}
                     {paymentState !== "settled" ? (
                       <Link
                         href={checkInActionHref}
