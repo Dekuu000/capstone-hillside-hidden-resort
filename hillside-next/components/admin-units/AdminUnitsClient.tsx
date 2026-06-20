@@ -24,6 +24,7 @@ import {
   normalizeUnitThumbUrls,
 } from "../../lib/unitMedia";
 import { AdminPageHeader } from "../layout/AdminPageHeader";
+import { Modal } from "../shared/Modal";
 import { Select } from "../shared/Select";
 
 type AdminUnitsClientProps = {
@@ -757,24 +758,37 @@ export function AdminUnitsClient({
         </div>
       </div>
 
-      {(editingUnitId || unitDetailLoading) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/55 p-3 md:p-4">
-          <div className="max-h-[92vh] w-full overflow-y-auto rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-lg)] md:max-w-2xl md:p-6">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-xl font-bold tracking-[-0.01em] text-[var(--color-text)]">Unit details</h3>
+      <Modal
+        open={Boolean(editingUnitId || unitDetailLoading)}
+        onClose={resetEditor}
+        title="Unit details"
+        size="md"
+        footer={
+          editingUnitId && !unitDetailLoading ? (
+            <>
               <button
                 type="button"
                 onClick={resetEditor}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-border)] text-[var(--color-muted)]"
-                aria-label="Close"
+                disabled={editorBusy}
+                className="inline-flex h-11 items-center justify-center rounded-xl border border-[var(--color-border)] bg-white px-4 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] disabled:opacity-50"
               >
-                <X className="h-4 w-4" />
+                Cancel
               </button>
-            </div>
+              <button
+                type="button"
+                onClick={() => void saveEditor()}
+                disabled={editorBusy || mediaActionBusy || uploadQueueCount > 0}
+                className="inline-flex h-11 items-center justify-center rounded-xl bg-[var(--color-primary)] px-5 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 disabled:opacity-50"
+              >
+                {editorBusy ? "Saving..." : "Save changes"}
+              </button>
+            </>
+          ) : null
+        }
+      >
+        {unitDetailLoading ? <p className="text-sm text-[var(--color-muted)]">Loading unit details...</p> : null}
 
-            {unitDetailLoading ? <p className="text-sm text-[var(--color-muted)]">Loading unit details...</p> : null}
-
-            {editingUnitId && !unitDetailLoading ? (
+        {editingUnitId && !unitDetailLoading ? (
               <div className="space-y-4">
                 <label className="grid gap-1 text-xs text-[var(--color-muted)]">
                   Name
@@ -782,7 +796,7 @@ export function AdminUnitsClient({
                     type="text"
                     value={editName}
                     onChange={(event) => setEditName(event.target.value)}
-                    className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm"
+                    className="h-11 rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)] focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
                   />
                 </label>
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -792,7 +806,7 @@ export function AdminUnitsClient({
                       type="text"
                       value={editUnitCode}
                       onChange={(event) => setEditUnitCode(event.target.value)}
-                      className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm"
+                      className="h-11 rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)] focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
                     />
                   </label>
                   <label className="grid gap-1 text-xs text-[var(--color-muted)]">
@@ -802,7 +816,7 @@ export function AdminUnitsClient({
                       value={editRoomNumber}
                       onChange={(event) => setEditRoomNumber(event.target.value)}
                       placeholder="e.g. 203"
-                      className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm"
+                      className="h-11 rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)] focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
                     />
                   </label>
                 </div>
@@ -841,7 +855,7 @@ export function AdminUnitsClient({
                       min={1}
                       value={editCapacity}
                       onChange={(event) => setEditCapacity(event.target.value)}
-                      className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm"
+                      className="h-11 rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)] focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
                     />
                   </label>
                   <label className="grid gap-1 text-xs text-[var(--color-muted)]">
@@ -851,7 +865,7 @@ export function AdminUnitsClient({
                       min={0}
                       value={editBasePrice}
                       onChange={(event) => setEditBasePrice(event.target.value)}
-                      className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm"
+                      className="h-11 rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)] focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
                     />
                   </label>
                 </div>
@@ -860,7 +874,7 @@ export function AdminUnitsClient({
                   <textarea
                     value={editDescription}
                     onChange={(event) => setEditDescription(event.target.value)}
-                    className="min-h-24 rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm"
+                    className="min-h-28 rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
                   />
                 </label>
                 <section className="space-y-3">
@@ -919,61 +933,43 @@ export function AdminUnitsClient({
                     />
                   ) : null}
                 </section>
-                <div className="flex justify-end gap-2 border-t border-[var(--color-border)] pt-4">
-                  <button
-                    type="button"
-                    onClick={resetEditor}
-                    className="rounded-lg border border-[var(--color-border)] bg-white px-4 py-2 text-sm font-semibold text-[var(--color-text)]"
-                    disabled={editorBusy}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void saveEditor()}
-                    className="rounded-lg border border-[var(--color-primary)] bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-white shadow-sm transition disabled:opacity-50"
-                    disabled={editorBusy || mediaActionBusy || uploadQueueCount > 0}
-                  >
-                    {editorBusy ? "Saving..." : "Save changes"}
-                  </button>
-                </div>
                 {uploadQueueCount > 0 ? (
                   <p className="text-xs text-[var(--color-muted)]">
                     Wait for {uploadQueueCount} upload{uploadQueueCount === 1 ? "" : "s"} before saving.
                   </p>
                 ) : null}
-
-                {pendingRemoveIndex !== null ? (
-                  <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/45 p-4">
-                    <div className="w-full max-w-sm rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-lg">
-                      <p className="text-sm font-semibold text-[var(--color-text)]">Remove this image?</p>
-                      <p className="mt-1 text-xs text-[var(--color-muted)]">
-                        This will remove the image from this unit after you save changes.
-                      </p>
-                      <div className="mt-4 grid grid-cols-2 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setPendingRemoveIndex(null)}
-                          className="h-10 rounded-lg border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)]"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="button"
-                          onClick={confirmRemoveImage}
-                          className="h-10 rounded-lg border border-red-200 bg-red-50 px-3 text-sm font-semibold text-red-700"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
               </div>
-            ) : null}
-          </div>
-        </div>
-      )}
+        ) : null}
+      </Modal>
+
+      {pendingRemoveIndex !== null ? (
+        <Modal
+          open
+          onClose={() => setPendingRemoveIndex(null)}
+          title="Remove this image?"
+          size="sm"
+          footer={
+            <>
+              <button
+                type="button"
+                onClick={() => setPendingRemoveIndex(null)}
+                className="inline-flex h-11 items-center justify-center rounded-xl border border-[var(--color-border)] bg-white px-4 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmRemoveImage}
+                className="inline-flex h-11 items-center justify-center rounded-xl bg-red-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700"
+              >
+                Remove
+              </button>
+            </>
+          }
+        >
+          <p className="text-sm text-[var(--color-muted)]">This will remove the image from this unit after you save changes.</p>
+        </Modal>
+      ) : null}
       <ImageLightbox
         open={lightboxOpen}
         images={galleryImages}

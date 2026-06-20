@@ -31,6 +31,7 @@ import { getSupabaseBrowserClient } from "../../lib/supabase";
 import { FancyDatePicker } from "../shared/FancyDatePicker";
 import { AdminPageHeader } from "../layout/AdminPageHeader";
 import { DataFreshnessBadge } from "../shared/DataFreshnessBadge";
+import { Modal } from "../shared/Modal";
 import { Select } from "../shared/Select";
 
 type AdminPaymentsClientProps = {
@@ -1378,38 +1379,19 @@ export function AdminPaymentsClient({
       ) : null}
 
       {rejectTarget ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-3 md:p-4">
-          <div className="w-full rounded-2xl border border-[var(--color-border)] bg-white p-4 md:max-w-xl">
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-[var(--color-text)]">Reject payment submission</h3>
-              <button
-                type="button"
-                aria-label="Close"
-                onClick={() => {
-                  if (rejectBusy) return;
-                  setRejectTarget(null);
-                  setRejectReason("");
-                  setRejectError(null);
-                }}
-                className="h-8 w-8 rounded-lg border border-[var(--color-border)] text-[var(--color-muted)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
-              >
-                x
-              </button>
-            </div>
-            <p className="mb-3 text-sm text-[var(--color-muted)]">
-              This will notify the guest that the submitted proof/reference could not be verified. They can resubmit payment proof.
-            </p>
-            <textarea
-              value={rejectReason}
-              onChange={(event) => setRejectReason(event.target.value)}
-              placeholder="e.g., Reference number not found in GCash records."
-              className="min-h-[120px] w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm outline-none ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)] transition focus:ring-2"
-            />
-            <p className="mt-1 text-xs text-[var(--color-muted)]">Minimum 5 characters.</p>
-            {rejectError ? (
-              <p className="mt-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{rejectError}</p>
-            ) : null}
-            <div className="mt-4 flex justify-end gap-2">
+        <Modal
+          open
+          onClose={() => {
+            if (rejectBusy) return;
+            setRejectTarget(null);
+            setRejectReason("");
+            setRejectError(null);
+          }}
+          title="Reject payment submission"
+          description="This notifies the guest that the submitted proof/reference could not be verified. They can resubmit payment proof."
+          size="md"
+          footer={
+            <>
               <button
                 type="button"
                 onClick={() => {
@@ -1418,22 +1400,33 @@ export function AdminPaymentsClient({
                   setRejectReason("");
                   setRejectError(null);
                 }}
-                className="rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
                 disabled={rejectBusy}
+                className="inline-flex h-11 items-center justify-center rounded-xl border border-[var(--color-border)] bg-white px-4 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={() => void confirmReject()}
-                className="rounded-lg border border-red-600 bg-red-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-200 disabled:opacity-50"
                 disabled={rejectBusy || rejectReason.trim().length < 5}
+                className="inline-flex h-11 items-center justify-center rounded-xl bg-red-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700 disabled:opacity-50"
               >
                 {rejectBusy ? "Rejecting..." : "Confirm Reject"}
               </button>
-            </div>
-          </div>
-        </div>
+            </>
+          }
+        >
+          <textarea
+            value={rejectReason}
+            onChange={(event) => setRejectReason(event.target.value)}
+            placeholder="e.g., Reference number not found in GCash records."
+            className="min-h-[120px] w-full rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)] focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
+          />
+          <p className="mt-1 text-xs text-[var(--color-muted)]">Minimum 5 characters.</p>
+          {rejectError ? (
+            <p className="mt-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{rejectError}</p>
+          ) : null}
+        </Modal>
       ) : null}
     </section>
   );
