@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, CheckCheck } from "lucide-react";
+import { Bell, CheckCheck, X } from "lucide-react";
 import type { NotificationItem } from "../../../packages/shared/src/types";
 import {
   notificationListResponseSchema,
@@ -41,7 +41,14 @@ function relativeTime(iso: string): string {
  * (no badge, empty panel) on any error — so it is safe before the notifications
  * table exists online.
  */
-export function NotificationBell({ light = false }: { light?: boolean }) {
+export function NotificationBell({
+  light = false,
+  placement = "bottom-end",
+}: {
+  light?: boolean;
+  /** Desktop popover direction: "bottom-end" (top-bar bells) or "top-start" (sidebar-footer bell). */
+  placement?: "bottom-end" | "top-start";
+}) {
   const router = useRouter();
   const [token, setToken] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
@@ -186,19 +193,38 @@ export function NotificationBell({ light = false }: { light?: boolean }) {
       </button>
 
       {open ? (
-        <div className="absolute right-0 top-full z-50 mt-2 w-[min(360px,calc(100vw-1rem))] overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)]">
-          <div className="flex items-center justify-between border-b border-[var(--color-border)] px-4 py-3">
-            <p className="text-sm font-semibold text-[var(--color-text)]">Notifications</p>
-            {unread > 0 ? (
-              <button
-                type="button"
-                onClick={() => void markAllRead()}
-                className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-secondary)] hover:underline"
-              >
-                <CheckCheck className="h-3.5 w-3.5" /> Mark all read
-              </button>
-            ) : null}
-          </div>
+        <>
+          {/* Mobile backdrop so the panel reads as a sheet (desktop uses a popover). */}
+          <div className="fixed inset-0 z-40 bg-black/20 sm:hidden" aria-hidden="true" onClick={() => setOpen(false)} />
+          <div
+            className={`fixed inset-x-3 top-[74px] z-50 overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)] sm:absolute sm:inset-x-auto sm:top-auto sm:w-[360px] ${
+              placement === "top-start"
+                ? "sm:bottom-full sm:left-0 sm:mb-2"
+                : "sm:top-full sm:right-0 sm:mt-2"
+            }`}
+          >
+            <div className="flex items-center justify-between gap-2 border-b border-[var(--color-border)] px-4 py-3">
+              <p className="text-sm font-semibold text-[var(--color-text)]">Notifications</p>
+              <div className="flex items-center gap-3">
+                {unread > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => void markAllRead()}
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-secondary)] hover:underline"
+                  >
+                    <CheckCheck className="h-3.5 w-3.5" /> Mark all read
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  aria-label="Close notifications"
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-full text-[var(--color-muted)] transition hover:bg-[var(--color-background)] sm:hidden"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
 
           <div className="max-h-[min(70vh,420px)] overflow-y-auto">
             {loading && items.length === 0 ? (
@@ -235,7 +261,8 @@ export function NotificationBell({ light = false }: { light?: boolean }) {
               </ul>
             )}
           </div>
-        </div>
+          </div>
+        </>
       ) : null}
     </div>
   );

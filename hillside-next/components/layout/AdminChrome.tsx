@@ -218,7 +218,7 @@ export function AdminChrome({ children, initialName = null, initialEmail = null,
                 <p className="truncate text-xs text-teal-100">{email || "admin"}</p>
               </div>
               <div className={`ml-auto ${collapsed ? "hidden" : "hidden lg:block"}`}>
-                <NotificationBell light />
+                <NotificationBell light placement="top-start" />
               </div>
             </div>
             <button
