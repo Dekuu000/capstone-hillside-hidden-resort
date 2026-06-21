@@ -19,6 +19,8 @@ from app.integrations.supabase_client import (
     get_reservation_by_id,
     list_admin_payments,
     list_payments_by_reservation,
+    notify_guest_payment_decision,
+    notify_ops_payment_proof,
     record_on_site_payment as record_on_site_payment_rpc,
     reject_payment as reject_payment_rpc,
     reject_payment_service_role,
@@ -274,6 +276,7 @@ def submit_payment(
     ):
         next_status = "confirmed" if next_status in {"pending_payment", "for_verification"} else next_status
 
+    notify_ops_payment_proof(reservation=(refreshed or reservation), payment_id=payment_id)
     response = PaymentSubmissionResponse(
         payment_id=payment_id,
         status="pending",
@@ -447,6 +450,7 @@ def verify_payment(payment_id: str, auth: AuthContext = Depends(require_admin)):
         verify_payment_rpc(payment_id, access_token=auth.access_token, approved=True)
     except RuntimeError as exc:
         raise_http_from_runtime_error(exc, default_status=status.HTTP_503_SERVICE_UNAVAILABLE)
+    notify_guest_payment_decision(payment_id=payment_id, approved=True)
     return {"ok": True, "payment_id": payment_id, "status": "verified"}
 
 
@@ -467,6 +471,7 @@ def reject_payment(
     except RuntimeError as exc:
         raise_http_from_runtime_error(exc, default_status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
+    notify_guest_payment_decision(payment_id=payment_id, approved=False)
     return {
         "ok": True,
         "payment_id": payment_id,

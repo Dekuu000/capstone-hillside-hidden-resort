@@ -41,7 +41,7 @@ function relativeTime(iso: string): string {
  * (no badge, empty panel) on any error — so it is safe before the notifications
  * table exists online.
  */
-export function NotificationBell() {
+export function NotificationBell({ light = false }: { light?: boolean }) {
   const router = useRouter();
   const [token, setToken] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
@@ -171,7 +171,11 @@ export function NotificationBell() {
         onClick={toggle}
         aria-label={`Notifications${unread > 0 ? ` (${unread} unread)` : ""}`}
         aria-expanded={open}
-        className="relative inline-flex h-10 w-10 items-center justify-center rounded-full text-[var(--color-text)] transition hover:bg-[color:color-mix(in_srgb,var(--color-secondary)_12%,white)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
+        className={`relative inline-flex h-10 w-10 items-center justify-center rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)] ${
+          light
+            ? "text-white hover:bg-white/15"
+            : "text-[var(--color-text)] hover:bg-[color:color-mix(in_srgb,var(--color-secondary)_12%,white)]"
+        }`}
       >
         <Bell className="h-5 w-5" />
         {unread > 0 ? (

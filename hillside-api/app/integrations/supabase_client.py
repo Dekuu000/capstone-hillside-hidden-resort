@@ -3267,3 +3267,155 @@ def emit_notification_to_roles(
         ):
             sent += 1
     return sent
+
+
+# --- Guest-facing notification emitters (best-effort) ---
+def notify_guest_payment_decision(*, payment_id: str, approved: bool) -> None:
+    """Notify the guest when their payment proof is verified or declined."""
+    try:
+        client = get_supabase_client()
+        resp = (
+            client.table("payments")
+            .select("reservation_id")
+            .eq("payment_id", payment_id)
+            .limit(1)
+            .execute()
+        )
+        rows = resp.data or []
+        reservation_id = rows[0].get("reservation_id") if rows else None
+        if not reservation_id:
+            return
+        reservation = get_reservation_by_id(str(reservation_id))
+        if not reservation:
+            return
+        guest_user_id = reservation.get("guest_user_id")
+        if not guest_user_id:
+            return
+        code = reservation.get("reservation_code") or "your booking"
+        status_now = str(reservation.get("status") or "").lower()
+        if approved:
+            confirmed = status_now == "confirmed"
+            emit_notification(
+                recipient_user_id=str(guest_user_id),
+                category="payment",
+                event_type="payment.verified",
+                title="Payment verified" + (" — booking confirmed" if confirmed else ""),
+                body=(
+                    f"Your payment for {code} was verified. Your QR pass is ready."
+                    if confirmed
+                    else f"Your payment for {code} was verified."
+                ),
+                severity="success",
+                entity_type="reservation",
+                entity_id=str(reservation_id),
+                link="/my-bookings",
+                dedupe_key=f"payment.verified:{payment_id}",
+            )
+        else:
+            emit_notification(
+                recipient_user_id=str(guest_user_id),
+                category="payment",
+                event_type="payment.declined",
+                title="Payment proof declined",
+                body=f"Your payment proof for {code} was declined. Please resubmit from your booking details.",
+                severity="warning",
+                entity_type="reservation",
+                entity_id=str(reservation_id),
+                link="/my-bookings",
+                dedupe_key=f"payment.declined:{payment_id}",
+            )
+    except Exception:  # noqa: BLE001 - best-effort
+        return
+
+
+def notify_guest_service_request(row: dict[str, Any] | None) -> None:
+    """Notify the guest when their resort-service request changes state."""
+    try:
+        if not isinstance(row, dict):
+            return
+        guest_user_id = row.get("guest_user_id")
+        if not guest_user_id:
+            return
+        status_now = str(row.get("status") or "").lower()
+        request_id = str(row.get("request_id") or "")
+        service_item = row.get("service_item") if isinstance(row.get("service_item"), dict) else {}
+        name = (service_item or {}).get("service_name") or "Your service request"
+        plans = {
+            "in_progress": ("service.in_progress", "Service in progress", f"{name} is being prepared.", "info"),
+            "done": ("service.completed", "Service completed", f"{name} is ready.", "success"),
+            "cancelled": ("service.cancelled", "Service request cancelled", f"{name} was cancelled.", "warning"),
+        }
+        plan = plans.get(status_now)
+        if not plan:
+            return
+        event_type, title, body, severity = plan
+        emit_notification(
+            recipient_user_id=str(guest_user_id),
+            category="service",
+            event_type=event_type,
+            title=title,
+            body=body,
+            severity=severity,
+            entity_type="service_request",
+            entity_id=request_id,
+            link="/guest/services",
+            dedupe_key=f"{event_type}:{request_id}",
+        )
+    except Exception:  # noqa: BLE001 - best-effort
+        return
+
+
+# --- Back-office notification emitters (fan-out, best-effort) ---
+def notify_ops_payment_proof(*, reservation: dict[str, Any] | None, payment_id: str) -> None:
+    """Tell managers a guest submitted a payment proof that needs verification."""
+    try:
+        if not isinstance(reservation, dict):
+            return
+        code = reservation.get("reservation_code") or "A reservation"
+        emit_notification_to_roles(
+            min_role="admin",
+            category="payment",
+            event_type="ops.payment_proof",
+            title="Payment proof submitted",
+            body=f"{code} submitted a payment proof for verification.",
+            severity="info",
+            entity_type="reservation",
+            entity_id=str(reservation.get("reservation_id") or ""),
+            link="/admin/payments",
+            dedupe_prefix=f"ops.payment_proof:{payment_id}",
+        )
+    except Exception:  # noqa: BLE001 - best-effort
+        return
+
+
+def notify_ops_new_service_request(row: dict[str, Any] | None) -> None:
+    """Tell front-desk/managers a guest raised a new resort-service request."""
+    try:
+        if not isinstance(row, dict):
+            return
+        request_id = str(row.get("request_id") or "")
+        service_item = row.get("service_item") if isinstance(row.get("service_item"), dict) else {}
+        name = (service_item or {}).get("service_name") or "a resort service"
+        quantity = row.get("quantity")
+        reservation = row.get("reservation") if isinstance(row.get("reservation"), dict) else {}
+        code = (reservation or {}).get("reservation_code")
+        body = (
+            f"A guest requested {name}"
+            + (f" (x{quantity})" if quantity else "")
+            + (f" for {code}" if code else "")
+            + "."
+        )
+        emit_notification_to_roles(
+            min_role="staff",
+            category="service",
+            event_type="ops.service_request",
+            title="New service request",
+            body=body,
+            severity="info",
+            entity_type="service_request",
+            entity_id=request_id,
+            link="/admin/services",
+            dedupe_prefix=f"ops.service_request:{request_id}",
+        )
+    except Exception:  # noqa: BLE001 - best-effort
+        return

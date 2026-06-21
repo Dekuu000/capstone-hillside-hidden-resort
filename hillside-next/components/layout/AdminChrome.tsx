@@ -26,6 +26,7 @@ import { clearServerSessionCookie } from "../../lib/authSessionCookie";
 import { getSupabaseBrowserClient, safeGetSession } from "../../lib/supabase";
 import { resolveUserDisplayName } from "../../lib/userProfile";
 import { HillsideLogo } from "../branding/HillsideLogo";
+import { NotificationBell } from "../shared/NotificationBell";
 import { canAccessTier, ROLE_LABELS, type NavTier, type Role } from "../../../packages/shared/src/types";
 
 type AdminChromeProps = {
@@ -216,6 +217,9 @@ export function AdminChrome({ children, initialName = null, initialEmail = null,
                 <p className="truncate text-sm font-semibold">{name}</p>
                 <p className="truncate text-xs text-teal-100">{email || "admin"}</p>
               </div>
+              <div className={`ml-auto ${collapsed ? "hidden" : "hidden lg:block"}`}>
+                <NotificationBell light />
+              </div>
             </div>
             <button
               type="button"
@@ -253,6 +257,9 @@ export function AdminChrome({ children, initialName = null, initialEmail = null,
                 className="[&_img]:h-9 [&_img]:w-9 [&_.hillside-brand-title]:text-[1.1rem] [&_.hillside-brand-title]:font-semibold"
               />
             </Link>
+            <div className="ml-auto">
+              <NotificationBell light />
+            </div>
           </div>
         </header>
 
