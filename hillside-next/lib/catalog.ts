@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { serviceListResponseSchema } from "../../packages/shared/src/schemas";
-import type { ServiceItem } from "../../packages/shared/src/types";
+import { serviceListResponseSchema, unitReviewsResponseSchema } from "../../packages/shared/src/schemas";
+import type { ServiceItem, UnitReviewsResponse } from "../../packages/shared/src/types";
 
 /**
  * Public catalog access (no auth) + presentation helpers for the Airbnb-style
@@ -88,6 +88,27 @@ export async function fetchAvailableUnits(params: {
 export async function fetchPublicUnitById(unitId: string): Promise<PublicUnit | null> {
   const units = await fetchPublicUnits({ limit: 100 });
   return units.find((unit) => unit.unit_id === unitId) ?? null;
+}
+
+/** Public reviews + summary for a unit. Returns an empty summary on any failure
+ * (e.g. the reviews table isn't provisioned yet), so the listing degrades cleanly. */
+export async function fetchUnitReviews(unitId: string): Promise<UnitReviewsResponse> {
+  const empty: UnitReviewsResponse = {
+    unit_id: unitId,
+    summary: { average_rating: 0, review_count: 0 },
+    items: [],
+  };
+  if (!apiBase) return empty;
+  try {
+    const res = await fetch(`${apiBase}/v2/catalog/units/${encodeURIComponent(unitId)}/reviews`, {
+      next: { revalidate: 30 },
+    });
+    if (!res.ok) return empty;
+    const parsed = unitReviewsResponseSchema.safeParse(await res.json());
+    return parsed.success ? parsed.data : empty;
+  } catch {
+    return empty;
+  }
 }
 
 // --- Presentation helpers ---

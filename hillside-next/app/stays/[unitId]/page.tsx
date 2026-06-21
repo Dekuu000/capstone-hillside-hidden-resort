@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft, MapPin, Star, Users } from "lucide-react";
 import { getServerAccessToken, getServerAuthContext } from "../../../lib/serverAuth";
-import { fetchPublicUnitById, unitGalleryImages, unitTypeLabel } from "../../../lib/catalog";
+import { fetchPublicUnitById, fetchUnitReviews, unitGalleryImages, unitTypeLabel } from "../../../lib/catalog";
 import { SearchNav } from "../../../components/booking/SearchNav";
 import { SiteFooter } from "../../../components/booking/SiteFooter";
 import { GuestBottomNav } from "../../../components/guest/GuestBottomNav";
@@ -11,6 +11,12 @@ import { AmenityList } from "../../../components/booking/AmenityList";
 import { ListingBookingCard } from "../../../components/booking/ListingBookingCard";
 import { MapPlaceholder } from "../../../components/booking/MapPlaceholder";
 import { isBackOffice } from "../../../../packages/shared/src/types";
+
+function formatReviewDate(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("en-PH", { month: "short", year: "numeric" });
+}
 
 export default async function ListingDetailPage({
   params,
@@ -30,9 +36,13 @@ export default async function ListingDetailPage({
   if (!unit) notFound();
 
   const accessToken = await getServerAccessToken();
-  const auth = accessToken ? await getServerAuthContext(accessToken) : null;
+  const [auth, reviews] = await Promise.all([
+    accessToken ? getServerAuthContext(accessToken) : Promise.resolve(null),
+    fetchUnitReviews(unitId),
+  ]);
   const gallery = unitGalleryImages(unit);
   const amenities = unit.amenities ?? [];
+  const hasReviews = reviews.summary.review_count > 0;
 
   return (
     <main className={`flex min-h-screen flex-col bg-[var(--color-background)]${auth ? " pb-24 md:pb-0" : ""}`}>
@@ -49,10 +59,18 @@ export default async function ListingDetailPage({
 
         <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{unit.name}</h1>
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm muted-text">
-          <span className="inline-flex items-center gap-1 text-[var(--color-text)]">
-            <Star className="h-4 w-4 fill-[var(--color-cta)] text-[var(--color-cta)]" />
-            4.9
-          </span>
+          {hasReviews ? (
+            <span className="inline-flex items-center gap-1 text-[var(--color-text)]">
+              <Star className="h-4 w-4 fill-[var(--color-cta)] text-[var(--color-cta)]" />
+              {reviews.summary.average_rating.toFixed(1)}
+              <span className="muted-text">({reviews.summary.review_count})</span>
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1">
+              <Star className="h-4 w-4 text-[var(--color-border)]" />
+              New
+            </span>
+          )}
           <span aria-hidden>·</span>
           <span>{unitTypeLabel(unit.type)}</span>
           <span aria-hidden>·</span>
@@ -99,7 +117,39 @@ export default async function ListingDetailPage({
 
             <section>
               <h2 className="text-lg font-semibold text-[var(--color-text)]">Guest reviews</h2>
-              <p className="mt-2 text-sm muted-text">Reviews from verified stays will appear here.</p>
+              {hasReviews ? (
+                <>
+                  <p className="mt-1 inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--color-text)]">
+                    <Star className="h-4 w-4 fill-[var(--color-cta)] text-[var(--color-cta)]" />
+                    {reviews.summary.average_rating.toFixed(1)} · {reviews.summary.review_count} review
+                    {reviews.summary.review_count === 1 ? "" : "s"} from verified stays
+                  </p>
+                  <ul className="mt-4 space-y-3">
+                    {reviews.items.map((review) => (
+                      <li key={review.review_id} className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="flex items-center gap-0.5" aria-label={`${review.rating} out of 5`}>
+                            {[1, 2, 3, 4, 5].map((n) => (
+                              <Star
+                                key={n}
+                                className={`h-3.5 w-3.5 ${n <= review.rating ? "fill-[var(--color-cta)] text-[var(--color-cta)]" : "fill-transparent text-[var(--color-border)]"}`}
+                                aria-hidden="true"
+                              />
+                            ))}
+                          </span>
+                          <span className="text-xs muted-text">{formatReviewDate(review.created_at)}</span>
+                        </div>
+                        {review.comment ? (
+                          <p className="mt-2 text-sm leading-relaxed text-[var(--color-text)]">{review.comment}</p>
+                        ) : null}
+                        <p className="mt-2 text-xs muted-text">— {review.guest_name || "Verified guest"}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : (
+                <p className="mt-2 text-sm muted-text">No reviews yet — be the first to review after your stay.</p>
+              )}
             </section>
           </div>
 
