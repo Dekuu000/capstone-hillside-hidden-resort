@@ -18,9 +18,11 @@ from app.observability.escrow_reconciliation_monitor import (
     escrow_reconciliation_scheduler_loop,
     get_escrow_reconciliation_monitor_snapshot,
 )
+from app.observability.upcoming_stay_scheduler import upcoming_stay_reminder_loop
 
 logger = logging.getLogger(__name__)
 _escrow_reconciliation_task: asyncio.Task | None = None
+_upcoming_stay_reminder_task: asyncio.Task | None = None
 
 
 async def _start_escrow_reconciliation_scheduler() -> None:
@@ -43,12 +45,34 @@ async def _stop_escrow_reconciliation_scheduler() -> None:
     _escrow_reconciliation_task = None
 
 
+async def _start_upcoming_stay_reminder_scheduler() -> None:
+    global _upcoming_stay_reminder_task
+    if settings.feature_upcoming_stay_reminders and _upcoming_stay_reminder_task is None:
+        _upcoming_stay_reminder_task = asyncio.create_task(upcoming_stay_reminder_loop())
+        logger.info("Started upcoming-stay reminder scheduler task.")
+
+
+async def _stop_upcoming_stay_reminder_scheduler() -> None:
+    global _upcoming_stay_reminder_task
+    task = _upcoming_stay_reminder_task
+    if task is None:
+        return
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
+    _upcoming_stay_reminder_task = None
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     await _start_escrow_reconciliation_scheduler()
+    await _start_upcoming_stay_reminder_scheduler()
     try:
         yield
     finally:
+        await _stop_upcoming_stay_reminder_scheduler()
         await _stop_escrow_reconciliation_scheduler()
 
 

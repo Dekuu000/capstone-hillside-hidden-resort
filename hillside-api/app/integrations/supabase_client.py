@@ -3419,3 +3419,68 @@ def notify_ops_new_service_request(row: dict[str, Any] | None) -> None:
         )
     except Exception:  # noqa: BLE001 - best-effort
         return
+
+
+# --- Scheduled reminders ---
+def _friendly_when(check_in_iso: str, today: date) -> str:
+    try:
+        target = date.fromisoformat(str(check_in_iso))
+    except (TypeError, ValueError):
+        return "coming up"
+    delta = (target - today).days
+    if delta <= 0:
+        return "today"
+    if delta == 1:
+        return "tomorrow"
+    return f"in {delta} days"
+
+
+def list_confirmed_reservations_starting_within(*, days: int) -> list[dict[str, Any]]:
+    try:
+        client = get_supabase_client()
+        today = date.today()
+        end = today + timedelta(days=max(0, days))
+        response = (
+            client.table("reservations")
+            .select("reservation_id, reservation_code, guest_user_id, check_in_date, status")
+            .eq("status", "confirmed")
+            .gte("check_in_date", today.isoformat())
+            .lte("check_in_date", end.isoformat())
+            .limit(500)
+            .execute()
+        )
+        return response.data or []
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def emit_upcoming_stay_reminders(*, lookahead_days: int = 2) -> int:
+    """Notify guests whose confirmed stay/tour starts within the lookahead window.
+    Deduped per reservation so the reminder fires once. Best-effort."""
+    try:
+        rows = list_confirmed_reservations_starting_within(days=lookahead_days)
+    except Exception:  # noqa: BLE001
+        return 0
+    today = date.today()
+    sent = 0
+    for row in rows:
+        guest_user_id = row.get("guest_user_id")
+        reservation_id = row.get("reservation_id")
+        if not guest_user_id or not reservation_id:
+            continue
+        code = row.get("reservation_code") or "your booking"
+        when = _friendly_when(str(row.get("check_in_date") or ""), today)
+        if emit_notification(
+            recipient_user_id=str(guest_user_id),
+            category="reservation",
+            event_type="reservation.upcoming",
+            title="Upcoming reservation",
+            body=f"Your booking {code} is {when}. Have your QR pass ready for check-in.",
+            severity="info",
+            entity_type="reservation",
+            entity_id=str(reservation_id),
+            link="/my-bookings",
+            dedupe_key=f"reservation.upcoming:{reservation_id}",
+        ):
+            sent += 1
+    return sent

@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     feature_nft_guest_pass: bool = False
     feature_dynamic_qr: bool = False
     feature_escrow_reconciliation_scheduler: bool = False
+    feature_upcoming_stay_reminders: bool = True
+    upcoming_stay_reminder_interval_sec: int = 3600
+    upcoming_stay_reminder_lookahead_days: int = 2
     feature_checkin_welcome_notification: bool = False
     feature_checkin_schedule_bypass: bool = False
     qr_signing_secret: str = ""
