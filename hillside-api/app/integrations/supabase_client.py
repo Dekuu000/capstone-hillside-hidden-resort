@@ -3086,3 +3086,184 @@ def write_reservation_escrow_shadow_metadata(
         return rows[0] if rows else None
     except Exception as exc:  # noqa: BLE001
         raise _runtime_error_from_exception(exc) from exc
+
+
+# ============================================
+# In-app notifications
+# ============================================
+NOTIFICATION_SELECT = (
+    "notification_id, category, event_type, title, body, severity, "
+    "entity_type, entity_id, link, metadata, created_at, read_at"
+)
+
+_NOTIFICATION_ROLE_ORDER = ["guest", "staff", "admin", "super_admin"]
+
+
+def _roles_at_least(min_role: str) -> list[str]:
+    role = (min_role or "").lower()
+    if role not in _NOTIFICATION_ROLE_ORDER:
+        return ["super_admin"]
+    return _NOTIFICATION_ROLE_ORDER[_NOTIFICATION_ROLE_ORDER.index(role):]
+
+
+def list_notifications(
+    *,
+    recipient_user_id: str,
+    limit: int = 20,
+    unread_only: bool = False,
+) -> list[dict[str, Any]]:
+    try:
+        client = get_supabase_client()
+        query = (
+            client.table("notifications")
+            .select(NOTIFICATION_SELECT)
+            .eq("recipient_user_id", recipient_user_id)
+        )
+        if unread_only:
+            query = query.is_("read_at", "null")
+        response = query.order("created_at", desc=True).limit(max(1, min(limit, 100))).execute()
+        return response.data or []
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def count_unread_notifications(*, recipient_user_id: str) -> int:
+    try:
+        client = get_supabase_client()
+        response = (
+            client.table("notifications")
+            .select("notification_id", count="exact")
+            .eq("recipient_user_id", recipient_user_id)
+            .is_("read_at", "null")
+            .execute()
+        )
+        return int(response.count or 0)
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def mark_notifications_read(
+    *,
+    recipient_user_id: str,
+    notification_ids: list[str] | None = None,
+    mark_all: bool = False,
+) -> int:
+    try:
+        client = get_supabase_client()
+        now_iso = datetime.now(timezone.utc).isoformat()
+        query = (
+            client.table("notifications")
+            .update({"read_at": now_iso})
+            .eq("recipient_user_id", recipient_user_id)
+            .is_("read_at", "null")
+        )
+        if not mark_all:
+            ids = [str(i) for i in (notification_ids or []) if i]
+            if not ids:
+                return 0
+            query = query.in_("notification_id", ids)
+        response = query.execute()
+        return len(response.data or [])
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def list_user_ids_with_role_at_least(min_role: str) -> list[str]:
+    try:
+        client = get_supabase_client()
+        response = (
+            client.table("users")
+            .select("user_id")
+            .in_("role", _roles_at_least(min_role))
+            .execute()
+        )
+        return [str(row["user_id"]) for row in (response.data or []) if row.get("user_id")]
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def emit_notification(
+    *,
+    recipient_user_id: str,
+    category: str,
+    event_type: str,
+    title: str,
+    body: str | None = None,
+    severity: str = "info",
+    entity_type: str | None = None,
+    entity_id: str | None = None,
+    link: str | None = None,
+    metadata: dict[str, Any] | None = None,
+    dedupe_key: str | None = None,
+) -> bool:
+    """Best-effort: notifications must never break the triggering operation."""
+    try:
+        client = get_supabase_client()
+        if dedupe_key:
+            existing = (
+                client.table("notifications")
+                .select("notification_id")
+                .eq("recipient_user_id", recipient_user_id)
+                .eq("dedupe_key", dedupe_key)
+                .limit(1)
+                .execute()
+            )
+            if existing.data:
+                return False
+        client.table("notifications").insert(
+            {
+                "recipient_user_id": recipient_user_id,
+                "category": category,
+                "event_type": event_type,
+                "title": title,
+                "body": body,
+                "severity": severity,
+                "entity_type": entity_type,
+                "entity_id": entity_id,
+                "link": link,
+                "metadata": metadata or {},
+                "dedupe_key": dedupe_key,
+            }
+        ).execute()
+        return True
+    except Exception:  # noqa: BLE001 - best-effort, never raise
+        return False
+
+
+def emit_notification_to_roles(
+    *,
+    min_role: str,
+    category: str,
+    event_type: str,
+    title: str,
+    body: str | None = None,
+    severity: str = "info",
+    entity_type: str | None = None,
+    entity_id: str | None = None,
+    link: str | None = None,
+    metadata: dict[str, Any] | None = None,
+    dedupe_prefix: str | None = None,
+) -> int:
+    """Fan out one notification to every back-office user at/above min_role."""
+    try:
+        recipient_ids = list_user_ids_with_role_at_least(min_role)
+    except Exception:  # noqa: BLE001
+        return 0
+    sent = 0
+    for recipient_id in recipient_ids:
+        dedupe_key = f"{dedupe_prefix}:{recipient_id}" if dedupe_prefix else None
+        if emit_notification(
+            recipient_user_id=recipient_id,
+            category=category,
+            event_type=event_type,
+            title=title,
+            body=body,
+            severity=severity,
+            entity_type=entity_type,
+            entity_id=entity_id,
+            link=link,
+            metadata=metadata,
+            dedupe_key=dedupe_key,
+        ):
+            sent += 1
+    return sent

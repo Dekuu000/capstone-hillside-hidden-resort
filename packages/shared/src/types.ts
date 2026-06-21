@@ -1133,3 +1133,40 @@ export type EscrowReconciliationResponse = {
   in_progress?: boolean;
   last_reconciled_at?: string | null;
 };
+
+// ---------- In-app notifications ----------
+export type NotificationSeverity = "info" | "success" | "warning" | "critical";
+
+export type NotificationItem = {
+  notification_id: string;
+  category: string;
+  event_type: string;
+  title: string;
+  body?: string | null;
+  severity: NotificationSeverity;
+  entity_type?: string | null;
+  entity_id?: string | null;
+  link?: string | null;
+  metadata?: Record<string, unknown> | null;
+  created_at: string;
+  read_at?: string | null;
+};
+
+export type NotificationListResponse = {
+  items: NotificationItem[];
+  unread_count: number;
+};
+
+export type NotificationUnreadCountResponse = {
+  unread_count: number;
+};
+
+export type NotificationMarkReadRequest = {
+  notification_ids?: string[];
+  all?: boolean;
+};
+
+export type NotificationMarkReadResponse = {
+  updated: number;
+  unread_count: number;
+};

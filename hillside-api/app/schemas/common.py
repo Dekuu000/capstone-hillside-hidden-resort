@@ -1040,3 +1040,37 @@ class SessionRequest(BaseModel):
 class SessionResponse(BaseModel):
     session_id: str
     user: dict
+
+
+class NotificationItem(BaseModel):
+    notification_id: str
+    category: str
+    event_type: str
+    title: str
+    body: str | None = None
+    severity: str = "info"
+    entity_type: str | None = None
+    entity_id: str | None = None
+    link: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    created_at: str
+    read_at: str | None = None
+
+
+class NotificationListResponse(BaseModel):
+    items: list[NotificationItem] = Field(default_factory=list)
+    unread_count: int = 0
+
+
+class NotificationUnreadCountResponse(BaseModel):
+    unread_count: int = 0
+
+
+class NotificationMarkReadRequest(BaseModel):
+    notification_ids: list[str] | None = None
+    all: bool = False
+
+
+class NotificationMarkReadResponse(BaseModel):
+    updated: int = 0
+    unread_count: int = 0

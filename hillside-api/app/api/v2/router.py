@@ -11,6 +11,7 @@ from app.api.v2.routes import (
     guest_services,
     me,
     nft,
+    notifications,
     operations,
     payments,
     qr,
@@ -23,6 +24,7 @@ from app.api.v2.routes import (
 router = APIRouter(prefix="/v2")
 router.include_router(auth.router, prefix="/auth", tags=["auth"])
 router.include_router(me.router, prefix="/me", tags=["me"])
+router.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
 router.include_router(reservations.router, prefix="/reservations", tags=["reservations"])
 router.include_router(catalog.router, prefix="/catalog", tags=["catalog"])
 router.include_router(payments.router, prefix="/payments", tags=["payments"])

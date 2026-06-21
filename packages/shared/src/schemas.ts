@@ -1086,3 +1086,35 @@ export const escrowReconciliationResponseSchema = z.object({
   in_progress: z.boolean().optional(),
   last_reconciled_at: z.string().datetime().optional().nullable(),
 });
+
+// ---------- In-app notifications ----------
+export const notificationSeveritySchema = z.enum(["info", "success", "warning", "critical"]);
+
+export const notificationItemSchema = z.object({
+  notification_id: z.string().min(1),
+  category: z.string().min(1),
+  event_type: z.string().min(1),
+  title: z.string().min(1),
+  body: z.string().optional().nullable(),
+  severity: notificationSeveritySchema,
+  entity_type: z.string().optional().nullable(),
+  entity_id: z.string().optional().nullable(),
+  link: z.string().optional().nullable(),
+  metadata: z.record(z.string(), z.unknown()).optional().nullable(),
+  created_at: z.string().min(1),
+  read_at: z.string().optional().nullable(),
+});
+
+export const notificationListResponseSchema = z.object({
+  items: z.array(notificationItemSchema),
+  unread_count: z.number().int().nonnegative(),
+});
+
+export const notificationUnreadCountResponseSchema = z.object({
+  unread_count: z.number().int().nonnegative(),
+});
+
+export const notificationMarkReadResponseSchema = z.object({
+  updated: z.number().int().nonnegative(),
+  unread_count: z.number().int().nonnegative(),
+});
