@@ -8,8 +8,14 @@ from app.integrations.supabase_client import (
     get_available_units as get_available_units_rpc,
     list_active_services as list_active_services_rpc,
     list_active_units_public,
+    list_unit_reviews,
 )
-from app.schemas.common import ServiceListResponse
+from app.schemas.common import (
+    ReviewItem,
+    ReviewSummary,
+    ServiceListResponse,
+    UnitReviewsResponse,
+)
 
 router = APIRouter()
 _CACHE = TTLCache(settings.cache_ttl_seconds)
@@ -92,3 +98,16 @@ def get_active_services():
     }
     _CACHE.set(cache_key, payload)
     return payload
+
+
+@router.get("/units/{unit_id}/reviews", response_model=UnitReviewsResponse)
+def get_unit_reviews(unit_id: str):
+    try:
+        items, summary = list_unit_reviews(unit_id=unit_id)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+    return UnitReviewsResponse(
+        unit_id=unit_id,
+        summary=ReviewSummary(**summary),
+        items=[ReviewItem(**item) for item in items],
+    )

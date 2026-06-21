@@ -3484,3 +3484,147 @@ def emit_upcoming_stay_reminders(*, lookahead_days: int = 2) -> int:
         ):
             sent += 1
     return sent
+
+
+# ============================================
+# Guest reviews
+# ============================================
+REVIEW_SELECT = (
+    "review_id, reservation_id, unit_id, rating, comment, created_at, "
+    "guest:users!guest_user_id(name)"
+)
+
+
+def _review_first_name(row: dict[str, Any]) -> str | None:
+    guest = row.get("guest") if isinstance(row.get("guest"), dict) else {}
+    name = (guest or {}).get("name")
+    if not name:
+        return None
+    parts = str(name).strip().split()
+    return parts[0] if parts else None
+
+
+def _review_row_to_item(row: dict[str, Any], *, include_name: bool) -> dict[str, Any]:
+    return {
+        "review_id": str(row.get("review_id")),
+        "reservation_id": str(row.get("reservation_id")),
+        "unit_id": str(row.get("unit_id")),
+        "rating": int(row.get("rating") or 0),
+        "comment": row.get("comment"),
+        "guest_name": _review_first_name(row) if include_name else None,
+        "created_at": str(row.get("created_at") or ""),
+    }
+
+
+def create_review(
+    *,
+    guest_user_id: str,
+    reservation_id: str,
+    rating: int,
+    comment: str | None,
+) -> dict[str, Any]:
+    """Insert a review after verifying the reservation is the guest's own and
+    checked out. Raises ValueError for rule violations, RuntimeError for DB errors."""
+    try:
+        client = get_supabase_client()
+        resp = (
+            client.table("reservations")
+            .select("reservation_id, guest_user_id, status")
+            .eq("reservation_id", reservation_id)
+            .limit(1)
+            .execute()
+        )
+        rows = resp.data or []
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+    if not rows:
+        raise ValueError("Reservation not found.")
+    reservation = rows[0]
+    if str(reservation.get("guest_user_id")) != str(guest_user_id):
+        raise PermissionError("You can only review your own stay.")
+    if str(reservation.get("status") or "").lower() != "checked_out":
+        raise ValueError("You can leave a review after your stay is checked out.")
+
+    try:
+        unit_ids = list_reservation_unit_ids(reservation_id=reservation_id)
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+    if not unit_ids:
+        raise ValueError("This booking has no stay to review.")
+
+    safe_rating = max(1, min(5, int(rating)))
+    safe_comment = (comment or "").strip() or None
+
+    try:
+        client = get_supabase_client()
+        existing = (
+            client.table("reviews")
+            .select("review_id")
+            .eq("reservation_id", reservation_id)
+            .limit(1)
+            .execute()
+        )
+        if existing.data:
+            raise ValueError("You've already reviewed this stay.")
+        inserted = (
+            client.table("reviews")
+            .insert(
+                {
+                    "reservation_id": reservation_id,
+                    "unit_id": str(unit_ids[0]),
+                    "guest_user_id": guest_user_id,
+                    "rating": safe_rating,
+                    "comment": safe_comment,
+                }
+            )
+            .execute()
+        )
+    except ValueError:
+        raise
+    except Exception as exc:  # noqa: BLE001
+        message = str(getattr(exc, "message", None) or exc).lower()
+        if "duplicate" in message or "unique" in message or "23505" in message:
+            raise ValueError("You've already reviewed this stay.") from exc
+        raise _runtime_error_from_exception(exc) from exc
+
+    created = (inserted.data or [{}])[0]
+    return _review_row_to_item({**created, "guest": {}}, include_name=False)
+
+
+def list_my_reviews(*, guest_user_id: str) -> list[dict[str, Any]]:
+    try:
+        client = get_supabase_client()
+        resp = (
+            client.table("reviews")
+            .select(REVIEW_SELECT)
+            .eq("guest_user_id", guest_user_id)
+            .order("created_at", desc=True)
+            .limit(200)
+            .execute()
+        )
+        return [_review_row_to_item(row, include_name=False) for row in (resp.data or [])]
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def list_unit_reviews(*, unit_id: str, limit: int = 20) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    try:
+        client = get_supabase_client()
+        resp = (
+            client.table("reviews")
+            .select(REVIEW_SELECT)
+            .eq("unit_id", unit_id)
+            .eq("is_hidden", False)
+            .order("created_at", desc=True)
+            .limit(200)
+            .execute()
+        )
+        rows = resp.data or []
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+    ratings = [int(r.get("rating") or 0) for r in rows if r.get("rating")]
+    count = len(ratings)
+    average = round(sum(ratings) / count, 2) if count else 0.0
+    items = [_review_row_to_item(row, include_name=True) for row in rows[: max(1, min(limit, 50))]]
+    return items, {"average_rating": average, "review_count": count}

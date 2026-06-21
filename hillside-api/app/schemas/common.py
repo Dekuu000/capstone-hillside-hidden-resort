@@ -1074,3 +1074,34 @@ class NotificationMarkReadRequest(BaseModel):
 class NotificationMarkReadResponse(BaseModel):
     updated: int = 0
     unread_count: int = 0
+
+
+class ReviewItem(BaseModel):
+    review_id: str
+    reservation_id: str
+    unit_id: str
+    rating: int
+    comment: str | None = None
+    guest_name: str | None = None
+    created_at: str
+
+
+class ReviewSummary(BaseModel):
+    average_rating: float = 0.0
+    review_count: int = 0
+
+
+class UnitReviewsResponse(BaseModel):
+    unit_id: str
+    summary: ReviewSummary = Field(default_factory=ReviewSummary)
+    items: list[ReviewItem] = Field(default_factory=list)
+
+
+class MyReviewsResponse(BaseModel):
+    items: list[ReviewItem] = Field(default_factory=list)
+
+
+class CreateReviewRequest(BaseModel):
+    reservation_id: str
+    rating: int = Field(ge=1, le=5)
+    comment: str | None = None

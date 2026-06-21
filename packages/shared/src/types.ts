@@ -1170,3 +1170,35 @@ export type NotificationMarkReadResponse = {
   updated: number;
   unread_count: number;
 };
+
+// ---------- Guest reviews ----------
+export type ReviewItem = {
+  review_id: string;
+  reservation_id: string;
+  unit_id: string;
+  rating: number;
+  comment?: string | null;
+  guest_name?: string | null;
+  created_at: string;
+};
+
+export type ReviewSummary = {
+  average_rating: number;
+  review_count: number;
+};
+
+export type UnitReviewsResponse = {
+  unit_id: string;
+  summary: ReviewSummary;
+  items: ReviewItem[];
+};
+
+export type MyReviewsResponse = {
+  items: ReviewItem[];
+};
+
+export type CreateReviewRequest = {
+  reservation_id: string;
+  rating: number;
+  comment?: string | null;
+};

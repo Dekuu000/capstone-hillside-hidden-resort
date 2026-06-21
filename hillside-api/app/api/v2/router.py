@@ -17,6 +17,7 @@ from app.api.v2.routes import (
     qr,
     reports,
     reservations,
+    reviews,
     sync,
     units,
 )
@@ -26,6 +27,7 @@ router.include_router(auth.router, prefix="/auth", tags=["auth"])
 router.include_router(me.router, prefix="/me", tags=["me"])
 router.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
 router.include_router(reservations.router, prefix="/reservations", tags=["reservations"])
+router.include_router(reviews.router, prefix="/reviews", tags=["reviews"])
 router.include_router(catalog.router, prefix="/catalog", tags=["catalog"])
 router.include_router(payments.router, prefix="/payments", tags=["payments"])
 router.include_router(qr.router, prefix="/qr", tags=["qr"])

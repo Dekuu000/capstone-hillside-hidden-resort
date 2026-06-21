@@ -1118,3 +1118,29 @@ export const notificationMarkReadResponseSchema = z.object({
   updated: z.number().int().nonnegative(),
   unread_count: z.number().int().nonnegative(),
 });
+
+// ---------- Guest reviews ----------
+export const reviewItemSchema = z.object({
+  review_id: z.string().min(1),
+  reservation_id: z.string().min(1),
+  unit_id: z.string().min(1),
+  rating: z.number().int().min(1).max(5),
+  comment: z.string().optional().nullable(),
+  guest_name: z.string().optional().nullable(),
+  created_at: z.string().min(1),
+});
+
+export const reviewSummarySchema = z.object({
+  average_rating: z.number(),
+  review_count: z.number().int().nonnegative(),
+});
+
+export const unitReviewsResponseSchema = z.object({
+  unit_id: z.string().min(1),
+  summary: reviewSummarySchema,
+  items: z.array(reviewItemSchema),
+});
+
+export const myReviewsResponseSchema = z.object({
+  items: z.array(reviewItemSchema),
+});
