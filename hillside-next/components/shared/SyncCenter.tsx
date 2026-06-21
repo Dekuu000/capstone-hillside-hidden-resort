@@ -308,6 +308,11 @@ export function SyncCenter({ title, description, scope }: SyncCenterProps) {
               {primaryStatus.label}
             </p>
             <p className="mt-1 text-xs text-[var(--color-muted)]">Last sync: {formatDateTime(sync.lastSyncedAt)}</p>
+            <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-[var(--color-muted)]">
+              <span className={`h-1.5 w-1.5 rounded-full ${sync.enabled ? "bg-emerald-500" : "bg-slate-300"}`} aria-hidden="true" />
+              Auto-sync {sync.enabled ? "on" : "off"}
+              {sync.enabled ? <span className="text-[var(--color-muted)]">— runs automatically</span> : null}
+            </p>
           </div>
           <div className="guest-surface-soft p-3">
             <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-muted)]">Outbox</p>
@@ -345,7 +350,7 @@ export function SyncCenter({ title, description, scope }: SyncCenterProps) {
         ) : null}
         {!sync.online ? (
           <div className="guest-surface-soft mt-3 border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-            Offline mode: your actions stay queued locally. Reconnect and tap <strong>Run sync now</strong> to send updates.
+            Offline mode: your actions stay queued locally. They&rsquo;ll sync <strong>automatically</strong> when you reconnect — or tap <strong>Run sync now</strong> to send them immediately.
           </div>
         ) : null}
       </div>

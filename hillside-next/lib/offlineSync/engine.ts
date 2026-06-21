@@ -54,6 +54,36 @@ export function onEnqueueEvent(handler: () => void): () => void {
   return () => window.removeEventListener(SYNC_ENQUEUE_EVENT, listener);
 }
 
+// Cross-tab poll dedup: any tab that completes a sync announces it; other tabs
+// skip their idle interval poll if a sibling synced very recently. This keeps
+// "one network poll per interval" across all open tabs without leader election —
+// single-tab is unaffected (no sibling ever announces). Degrades gracefully when
+// BroadcastChannel is unavailable (each tab polls independently).
+let syncChannel: BroadcastChannel | null = null;
+let lastGlobalSyncAt = 0;
+
+function getSyncChannel(): BroadcastChannel | null {
+  if (typeof window === "undefined" || typeof BroadcastChannel === "undefined") return null;
+  if (!syncChannel) {
+    syncChannel = new BroadcastChannel("hillside-sync");
+    syncChannel.onmessage = (event) => {
+      const at = event.data && typeof event.data.t === "number" ? event.data.t : 0;
+      if (at > lastGlobalSyncAt) lastGlobalSyncAt = at;
+    };
+  }
+  return syncChannel;
+}
+
+function announceSync() {
+  lastGlobalSyncAt = Date.now();
+  getSyncChannel()?.postMessage({ t: lastGlobalSyncAt });
+}
+
+/** Ms since any open tab last completed a sync (Infinity if none observed yet). */
+export function msSinceLastGlobalSync(): number {
+  return lastGlobalSyncAt === 0 ? Number.POSITIVE_INFINITY : Date.now() - lastGlobalSyncAt;
+}
+
 export async function enqueueOfflineOperation(
   operation: Omit<OfflineOperation, "operation_id" | "created_at" | "retry_count"> & { operation_id?: string },
 ): Promise<OfflineOperation> {
@@ -266,6 +296,7 @@ export async function runSyncCycle(accessToken: string, scope: SyncScope): Promi
     await commitUploads(accessToken);
     await pushOutbox(accessToken, scope);
     await pullDeltas(accessToken, scope);
+    announceSync();
     emitSyncEvent();
   } catch (error) {
     await setSyncState(scope, {
@@ -314,7 +345,11 @@ export function startSyncLoop(params: {
 
   const startInterval = () => {
     if (intervalTimer !== null) return;
+    // Attach this tab to the cross-tab channel so it hears siblings' sync pings.
+    getSyncChannel();
     intervalTimer = window.setInterval(() => {
+      // Skip this idle poll if another open tab already synced this interval.
+      if (msSinceLastGlobalSync() < resolveIntervalMs() * 0.8) return;
       void tick();
     }, resolveIntervalMs());
   };
