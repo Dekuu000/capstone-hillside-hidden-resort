@@ -249,8 +249,8 @@ export function AdminChrome({ children, initialName = null, initialEmail = null,
             <Link href="/admin" className="min-w-0" aria-label="Hillside Hidden Resort">
               <HillsideLogo
                 light
-                compact
-                className="[&_img]:h-9 [&_img]:w-9 [&_.hillside-brand-title]:text-[1.05rem] [&_.hillside-brand-title]:font-semibold [&_.hillside-brand-subtitle]:text-[0.55rem] [&_.hillside-brand-subtitle]:tracking-[0.28em]"
+                oneLine
+                className="[&_img]:h-9 [&_img]:w-9 [&_.hillside-brand-title]:text-[1.1rem] [&_.hillside-brand-title]:font-semibold"
               />
             </Link>
           </div>
