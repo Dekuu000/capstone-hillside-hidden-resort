@@ -23,7 +23,7 @@ const PUBLIC_NAV_LOGO_CLASS =
 /** Sticky top bar for the public funnel — matches the logged-in guest header. */
 export function SearchNav({ isAuthed = false, isAdmin = false, initialName = null }: SearchNavProps) {
   return (
-    <header className="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[var(--color-surface)]/95 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[var(--color-surface)]">
       <div className="mx-auto flex h-[70px] w-full max-w-[1440px] items-center justify-between gap-3 px-4 md:h-20 md:px-6 lg:px-8">
         <Link href="/" className="flex min-w-0 items-center" aria-label="Hillside Hidden Resort home">
           <HillsideLogo oneLine className={isAuthed ? GUEST_HEADER_LOGO_CLASS : PUBLIC_NAV_LOGO_CLASS} />
