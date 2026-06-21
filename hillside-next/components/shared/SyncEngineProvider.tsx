@@ -35,15 +35,35 @@ const defaultState: SyncRuntimeState = {
 
 const SyncEngineContext = createContext<SyncRuntimeState>(defaultState);
 
+type SyncProfile = { scope: SyncScope; intervalMs: number };
+
+// Front-desk operational pages (where time-sensitive writes happen) sync fast.
+// Read-heavy management dashboards and guest views poll less often and rely on
+// instant push-on-enqueue + pull-on-focus for freshness.
+const OPERATIONAL_PREFIXES = [
+  "/admin/check-in",
+  "/admin/walk-in",
+  "/admin/services",
+  "/admin/payments",
+  "/admin/reservations",
+];
+
+function resolveSyncProfile(pathname: string | null, baseIntervalMs: number): SyncProfile {
+  const path = pathname || "";
+  if (path.startsWith("/admin")) {
+    const operational = OPERATIONAL_PREFIXES.some((prefix) => path.startsWith(prefix));
+    return { scope: "admin", intervalMs: operational ? baseIntervalMs : baseIntervalMs * 3 };
+  }
+  return { scope: "me", intervalMs: baseIntervalMs * 2 };
+}
+
 export function SyncEngineProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [snapshot, setSnapshot] = useState<SyncRuntimeState>(defaultState);
   const [accessToken, setAccessToken] = useState<string | null>(null);
 
-  const scope: SyncScope = useMemo(
-    () => (pathname?.startsWith("/admin") ? "admin" : "me"),
-    [pathname],
-  );
+  const profile = useMemo(() => resolveSyncProfile(pathname, env.syncIntervalMs), [pathname]);
+  const scope = profile.scope;
 
   useEffect(() => {
     let mounted = true;
@@ -90,6 +110,7 @@ export function SyncEngineProvider({ children }: { children: ReactNode }) {
     const stop = startSyncLoop({
       getAccessToken,
       getScope: () => scope,
+      getIntervalMs: () => profile.intervalMs,
       onError: async (error) => {
         setSnapshot((previous) => ({
           ...previous,
@@ -120,7 +141,7 @@ export function SyncEngineProvider({ children }: { children: ReactNode }) {
       window.removeEventListener("online", syncOnlineState);
       window.removeEventListener("offline", syncOnlineState);
     };
-  }, [getAccessToken, refreshState, scope]);
+  }, [getAccessToken, refreshState, scope, profile.intervalMs]);
 
   const value = useMemo<SyncRuntimeState>(() => {
     const runNow = async () => {

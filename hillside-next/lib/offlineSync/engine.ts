@@ -281,18 +281,28 @@ export async function runSyncCycle(accessToken: string, scope: SyncScope): Promi
 export function startSyncLoop(params: {
   getAccessToken: () => Promise<string | null> | string | null;
   getScope: () => SyncScope;
+  // Role/page-aware pull cadence (ms). Operational desk pages poll fast;
+  // read-heavy dashboards and guests poll slower and lean on focus/enqueue.
+  getIntervalMs?: () => number;
   onError?: (error: Error) => void;
 }): () => void {
   if (!env.syncEnabled || typeof window === "undefined") return () => undefined;
 
+  const resolveIntervalMs = () => {
+    const value = params.getIntervalMs?.() ?? env.syncIntervalMs;
+    return Number.isFinite(value) && value >= 5000 ? value : env.syncIntervalMs;
+  };
+
   let cancelled = false;
   let intervalTimer: number | null = null;
   let enqueueTimer: number | null = null;
+  let lastTickAt = 0;
 
   const tick = async () => {
     if (cancelled) return;
     const token = await params.getAccessToken();
     if (!token) return;
+    lastTickAt = Date.now();
     try {
       await runSyncCycle(token, params.getScope());
     } catch (error) {
@@ -306,7 +316,7 @@ export function startSyncLoop(params: {
     if (intervalTimer !== null) return;
     intervalTimer = window.setInterval(() => {
       void tick();
-    }, env.syncIntervalMs);
+    }, resolveIntervalMs());
   };
 
   const stopInterval = () => {
@@ -341,7 +351,16 @@ export function startSyncLoop(params: {
     }
   };
 
+  // Pull-on-focus: refresh when the window regains OS focus (covers alt-tabbing
+  // back to an already-visible tab, which visibilitychange does not fire for).
+  // Throttled so rapid focus/blur can't hammer the pull endpoint.
+  const handleFocus = () => {
+    const minGap = Math.min(10000, resolveIntervalMs() / 2);
+    if (Date.now() - lastTickAt >= minGap) void tick();
+  };
+
   window.addEventListener("online", handleOnline);
+  window.addEventListener("focus", handleFocus);
   document.addEventListener("visibilitychange", handleVisibility);
   const detachEnqueue = onEnqueueEvent(handleEnqueue);
 
@@ -353,6 +372,7 @@ export function startSyncLoop(params: {
   return () => {
     cancelled = true;
     window.removeEventListener("online", handleOnline);
+    window.removeEventListener("focus", handleFocus);
     document.removeEventListener("visibilitychange", handleVisibility);
     detachEnqueue();
     stopInterval();
