@@ -71,12 +71,12 @@ export function SearchWidget({
           onChange={setCheckOut}
         />
 
-        <div className="flex flex-col gap-3 md:flex-row md:items-end">
+        <div className="flex items-end gap-3">
           <PaxSelector value={guests} onChange={setGuests} min={1} max={50} />
           <button
             type="button"
             onClick={submit}
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-cta)] px-5 text-sm font-semibold text-white transition hover:brightness-95 focus-visible:ring-4 focus-visible:ring-[color:color-mix(in_srgb,var(--color-cta)_30%,white)] md:w-auto"
+            className="flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-[var(--color-cta)] px-5 text-sm font-semibold text-white transition hover:brightness-95 focus-visible:ring-4 focus-visible:ring-[color:color-mix(in_srgb,var(--color-cta)_30%,white)] md:flex-none"
           >
             <Search className="h-4 w-4" />
             <span className="md:hidden lg:inline">Search</span>
