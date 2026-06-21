@@ -75,9 +75,11 @@ export default async function HomePage() {
               <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">Day passes &amp; tours</h2>
               <p className="muted-text text-sm">Guided experiences and day visits — no overnight stay required.</p>
             </div>
-            <Link href="/tours" className="shrink-0 text-sm font-semibold text-[var(--color-secondary)] hover:underline">
-              See all
-            </Link>
+            {services.length > 4 ? (
+              <Link href="/tours" className="shrink-0 text-sm font-semibold text-[var(--color-secondary)] hover:underline">
+                See all
+              </Link>
+            ) : null}
           </div>
           <div className="grid grid-cols-1 gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {services.slice(0, 4).map((service) => (
