@@ -536,8 +536,15 @@ a:focus-visible {
   body:has(#printable-report) > *:not(#printable-report) {
     display: none !important;
   }
+  /* The app's gray body background would otherwise print as a block below the
+     (white) report; force the print surface white. */
+  html,
+  body {
+    background: #fff !important;
+  }
   #printable-report {
     display: block !important;
+    background: #fff !important;
   }
   .no-print {
     display: none !important;
