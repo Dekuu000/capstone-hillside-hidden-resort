@@ -26,7 +26,7 @@ export function GuestBottomNav() {
   };
 
   return (
-    <nav data-testid="guest-bottom-nav" className="fixed inset-x-0 bottom-0 z-50 border-t border-[var(--color-border)] bg-[var(--color-surface)]/90 px-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur md:hidden">
+    <nav data-testid="guest-bottom-nav" className="fixed inset-x-0 bottom-0 z-30 border-t border-[var(--color-border)] bg-[var(--color-surface)]/90 px-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur md:hidden">
       <div className="mx-auto flex h-[72px] w-full max-w-[430px] items-center justify-around gap-1 rounded-[2rem] bg-[var(--color-surface)] px-2 shadow-[var(--shadow-md)]">
         {TABS.map((item) => {
           const active = isActive(item.href);
