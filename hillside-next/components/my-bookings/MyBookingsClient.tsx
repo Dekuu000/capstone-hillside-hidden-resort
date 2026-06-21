@@ -658,15 +658,6 @@ export function MyBookingsClient({
     [qrFor?.reservation_code, token],
   );
 
-  const copyQrPayload = useCallback(async () => {
-    if (!qrToken) return;
-    try {
-      await navigator.clipboard.writeText(JSON.stringify(compactQrTokenPayload(qrToken), null, 2));
-      pushActionMessage("QR payload copied.");
-    } catch {
-      pushActionMessage("Unable to copy QR payload.");
-    }
-  }, [pushActionMessage, qrToken]);
 
   useEffect(() => {
     if (!qrFor?.reservation_id || !token) return;
@@ -727,7 +718,6 @@ export function MyBookingsClient({
   const detailUnits = details?.units ?? [];
   const detailTours = details?.service_bookings ?? [];
   const qrCodeValue = qrToken ? JSON.stringify(compactQrTokenPayload(qrToken)) : "";
-  const qrPayload = qrToken ? JSON.stringify(compactQrTokenPayload(qrToken), null, 2) : "";
   const openUnitGallery = useCallback(
     (unit?: {
       name?: string | null;
@@ -1362,7 +1352,7 @@ export function MyBookingsClient({
       {qrFor ? (
         <ModalDialog
           titleId="checkin-qr-title"
-          title="Check-in QR Token"
+          title="Your check-in pass"
           zIndexClass="z-[70]"
           maxWidthClass="md:max-w-2xl"
           panelClassName="max-h-[calc(100dvh-0.9rem)] border-[var(--color-border)] bg-white pb-[calc(1rem+env(safe-area-inset-bottom))]"
@@ -1375,65 +1365,53 @@ export function MyBookingsClient({
           }}
         >
 
-            <p className="text-sm text-[var(--color-muted)]">
-              Reservation: <strong>{qrFor.reservation_code}</strong>
-            </p>
-            <p className="mt-1 text-xs text-[var(--color-muted)]">
-              Token refreshes automatically near expiry. Share this payload with the admin scanner.
-            </p>
-            {!networkOnline ? (
-              <p className="mt-1 text-xs font-semibold text-amber-700">
-                Offline: new token issuance is unavailable. Last cached token is shown if present.
+            <div className="text-center">
+              <p className="text-sm text-[var(--color-muted)]">
+                Show this code at the front desk to check in.
               </p>
-            ) : null}
+              <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-[var(--color-background)] px-3 py-1 text-xs font-semibold text-[var(--color-text)]">
+                Booking {qrFor.reservation_code}
+              </span>
 
-            {qrError ? <p className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">{qrError}</p> : null}
-            {qrBusy ? <p className="mt-3 text-sm text-[var(--color-muted)]" role="status">Generating token...</p> : null}
+              {!networkOnline ? (
+                <p className="mx-auto mt-3 max-w-sm rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-xs font-semibold text-amber-800">
+                  You&rsquo;re offline — showing your last saved pass. Reconnect to refresh it.
+                </p>
+              ) : null}
 
-            {qrToken ? (
-              <>
-                <div className="mt-3 grid gap-2 text-xs text-[var(--color-muted)] sm:grid-cols-2">
-                  <p>
-                    Expires: <strong>{formatLocalDateTime(qrToken.expires_at)}</strong>
+              {qrError ? <p className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">{qrError}</p> : null}
+              {qrBusy && !qrToken ? <p className="mt-3 text-sm text-[var(--color-muted)]" role="status">Preparing your pass…</p> : null}
+
+              {qrToken ? (
+                <>
+                  <div className="mt-4 flex justify-center">
+                    <div className="rounded-3xl border border-[var(--color-border)] bg-white p-4 shadow-sm">
+                      <QRCodeSVG value={qrCodeValue} size={256} level="M" includeMargin />
+                    </div>
+                  </div>
+                  <p className="mt-3 inline-flex items-center gap-2 text-xs text-[var(--color-muted)]">
+                    <span className="relative flex h-2 w-2" aria-hidden="true">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                    </span>
+                    Auto-refreshes to stay valid{qrSecondsLeft > 0 ? ` · ${qrSecondsLeft}s` : ""}
                   </p>
-                  <p>
-                    Seconds left: <strong>{qrSecondsLeft}</strong>
-                  </p>
-                </div>
-                {qrFromCache ? (
-                  <p className="mt-2 text-xs font-semibold text-amber-700">
-                    Cached token loaded for offline display.
-                  </p>
-                ) : null}
-                <div className="mt-3 flex justify-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-4">
-                  <QRCodeSVG value={qrCodeValue} size={300} level="M" includeMargin />
-                </div>
+                  {qrFromCache ? (
+                    <p className="mt-1.5 text-xs font-semibold text-amber-700">Saved pass shown for offline use.</p>
+                  ) : null}
+                </>
+              ) : null}
 
-                <textarea
-                  readOnly
-                  value={qrPayload}
-                  className="mt-3 min-h-[200px] w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] p-3 font-mono text-xs text-[var(--color-text)]"
-                />
-              </>
-            ) : null}
-
-            <div className="mt-3 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => void issueCheckinQr(qrFor.reservation_id)}
-                className="guest-secondary-cta min-h-10 px-3 text-sm"
-                disabled={qrBusy || !networkOnline}
-              >
-                {networkOnline ? "Refresh now" : "Reconnect to refresh"}
-              </button>
-              <button
-                type="button"
-                onClick={() => void copyQrPayload()}
-                className="guest-primary-cta min-h-10 px-3 text-sm"
-                disabled={!qrToken}
-              >
-                Copy payload
-              </button>
+              <div className="mt-5 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => void issueCheckinQr(qrFor.reservation_id)}
+                  className="guest-secondary-cta min-h-10 px-4 text-sm"
+                  disabled={qrBusy || !networkOnline}
+                >
+                  {networkOnline ? "Refresh now" : "Reconnect to refresh"}
+                </button>
+              </div>
             </div>
         </ModalDialog>
       ) : null}
