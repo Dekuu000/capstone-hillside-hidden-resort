@@ -3,6 +3,7 @@ import { ExternalLink, RotateCcw, Search, SlidersHorizontal } from "lucide-react
 import type { AuditLogsResponse } from "../../../../packages/shared/src/types";
 import { auditLogsResponseSchema } from "../../../../packages/shared/src/schemas";
 import { Badge, statusToBadgeVariant } from "../../../components/shared/Badge";
+import { Pagination } from "../../../components/shared/Pagination";
 import { buildTxExplorerUrl } from "../../../lib/chainExplorer";
 import { formatDateTime } from "../../../lib/dateDisplay";
 import { getServerAccessToken, requireRoleAtLeastServer } from "../../../lib/serverAuth";
@@ -108,8 +109,6 @@ export default async function AdminAuditPage({
 
   const totalCount = data?.count || 0;
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
-  const canPrev = page > 1;
-  const canNext = page < totalPages;
   const hasActiveFilters = Boolean(search || action || fromDate !== toIsoDate(-7) || toDate !== toIsoDate(0));
 
   return (
@@ -254,46 +253,22 @@ export default async function AdminAuditPage({
             </table>
           </div>
 
-          <div className="flex items-center justify-between border-t border-[var(--color-border)] px-4 py-3">
-            <p className="text-xs text-[var(--color-muted)]">
-              Page {page} of {totalPages} | {totalCount} total
-            </p>
-            <div className="flex gap-2">
-              {canPrev ? (
-                <Link
-                  href={buildQuery({
-                    action: action || undefined,
-                    from: fromDate || undefined,
-                    to: toDate || undefined,
-                    search: search || undefined,
-                    page: page - 1,
-                  })}
-                  prefetch
-                  className="rounded-lg border border-[var(--color-border)] bg-white px-3 py-1.5 text-sm font-semibold text-[var(--color-text)]"
-                >
-                  Previous
-                </Link>
-              ) : (
-                <span className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-1.5 text-sm text-slate-400">Previous</span>
-              )}
-              {canNext ? (
-                <Link
-                  href={buildQuery({
-                    action: action || undefined,
-                    from: fromDate || undefined,
-                    to: toDate || undefined,
-                    search: search || undefined,
-                    page: page + 1,
-                  })}
-                  prefetch
-                  className="rounded-lg border border-[var(--color-border)] bg-white px-3 py-1.5 text-sm font-semibold text-[var(--color-text)]"
-                >
-                  Next
-                </Link>
-              ) : (
-                <span className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-1.5 text-sm text-slate-400">Next</span>
-              )}
-            </div>
+          <div className="border-t border-[var(--color-border)] px-4 py-3">
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              totalCount={totalCount}
+              pageSize={PAGE_SIZE}
+              hrefForPage={(n) =>
+                buildQuery({
+                  action: action || undefined,
+                  from: fromDate || undefined,
+                  to: toDate || undefined,
+                  search: search || undefined,
+                  page: n,
+                })
+              }
+            />
           </div>
         </div>
       )}

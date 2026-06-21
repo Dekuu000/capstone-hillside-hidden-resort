@@ -32,6 +32,7 @@ import { FancyDatePicker } from "../shared/FancyDatePicker";
 import { AdminPageHeader } from "../layout/AdminPageHeader";
 import { DataFreshnessBadge } from "../shared/DataFreshnessBadge";
 import { Modal } from "../shared/Modal";
+import { Pagination } from "../shared/Pagination";
 import { Select } from "../shared/Select";
 
 type AdminPaymentsClientProps = {
@@ -647,8 +648,6 @@ export function AdminPaymentsClient({
     notice && notice.toLowerCase().startsWith("walk-in reservation loaded"),
   );
   const onSitePrimaryLabel = onSiteBusy ? "Recording..." : onSiteMethod === "cash" ? "Record Cash Payment" : "Record Payment";
-  const canPrev = page > 1;
-  const canNext = page < totalPages;
   const activeFilterCount = [methodFilter, fromDateFilter, toDateFilter].filter(Boolean).length;
   const isToReview = workflowFilter === "to_review";
   const showVerifiedCols = tab === "verified" || tab === "all";
@@ -1336,44 +1335,14 @@ export function AdminPaymentsClient({
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--color-border)] bg-white px-3 py-2.5 shadow-[var(--shadow-card)]">
-            <p className="text-xs text-[var(--color-muted)]">
-              Page {page} of {totalPages} | {count} total
-            </p>
-            <div className="inline-flex items-center gap-1 rounded-full border border-[var(--color-border)] bg-white p-1 shadow-sm">
-              <button
-                type="button"
-                onClick={() => setPage(1)}
-                disabled={!canPrev}
-                className="rounded-full px-3 py-1.5 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] disabled:opacity-45"
-              >
-                First
-              </button>
-              <button
-                type="button"
-                onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                disabled={!canPrev}
-                className="rounded-full px-3 py-1.5 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] disabled:opacity-45"
-              >
-                Previous
-              </button>
-              <button
-                type="button"
-                onClick={() => setPage((prev) => prev + 1)}
-                disabled={!canNext}
-                className="rounded-full px-3 py-1.5 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] disabled:opacity-45"
-              >
-                Next
-              </button>
-              <button
-                type="button"
-                onClick={() => setPage(totalPages)}
-                disabled={!canNext}
-                className="rounded-full px-3 py-1.5 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] disabled:opacity-45"
-              >
-                Last
-              </button>
-            </div>
+          <div className="rounded-2xl border border-[var(--color-border)] bg-white px-3 py-2.5 shadow-[var(--shadow-card)]">
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              totalCount={count}
+              pageSize={PAGE_SIZE}
+              onPageChange={(target) => setPage(Math.min(totalPages, Math.max(1, target)))}
+            />
           </div>
         </div>
       ) : null}

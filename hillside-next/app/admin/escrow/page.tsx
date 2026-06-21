@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+﻿import { Pagination } from "../../../components/shared/Pagination";
 import {
   escrowReconciliationResponseSchema,
 } from "../../../../packages/shared/src/schemas";
@@ -106,38 +106,14 @@ export default async function AdminEscrowPage({
           ) : (
             <div className="space-y-4">
               <AdminEscrowTableClient items={data.items} lastReconciledAt={data.last_reconciled_at} />
-              <div className="flex items-center justify-between border-t border-[var(--color-border)] px-4 py-3">
-                <p className="text-xs text-[var(--color-muted)]">
-                  Page {page} of {totalPages} | {totalCount} total
-                </p>
-                <div className="flex gap-2">
-                  {page > 1 ? (
-                    <Link
-                      href={buildPageQuery(page - 1)}
-                      prefetch={false}
-                      className="rounded-lg border border-[var(--color-border)] bg-white px-3 py-1.5 text-sm font-semibold text-[var(--color-text)]"
-                    >
-                      Previous
-                    </Link>
-                  ) : (
-                    <span className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-1.5 text-sm text-slate-400">
-                      Previous
-                    </span>
-                  )}
-                  {page < totalPages ? (
-                    <Link
-                      href={buildPageQuery(page + 1)}
-                      prefetch={false}
-                      className="rounded-lg border border-blue-700 bg-blue-700 px-3 py-1.5 text-sm font-semibold text-white"
-                    >
-                      Next
-                    </Link>
-                  ) : (
-                    <span className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-1.5 text-sm text-slate-400">
-                      Next
-                    </span>
-                  )}
-                </div>
+              <div className="border-t border-[var(--color-border)] px-4 py-3">
+                <Pagination
+                  page={page}
+                  totalPages={totalPages}
+                  totalCount={totalCount}
+                  pageSize={PAGE_SIZE}
+                  hrefForPage={(n) => buildPageQuery(n)}
+                />
               </div>
             </div>
           )}
