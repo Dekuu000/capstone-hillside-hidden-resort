@@ -1,10 +1,11 @@
 "use client";
 
-import { RefreshCw } from "lucide-react";
+import { Info, RefreshCw } from "lucide-react";
 import type { ChainKey, EscrowReconciliationResponse } from "../../../packages/shared/src/types";
 import { formatDateTime } from "../../lib/dateDisplay";
 import { AdminEscrowTableClient } from "../admin-escrow/AdminEscrowTableClient";
 import { Button } from "../shared/Button";
+import { Pagination } from "../shared/Pagination";
 import { Select } from "../shared/Select";
 import { StatCard } from "../shared/StatCard";
 
@@ -38,10 +39,21 @@ export function EscrowReconciliationPanel({
   const pageOffset = data?.offset ?? 0;
   const pageLimit = data?.limit ?? 10;
   const totalCount = data?.count ?? 0;
-  const totalPages = Math.max(1, Math.ceil(totalCount / pageLimit));
-  const currentPage = Math.floor(pageOffset / pageLimit) + 1;
   const canGoPrevious = pageOffset > 0;
   const canGoNext = Boolean(data?.has_more);
+
+  // Shadow mode: on-chain locking is disabled, so escrows are recorded off-chain
+  // with placeholder "shadow-" tx hashes. "Missing on-chain" rows are expected,
+  // not failures — detect it so we can present this calmly instead of as an alert.
+  const mismatch = data?.summary.mismatch ?? 0;
+  const missingOnchain = data?.summary.missing_onchain ?? 0;
+  const isShadowMode =
+    mismatch === 0 &&
+    missingOnchain > 0 &&
+    (data?.items ?? []).every(
+      (item) =>
+        item.result !== "missing_onchain" || !item.chain_tx_hash || item.chain_tx_hash.startsWith("shadow-"),
+    );
 
   return (
     <section className="surface p-4 sm:p-5">
@@ -50,8 +62,8 @@ export function EscrowReconciliationPanel({
           <h2 className="text-xl font-bold text-[var(--color-text)]">Reconciliation</h2>
           <p className="text-sm text-[var(--color-muted)]">Exception-first view for escrow mismatches and missing on-chain rows.</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="min-w-[130px]">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+          <div className="min-w-0 sm:min-w-[130px]">
             <Select
               ariaLabel="Chain"
               value={chainKey}
@@ -59,7 +71,14 @@ export function EscrowReconciliationPanel({
               options={enabledChains.map((chain) => ({ value: chain, label: chain }))}
             />
           </div>
-          <Button variant="secondary" size="md" onClick={onRefresh} loading={loading} leftSlot={<RefreshCw className="h-4 w-4" />}>
+          <Button
+            variant="secondary"
+            size="md"
+            onClick={onRefresh}
+            loading={loading}
+            leftSlot={<RefreshCw className="h-4 w-4" />}
+            className="w-full sm:w-auto"
+          >
             Refresh
           </Button>
         </div>
@@ -68,6 +87,18 @@ export function EscrowReconciliationPanel({
       {error ? (
         <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
           {error}
+        </div>
+      ) : null}
+
+      {isShadowMode ? (
+        <div className="mt-4 flex items-start gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2.5 text-sm text-[var(--color-text)]">
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-secondary)]" aria-hidden="true" />
+          <p>
+            <span className="font-semibold">Shadow mode is on.</span> On-chain locking is disabled, so escrows are recorded
+            off-chain with placeholder references. The <span className="font-semibold">{missingOnchain}</span> “missing
+            on-chain” {missingOnchain === 1 ? "row is" : "rows are"} expected here — not an error. Enable on-chain locking to
+            settle them on the chain.
+          </p>
         </div>
       ) : null}
 
@@ -96,8 +127,8 @@ export function EscrowReconciliationPanel({
         <StatCard
           label="Missing On-chain"
           value={String(data?.summary.missing_onchain ?? 0)}
-          hint="Potential chain/data gap"
-          tone={(data?.summary.missing_onchain ?? 0) > 0 ? "warn" : "neutral"}
+          hint={isShadowMode ? "Expected in shadow mode" : "Potential chain/data gap"}
+          tone={isShadowMode ? "info" : missingOnchain > 0 ? "warn" : "neutral"}
         />
         <StatCard label="Match" value={String(data?.summary.match ?? 0)} hint="Healthy rows" tone="success" />
         <StatCard label="Skipped" value={String(data?.summary.skipped ?? 0)} hint="Intentionally ignored" tone="info" />
@@ -121,30 +152,17 @@ export function EscrowReconciliationPanel({
               lastReconciledAt={data.last_reconciled_at}
               initialResultFilter={defaultResultFilter}
             />
-            <div className="mt-4 flex items-center justify-between border-t border-[var(--color-border)] px-1 pt-3">
-              <p className="text-xs text-[var(--color-muted)]">
-                Page {currentPage} of {totalPages} | {totalCount} total
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  disabled={!canGoPrevious || loading}
-                  onClick={() => onPageChange(Math.max(0, pageOffset - pageLimit))}
-                >
-                  Previous
-                </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  disabled={!canGoNext || loading}
-                  onClick={() => onPageChange(pageOffset + pageLimit)}
-                >
-                  Next
-                </Button>
-              </div>
+            <div className="mt-4 border-t border-[var(--color-border)] px-1 pt-3">
+              <Pagination
+                page={Math.floor(pageOffset / pageLimit) + 1}
+                totalCount={totalCount}
+                pageSize={pageLimit}
+                hasPrev={canGoPrevious}
+                hasNext={canGoNext}
+                showNumbers={false}
+                disabled={loading}
+                onPageChange={(target) => onPageChange(Math.max(0, (target - 1) * pageLimit))}
+              />
             </div>
           </>
         )}

@@ -7,6 +7,7 @@ import { buildTxExplorerUrlFromBase, normalizeTxHash, shortHash } from "../../li
 import { formatDateTime } from "../../lib/dateDisplay";
 import { Badge, statusToBadgeVariant } from "../shared/Badge";
 import { Button } from "../shared/Button";
+import { Pagination } from "../shared/Pagination";
 import { Select } from "../shared/Select";
 import { StatCard } from "../shared/StatCard";
 
@@ -75,8 +76,6 @@ export function ContractStatusPanel({
   const pageLimit = data?.limit ?? 10;
   const totalCount = (data?.count ?? 0) > 0 ? (data?.count ?? 0) : rowsCount;
   const hasMore = data?.has_more ?? false;
-  const pageStart = totalCount === 0 ? 0 : pageOffset + 1;
-  const pageEnd = totalCount === 0 ? 0 : Math.min(pageOffset + (data?.recent_successful_txs.length ?? 0), totalCount);
   const canGoPrevious = pageOffset > 0;
   const canGoNext = hasMore;
 
@@ -87,8 +86,8 @@ export function ContractStatusPanel({
           <h2 className="text-xl font-bold text-[var(--color-text)]">Contract Status</h2>
           <p className="text-sm text-[var(--color-muted)]">Escrow chain health and recent successful on-chain settlements.</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="min-w-[130px]">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+          <div className="min-w-0 sm:min-w-[130px]">
             <Select
               ariaLabel="Chain"
               value={chainKey}
@@ -96,7 +95,7 @@ export function ContractStatusPanel({
               options={enabledChains.map((chain) => ({ value: chain, label: chain }))}
             />
           </div>
-          <div className="min-w-[140px]">
+          <div className="min-w-0 sm:min-w-[140px]">
             <Select
               ariaLabel="Window"
               value={String(windowDays)}
@@ -108,7 +107,7 @@ export function ContractStatusPanel({
               ]}
             />
           </div>
-          <div className="min-w-[110px]">
+          <div className="min-w-0 sm:min-w-[110px]">
             <Select
               ariaLabel="Rows"
               value={String(contractLimit)}
@@ -120,7 +119,14 @@ export function ContractStatusPanel({
               ]}
             />
           </div>
-          <Button variant="secondary" size="md" onClick={onRefresh} loading={loading} leftSlot={<RefreshCw className="h-4 w-4" />}>
+          <Button
+            variant="secondary"
+            size="md"
+            onClick={onRefresh}
+            loading={loading}
+            leftSlot={<RefreshCw className="h-4 w-4" />}
+            className="col-span-2 w-full sm:w-auto"
+          >
             Refresh
           </Button>
         </div>
@@ -256,28 +262,17 @@ export function ContractStatusPanel({
                 </tbody>
               </table>
             </div>
-            <div className="flex flex-col gap-2 border-t border-[var(--color-border)] px-3 py-3 text-xs text-[var(--color-muted)] sm:flex-row sm:items-center sm:justify-between">
-              <p>
-                Showing {pageStart}-{pageEnd} of {totalCount}
-              </p>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  disabled={!canGoPrevious || loading}
-                  onClick={() => onPageChange(Math.max(0, pageOffset - pageLimit))}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  disabled={!canGoNext || loading}
-                  onClick={() => onPageChange(pageOffset + pageLimit)}
-                >
-                  Next
-                </Button>
-              </div>
+            <div className="border-t border-[var(--color-border)] px-3 py-3">
+              <Pagination
+                page={Math.floor(pageOffset / pageLimit) + 1}
+                totalCount={totalCount}
+                pageSize={pageLimit}
+                hasPrev={canGoPrevious}
+                hasNext={canGoNext}
+                showNumbers={false}
+                disabled={loading}
+                onPageChange={(target) => onPageChange(Math.max(0, (target - 1) * pageLimit))}
+              />
             </div>
           </div>
         )}

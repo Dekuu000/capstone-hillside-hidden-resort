@@ -7,6 +7,7 @@ import { buildTxExplorerUrl, shortHash } from "../../lib/chainExplorer";
 import { formatDateTime } from "../../lib/dateDisplay";
 import { Badge, statusToBadgeVariant } from "../shared/Badge";
 import { Button } from "../shared/Button";
+import { Pagination } from "../shared/Pagination";
 import { DetailDrawer } from "../shared/DetailDrawer";
 import { FancyDatePicker } from "../shared/FancyDatePicker";
 import { Select } from "../shared/Select";
@@ -239,30 +240,15 @@ export function AuditLogsPanel({
         </div>
 
         {data ? (
-          <div className="flex items-center justify-between border-t border-[var(--color-border)] bg-[var(--color-background)] px-3 py-3">
-            <p className="text-xs text-[var(--color-muted)]">
-              Page {filters.page} of {totalPages} | {data.count} total
-            </p>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                disabled={filters.page <= 1 || loading}
-                onClick={() => onPageChange(Math.max(1, filters.page - 1))}
-              >
-                Previous
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                disabled={filters.page >= totalPages || loading}
-                onClick={() => onPageChange(Math.min(totalPages, filters.page + 1))}
-              >
-                Next
-              </Button>
-            </div>
+          <div className="border-t border-[var(--color-border)] bg-[var(--color-background)] px-3 py-3">
+            <Pagination
+              page={filters.page}
+              totalPages={totalPages}
+              totalCount={data.count}
+              pageSize={data.limit || 10}
+              disabled={loading}
+              onPageChange={(target) => onPageChange(Math.min(totalPages, Math.max(1, target)))}
+            />
           </div>
         ) : null}
       </div>
