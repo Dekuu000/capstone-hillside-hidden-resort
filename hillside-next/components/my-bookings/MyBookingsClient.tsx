@@ -65,10 +65,10 @@ const TAB_LABELS: Record<TabKey, string> = {
 };
 
 const TAB_HINTS: Record<TabKey, string> = {
-  upcoming: "Your upcoming reservations and actions that need attention.",
-  pending_payment: "Bookings waiting for payment or payment verification.",
-  completed: "Finished reservations for your records.",
-  cancelled: "Cancelled reservations and policy outcomes.",
+  upcoming: "Upcoming stays and actions to take.",
+  pending_payment: "Waiting for payment or verification.",
+  completed: "Past stays, kept for your records.",
+  cancelled: "Cancelled bookings.",
 };
 
 const STAY_BANNERS = [
@@ -873,7 +873,7 @@ export function MyBookingsClient({
           />
         </div>
         <div className="mt-3 lg:mt-4">
-          <p className="text-sm text-[var(--color-muted)]">{TAB_HINTS[tab]}</p>
+          <p className="truncate text-sm text-[var(--color-muted)]">{TAB_HINTS[tab]}</p>
         </div>
       </section>
 
