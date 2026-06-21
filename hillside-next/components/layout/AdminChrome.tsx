@@ -17,6 +17,7 @@ import {
   RefreshCcw,
   ScanLine,
   ShieldCheck,
+  Star,
   TrendingUp,
   UserPlus,
   X,
@@ -49,6 +50,7 @@ const navigation: Array<{ name: string; href: string; tier: NavTier; icon: Lucid
   { name: "Payments", href: "/admin/payments", tier: "management", icon: CreditCard },
   { name: "Services", href: "/admin/services", tier: "operations", icon: ConciergeBell },
   { name: "Reports", href: "/admin/reports", tier: "management", icon: BarChart3 },
+  { name: "Reviews", href: "/admin/reviews", tier: "management", icon: Star },
   // Technical tools — System Admin only, with plain-language labels.
   { name: "Records & Security", href: "/admin/blockchain", tier: "technical", icon: ShieldCheck },
   { name: "Offline & Sync", href: "/admin/sync", tier: "technical", icon: RefreshCcw },

@@ -1202,3 +1202,18 @@ export type CreateReviewRequest = {
   rating: number;
   comment?: string | null;
 };
+
+export type AdminReviewItem = {
+  review_id: string;
+  unit_id: string;
+  unit_name?: string | null;
+  guest_name?: string | null;
+  rating: number;
+  comment?: string | null;
+  is_hidden: boolean;
+  created_at: string;
+};
+
+export type AdminReviewsResponse = {
+  items: AdminReviewItem[];
+};

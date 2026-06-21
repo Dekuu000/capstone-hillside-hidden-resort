@@ -3628,3 +3628,59 @@ def list_unit_reviews(*, unit_id: str, limit: int = 20) -> tuple[list[dict[str, 
     average = round(sum(ratings) / count, 2) if count else 0.0
     items = [_review_row_to_item(row, include_name=True) for row in rows[: max(1, min(limit, 50))]]
     return items, {"average_rating": average, "review_count": count}
+
+
+# --- Admin review moderation ---
+ADMIN_REVIEW_SELECT = (
+    "review_id, reservation_id, unit_id, rating, comment, is_hidden, created_at, "
+    "guest:users!guest_user_id(name), unit:units(name)"
+)
+
+
+def _admin_review_row(row: dict[str, Any]) -> dict[str, Any]:
+    guest = row.get("guest") if isinstance(row.get("guest"), dict) else {}
+    unit = row.get("unit") if isinstance(row.get("unit"), dict) else {}
+    return {
+        "review_id": str(row.get("review_id")),
+        "unit_id": str(row.get("unit_id")),
+        "unit_name": (unit or {}).get("name"),
+        "guest_name": (guest or {}).get("name"),
+        "rating": int(row.get("rating") or 0),
+        "comment": row.get("comment"),
+        "is_hidden": bool(row.get("is_hidden")),
+        "created_at": str(row.get("created_at") or ""),
+    }
+
+
+def list_reviews_for_admin(*, limit: int = 100) -> list[dict[str, Any]]:
+    try:
+        client = get_supabase_client()
+        resp = (
+            client.table("reviews")
+            .select(ADMIN_REVIEW_SELECT)
+            .order("created_at", desc=True)
+            .limit(max(1, min(limit, 200)))
+            .execute()
+        )
+        return [_admin_review_row(row) for row in (resp.data or [])]
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def set_review_hidden(*, review_id: str, hidden: bool) -> dict[str, Any] | None:
+    try:
+        client = get_supabase_client()
+        client.table("reviews").update(
+            {"is_hidden": bool(hidden), "updated_at": datetime.now(timezone.utc).isoformat()}
+        ).eq("review_id", review_id).execute()
+        resp = (
+            client.table("reviews")
+            .select(ADMIN_REVIEW_SELECT)
+            .eq("review_id", review_id)
+            .limit(1)
+            .execute()
+        )
+        rows = resp.data or []
+        return _admin_review_row(rows[0]) if rows else None
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc

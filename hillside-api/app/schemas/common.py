@@ -1105,3 +1105,22 @@ class CreateReviewRequest(BaseModel):
     reservation_id: str
     rating: int = Field(ge=1, le=5)
     comment: str | None = None
+
+
+class AdminReviewItem(BaseModel):
+    review_id: str
+    unit_id: str
+    unit_name: str | None = None
+    guest_name: str | None = None
+    rating: int
+    comment: str | None = None
+    is_hidden: bool = False
+    created_at: str
+
+
+class AdminReviewsResponse(BaseModel):
+    items: list[AdminReviewItem] = Field(default_factory=list)
+
+
+class ModerateReviewRequest(BaseModel):
+    is_hidden: bool

@@ -1144,3 +1144,18 @@ export const unitReviewsResponseSchema = z.object({
 export const myReviewsResponseSchema = z.object({
   items: z.array(reviewItemSchema),
 });
+
+export const adminReviewItemSchema = z.object({
+  review_id: z.string().min(1),
+  unit_id: z.string().min(1),
+  unit_name: z.string().optional().nullable(),
+  guest_name: z.string().optional().nullable(),
+  rating: z.number().int().min(0).max(5),
+  comment: z.string().optional().nullable(),
+  is_hidden: z.boolean(),
+  created_at: z.string().min(1),
+});
+
+export const adminReviewsResponseSchema = z.object({
+  items: z.array(adminReviewItemSchema),
+});
