@@ -56,6 +56,7 @@ export function ReportDocument({
             <HillsideLogo className="[&_img]:h-12 [&_img]:w-12 [&_.hillside-brand-title]:text-[1.15rem] [&_.hillside-brand-title]:text-black [&_.hillside-brand-subtitle]:text-[0.55rem] [&_.hillside-brand-subtitle]:tracking-[0.28em] [&_.hillside-brand-subtitle]:text-gray-600" />
           </div>
           <div className="text-right text-[11px] leading-4 text-gray-700">
+            <p className="font-semibold text-black">Hillside Hidden Resort</p>
             <p>{RESORT_ADDRESS}</p>
             <p>hillsidehidden.resort</p>
           </div>

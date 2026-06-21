@@ -10,6 +10,12 @@ import { formatPhpPeso as formatPeso } from "../../../lib/formatCurrency";
 import { getServerAccessToken, getServerAuthContext } from "../../../lib/serverAuth";
 import { fetchServerApiData } from "../../../lib/serverApi";
 
+// Neutral title so the browser's print header reads "Sales & Occupancy Report"
+// instead of repeating the resort name already shown in the report letterhead.
+export const metadata = {
+  title: "Sales & Occupancy Report",
+};
+
 function formatPercent(value: number) {
   return `${Math.round((value || 0) * 100)}%`;
 }
