@@ -220,11 +220,12 @@ export function MyBookingsClient({
   const [items, setItems] = useState<Booking[]>(initialData?.items ?? []);
   const [nextCursor, setNextCursor] = useState<Cursor | null>(initialData?.nextCursor ?? null);
   const [totalCount, setTotalCount] = useState(initialData?.totalCount ?? 0);
-  const [loading, setLoading] = useState(false);
+  // Start in the loading state when there's no SSR data, so the skeleton (not the
+  // empty state) shows for the brief moment before the cached snapshot paints.
+  const [loading, setLoading] = useState(!initialData);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const requestIdRef = useRef(0);
-  const didUseInitialUpcomingDataRef = useRef(false);
   const autoOpenPayHandledRef = useRef(false);
 
   const [details, setDetails] = useState<Booking | null>(null);
@@ -318,11 +319,13 @@ export function MyBookingsClient({
   }, [initialAutoOpenPay, initialFocusReservationId, items, openPaymentSubmissionForBooking, tab]);
 
   const fetchBookings = useCallback(
-    async (cursor: Cursor | null, mode: "replace" | "append") => {
+    async (cursor: Cursor | null, mode: "replace" | "append", opts: { silent?: boolean } = {}) => {
       if (!token) return;
       const currentRequestId = ++requestIdRef.current;
       const snapshotVariantKey = `${tab}::${searchValue || "__all__"}`;
-      if (mode === "replace") setLoading(true);
+      // `silent` = a stale-while-revalidate background refresh: keep the cached
+      // list on screen instead of flashing the skeleton.
+      if (mode === "replace" && !opts.silent) setLoading(true);
       if (mode === "append") setLoadingMore(true);
       setError(null);
 
@@ -385,22 +388,35 @@ export function MyBookingsClient({
       setNextCursor(null);
       setTotalCount(0);
       setCachedViewMeta(null);
+      setLoading(false);
       return;
     }
-    // Skip one fetch on first render when SSR already provided upcoming data.
-    // Subsequent tab switches should always fetch fresh data.
-    if (!didUseInitialUpcomingDataRef.current && initialData && !searchValue && tab === "upcoming") {
-      didUseInitialUpcomingDataRef.current = true;
-      return;
-    }
-    void fetchBookings(null, "replace");
-  }, [token, tab, searchValue, fetchBookings, initialData]);
-
-  useEffect(() => {
-    if (!token || !initialData) return;
-    const snapshotVariantKey = "upcoming::__all__";
-    void saveBookingsSnapshot("me", initialData, { variantKey: snapshotVariantKey });
-  }, [initialData, token]);
+    // Show the skeleton (not the empty state) until the cache or first fetch
+    // resolves for this tab/search.
+    setLoading(true);
+    let cancelled = false;
+    void (async () => {
+      // Stale-while-revalidate: paint the cached snapshot instantly, then refresh
+      // in the background (silently, so the cached list isn't replaced by a
+      // skeleton). On the very first visit there is no cache, so the skeleton
+      // stays up while the first fetch runs.
+      let paintedFromCache = false;
+      const cached = await loadBookingsSnapshot("me", {
+        variantKey: `${tab}::${searchValue || "__all__"}`,
+      });
+      if (!cancelled && cached?.data?.items?.length) {
+        setItems(cached.data.items);
+        setNextCursor(cached.data.nextCursor ?? null);
+        setTotalCount(cached.data.totalCount ?? 0);
+        setLoading(false);
+        paintedFromCache = true;
+      }
+      if (!cancelled) void fetchBookings(null, "replace", { silent: paintedFromCache });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [token, tab, searchValue, fetchBookings]);
 
   const openDetails = useCallback(
     async (reservationId: string) => {

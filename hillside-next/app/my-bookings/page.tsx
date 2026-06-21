@@ -1,25 +1,14 @@
 import { redirect } from "next/navigation";
 import { MyBookingsClient } from "../../components/my-bookings/MyBookingsClient";
 import { GuestShell } from "../../components/layout/GuestShell";
-import { fetchServerApiData } from "../../lib/serverApi";
 import { getServerAccessToken, getServerAuthContext, getServerEmailHint } from "../../lib/serverAuth";
-import { myBookingsResponseSchema } from "../../../packages/shared/src/schemas";
-import { isBackOffice, type MyBookingsResponse, type MyBookingsTab } from "../../../packages/shared/src/types";
+import { isBackOffice, type MyBookingsTab } from "../../../packages/shared/src/types";
 
 function normalizeTab(value?: string): MyBookingsTab {
   if (value === "pending_payment" || value === "completed" || value === "cancelled") {
     return value;
   }
   return "upcoming";
-}
-
-async function fetchInitialBookings(accessToken: string, tab: MyBookingsTab): Promise<MyBookingsResponse | null> {
-  return fetchServerApiData({
-    accessToken,
-    path: `/v2/me/bookings?tab=${tab}&limit=10`,
-    schema: myBookingsResponseSchema,
-    revalidate: 0,
-  });
 }
 
 export default async function MyBookingsPage({
@@ -36,11 +25,10 @@ export default async function MyBookingsPage({
     redirect("/login?next=/my-bookings");
   }
 
-  // Fetch auth context and bookings concurrently (was two sequential round trips).
-  const [auth, initialData] = await Promise.all([
-    getServerAuthContext(accessToken),
-    fetchInitialBookings(accessToken, initialTab),
-  ]);
+  // Don't block navigation on the bookings round trip — the client paints its
+  // cached snapshot instantly (stale-while-revalidate) and refreshes in the
+  // background. We only await the (cached) auth check for the role gate.
+  const auth = await getServerAuthContext(accessToken);
   if (!auth) {
     redirect("/login?next=/my-bookings");
   }
@@ -56,7 +44,7 @@ export default async function MyBookingsPage({
         initialToken={accessToken}
         initialSessionEmail={emailHint}
         initialTab={initialTab}
-        initialData={initialData}
+        initialData={null}
         initialFocusReservationId={initialFocusReservationId}
         initialAutoOpenPay={initialAutoOpenPay}
       />
