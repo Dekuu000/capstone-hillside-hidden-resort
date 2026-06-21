@@ -110,7 +110,7 @@ export function TourBookingCard({ service, isAuthed, initialVisitDate }: TourBoo
       <div className="mt-4 flex items-center gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2.5 text-xs muted-text">
         <ShieldCheck className="h-4 w-4 shrink-0 text-[var(--color-secondary)]" />
         <span>
-          <span className="font-semibold text-[var(--color-text)]">Secure GCash deposit.</span> Every booking is reviewed by our team before it&apos;s confirmed.
+          <span className="font-semibold text-[var(--color-text)]">Secure deposit.</span> Every booking is reviewed by our team before it&apos;s confirmed.
         </span>
       </div>
     </div>
