@@ -517,14 +517,28 @@ a:focus-visible {
   }
 }
 
-/* The standalone /reports-print page renders only the report document, so we
-   just set the page size + keep colours, and hide any .no-print controls. */
+/* The printable report (#printable-report) is portalled to <body> and hidden on
+   screen; it only appears when printing. The Reports page prints it in-place
+   (same window, no new tab) via the browser print dialog. */
+.print-only {
+  display: none;
+}
+
 @page {
   size: A4;
   margin: 12mm;
 }
 
 @media print {
+  /* When the in-place report portal is present, hide everything else and show
+     only the document. Scoped with :has() so the standalone /reports-print route
+     (no portal) still prints its full page normally. */
+  body:has(#printable-report) > *:not(#printable-report) {
+    display: none !important;
+  }
+  #printable-report {
+    display: block !important;
+  }
   .no-print {
     display: none !important;
   }

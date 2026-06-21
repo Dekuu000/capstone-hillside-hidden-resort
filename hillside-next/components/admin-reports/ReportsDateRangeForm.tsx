@@ -111,7 +111,7 @@ export function ReportsDateRangeForm({ fromDate, toDate, daily, monthly }: Props
           </button>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center lg:shrink-0">
-          <PrintReportButton fromDate={from} toDate={to} />
+          <PrintReportButton />
           <ReportsExportButtons daily={daily} monthly={monthly} fromDate={from} toDate={to} fullWidthMobile />
         </div>
       </div>

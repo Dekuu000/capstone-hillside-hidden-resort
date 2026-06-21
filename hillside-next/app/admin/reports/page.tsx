@@ -1,11 +1,13 @@
 ﻿import { Coins } from "lucide-react";
-import type { ReportsOverviewResponse } from "../../../../packages/shared/src/types";
+import type { ReportsOverviewResponse, Role } from "../../../../packages/shared/src/types";
+import { ROLE_LABELS } from "../../../../packages/shared/src/types";
 import { reportsOverviewResponseSchema } from "../../../../packages/shared/src/schemas";
 import { ReportsDateRangeForm } from "../../../components/admin-reports/ReportsDateRangeForm";
+import { PrintableReport } from "../../../components/admin-reports/PrintableReport";
 import { todayPlusLocalIsoDate } from "../../../lib/dateIso";
 import { formatDateOnly, formatDateTime } from "../../../lib/dateDisplay";
 import { formatPhpPeso as formatPeso } from "../../../lib/formatCurrency";
-import { getServerAccessToken } from "../../../lib/serverAuth";
+import { getServerAccessToken, getServerAuthContext } from "../../../lib/serverAuth";
 import { fetchServerApiData } from "../../../lib/serverApi";
 
 function formatPercent(value: number) {
@@ -68,7 +70,12 @@ export default async function AdminReportsPage({
   const resolved = (await searchParams) ?? {};
   const fromDate = (Array.isArray(resolved.from) ? resolved.from[0] : resolved.from) || todayPlusLocalIsoDate(-7);
   const toDate = (Array.isArray(resolved.to) ? resolved.to[0] : resolved.to) || todayPlusLocalIsoDate(0);
-  const overview = await fetchOverview(accessToken, fromDate, toDate);
+  const [overview, auth] = await Promise.all([
+    fetchOverview(accessToken, fromDate, toDate),
+    getServerAuthContext(accessToken),
+  ]);
+  const preparedBy = `${ROLE_LABELS[(auth?.role || "") as Role] || "Back office"}${auth?.email ? ` (${auth.email})` : ""}`;
+  const generatedAt = new Date().toISOString();
   const netBookings = overview
     ? Math.max(overview.summary.bookings - overview.summary.cancellations, 0)
     : 0;
@@ -112,6 +119,7 @@ export default async function AdminReportsPage({
         </p>
       ) : (
         <>
+          <PrintableReport overview={overview} preparedBy={preparedBy} generatedAt={generatedAt} />
           <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <div className="rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-[var(--shadow-card)] xl:col-span-2">
               <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">
