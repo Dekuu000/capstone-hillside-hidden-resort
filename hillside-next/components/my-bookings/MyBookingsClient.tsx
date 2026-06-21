@@ -4,11 +4,12 @@ import { FormEvent, useCallback, useEffect, useId, useMemo, useRef, useState } f
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
-import { Calendar, CircleCheck, CircleX, CreditCard, Eye, Loader2, QrCode, Upload } from "lucide-react";
+import { Calendar, CircleCheck, CircleX, CreditCard, Eye, Loader2, QrCode, Star, Upload } from "lucide-react";
 import type {
   MyBookingsCursor as Cursor,
   MyBookingsResponse as BookingsResponse,
   MyBookingsTab as TabKey,
+  MyReviewsResponse,
   PaymentSubmissionResponse,
   QrToken,
   ReservationListItem as Booking,
@@ -19,9 +20,11 @@ import { computeStayDepositPreview } from "../../../packages/shared/src/types";
 import {
   paymentSubmissionResponseSchema,
   myBookingsResponseSchema,
+  myReviewsResponseSchema,
   qrTokenSchema,
   reservationCancelResponseSchema,
   reservationListItemSchema,
+  reviewItemSchema,
 } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
@@ -257,6 +260,14 @@ export function MyBookingsClient({
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [actionHasSyncCta, setActionHasSyncCta] = useState(false);
   const [cachedViewMeta, setCachedViewMeta] = useState<string | null>(null);
+  // Reviews: which reservations the guest has already rated, and the in-flight
+  // review form.
+  const [reviewedByReservation, setReviewedByReservation] = useState<Map<string, number>>(new Map());
+  const [reviewFor, setReviewFor] = useState<Booking | null>(null);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState("");
+  const [reviewBusy, setReviewBusy] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
   const [detailGalleryImages, setDetailGalleryImages] = useState<string[]>([]);
   const [detailGalleryThumbs, setDetailGalleryThumbs] = useState<string[]>([]);
   const [detailGalleryTitle, setDetailGalleryTitle] = useState("Unit photos");
@@ -638,6 +649,70 @@ export function MyBookingsClient({
       setCancelBusy(false);
     }
   }, [cancelFor, fetchBookings, token, pushActionMessage]);
+
+  // Load the guest's existing reviews so completed bookings show "Leave a review"
+  // vs "You rated …". Silent on failure (table not provisioned / offline).
+  useEffect(() => {
+    if (!token) {
+      setReviewedByReservation(new Map());
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const data = await apiFetch<MyReviewsResponse>(
+          "/v2/reviews/mine",
+          { method: "GET" },
+          token,
+          myReviewsResponseSchema,
+        );
+        if (cancelled) return;
+        const map = new Map<string, number>();
+        data.items.forEach((review) => map.set(review.reservation_id, review.rating));
+        setReviewedByReservation(map);
+      } catch {
+        /* no reviews available */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
+  const openReview = useCallback((booking: Booking) => {
+    setReviewFor(booking);
+    setReviewRating(5);
+    setReviewComment("");
+    setReviewError(null);
+  }, []);
+
+  const submitReview = useCallback(async () => {
+    if (!token || !reviewFor) return;
+    setReviewBusy(true);
+    setReviewError(null);
+    try {
+      await apiFetch(
+        "/v2/reviews",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            reservation_id: reviewFor.reservation_id,
+            rating: reviewRating,
+            comment: reviewComment.trim() || null,
+          }),
+        },
+        token,
+        reviewItemSchema,
+      );
+      setReviewedByReservation((prev) => new Map(prev).set(reviewFor.reservation_id, reviewRating));
+      setReviewFor(null);
+      pushActionMessage("Thanks for your review!");
+    } catch (unknownError) {
+      setReviewError(getApiErrorMessage(unknownError, "Couldn't submit your review."));
+    } finally {
+      setReviewBusy(false);
+    }
+  }, [pushActionMessage, reviewComment, reviewFor, reviewRating, token]);
 
   const issueCheckinQr = useCallback(
     async (reservationId: string) => {
@@ -1066,6 +1141,28 @@ export function MyBookingsClient({
                     ) : null}
                   </div>
                 ) : null}
+
+                {booking.status === "checked_out" ? (
+                  <div className="mt-4 flex flex-col gap-2 border-t border-[var(--color-border)] pt-3 sm:flex-row sm:items-center sm:justify-between">
+                    {reviewedByReservation.has(booking.reservation_id) ? (
+                      <span className="inline-flex items-center gap-1.5 text-sm text-[var(--color-muted)]">
+                        <Star className="h-4 w-4 fill-[var(--color-cta)] text-[var(--color-cta)]" aria-hidden="true" />
+                        You rated this stay {reviewedByReservation.get(booking.reservation_id)}/5
+                      </span>
+                    ) : (
+                      <>
+                        <span className="text-sm text-[var(--color-muted)]">How was your stay?</span>
+                        <button
+                          type="button"
+                          className="guest-secondary-cta min-h-11 px-4 text-sm"
+                          onClick={() => openReview(booking)}
+                        >
+                          Leave a review
+                        </button>
+                      </>
+                    )}
+                  </div>
+                ) : null}
               </div>
             </article>
           );
@@ -1429,6 +1526,73 @@ export function MyBookingsClient({
                 </button>
               </div>
             </div>
+        </ModalDialog>
+      ) : null}
+
+      {reviewFor ? (
+        <ModalDialog
+          titleId="leave-review-title"
+          title="Leave a review"
+          zIndexClass="z-[70]"
+          maxWidthClass="md:max-w-md"
+          panelClassName="max-h-[calc(100dvh-0.75rem)] border-[var(--color-border)] bg-white pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
+          onClose={() => setReviewFor(null)}
+        >
+          <p className="text-sm text-[var(--color-muted)]">
+            How was your stay at <strong className="text-[var(--color-text)]">{reviewFor.reservation_code}</strong>?
+          </p>
+
+          <div className="mt-4 flex items-center justify-center gap-2" role="radiogroup" aria-label="Rating">
+            {[1, 2, 3, 4, 5].map((value) => (
+              <button
+                key={`star-${value}`}
+                type="button"
+                role="radio"
+                aria-checked={reviewRating === value}
+                aria-label={`${value} star${value === 1 ? "" : "s"}`}
+                onClick={() => setReviewRating(value)}
+                className="rounded-full p-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
+              >
+                <Star
+                  className={`h-9 w-9 ${value <= reviewRating ? "fill-[var(--color-cta)] text-[var(--color-cta)]" : "fill-transparent text-[var(--color-border)]"}`}
+                  aria-hidden="true"
+                />
+              </button>
+            ))}
+          </div>
+
+          <textarea
+            value={reviewComment}
+            onChange={(event) => setReviewComment(event.target.value)}
+            maxLength={1000}
+            rows={4}
+            placeholder="Share what you loved or what could be better (optional)."
+            className="mt-4 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3 text-sm text-[var(--color-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
+          />
+
+          {reviewError ? (
+            <p className="mt-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">
+              {reviewError}
+            </p>
+          ) : null}
+
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => setReviewFor(null)}
+              className="guest-secondary-cta min-h-10 min-w-[120px] px-3 text-sm"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => void submitReview()}
+              disabled={reviewBusy}
+              className="guest-primary-cta min-h-10 min-w-[140px] px-3 text-sm"
+            >
+              {reviewBusy ? "Submitting…" : "Submit review"}
+            </button>
+          </div>
         </ModalDialog>
       ) : null}
 
