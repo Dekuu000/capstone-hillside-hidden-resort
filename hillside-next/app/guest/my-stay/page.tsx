@@ -76,13 +76,17 @@ async function fetchStayDashboard(accessToken: string): Promise<StayDashboardRes
 export default async function GuestMyStayPage() {
   const accessToken = await getServerAccessToken();
   if (!accessToken) redirect("/login?next=/guest/my-stay");
-  const auth = await getServerAuthContext(accessToken);
+  // Resolve auth, dashboard data, and email hint concurrently instead of
+  // back-to-back round trips, so the page returns in ~one round trip.
+  const [auth, stayDashboard, emailHint] = await Promise.all([
+    getServerAuthContext(accessToken),
+    fetchStayDashboard(accessToken),
+    getServerEmailHint(),
+  ]);
   if (isBackOffice(auth?.role)) {
     redirect("/admin");
   }
 
-  const emailHint = await getServerEmailHint();
-  const stayDashboard = await fetchStayDashboard(accessToken);
   const stay = stayDashboard?.reservation ?? null;
   const welcomeNotification = stayDashboard?.welcome_notification ?? null;
 

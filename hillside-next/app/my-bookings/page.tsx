@@ -36,7 +36,11 @@ export default async function MyBookingsPage({
     redirect("/login?next=/my-bookings");
   }
 
-  const auth = await getServerAuthContext(accessToken);
+  // Fetch auth context and bookings concurrently (was two sequential round trips).
+  const [auth, initialData] = await Promise.all([
+    getServerAuthContext(accessToken),
+    fetchInitialBookings(accessToken, initialTab),
+  ]);
   if (!auth) {
     redirect("/login?next=/my-bookings");
   }
@@ -44,7 +48,6 @@ export default async function MyBookingsPage({
     redirect("/admin");
   }
 
-  const initialData = await fetchInitialBookings(accessToken, initialTab);
   const emailHint = auth.email || (await getServerEmailHint());
 
   return (

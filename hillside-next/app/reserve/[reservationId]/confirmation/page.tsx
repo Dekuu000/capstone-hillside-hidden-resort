@@ -32,14 +32,16 @@ export default async function ConfirmationPage({
 
   const token = await getServerAccessToken();
   if (!token) redirect(`/login?next=/reserve/${reservationId}/confirmation`);
-  const auth = await getServerAuthContext(token);
+  // Auth context + booking fetched concurrently (was two sequential round trips).
+  const [auth, booking] = await Promise.all([
+    getServerAuthContext(token),
+    fetchServerApiData({
+      accessToken: token,
+      path: `/v2/me/bookings/${reservationId}`,
+      schema: reservationListItemSchema,
+    }),
+  ]);
   if (!auth) redirect(`/login?next=/reserve/${reservationId}/confirmation`);
-
-  const booking = await fetchServerApiData({
-    accessToken: token,
-    path: `/v2/me/bookings/${reservationId}`,
-    schema: reservationListItemSchema,
-  });
 
   const unitNames = (booking?.units ?? [])
     .map((entry) => entry?.unit?.name)

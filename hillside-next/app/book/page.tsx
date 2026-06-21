@@ -37,14 +37,16 @@ export default async function BookPage() {
   const checkOutDate = isoLocalDate(3);
 
   const accessToken = await getServerAccessToken();
-  const auth = accessToken ? await getServerAuthContext(accessToken) : null;
+  // Resolve auth, available units, and the email hint concurrently.
+  const [auth, initialUnitsData, rawEmailHint] = await Promise.all([
+    accessToken ? getServerAuthContext(accessToken) : Promise.resolve(null),
+    accessToken ? fetchInitialAvailableUnits(accessToken, checkInDate, checkOutDate) : Promise.resolve(null),
+    getServerEmailHint(),
+  ]);
   if (isBackOffice(auth?.role)) {
     redirect("/admin");
   }
-  const emailHint = auth?.email || (await getServerEmailHint());
-  const initialUnitsData = accessToken
-    ? await fetchInitialAvailableUnits(accessToken, checkInDate, checkOutDate)
-    : null;
+  const emailHint = auth?.email || rawEmailHint;
 
   return (
     <GuestShell initialEmail={emailHint}>
