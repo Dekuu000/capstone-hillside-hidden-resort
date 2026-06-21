@@ -156,15 +156,17 @@ export function ReportDocument({
           </section>
         ) : null}
 
-        {/* Signatures */}
-        <section className="mt-7 grid grid-cols-2 gap-8 text-[12px]">
-          <div>
-            <div className="border-t border-black pt-1 text-center font-semibold">Prepared by</div>
-            <p className="mt-1 text-center text-gray-600">{preparedBy}</p>
+        {/* Signatures — blank space above each line for a handwritten signature */}
+        <section className="mt-6 grid grid-cols-2 gap-12 text-[12px]">
+          <div className="text-center">
+            <div className="h-10" aria-hidden="true" />
+            <div className="border-t border-black pt-1 font-semibold">Prepared by</div>
+            <p className="mt-1 text-gray-600">{preparedBy}</p>
           </div>
-          <div>
-            <div className="border-t border-black pt-1 text-center font-semibold">Verified by</div>
-            <p className="mt-1 text-center text-gray-600">&nbsp;</p>
+          <div className="text-center">
+            <div className="h-10" aria-hidden="true" />
+            <div className="border-t border-black pt-1 font-semibold">Verified by</div>
+            <p className="mt-1 text-gray-600">&nbsp;</p>
           </div>
         </section>
 

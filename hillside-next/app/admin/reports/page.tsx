@@ -1,4 +1,5 @@
-﻿import { Coins } from "lucide-react";
+﻿import type { Metadata } from "next";
+import { Coins } from "lucide-react";
 import type { ReportsOverviewResponse, Role } from "../../../../packages/shared/src/types";
 import { ROLE_LABELS } from "../../../../packages/shared/src/types";
 import { reportsOverviewResponseSchema } from "../../../../packages/shared/src/schemas";
@@ -10,11 +11,20 @@ import { formatPhpPeso as formatPeso } from "../../../lib/formatCurrency";
 import { getServerAccessToken, getServerAuthContext } from "../../../lib/serverAuth";
 import { fetchServerApiData } from "../../../lib/serverApi";
 
-// Neutral title so the browser's print header reads "Sales & Occupancy Report"
-// instead of repeating the resort name already shown in the report letterhead.
-export const metadata = {
-  title: "Sales & Occupancy Report",
-};
+// Date-stamped document title. The browser stamps document.title into the print
+// header (top-center) and uses it as the default "Save as PDF" filename, so a
+// period-scoped title is distinct from the report's "Sales & Occupancy Report"
+// heading and makes saved files self-describing.
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}): Promise<Metadata> {
+  const resolved = (await searchParams) ?? {};
+  const fromDate = (Array.isArray(resolved.from) ? resolved.from[0] : resolved.from) || todayPlusLocalIsoDate(-7);
+  const toDate = (Array.isArray(resolved.to) ? resolved.to[0] : resolved.to) || todayPlusLocalIsoDate(0);
+  return { title: `Sales Report (${fromDate} to ${toDate})` };
+}
 
 function formatPercent(value: number) {
   return `${Math.round((value || 0) * 100)}%`;
