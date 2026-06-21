@@ -17,7 +17,7 @@ import {
   RefreshCcw,
   ScanLine,
   ShieldCheck,
-  Sparkles,
+  TrendingUp,
   UserPlus,
   X,
   type LucideIcon,
@@ -51,7 +51,7 @@ const navigation: Array<{ name: string; href: string; tier: NavTier; icon: Lucid
   // Technical tools — System Admin only, with plain-language labels.
   { name: "Records & Security", href: "/admin/blockchain", tier: "technical", icon: ShieldCheck },
   { name: "Offline & Sync", href: "/admin/sync", tier: "technical", icon: RefreshCcw },
-  { name: "Smart Pricing", href: "/admin/ai", tier: "technical", icon: Sparkles },
+  { name: "Smart Pricing", href: "/admin/ai", tier: "technical", icon: TrendingUp },
 ];
 
 const noPrefetchRoutes = new Set([
