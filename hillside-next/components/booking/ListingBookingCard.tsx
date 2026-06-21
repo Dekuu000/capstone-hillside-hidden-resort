@@ -95,14 +95,15 @@ export function ListingBookingCard({
         />
       </div>
 
-      <div className="mt-3 rounded-2xl border border-[var(--color-border)] px-4 py-3">
-        <PaxSelector
-          value={guests}
-          onChange={setGuests}
-          min={1}
-          max={unit.capacity}
-          hint={`Up to ${unit.capacity} guests`}
-        />
+      <div className="mt-3 flex items-end gap-3">
+        <PaxSelector value={guests} onChange={setGuests} min={1} max={unit.capacity} />
+        <button
+          type="button"
+          onClick={reserve}
+          className="flex h-12 flex-1 items-center justify-center rounded-2xl bg-[var(--color-cta)] text-base font-semibold text-white transition hover:brightness-95 focus-visible:ring-4 focus-visible:ring-[color:color-mix(in_srgb,var(--color-cta)_30%,white)]"
+        >
+          Reserve
+        </button>
       </div>
 
       {error ? (
@@ -111,14 +112,7 @@ export function ListingBookingCard({
         </p>
       ) : null}
 
-      <button
-        type="button"
-        onClick={reserve}
-        className="mt-4 flex h-12 w-full items-center justify-center rounded-2xl bg-[var(--color-cta)] text-base font-semibold text-white transition hover:brightness-95 focus-visible:ring-4 focus-visible:ring-[color:color-mix(in_srgb,var(--color-cta)_30%,white)]"
-      >
-        Reserve
-      </button>
-      <p className="mt-2 text-center text-xs muted-text">You won&apos;t be charged yet</p>
+      <p className="mt-2 text-center text-xs muted-text">Up to {unit.capacity} guests · You won&apos;t be charged yet</p>
 
       {nights > 0 ? (
         <div className="mt-4 border-t border-[var(--color-border)] pt-4">
