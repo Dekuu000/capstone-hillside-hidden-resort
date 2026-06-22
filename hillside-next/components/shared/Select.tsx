@@ -127,7 +127,7 @@ export function Select({
             }
           }}
           className={cn(
-            "absolute top-[calc(100%+6px)] z-40 max-h-[296px] min-w-full overflow-auto rounded-xl border border-[var(--color-border)] bg-white p-1.5 shadow-[var(--shadow-md)] focus:outline-none",
+            "absolute top-[calc(100%+6px)] z-40 max-h-[296px] w-full overflow-auto rounded-xl border border-[var(--color-border)] bg-white p-1.5 shadow-[var(--shadow-md)] focus:outline-none",
             align === "end" ? "right-0" : "left-0",
             menuClassName,
           )}
@@ -150,7 +150,7 @@ export function Select({
                   isActive ? "bg-[var(--color-background)]" : "",
                 )}
               >
-                <span className="truncate">{option.label}</span>
+                <span className="min-w-0 flex-1 truncate">{option.label}</span>
                 {isSelected ? <Check className="h-4 w-4 shrink-0 text-[var(--color-secondary)]" aria-hidden="true" /> : null}
               </button>
             );
