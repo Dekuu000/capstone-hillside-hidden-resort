@@ -12,6 +12,7 @@ from app.integrations.ai_pricing import (
     get_ai_pricing_metrics_snapshot,
     get_occupancy_forecast,
     get_pricing_recommendation,
+    warm_ai_service,
 )
 from app.integrations.supabase_client import (
     get_anonymized_concierge_behavior,
@@ -210,6 +211,16 @@ def pricing_metrics(
     _auth: AuthContext = Depends(require_technical),
 ):
     return get_ai_pricing_metrics_snapshot()
+
+
+@router.post("/warmup")
+def warmup_ai_service(
+    _auth: AuthContext = Depends(require_technical),
+) -> dict[str, bool]:
+    # Non-blocking: kicks a background ping so a spun-down AI service starts
+    # waking while the admin reads the page, before they request a result.
+    triggered = warm_ai_service()
+    return {"configured": bool(settings.ai_service_base_url), "warming": triggered}
 
 
 @router.post("/occupancy/forecast", response_model=OccupancyForecastResponse)
