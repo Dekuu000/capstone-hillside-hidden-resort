@@ -1,3 +1,5 @@
+import hashlib
+import json
 from datetime import date, datetime, timedelta, timezone
 from functools import lru_cache
 from typing import Any
@@ -59,6 +61,9 @@ RESERVATION_LIST_SELECT = """
     check_in_date,
     check_out_date,
     total_amount,
+    original_total,
+    discount_amount,
+    promo_code,
     amount_paid_verified,
     balance_due,
     guest_count,
@@ -2929,6 +2934,7 @@ def create_tour_reservation_atomic(
     is_advance: bool,
     expected_pay_now: float | None = None,
     notes: str | None = None,
+    promo_code: str | None = None,
 ) -> dict[str, Any]:
     try:
         client = get_supabase_user_scoped_client(access_token)
@@ -2944,6 +2950,7 @@ def create_tour_reservation_atomic(
                 "p_deposit_override": None,
                 "p_expected_pay_now": expected_pay_now,
                 "p_notes": notes,
+                "p_promo_code": promo_code,
             },
         ).execute()
         rows = response.data or []
@@ -2969,6 +2976,7 @@ def create_reservation_atomic(
     deposit_required: float | None = None,
     expected_pay_now: float | None = None,
     notes: str | None = None,
+    promo_code: str | None = None,
 ) -> dict[str, Any]:
     try:
         client = get_supabase_user_scoped_client(access_token)
@@ -2985,6 +2993,7 @@ def create_reservation_atomic(
                 "p_deposit_required": deposit_required,
                 "p_expected_pay_now": expected_pay_now,
                 "p_notes": notes,
+                "p_promo_code": promo_code,
             },
         ).execute()
         rows = response.data or []
@@ -3682,5 +3691,651 @@ def set_review_hidden(*, review_id: str, hidden: bool) -> dict[str, Any] | None:
         )
         rows = resp.data or []
         return _admin_review_row(rows[0]) if rows else None
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+# ---------------------------------------------------------------------------
+# Team / account management (System Admin + Manager)
+# ---------------------------------------------------------------------------
+
+_TEAM_ROLES = ("staff", "admin", "super_admin")
+
+
+def _roles_creatable_by(actor_role: str | None) -> set[str]:
+    """Roles an actor may grant — enforces the no-privilege-escalation rule.
+
+    System Admin can grant any back-office role; Manager can grant Front Desk
+    only (never another Manager or System Admin). Everyone else: nothing.
+    """
+    actor = (actor_role or "").strip().lower()
+    if actor == "super_admin":
+        return {"staff", "admin", "super_admin"}
+    if actor == "admin":
+        return {"staff"}
+    return set()
+
+
+def _record_user_audit(
+    *, performed_by: str | None, entity_id: str, action: str, metadata: dict[str, Any]
+) -> None:
+    """Best-effort audit row for account/role changes. Never raises."""
+    try:
+        client = get_supabase_client()
+        payload: dict[str, Any] = {
+            "performed_by_user_id": performed_by,
+            "entity_type": "user",
+            "entity_id": str(entity_id),
+            "action": action,
+            "metadata": metadata,
+        }
+        canonical = json.dumps(payload, sort_keys=True, default=str)
+        payload["data_hash"] = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+        client.table("audit_logs").insert(payload).execute()
+    except Exception:  # noqa: BLE001 - auditing must never block the action
+        pass
+
+
+def list_team_members() -> list[dict[str, Any]]:
+    """All back-office users (Front Desk, Manager, System Admin), oldest first."""
+    try:
+        client = get_supabase_client()
+        resp = (
+            client.table("users")
+            .select("user_id,name,email,role,created_at")
+            .in_("role", list(_TEAM_ROLES))
+            .order("created_at", desc=False)
+            .execute()
+        )
+        items: list[dict[str, Any]] = []
+        for row in resp.data or []:
+            items.append(
+                {
+                    "user_id": str(row.get("user_id")),
+                    "name": row.get("name"),
+                    "email": row.get("email"),
+                    "role": str(row.get("role") or "guest"),
+                    "created_at": str(row.get("created_at") or ""),
+                }
+            )
+        return items
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def create_team_member(
+    *,
+    actor_user_id: str,
+    actor_role: str | None,
+    name: str,
+    email: str,
+    role: str,
+    password: str,
+) -> dict[str, Any]:
+    """Create a back-office account via the Supabase admin API and set its role.
+
+    Enforces the grant rule server-side, so the frontend dropdown is convenience
+    only. Raises PermissionError / ValueError / RuntimeError for the route layer.
+    """
+    role = (role or "").strip().lower()
+    email = (email or "").strip().lower()
+    name = (name or "").strip()
+    if role not in _roles_creatable_by(actor_role):
+        raise PermissionError("You don't have permission to create that role.")
+    if not name:
+        raise ValueError("A name is required.")
+    if "@" not in email or "." not in email.split("@")[-1]:
+        raise ValueError("A valid email address is required.")
+    if len(password or "") < 8:
+        raise ValueError("Temporary password must be at least 8 characters.")
+    try:
+        client = get_supabase_client()
+        created = client.auth.admin.create_user(
+            {
+                "email": email,
+                "password": password,
+                "email_confirm": True,
+                "user_metadata": {"name": name},
+            }
+        )
+        user = getattr(created, "user", None)
+        new_id = getattr(user, "id", None) if user is not None else None
+        if not new_id:
+            raise RuntimeError("The account could not be created.")
+        # handle_new_user inserts a users row (role 'guest'); upsert to set the
+        # profile + granted role. Service-role context bypasses the
+        # prevent_non_admin_role_change trigger, so the role write is allowed.
+        client.table("users").upsert(
+            {"user_id": str(new_id), "name": name, "email": email, "role": role},
+            on_conflict="user_id",
+        ).execute()
+        _record_user_audit(
+            performed_by=actor_user_id,
+            entity_id=str(new_id),
+            action="create",
+            metadata={"email": email, "role": role, "by_role": (actor_role or "")},
+        )
+        return {
+            "user_id": str(new_id),
+            "name": name,
+            "email": email,
+            "role": role,
+            "created_at": "",
+        }
+    except (PermissionError, ValueError):
+        raise
+    except Exception as exc:  # noqa: BLE001
+        message = str(getattr(exc, "message", None) or exc).lower()
+        if any(token in message for token in ("already", "exists", "registered", "duplicate")):
+            raise ValueError(
+                "An account with this email already exists."
+            ) from exc
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def update_team_member_role(
+    *, actor_user_id: str, actor_role: str | None, target_user_id: str, new_role: str
+) -> dict[str, Any]:
+    """Change a team member's role, guarded by the grant rule + safety checks."""
+    new_role = (new_role or "").strip().lower()
+    creatable = _roles_creatable_by(actor_role)
+    # Allow granting a role you're permitted to grant, or demoting to 'guest'
+    # (remove back-office access). The target's *current* role must also be one
+    # you can manage, so a Manager can never touch a Manager / System Admin.
+    if new_role not in creatable and new_role != "guest":
+        raise PermissionError("You can't assign that role.")
+    if str(target_user_id) == str(actor_user_id):
+        raise ValueError("You can't change your own role.")
+    try:
+        client = get_supabase_client()
+        resp = (
+            client.table("users")
+            .select("user_id,name,email,role")
+            .eq("user_id", target_user_id)
+            .limit(1)
+            .execute()
+        )
+        rows = resp.data or []
+        if not rows:
+            raise ValueError("That account no longer exists.")
+        target = rows[0]
+        current = str(target.get("role") or "guest").lower()
+        if current not in creatable and current != "guest":
+            raise PermissionError("You can't manage that account.")
+        if current == new_role:
+            return {
+                "user_id": str(target_user_id),
+                "name": target.get("name"),
+                "email": target.get("email"),
+                "role": new_role,
+                "created_at": "",
+            }
+        # Never strand the system: keep at least one System Admin.
+        if current == "super_admin" and new_role != "super_admin":
+            count_resp = (
+                client.table("users")
+                .select("user_id", count="exact")
+                .eq("role", "super_admin")
+                .execute()
+            )
+            if int(count_resp.count or 0) <= 1:
+                raise ValueError("You can't change the last System Admin.")
+        client.table("users").update({"role": new_role}).eq(
+            "user_id", target_user_id
+        ).execute()
+        _record_user_audit(
+            performed_by=actor_user_id,
+            entity_id=str(target_user_id),
+            action="update",
+            metadata={"from": current, "to": new_role, "by_role": (actor_role or "")},
+        )
+        return {
+            "user_id": str(target_user_id),
+            "name": target.get("name"),
+            "email": target.get("email"),
+            "role": new_role,
+            "created_at": "",
+        }
+    except (PermissionError, ValueError):
+        raise
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+# ---------------------------------------------------------------------------
+# Promo codes (discounts)
+# ---------------------------------------------------------------------------
+
+
+def _parse_iso_dt(value: Any) -> datetime | None:
+    if not value:
+        return None
+    try:
+        text = str(value).replace("Z", "+00:00")
+        dt = datetime.fromisoformat(text)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _promo_row(row: dict[str, Any]) -> dict[str, Any]:
+    def num(value: Any) -> float | None:
+        try:
+            return None if value is None else float(value)
+        except Exception:  # noqa: BLE001
+            return None
+
+    def intval(value: Any) -> int | None:
+        try:
+            return None if value is None else int(value)
+        except Exception:  # noqa: BLE001
+            return None
+
+    return {
+        "promo_id": str(row.get("promo_id")),
+        "code": row.get("code") or None,
+        "description": row.get("description"),
+        "discount_type": str(row.get("discount_type") or "percent"),
+        "discount_value": num(row.get("discount_value")) or 0,
+        "max_discount": num(row.get("max_discount")),
+        "min_total": num(row.get("min_total")) or 0,
+        "starts_at": row.get("starts_at"),
+        "ends_at": row.get("ends_at"),
+        "usage_limit": intval(row.get("usage_limit")),
+        "used_count": intval(row.get("used_count")) or 0,
+        "per_user_limit": intval(row.get("per_user_limit")),
+        "applies_to": str(row.get("applies_to") or "stays"),
+        "auto_apply": bool(row.get("auto_apply")),
+        "is_active": bool(row.get("is_active")),
+        "created_at": str(row.get("created_at") or ""),
+    }
+
+
+def _compute_promo_discount(promo: dict[str, Any], total: float) -> float:
+    discount_type = str(promo.get("discount_type") or "percent")
+    value = float(promo.get("discount_value") or 0)
+    if discount_type == "percent":
+        discount = round(float(total) * value / 100.0, 2)
+        max_discount = promo.get("max_discount")
+        if max_discount is not None:
+            discount = min(discount, float(max_discount))
+    else:
+        discount = value
+    return round(min(max(discount, 0.0), float(total)), 2)
+
+
+def _promo_eligible(promo: dict[str, Any], total: float, kind: str, user_id: str | None, client) -> bool:
+    if not promo or not promo.get("is_active"):
+        return False
+    if str(promo.get("applies_to") or "stays") not in (kind, "all"):
+        return False
+    now = datetime.now(timezone.utc)
+    starts = _parse_iso_dt(promo.get("starts_at"))
+    ends = _parse_iso_dt(promo.get("ends_at"))
+    if starts and now < starts:
+        return False
+    if ends and now > ends:
+        return False
+    if float(total) < float(promo.get("min_total") or 0):
+        return False
+    usage_limit = promo.get("usage_limit")
+    if usage_limit is not None and int(promo.get("used_count") or 0) >= int(usage_limit):
+        return False
+    per_user_limit = promo.get("per_user_limit")
+    if per_user_limit is not None and user_id:
+        cnt = (
+            client.table("promo_redemptions")
+            .select("redemption_id", count="exact")
+            .eq("promo_id", promo.get("promo_id"))
+            .eq("user_id", user_id)
+            .execute()
+        )
+        if int(cnt.count or 0) >= int(per_user_limit):
+            return False
+    return True
+
+
+def validate_promo_code(
+    *, code: str, total: float, user_id: str | None = None, kind: str = "stays"
+) -> dict[str, Any]:
+    """Preview a promo against a draft total. Read-only — the authoritative discount
+    is re-applied (and redeemed) inside the reservation RPC. An empty code returns
+    the best auto-apply promo for the kind (silent if none)."""
+    norm = (code or "").strip().upper()
+    kind = (kind or "stays").strip().lower()
+    if kind not in ("stays", "tours"):
+        kind = "stays"
+
+    def invalid(message: str | None) -> dict[str, Any]:
+        return {
+            "valid": False,
+            "code": code or "",
+            "discount_type": None,
+            "discount_value": None,
+            "discount_amount": 0,
+            "new_total": round(float(total or 0), 2),
+            "message": message,
+        }
+
+    def ok(promo: dict[str, Any], discount: float) -> dict[str, Any]:
+        return {
+            "valid": True,
+            "code": str(promo.get("code") or ""),
+            "discount_type": str(promo.get("discount_type") or "percent"),
+            "discount_value": float(promo.get("discount_value") or 0),
+            "discount_amount": round(discount, 2),
+            "new_total": round(float(total) - discount, 2),
+            "message": None,
+        }
+
+    try:
+        client = get_supabase_client()
+        if not norm:
+            # Auto-apply preview: pick the best eligible auto promo for this kind.
+            resp = (
+                client.table("promo_codes")
+                .select("*")
+                .eq("is_active", True)
+                .eq("auto_apply", True)
+                .execute()
+            )
+            best: dict[str, Any] | None = None
+            best_discount = 0.0
+            for promo in resp.data or []:
+                if not _promo_eligible(promo, total, kind, user_id, client):
+                    continue
+                discount = _compute_promo_discount(promo, total)
+                if discount > best_discount:
+                    best_discount = discount
+                    best = promo
+            if best is not None and best_discount > 0:
+                return ok(best, best_discount)
+            return invalid(None)  # no auto promo — silent
+
+        resp = client.table("promo_codes").select("*").ilike("code", norm).limit(1).execute()
+        rows = [r for r in (resp.data or []) if str(r.get("code") or "").strip().upper() == norm]
+        promo = rows[0] if rows else None
+        if not promo or not promo.get("is_active"):
+            return invalid("This promo code is not valid.")
+        if str(promo.get("applies_to") or "stays") not in (kind, "all"):
+            return invalid(f"This promo code does not apply to {kind}.")
+        now = datetime.now(timezone.utc)
+        starts = _parse_iso_dt(promo.get("starts_at"))
+        ends = _parse_iso_dt(promo.get("ends_at"))
+        if starts and now < starts:
+            return invalid("This promo code is not active yet.")
+        if ends and now > ends:
+            return invalid("This promo code has expired.")
+        min_total = float(promo.get("min_total") or 0)
+        if float(total) < min_total:
+            return invalid(f"Add ₱{int(min_total)} more to use this promo (minimum spend).")
+        usage_limit = promo.get("usage_limit")
+        if usage_limit is not None and int(promo.get("used_count") or 0) >= int(usage_limit):
+            return invalid("This promo code has been fully redeemed.")
+        per_user_limit = promo.get("per_user_limit")
+        if per_user_limit is not None and user_id:
+            cnt = (
+                client.table("promo_redemptions")
+                .select("redemption_id", count="exact")
+                .eq("promo_id", promo.get("promo_id"))
+                .eq("user_id", user_id)
+                .execute()
+            )
+            if int(cnt.count or 0) >= int(per_user_limit):
+                return invalid("You have already used this promo code.")
+        return ok(promo, _compute_promo_discount(promo, total))
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def release_expired_holds(*, window_minutes: int = 120) -> list[dict[str, Any]]:
+    """Cancel pending_payment reservations older than the window (frees the held
+    unit/slot), then best-effort notify each guest. Returns the released rows."""
+    try:
+        client = get_supabase_client()
+        resp = client.rpc(
+            "release_expired_holds", {"p_window_minutes": int(window_minutes)}
+        ).execute()
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+    # Phrase the window the way a guest reads it ("2 hours", "90 minutes").
+    if window_minutes % 60 == 0:
+        _hrs = window_minutes // 60
+        window_phrase = f"{_hrs} hour" + ("s" if _hrs != 1 else "")
+    else:
+        window_phrase = f"{window_minutes} minutes"
+
+    def _fmt_deadline(raw: Any) -> str | None:
+        # Render the true hold-expiry moment in PH local time (UTC+8, no DST), so
+        # the message reflects WHEN the hold lapsed regardless of when this job ran.
+        if not raw:
+            return None
+        try:
+            parsed = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=timezone.utc)
+            local = parsed.astimezone(timezone(timedelta(hours=8)))
+            return local.strftime("%b %d, %Y at %I:%M %p")
+        except Exception:  # noqa: BLE001
+            return None
+
+    released: list[dict[str, Any]] = []
+    for row in resp.data or []:
+        reservation_id = str(row.get("reservation_id") or "")
+        guest_user_id = row.get("guest_user_id")
+        reservation_code = str(row.get("reservation_code") or "")
+        hold_expired_at = row.get("hold_expired_at")
+        if not reservation_id:
+            continue
+        released.append(
+            {
+                "reservation_id": reservation_id,
+                "reservation_code": reservation_code,
+                "guest_user_id": str(guest_user_id) if guest_user_id else None,
+                "hold_expired_at": hold_expired_at,
+            }
+        )
+        if guest_user_id:
+            deadline_str = _fmt_deadline(hold_expired_at)
+            if deadline_str:
+                body = (
+                    f"Reservation {reservation_code} was released because the deposit "
+                    f"wasn't completed within {window_phrase} of booking "
+                    f"(deadline {deadline_str}). You're welcome to book again anytime."
+                )
+            else:
+                body = (
+                    f"Reservation {reservation_code} was released because the deposit "
+                    f"wasn't completed within {window_phrase} of booking. "
+                    "You're welcome to book again anytime."
+                )
+            emit_notification(
+                recipient_user_id=str(guest_user_id),
+                category="reservation",
+                event_type="reservation.released",
+                title="Booking released",
+                body=body,
+                severity="warning",
+                entity_type="reservation",
+                entity_id=reservation_id,
+                link="/my-bookings",
+                metadata=(
+                    {"hold_expired_at": str(hold_expired_at)} if hold_expired_at else None
+                ),
+                dedupe_key=f"released:{reservation_id}",
+            )
+    return released
+
+
+def mark_expired_no_shows(*, grace_days: int = 1) -> list[dict[str, Any]]:
+    """Flag confirmed bookings past their check-out date as no_show (deposit
+    forfeited), then best-effort notify each guest. Returns the flagged rows."""
+    try:
+        client = get_supabase_client()
+        resp = client.rpc(
+            "mark_expired_no_shows", {"p_grace_days": int(grace_days)}
+        ).execute()
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+    flagged: list[dict[str, Any]] = []
+    for row in resp.data or []:
+        reservation_id = str(row.get("reservation_id") or "")
+        guest_user_id = row.get("guest_user_id")
+        reservation_code = str(row.get("reservation_code") or "")
+        if not reservation_id:
+            continue
+        flagged.append(
+            {
+                "reservation_id": reservation_id,
+                "reservation_code": reservation_code,
+                "guest_user_id": str(guest_user_id) if guest_user_id else None,
+            }
+        )
+        if guest_user_id:
+            emit_notification(
+                recipient_user_id=str(guest_user_id),
+                category="reservation",
+                event_type="reservation.no_show",
+                title="Marked as no-show",
+                body=(
+                    f"Reservation {reservation_code} was marked as a no-show since "
+                    "there was no check-in by the end of the stay. The deposit is "
+                    "non-refundable per the booking policy."
+                ),
+                severity="warning",
+                entity_type="reservation",
+                entity_id=reservation_id,
+                link="/my-bookings",
+                dedupe_key=f"no_show:{reservation_id}",
+            )
+        emit_notification_to_roles(
+            min_role="staff",
+            category="reservation",
+            event_type="ops.no_show",
+            title="Guest no-show",
+            body=(
+                f"{reservation_code} was auto-marked a no-show (no check-in by "
+                "checkout). Deposit forfeited; the unit/slot is now free."
+            ),
+            severity="warning",
+            entity_type="reservation",
+            entity_id=reservation_id,
+            link="/admin/reservations",
+            dedupe_prefix=f"ops_no_show:{reservation_id}",
+        )
+    return flagged
+
+
+def cascade_service_bookings_no_show(*, reservation_id: str) -> None:
+    """Best-effort: mark a reservation's non-terminal service bookings as no_show."""
+    try:
+        client = get_supabase_client()
+        client.table("service_bookings").update({"status": "no_show"}).eq(
+            "reservation_id", reservation_id
+        ).not_.in_("status", ["cancelled", "no_show", "checked_in", "checked_out"]).execute()
+    except Exception:  # noqa: BLE001 - cascade must never break the status change
+        pass
+
+
+def list_promos() -> list[dict[str, Any]]:
+    try:
+        client = get_supabase_client()
+        resp = (
+            client.table("promo_codes")
+            .select("*")
+            .order("created_at", desc=True)
+            .execute()
+        )
+        return [_promo_row(r) for r in (resp.data or [])]
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def create_promo(*, actor_user_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    code = str(payload.get("code") or "").strip()
+    auto_apply = bool(payload.get("auto_apply", False))
+    discount_type = str(payload.get("discount_type") or "").strip().lower()
+    if not code and not auto_apply:
+        raise ValueError("A promo code is required (or mark it as auto-apply).")
+    if discount_type not in ("percent", "fixed"):
+        raise ValueError("Discount type must be percent or fixed.")
+    try:
+        value = float(payload.get("discount_value"))
+    except Exception as exc:  # noqa: BLE001
+        raise ValueError("Discount value must be a number.") from exc
+    if value <= 0:
+        raise ValueError("Discount value must be greater than zero.")
+    if discount_type == "percent" and value > 100:
+        raise ValueError("A percentage discount can't exceed 100%.")
+
+    record = {
+        "code": code or None,
+        "description": payload.get("description"),
+        "discount_type": discount_type,
+        "discount_value": value,
+        "max_discount": payload.get("max_discount"),
+        "min_total": float(payload.get("min_total") or 0),
+        "starts_at": payload.get("starts_at"),
+        "ends_at": payload.get("ends_at"),
+        "usage_limit": payload.get("usage_limit"),
+        "per_user_limit": payload.get("per_user_limit"),
+        "applies_to": str(payload.get("applies_to") or "stays"),
+        "auto_apply": auto_apply,
+        "is_active": bool(payload.get("is_active", True)),
+        "created_by": actor_user_id,
+    }
+    try:
+        client = get_supabase_client()
+        resp = client.table("promo_codes").insert(record).execute()
+        rows = resp.data or []
+        if not rows:
+            raise RuntimeError("The promo could not be created.")
+        return _promo_row(rows[0])
+    except (PermissionError, ValueError):
+        raise
+    except Exception as exc:  # noqa: BLE001
+        message = str(getattr(exc, "message", None) or exc).lower()
+        if any(token in message for token in ("duplicate", "unique", "already")):
+            raise ValueError("A promo with this code already exists.") from exc
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def update_promo(*, promo_id: str, patch: dict[str, Any]) -> dict[str, Any]:
+    allowed = {
+        "description",
+        "discount_type",
+        "discount_value",
+        "max_discount",
+        "min_total",
+        "starts_at",
+        "ends_at",
+        "usage_limit",
+        "per_user_limit",
+        "applies_to",
+        "auto_apply",
+        "is_active",
+    }
+    update = {k: v for k, v in patch.items() if k in allowed and v is not None}
+    if "is_active" in patch:
+        update["is_active"] = bool(patch["is_active"])
+    if "auto_apply" in patch and patch["auto_apply"] is not None:
+        update["auto_apply"] = bool(patch["auto_apply"])
+    if not update:
+        raise ValueError("Nothing to update.")
+    update["updated_at"] = datetime.now(timezone.utc).isoformat()
+    try:
+        client = get_supabase_client()
+        client.table("promo_codes").update(update).eq("promo_id", promo_id).execute()
+        resp = client.table("promo_codes").select("*").eq("promo_id", promo_id).limit(1).execute()
+        rows = resp.data or []
+        if not rows:
+            raise ValueError("That promo no longer exists.")
+        return _promo_row(rows[0])
+    except (PermissionError, ValueError):
+        raise
     except Exception as exc:  # noqa: BLE001
         raise _runtime_error_from_exception(exc) from exc

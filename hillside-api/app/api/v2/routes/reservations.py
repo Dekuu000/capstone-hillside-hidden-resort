@@ -28,6 +28,9 @@ from app.integrations.supabase_client import (
     create_tour_reservation_atomic as create_tour_reservation_atomic_rpc,
     create_reservation_atomic as create_reservation_atomic_rpc,
     update_reservation_status as update_reservation_status_rpc,
+    cascade_service_bookings_no_show,
+    emit_notification,
+    emit_notification_to_roles,
     get_active_service_by_id as get_active_service_by_id_rpc,
     get_available_units as get_available_units_rpc,
     cancel_reservation as cancel_reservation_rpc,
@@ -522,6 +525,49 @@ def _apply_cancellation_side_effects(
     return decision
 
 
+def _apply_no_show_side_effects(*, reservation_id: str, reservation_row: dict) -> None:
+    """Manual no-show (admin): forfeit the deposit + cascade to service bookings,
+    then notify the guest and the back office. Status is already set by the caller."""
+    _apply_cancellation_policy_metadata(
+        reservation_id=reservation_id,
+        actor="admin",
+        outcome="forfeited",
+        rule_applied=_resolve_reservation_policy_rule(reservation_row),
+    )
+    cascade_service_bookings_no_show(reservation_id=reservation_id)
+
+    code = str(reservation_row.get("reservation_code") or "")
+    guest_id = reservation_row.get("guest_user_id")
+    if guest_id:
+        emit_notification(
+            recipient_user_id=str(guest_id),
+            category="reservation",
+            event_type="reservation.no_show",
+            title="Marked as no-show",
+            body=(
+                f"Reservation {code} was marked as a no-show. The deposit is "
+                "non-refundable per the booking policy."
+            ),
+            severity="warning",
+            entity_type="reservation",
+            entity_id=reservation_id,
+            link="/my-bookings",
+            dedupe_key=f"no_show:{reservation_id}",
+        )
+    emit_notification_to_roles(
+        min_role="staff",
+        category="reservation",
+        event_type="ops.no_show",
+        title="Guest no-show",
+        body=f"{code} was marked a no-show by staff. Deposit forfeited; the unit/slot is now free.",
+        severity="warning",
+        entity_type="reservation",
+        entity_id=reservation_id,
+        link="/admin/reservations",
+        dedupe_prefix=f"ops_no_show:{reservation_id}",
+    )
+
+
 def _build_cancel_response(
     *,
     reservation_id: str,
@@ -803,6 +849,7 @@ def create_reservation(
             total_amount=total_amount,
             guest_count=payload.guest_count,
             notes=None,
+            promo_code=payload.promo_code,
         )
     except RuntimeError as exc:
         raise_http_from_runtime_error(exc, default_status=status.HTTP_400_BAD_REQUEST)
@@ -888,6 +935,7 @@ def create_tour_reservation(
             is_advance=payload.is_advance,
             expected_pay_now=payload.expected_pay_now,
             notes=payload.notes,
+            promo_code=payload.promo_code,
         )
     except RuntimeError as exc:
         raise_http_from_runtime_error(exc, default_status=status.HTTP_400_BAD_REQUEST)
@@ -973,6 +1021,7 @@ def create_walk_in_stay_reservation(
             total_amount=total_amount,
             expected_pay_now=payload.expected_pay_now,
             notes=notes,
+            promo_code=payload.promo_code,
         )
     except RuntimeError as exc:
         raise_http_from_runtime_error(exc, default_status=status.HTTP_400_BAD_REQUEST)
@@ -1100,6 +1149,8 @@ def patch_reservation_status(
             reservation_row=current,
             actor_role="admin",
         )
+    elif payload.status == BookingStatus.NO_SHOW:
+        _apply_no_show_side_effects(reservation_id=reservation_id, reservation_row=current)
 
     return {"ok": True, "reservation": updated}
 

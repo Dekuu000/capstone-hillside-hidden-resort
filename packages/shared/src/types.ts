@@ -60,13 +60,34 @@ const TIER_MIN_ROLE: Record<NavTier, Role> = {
 export function canAccessTier(role: string | null | undefined, tier: NavTier): boolean {
   return roleAtLeast(role, TIER_MIN_ROLE[tier]);
 }
-export const RESERVATION_CANCELLATION_ACTORS = ["guest", "admin"] as const;
+
+/**
+ * Which roles an actor may grant when creating or editing a team member.
+ * Enforces the no-privilege-escalation rule (also enforced server-side):
+ * System Admin can grant any back-office role; Manager can grant Front Desk
+ * only. This is the single source of truth for the "Team" admin UI.
+ */
+export function rolesCreatableBy(role: string | null | undefined): Role[] {
+  const actor = normalizeRole(role);
+  if (actor === "super_admin") return ["staff", "admin", "super_admin"];
+  if (actor === "admin") return ["staff"];
+  return [];
+}
+
+/** Can this actor open/manage the Team (account management) area at all? */
+export function canManageTeam(role: string | null | undefined): boolean {
+  return rolesCreatableBy(role).length > 0;
+}
+export const RESERVATION_CANCELLATION_ACTORS = ["guest", "admin", "system"] as const;
 export const RESERVATION_POLICY_OUTCOMES = ["released", "refunded", "forfeited"] as const;
 export type ReservationCancellationActor = (typeof RESERVATION_CANCELLATION_ACTORS)[number];
 export type ReservationPolicyOutcome = (typeof RESERVATION_POLICY_OUTCOMES)[number];
 export const STAY_DEPOSIT_RATE = 0.2;
 export const STAY_DEPOSIT_MIN = 500;
-export const STAY_DEPOSIT_MAX = 1000;
+// Cap on the stay deposit. Raised from 1000 so large / many-guest bookings
+// deposit proportionally (20% of total). Keep in sync with the DB function in
+// supabase/migrations/20260622003_raise_stay_deposit_cap.sql.
+export const STAY_DEPOSIT_MAX = 5000;
 
 export function computeStayDepositPreview(totalAmount: number): number {
   if (!Number.isFinite(totalAmount) || totalAmount <= 0) return 0;
@@ -326,6 +347,9 @@ export type ReservationListItem = ReservationPaymentPolicyMetadata & {
   check_in_date: string;
   check_out_date: string;
   total_amount: number;
+  original_total?: number | null;
+  discount_amount?: number | null;
+  promo_code?: string | null;
   amount_paid_verified?: number | null;
   balance_due?: number | null;
   guest_count?: number | null;
@@ -581,6 +605,7 @@ export type ReportSummary = {
   occupancy_rate: number;
   unit_booked_value: number;
   tour_booked_value: number;
+  promo_discounts: number;
 };
 
 export type ReportDailyItem = {
@@ -591,6 +616,7 @@ export type ReportDailyItem = {
   occupancy_rate: number;
   unit_booked_value: number;
   tour_booked_value: number;
+  promo_discounts: number;
 };
 
 export type ReportMonthlyItem = {
@@ -601,6 +627,7 @@ export type ReportMonthlyItem = {
   occupancy_rate: number;
   unit_booked_value: number;
   tour_booked_value: number;
+  promo_discounts: number;
 };
 
 export type ReportsOverviewResponse = {
@@ -1216,4 +1243,99 @@ export type AdminReviewItem = {
 
 export type AdminReviewsResponse = {
   items: AdminReviewItem[];
+};
+
+// ── Team / account management ────────────────────────────────────────
+export type TeamMember = {
+  user_id: string;
+  name?: string | null;
+  email?: string | null;
+  role: Role;
+  created_at?: string | null;
+};
+
+export type TeamListResponse = {
+  items: TeamMember[];
+};
+
+export type CreateTeamMemberRequest = {
+  name: string;
+  email: string;
+  role: Role;
+  password: string;
+};
+
+export type UpdateTeamMemberRoleRequest = {
+  role: Role;
+};
+
+// ── Promo codes (discounts) ──────────────────────────────────────────
+export type PromoDiscountType = "percent" | "fixed";
+export type PromoAppliesTo = "stays" | "tours" | "all";
+
+/** Result of validating a promo code against a draft total (preview). */
+export type PromoValidationResult = {
+  valid: boolean;
+  code: string;
+  discount_type?: PromoDiscountType | null;
+  discount_value?: number | null;
+  /** Peso discount computed for the submitted total. */
+  discount_amount: number;
+  /** Total after the discount. */
+  new_total: number;
+  /** Reason when not valid (guest-facing). */
+  message?: string | null;
+};
+
+export type PromoCode = {
+  promo_id: string;
+  code?: string | null;
+  description?: string | null;
+  discount_type: PromoDiscountType;
+  discount_value: number;
+  max_discount?: number | null;
+  min_total: number;
+  starts_at?: string | null;
+  ends_at?: string | null;
+  usage_limit?: number | null;
+  used_count: number;
+  per_user_limit?: number | null;
+  applies_to: PromoAppliesTo;
+  auto_apply: boolean;
+  is_active: boolean;
+  created_at?: string | null;
+};
+
+export type PromoListResponse = {
+  items: PromoCode[];
+};
+
+export type CreatePromoRequest = {
+  code?: string | null;
+  description?: string | null;
+  discount_type: PromoDiscountType;
+  discount_value: number;
+  max_discount?: number | null;
+  min_total?: number;
+  starts_at?: string | null;
+  ends_at?: string | null;
+  usage_limit?: number | null;
+  per_user_limit?: number | null;
+  applies_to?: PromoAppliesTo;
+  auto_apply?: boolean;
+  is_active?: boolean;
+};
+
+export type UpdatePromoRequest = {
+  description?: string | null;
+  discount_type?: PromoDiscountType;
+  discount_value?: number;
+  max_discount?: number | null;
+  min_total?: number;
+  starts_at?: string | null;
+  ends_at?: string | null;
+  usage_limit?: number | null;
+  per_user_limit?: number | null;
+  applies_to?: PromoAppliesTo;
+  is_active?: boolean;
 };

@@ -87,6 +87,7 @@ def get_reports_overview(
             "occupancy_rate": _to_float(summary_row.get("occupancy_rate")),
             "unit_booked_value": _to_float(summary_row.get("unit_booked_value")),
             "tour_booked_value": _to_float(summary_row.get("tour_booked_value")),
+            "promo_discounts": _to_float(summary_row.get("promo_discounts")),
         },
         "daily": [
             {
@@ -97,6 +98,7 @@ def get_reports_overview(
                 "occupancy_rate": _to_float(row.get("occupancy_rate")),
                 "unit_booked_value": _to_float(row.get("unit_booked_value")),
                 "tour_booked_value": _to_float(row.get("tour_booked_value")),
+                "promo_discounts": _to_float(row.get("promo_discounts")),
             }
             for row in (daily_rows or [])
         ],
@@ -109,6 +111,7 @@ def get_reports_overview(
                 "occupancy_rate": _to_float(row.get("occupancy_rate")),
                 "unit_booked_value": _to_float(row.get("unit_booked_value")),
                 "tour_booked_value": _to_float(row.get("tour_booked_value")),
+                "promo_discounts": _to_float(row.get("promo_discounts")),
             }
             for row in (monthly_rows or [])
         ],

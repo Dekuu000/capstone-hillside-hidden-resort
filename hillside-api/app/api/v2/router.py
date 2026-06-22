@@ -14,11 +14,13 @@ from app.api.v2.routes import (
     notifications,
     operations,
     payments,
+    promos,
     qr,
     reports,
     reservations,
     reviews,
     sync,
+    team,
     units,
 )
 
@@ -41,4 +43,7 @@ router.include_router(escrow.router, prefix="/escrow", tags=["escrow"])
 router.include_router(nft.router, prefix="/nft", tags=["nft"])
 router.include_router(guest_services.router, prefix="/guest/services", tags=["guest-services"])
 router.include_router(admin_services.router, prefix="/admin/services", tags=["admin-services"])
+router.include_router(team.router, prefix="/admin/team", tags=["team"])
+router.include_router(promos.router, prefix="/promos", tags=["promos"])
+router.include_router(promos.admin_router, prefix="/admin/promos", tags=["admin-promos"])
 router.include_router(sync.router, tags=["sync"])

@@ -284,6 +284,9 @@ export const reservationListItemSchema = z.object({
   check_in_date: z.string().min(1),
   check_out_date: z.string().min(1),
   total_amount: z.number(),
+  original_total: z.number().optional().nullable(),
+  discount_amount: z.number().optional().nullable(),
+  promo_code: z.string().optional().nullable(),
   amount_paid_verified: z.number().optional().nullable(),
   balance_due: z.number().optional().nullable(),
   ...reservationPaymentPolicyMetadataShape,
@@ -541,6 +544,7 @@ export const reportSummarySchema = z.object({
   occupancy_rate: z.number(),
   unit_booked_value: z.number(),
   tour_booked_value: z.number(),
+  promo_discounts: z.number().optional().default(0),
 });
 
 export const reportDailyItemSchema = z.object({
@@ -551,6 +555,7 @@ export const reportDailyItemSchema = z.object({
   occupancy_rate: z.number(),
   unit_booked_value: z.number(),
   tour_booked_value: z.number(),
+  promo_discounts: z.number().optional().default(0),
 });
 
 export const reportMonthlyItemSchema = z.object({
@@ -561,6 +566,7 @@ export const reportMonthlyItemSchema = z.object({
   occupancy_rate: z.number(),
   unit_booked_value: z.number(),
   tour_booked_value: z.number(),
+  promo_discounts: z.number().optional().default(0),
 });
 
 export const reportsOverviewResponseSchema = z.object({
@@ -1158,4 +1164,54 @@ export const adminReviewItemSchema = z.object({
 
 export const adminReviewsResponseSchema = z.object({
   items: z.array(adminReviewItemSchema),
+});
+
+// ── Team / account management ────────────────────────────────────────
+export const teamMemberSchema = z.object({
+  user_id: z.string().min(1),
+  name: z.string().optional().nullable(),
+  email: z.string().optional().nullable(),
+  role: roleSchema,
+  created_at: z.string().optional().nullable(),
+});
+
+export const teamListResponseSchema = z.object({
+  items: z.array(teamMemberSchema),
+});
+
+// ── Promo codes ──────────────────────────────────────────────────────
+export const promoDiscountTypeSchema = z.enum(["percent", "fixed"]);
+export const promoAppliesToSchema = z.enum(["stays", "tours", "all"]);
+
+export const promoValidationResultSchema = z.object({
+  valid: z.boolean(),
+  code: z.string(),
+  discount_type: promoDiscountTypeSchema.optional().nullable(),
+  discount_value: z.number().optional().nullable(),
+  discount_amount: z.number(),
+  new_total: z.number(),
+  message: z.string().optional().nullable(),
+});
+
+export const promoCodeSchema = z.object({
+  promo_id: z.string().min(1),
+  code: z.string().optional().nullable(),
+  description: z.string().optional().nullable(),
+  discount_type: promoDiscountTypeSchema,
+  discount_value: z.number(),
+  max_discount: z.number().optional().nullable(),
+  min_total: z.number(),
+  starts_at: z.string().optional().nullable(),
+  ends_at: z.string().optional().nullable(),
+  usage_limit: z.number().int().optional().nullable(),
+  used_count: z.number().int(),
+  per_user_limit: z.number().int().optional().nullable(),
+  applies_to: promoAppliesToSchema,
+  auto_apply: z.boolean(),
+  is_active: z.boolean(),
+  created_at: z.string().optional().nullable(),
+});
+
+export const promoListResponseSchema = z.object({
+  items: z.array(promoCodeSchema),
 });

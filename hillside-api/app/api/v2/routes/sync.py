@@ -149,6 +149,7 @@ def _apply_reservation_create(op: OfflineOperation, auth: AuthContext) -> tuple[
     raw_notes = str(payload.get("notes") or "").strip() or None
     expected_pay_now_raw = payload.get("expected_pay_now")
     expected_pay_now = float(expected_pay_now_raw) if expected_pay_now_raw is not None else None
+    promo_code = payload.get("promo_code") or None
     notes = raw_notes
     if is_walk_in:
         notes_parts = [
@@ -196,6 +197,7 @@ def _apply_reservation_create(op: OfflineOperation, auth: AuthContext) -> tuple[
         guest_count=guest_count,
         expected_pay_now=expected_pay_now,
         notes=notes,
+        promo_code=promo_code,
     )
     reservation_id = str(created.get("reservation_id") or "")
     if reservation_id:
@@ -222,6 +224,7 @@ def _apply_tour_reservation_create(op: OfflineOperation, auth: AuthContext) -> t
     notes = str(payload.get("notes") or "").strip() or None
     expected_pay_now_raw = payload.get("expected_pay_now")
     expected_pay_now = float(expected_pay_now_raw) if expected_pay_now_raw is not None else None
+    tour_promo_code = payload.get("promo_code") or None
 
     service = get_active_service_by_id_rpc(service_id)
     if not service:
@@ -237,6 +240,7 @@ def _apply_tour_reservation_create(op: OfflineOperation, auth: AuthContext) -> t
         is_advance=is_advance,
         expected_pay_now=expected_pay_now,
         notes=notes,
+        promo_code=tour_promo_code,
     )
     reservation_id = str(created.get("reservation_id") or "")
     source_value = "walk_in" if role_at_least(auth.role, "staff") and not is_advance else "online"

@@ -18,11 +18,15 @@ from app.observability.escrow_reconciliation_monitor import (
     escrow_reconciliation_scheduler_loop,
     get_escrow_reconciliation_monitor_snapshot,
 )
+from app.observability.no_show_scheduler import auto_no_show_loop
+from app.observability.release_holds_scheduler import release_expired_holds_loop
 from app.observability.upcoming_stay_scheduler import upcoming_stay_reminder_loop
 
 logger = logging.getLogger(__name__)
 _escrow_reconciliation_task: asyncio.Task | None = None
 _upcoming_stay_reminder_task: asyncio.Task | None = None
+_release_holds_task: asyncio.Task | None = None
+_no_show_task: asyncio.Task | None = None
 
 
 async def _start_escrow_reconciliation_scheduler() -> None:
@@ -65,13 +69,57 @@ async def _stop_upcoming_stay_reminder_scheduler() -> None:
     _upcoming_stay_reminder_task = None
 
 
+async def _start_release_holds_scheduler() -> None:
+    global _release_holds_task
+    if settings.feature_release_expired_holds and _release_holds_task is None:
+        _release_holds_task = asyncio.create_task(release_expired_holds_loop())
+        logger.info("Started expired-hold release scheduler task.")
+
+
+async def _stop_release_holds_scheduler() -> None:
+    global _release_holds_task
+    task = _release_holds_task
+    if task is None:
+        return
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
+    _release_holds_task = None
+
+
+async def _start_no_show_scheduler() -> None:
+    global _no_show_task
+    if settings.feature_auto_no_show and _no_show_task is None:
+        _no_show_task = asyncio.create_task(auto_no_show_loop())
+        logger.info("Started auto no-show scheduler task.")
+
+
+async def _stop_no_show_scheduler() -> None:
+    global _no_show_task
+    task = _no_show_task
+    if task is None:
+        return
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
+    _no_show_task = None
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     await _start_escrow_reconciliation_scheduler()
     await _start_upcoming_stay_reminder_scheduler()
+    await _start_release_holds_scheduler()
+    await _start_no_show_scheduler()
     try:
         yield
     finally:
+        await _stop_no_show_scheduler()
+        await _stop_release_holds_scheduler()
         await _stop_upcoming_stay_reminder_scheduler()
         await _stop_escrow_reconciliation_scheduler()
 
