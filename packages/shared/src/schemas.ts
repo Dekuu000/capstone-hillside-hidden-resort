@@ -226,6 +226,17 @@ export const pricingApplyResponseSchema = z.object({
   logged: z.boolean(),
   reservation_id: z.string().optional().nullable(),
   applied_at: z.string(),
+  applied_units: z
+    .array(
+      z.object({
+        unit_id: z.string(),
+        name: z.string().optional().nullable(),
+        previous_price: z.number(),
+        new_price: z.number(),
+      }),
+    )
+    .optional()
+    .default([]),
 });
 
 export const myBookingsTabSchema = z.enum(MY_BOOKINGS_TABS);
@@ -631,6 +642,21 @@ export const resortSnapshotResponseSchema = z.object({
   occupancy: resortSnapshotOccupancySchema,
   revenue: resortSnapshotRevenueSchema,
   ai_demand_7d: resortSnapshotAiDemandSchema,
+});
+
+export const operationsSnapshotResponseSchema = z.object({
+  as_of: z.string().min(1),
+  rooms: z.object({
+    cleaned: z.number().int().nonnegative(),
+    occupied: z.number().int().nonnegative(),
+    maintenance: z.number().int().nonnegative(),
+    dirty: z.number().int().nonnegative(),
+    total: z.number().int().nonnegative(),
+  }),
+  today_arrivals: z.number().int().nonnegative(),
+  ready_for_check_in: z.number().int().nonnegative(),
+  pending_payment: z.number().int().nonnegative(),
+  walk_ins_today: z.number().int().nonnegative(),
 });
 
 export const qrVerifyResponseSchema = z.object({

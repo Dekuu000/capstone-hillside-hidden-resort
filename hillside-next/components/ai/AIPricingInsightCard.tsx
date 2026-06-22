@@ -15,6 +15,12 @@ function getSource(recommendation: PricingRecommendation | null) {
   return lowered.some((item) => item.includes("fallback")) ? "fallback" : "live";
 }
 
+function confidenceLabel(confidence: number): string {
+  if (confidence >= 0.75) return "High";
+  if (confidence >= 0.5) return "Medium";
+  return "Low";
+}
+
 function extractModelVersion(recommendation: PricingRecommendation | null): string | null {
   if (!recommendation) return null;
   for (const item of recommendation.explanations) {
@@ -55,13 +61,11 @@ export function AIPricingInsightCard({
         </h3>
         <div className="flex items-center gap-2">
           {recommendation ? (
-            <Badge
-              label={getSource(recommendation) === "fallback" ? "fallback" : "live"}
-              variant={getSource(recommendation) === "fallback" ? "warn" : "info"}
-            />
-          ) : null}
-          {recommendation && extractModelVersion(recommendation) ? (
-            <Badge label={extractModelVersion(recommendation) as string} variant="neutral" />
+            getSource(recommendation) === "fallback" ? (
+              <Badge label="Estimated · AI offline" variant="warn" />
+            ) : (
+              <Badge label="Live AI" variant="success" />
+            )
           ) : null}
           {showViewLink ? (
             <Link href="/admin/ai" className="text-xs font-semibold text-[var(--color-primary)] underline-offset-2 hover:underline">
@@ -97,7 +101,10 @@ export function AIPricingInsightCard({
               </strong>
             </p>
             <p className="text-sm text-[var(--color-text)]">
-              Confidence: <strong>{Math.round(Number(recommendation.confidence) * 100)}%</strong>
+              Confidence:{" "}
+              <strong>
+                {confidenceLabel(Number(recommendation.confidence))} ({Math.round(Number(recommendation.confidence) * 100)}%)
+              </strong>
             </p>
             {recommendation.suggested_multiplier != null ? (
               <p className="text-sm text-[var(--color-text)]">
@@ -125,8 +132,21 @@ export function AIPricingInsightCard({
             </div>
           ) : null}
 
-          {recommendation.signal_breakdown && recommendation.signal_breakdown.length > 0 ? (
-            <div className="mt-3 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
+          {(recommendation.signal_breakdown && recommendation.signal_breakdown.length > 0) ||
+          recommendation.confidence_breakdown ||
+          extractModelVersion(recommendation) ? (
+            <details className="mt-3 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-slate-50/60 p-3">
+              <summary className="cursor-pointer select-none text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">
+                Technical details
+              </summary>
+              <div className="mt-3 space-y-3">
+                {extractModelVersion(recommendation) ? (
+                  <p className="text-xs text-[var(--color-muted)]">
+                    Model: <strong className="text-[var(--color-text)]">{extractModelVersion(recommendation)}</strong>
+                  </p>
+                ) : null}
+                {recommendation.signal_breakdown && recommendation.signal_breakdown.length > 0 ? (
+            <div className="rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">
                 Signal Breakdown (Full)
               </p>
@@ -175,13 +195,16 @@ export function AIPricingInsightCard({
             </div>
           ) : null}
 
-          {recommendation.confidence_breakdown ? (
-            <div className="mt-3 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-slate-50 p-3 text-xs text-[var(--color-muted)]">
-              Confidence calc: fit {Math.round((recommendation.confidence_breakdown.model_fit_score ?? 0) * 100)}%
-              , raw {Math.round((recommendation.confidence_breakdown.raw_confidence ?? 0) * 100)}%
-              , penalty {Math.round((recommendation.confidence_breakdown.zero_adjustment_penalty ?? 0) * 100)}%
-              , final <span className="font-semibold text-[var(--color-text)]">{Math.round((recommendation.confidence_breakdown.final_confidence ?? recommendation.confidence) * 100)}%</span>.
-            </div>
+                {recommendation.confidence_breakdown ? (
+                  <div className="rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-white p-3 text-xs text-[var(--color-muted)]">
+                    Confidence calc: fit {Math.round((recommendation.confidence_breakdown.model_fit_score ?? 0) * 100)}%
+                    , raw {Math.round((recommendation.confidence_breakdown.raw_confidence ?? 0) * 100)}%
+                    , penalty {Math.round((recommendation.confidence_breakdown.zero_adjustment_penalty ?? 0) * 100)}%
+                    , final <span className="font-semibold text-[var(--color-text)]">{Math.round((recommendation.confidence_breakdown.final_confidence ?? recommendation.confidence) * 100)}%</span>.
+                  </div>
+                ) : null}
+              </div>
+            </details>
           ) : null}
         </>
       ) : null}

@@ -1,6 +1,7 @@
 import { roleAtLeast, type ContractStatusResponse, type UnitItem } from "../../../packages/shared/src/types";
-import { contractStatusResponseSchema, resortSnapshotResponseSchema, unitListResponseSchema } from "../../../packages/shared/src/schemas";
+import { contractStatusResponseSchema, operationsSnapshotResponseSchema, resortSnapshotResponseSchema, unitListResponseSchema } from "../../../packages/shared/src/schemas";
 import { GuestVerificationPanel } from "../../components/admin-dashboard/GuestVerificationPanel";
+import { StaffOperationsDashboard } from "../../components/admin-dashboard/StaffOperationsDashboard";
 import { LedgerExplorerPanel } from "../../components/admin-dashboard/LedgerExplorerPanel";
 import { ResourceHeatmapPanel } from "../../components/admin-dashboard/ResourceHeatmapPanel";
 import { ResortSnapshotPanel } from "../../components/admin-dashboard/ResortSnapshotPanel";
@@ -13,6 +14,25 @@ import { getServerAccessToken, getServerAuthContext } from "../../lib/serverAuth
 export default async function AdminShellPage() {
   const token = await getServerAccessToken();
   const auth = token ? await getServerAuthContext(token) : null;
+
+  // Front Desk (staff) gets an operations-only cockpit — no revenue/crypto/AI,
+  // and it never calls the admin-only snapshot endpoints.
+  const isManagerPlus = roleAtLeast(auth?.role, "admin");
+  if (token && auth && !isManagerPlus) {
+    const ops = await fetchServerApiData({
+      accessToken: token,
+      path: "/v2/dashboard/operations",
+      schema: operationsSnapshotResponseSchema,
+      revalidate: 30,
+    });
+    return (
+      <StaffOperationsDashboard
+        snapshot={ops}
+        error={ops ? null : "Unable to load today's operations. Please refresh or check API connectivity."}
+      />
+    );
+  }
+
   // The on-chain ledger is a System Admin (technical) tool — hide it from Managers/Front Desk.
   const canSeeLedger = roleAtLeast(auth?.role, "super_admin");
 
@@ -71,7 +91,7 @@ export default async function AdminShellPage() {
       />
 
       <div className="grid gap-5 [&>*]:min-w-0 xl:grid-cols-[1.45fr_1fr] 2xl:grid-cols-[1.55fr_1fr]">
-        <ResortSnapshotPanel snapshot={snapshot} error={snapshotError} />
+        <ResortSnapshotPanel snapshot={snapshot} error={snapshotError} canSeeTechnical={canSeeLedger} />
         <GuestVerificationPanel />
       </div>
 

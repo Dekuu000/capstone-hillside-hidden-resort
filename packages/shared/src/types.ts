@@ -282,6 +282,12 @@ export type PricingApplyResponse = {
   logged: boolean;
   reservation_id?: string | null;
   applied_at: string;
+  applied_units: Array<{
+    unit_id: string;
+    name?: string | null;
+    previous_price: number;
+    new_price: number;
+  }>;
 };
 
 export type GuestMapAmenityKind = "trail" | "facility";
@@ -692,6 +698,21 @@ export type ResortSnapshotResponse = {
   occupancy: ResortSnapshotOccupancy;
   revenue: ResortSnapshotRevenue;
   ai_demand_7d: ResortSnapshotAiDemand;
+};
+
+export type OperationsSnapshotResponse = {
+  as_of: string;
+  rooms: {
+    cleaned: number;
+    occupied: number;
+    maintenance: number;
+    dirty: number;
+    total: number;
+  };
+  today_arrivals: number;
+  ready_for_check_in: number;
+  pending_payment: number;
+  walk_ins_today: number;
 };
 
 export type QrVerifyResponse = {

@@ -155,6 +155,17 @@ class PricingApplyRequest(BaseModel):
     confidence: float | None = Field(default=None, ge=0.0, le=1.0)
     explanations: list[str] = Field(default_factory=list)
     notes: str | None = None
+    # When both are provided, the recommendation is applied to these units'
+    # base prices (multiplier clamped server-side). Omit to only log the decision.
+    unit_ids: list[str] = Field(default_factory=list)
+    multiplier: float | None = Field(default=None, gt=0)
+
+
+class PricingAppliedUnit(BaseModel):
+    unit_id: str
+    name: str | None = None
+    previous_price: float
+    new_price: float
 
 
 class PricingApplyResponse(BaseModel):
@@ -162,6 +173,7 @@ class PricingApplyResponse(BaseModel):
     logged: bool = True
     reservation_id: str | None = None
     applied_at: str
+    applied_units: list[PricingAppliedUnit] = Field(default_factory=list)
 
 
 class ConciergeRecommendationRequest(BaseModel):
@@ -445,6 +457,25 @@ class ResortSnapshotResponse(BaseModel):
     occupancy: ResortSnapshotOccupancy
     revenue: ResortSnapshotRevenue
     ai_demand_7d: ResortSnapshotAiDemand
+
+
+class OperationsRoomCounts(BaseModel):
+    cleaned: int = 0
+    occupied: int = 0
+    maintenance: int = 0
+    dirty: int = 0
+    total: int = 0
+
+
+class OperationsSnapshotResponse(BaseModel):
+    """Front-desk operations snapshot — no revenue, crypto, or AI internals.
+    Safe for the staff (Front Desk) dashboard."""
+    as_of: datetime
+    rooms: OperationsRoomCounts
+    today_arrivals: int = 0
+    ready_for_check_in: int = 0
+    pending_payment: int = 0
+    walk_ins_today: int = 0
 
 
 class ReservationGuestSummary(BaseModel):

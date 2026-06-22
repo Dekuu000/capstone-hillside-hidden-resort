@@ -21,9 +21,12 @@ function toDemandPath(points: Array<{ occupancy_pct: number }>, width = 520, hei
 export function ResortSnapshotPanel({
   snapshot,
   error,
+  canSeeTechnical = false,
 }: {
   snapshot: ResortSnapshotResponse | null;
   error?: string | null;
+  /** System Admin only: show on-chain/crypto + AI model-version internals. */
+  canSeeTechnical?: boolean;
 }) {
   const aiStatus = snapshot?.ai_demand_7d.status ?? "missing";
   const aiTone = aiStatus === "ready" ? "success" : aiStatus === "stale" ? "warn" : "error";
@@ -68,7 +71,7 @@ export function ResortSnapshotPanel({
         <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-4 text-sm text-red-700">{error}</div>
       ) : null}
 
-      <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className={`mt-5 grid gap-3 sm:grid-cols-2 ${canSeeTechnical ? "xl:grid-cols-4" : "xl:grid-cols-3"}`}>
         <article className="group h-full min-h-[132px] rounded-2xl border border-[var(--color-border)] bg-white p-4 transition-colors duration-200 hover:border-[color:color-mix(in_srgb,var(--color-secondary)_35%,white)]">
           <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">
             <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
@@ -97,20 +100,22 @@ export function ResortSnapshotPanel({
           </p>
         </article>
 
-        <article className="group h-full min-h-[132px] rounded-2xl border border-[var(--color-border)] bg-white p-4 transition-colors duration-200 hover:border-[color:color-mix(in_srgb,var(--color-secondary)_35%,white)]">
-          <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-orange-50 text-[var(--color-cta)]">
-              <Activity className="h-4 w-4" />
-            </span>
-            Crypto revenue
-          </p>
-          <p className="mt-3 text-3xl font-bold tracking-[-0.01em] text-[var(--color-text)]">
-            {snapshot ? `${snapshot.revenue.crypto_native_total.toFixed(4)} ${snapshot.revenue.crypto_unit}` : "--"}
-          </p>
-          <p className="mt-1 text-xs text-[var(--color-muted)]">
-            {snapshot ? `${snapshot.revenue.crypto_tx_count} tx · ${snapshot.revenue.crypto_chain_key.toUpperCase()}` : "No chain activity"}
-          </p>
-        </article>
+        {canSeeTechnical ? (
+          <article className="group h-full min-h-[132px] rounded-2xl border border-[var(--color-border)] bg-white p-4 transition-colors duration-200 hover:border-[color:color-mix(in_srgb,var(--color-secondary)_35%,white)]">
+            <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-orange-50 text-[var(--color-cta)]">
+                <Activity className="h-4 w-4" />
+              </span>
+              Crypto revenue
+            </p>
+            <p className="mt-3 text-3xl font-bold tracking-[-0.01em] text-[var(--color-text)]">
+              {snapshot ? `${snapshot.revenue.crypto_native_total.toFixed(4)} ${snapshot.revenue.crypto_unit}` : "--"}
+            </p>
+            <p className="mt-1 text-xs text-[var(--color-muted)]">
+              {snapshot ? `${snapshot.revenue.crypto_tx_count} tx · ${snapshot.revenue.crypto_chain_key.toUpperCase()}` : "No chain activity"}
+            </p>
+          </article>
+        ) : null}
 
         <article className="group h-full min-h-[132px] rounded-2xl border border-[var(--color-border)] bg-white p-4 transition-colors duration-200 hover:border-[color:color-mix(in_srgb,var(--color-secondary)_35%,white)]">
           <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">
@@ -137,9 +142,11 @@ export function ResortSnapshotPanel({
         <span className="inline-flex items-center rounded-full border border-[var(--color-border)] bg-[var(--color-background)] px-2.5 py-1 font-semibold text-[var(--color-text)]">
           Vacant now: {remainingCleanable ?? "--"}
         </span>
-        <span className="inline-flex items-center rounded-full border border-[var(--color-border)] bg-[var(--color-background)] px-2.5 py-1 font-semibold text-[var(--color-text)]">
-          Chain: {snapshot?.revenue.crypto_chain_key ?? "sepolia"}
-        </span>
+        {canSeeTechnical ? (
+          <span className="inline-flex items-center rounded-full border border-[var(--color-border)] bg-[var(--color-background)] px-2.5 py-1 font-semibold text-[var(--color-text)]">
+            Chain: {snapshot?.revenue.crypto_chain_key ?? "sepolia"}
+          </span>
+        ) : null}
       </div>
 
       <div className="mt-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
@@ -147,9 +154,11 @@ export function ResortSnapshotPanel({
           <>
             <div className="mb-2 flex items-center justify-between gap-2">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)]">Demand trend next 7 days</p>
-              <span className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs font-semibold text-[var(--color-text)]">
-                {snapshot.ai_demand_7d.model_version || "unknown-model"}
-              </span>
+              {canSeeTechnical ? (
+                <span className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs font-semibold text-[var(--color-text)]">
+                  {snapshot.ai_demand_7d.model_version || "unknown-model"}
+                </span>
+              ) : null}
             </div>
             <svg viewBox="0 0 520 120" className="h-28 w-full" aria-label="AI demand trend">
               <path d={demandPath} fill="none" stroke="var(--color-secondary)" strokeWidth="3" strokeLinecap="round" />

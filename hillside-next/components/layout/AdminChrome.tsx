@@ -44,7 +44,7 @@ const COLLAPSE_STORAGE_KEY = "hh-admin-nav-collapsed";
 // Each item is gated by capability tier. Front Desk sees operations only;
 // Manager adds management; System Admin adds the technical tools.
 const navigation: Array<{ name: string; href: string; tier: NavTier; icon: LucideIcon }> = [
-  { name: "Dashboard", href: "/admin", tier: "management", icon: LayoutDashboard },
+  { name: "Dashboard", href: "/admin", tier: "operations", icon: LayoutDashboard },
   { name: "Units", href: "/admin/units", tier: "management", icon: BedDouble },
   { name: "Reservations", href: "/admin/reservations", tier: "management", icon: CalendarCheck },
   { name: "Walk-in", href: "/admin/walk-in", tier: "operations", icon: UserPlus },

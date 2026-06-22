@@ -5,7 +5,7 @@ from datetime import date, timedelta
 from datetime import datetime, timezone
 from math import ceil
 from threading import Lock
-from time import perf_counter
+from time import perf_counter, sleep
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -312,43 +312,49 @@ def get_pricing_recommendation(
         method="POST",
     )
 
-    try:
-        with urlopen(request, timeout=timeout_sec) as response:  # noqa: S310
-            raw = response.read().decode("utf-8")
-            payload = json.loads(raw) if raw else {}
-            recommendation = _extract_recommendation(reservation_id=reservation_id, payload=payload)
-            if recommendation is not None:
-                ai_pricing_metrics.record(
-                    duration_ms=(perf_counter() - started_at) * 1000,
-                    used_fallback=False,
-                )
-                return recommendation
-            fallback_reason = "AI service response schema invalid."
-            recommendation = _fallback_recommendation(
-                reservation_id=reservation_id,
-                context=context,
-                reason=fallback_reason,
+    # Retry transient failures (429 / 5xx / network / timeout) a couple of times
+    # with a short backoff before falling back, so a momentarily-busy or
+    # cold-starting AI service doesn't immediately downgrade to the rule-based model.
+    transient_codes = {429, 500, 502, 503, 504}
+    max_attempts = 2
+    fallback_reason = "AI service unavailable."
+    for attempt in range(max_attempts):
+        try:
+            with urlopen(request, timeout=timeout_sec) as response:  # noqa: S310
+                raw = response.read().decode("utf-8")
+                payload = json.loads(raw) if raw else {}
+                recommendation = _extract_recommendation(reservation_id=reservation_id, payload=payload)
+                if recommendation is not None:
+                    ai_pricing_metrics.record(
+                        duration_ms=(perf_counter() - started_at) * 1000,
+                        used_fallback=False,
+                    )
+                    return recommendation
+                fallback_reason = "AI service response schema invalid."
+                break  # a schema mismatch will not be fixed by retrying
+        except (HTTPError, URLError, TimeoutError, json.JSONDecodeError) as exc:
+            fallback_reason = f"AI service unavailable: {exc}"
+            is_transient = (isinstance(exc, HTTPError) and exc.code in transient_codes) or isinstance(
+                exc, (URLError, TimeoutError)
             )
-            ai_pricing_metrics.record(
-                duration_ms=(perf_counter() - started_at) * 1000,
-                used_fallback=True,
-                fallback_reason=fallback_reason,
-            )
-            return recommendation
-    except (HTTPError, URLError, TimeoutError, json.JSONDecodeError) as exc:
-        logger.warning("AI pricing fallback used (%s).", exc)
-        fallback_reason = f"AI service unavailable: {exc}"
-        recommendation = _fallback_recommendation(
-            reservation_id=reservation_id,
-            context=context,
-            reason=fallback_reason,
-        )
-        ai_pricing_metrics.record(
-            duration_ms=(perf_counter() - started_at) * 1000,
-            used_fallback=True,
-            fallback_reason=fallback_reason,
-        )
-        return recommendation
+            if is_transient and attempt < max_attempts - 1:
+                logger.info("AI pricing transient error (%s); retrying.", exc)
+                sleep(0.3 * (attempt + 1))
+                continue
+            logger.warning("AI pricing fallback used (%s).", exc)
+            break
+
+    recommendation = _fallback_recommendation(
+        reservation_id=reservation_id,
+        context=context,
+        reason=fallback_reason,
+    )
+    ai_pricing_metrics.record(
+        duration_ms=(perf_counter() - started_at) * 1000,
+        used_fallback=True,
+        fallback_reason=fallback_reason,
+    )
+    return recommendation
 
 
 def _fallback_occupancy_forecast(
