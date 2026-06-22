@@ -1,8 +1,10 @@
 # Hillside Hidden Resort — Project Overview
 
-> Single source of truth for the Hillside Hidden Resort capstone. Generated as a read-only analysis pass during the Codex → Claude Code transition. No code was modified.
+> Single source of truth for the Hillside Hidden Resort capstone. Originally generated as a read-only analysis pass during the Codex → Claude Code transition.
 >
-> **Date:** 2026-06-19 · **Branch:** `master`
+> **Original snapshot:** 2026-06-19 · **Last refreshed:** 2026-06-22 (branch `feat/airbnb-rebrand-rbac-guest`)
+>
+> **Refresh note (2026-06-22):** Since the original snapshot the system gained four-tier RBAC (guest/staff/admin/super_admin) with staff account management, promotions & discount codes, guest reviews & ratings, in-app notifications (with retention pruning), and an automated booking lifecycle (auto-release of unpaid holds + auto no-show). Counts, the §4 feature map, §5 schema, §6 endpoints, and the §7.2 flow have been updated; some §10 issues/§12 questions below may reflect the original snapshot.
 
 ---
 
@@ -13,10 +15,10 @@ Hillside Hidden Resort is a **mobile-first, offline-capable PWA** for resort boo
 The stack is a **polyglot monorepo**:
 
 - **`hillside-next/`** — Active Next.js 15 / React 19 PWA (the frontend). *This is the live app.*
-- **`hillside-api/`** — FastAPI backend (trusted business logic, ~58 endpoints).
+- **`hillside-api/`** — FastAPI backend (trusted business logic, ~75 endpoints across 21 route groups).
 - **`hillside-ai/`** — FastAPI ML microservice (Prophet/scikit-learn pricing & forecasting).
 - **`hillside-contracts/`** — Solidity/Hardhat contracts (escrow + guest-pass NFT).
-- **`supabase/`** — Postgres schema (77 migrations), RLS, RPCs, storage.
+- **`supabase/`** — Postgres schema (109 migrations), RLS, RPCs, storage.
 - **`packages/shared/`** — Shared Zod schemas/TypeScript types (the FE↔BE contract).
 - **`hillside-app/`** — ⚠️ **Legacy Vite/React app, retained for reference only.** Not part of the active build.
 
@@ -44,7 +46,7 @@ The stack is a **polyglot monorepo**:
 | | `cryptography` | `>=43.0.0` | Ed25519 QR signing |
 | | (no JWT lib) | — | Tokens validated via Supabase `auth.get_user()` |
 | AI service | FastAPI + scikit-learn + Prophet + pandas | sklearn `>=1.5.2`, prophet `>=1.1.6` | `hillside-ai/`, single-file app |
-| Database/Auth/Storage | Supabase (Postgres 15) | CLI `^2.78.1` | 77 migrations, RLS on all tables |
+| Database/Auth/Storage | Supabase (Postgres 15) | CLI `^2.78.1` | 109 migrations, RLS on all tables |
 | Blockchain | Ethereum Sepolia (active), Polygon Amoy (future) | chainId 11155111 / 80002 | |
 | Smart contracts | Solidity / Hardhat / ethers v6 | Solidity `0.8.24` | `hillside-contracts/` |
 | Shared types | `@hillside/shared` (Zod) | `0.1.0`, zod `^4.1.12` | Imported as raw `.ts` (no build step) |
@@ -173,20 +175,25 @@ Two fetch wrappers split by execution context:
 | **AI pricing center** | `app/admin/ai`, `lib/aiPricing.ts` | `routes/ai.py` → `hillside-ai` |
 | **Reports** | `app/admin/reports`, `components/admin-reports/*` | `routes/reports.py` |
 | **Offline / Sync Center** | `app/admin/sync`, `app/guest/sync`, `lib/offlineSync/*` | `routes/sync.py` |
+| **Promotions / discounts** | `app/admin/promos`, `components/admin-promos/*`, promo input in `ReserveClient`/`TourReserveClient` + `PriceBreakdown` | `routes/promos.py` (`/v2/promos/validate`, `/v2/admin/promos`) |
+| **Reviews & ratings** | My Trips Completed tab, listing rating on `app/stays/[unitId]` | `routes/reviews.py` (`/v2/reviews*`, `/v2/reviews/admin` moderation) |
+| **In-app notifications** | `components/shared/NotificationBell.tsx` (filter / date grouping / infinite scroll) in guest + admin header | `routes/notifications.py` (`/v2/notifications*`) |
+| **Team / staff accounts** | `app/admin/team`, `components/admin-team/*` | `routes/team.py` (`/v2/admin/team`) |
+| **Automated lifecycle** | (surfaced via notifications + reservation status) | schedulers: `release_holds_scheduler`, `no_show_scheduler`, `notification_retention_scheduler` |
 
 ---
 
 ## 5. Database Schema
 
-Postgres 15. Enumerations are modeled as **TEXT + CHECK** (no `CREATE TYPE`). RLS is enabled on all ~20 tables; dominant pattern is *guest-owns-own + admin-sees-all*. ~20 `SECURITY DEFINER` RPCs implement atomic, anti-tamper operations.
+Postgres 15. Enumerations are modeled as **TEXT + CHECK** (no `CREATE TYPE`). RLS is enabled on all ~24 tables; dominant pattern is *guest-owns-own + admin-sees-all*. ~30 `SECURITY DEFINER` RPCs implement atomic, anti-tamper operations.
 
 ### Core tables
 
 | Table | PK | Key columns / notes |
 | --- | --- | --- |
-| `users` | `user_id` (→ `auth.users.id` CASCADE) | `role` CHECK admin\|guest; `wallet_address` (regex-checked) |
+| `users` | `user_id` (→ `auth.users.id` CASCADE) | `role` CHECK **guest\|staff\|admin\|super_admin** (4-tier RBAC); `wallet_address` (regex-checked); role-escalation guard trigger |
 | `units` | `unit_id` | `type` CHECK room\|cottage\|amenity; `operational_status` CHECK cleaned\|occupied\|maintenance\|dirty; `unit_code` UNIQUE; image arrays |
-| `reservations` | `reservation_id` | `reservation_code` UNIQUE; `status` 7-state CHECK; `balance_due` **GENERATED STORED**; shadow-escrow cols; guest-pass NFT cols; `reservation_source`, `sync_version`, deposit-policy cols |
+| `reservations` | `reservation_id` | `reservation_code` UNIQUE; `status` CHECK (incl. `no_show`); `balance_due` **GENERATED STORED**; shadow-escrow cols; guest-pass NFT cols; `reservation_source`, `sync_version`, deposit-policy cols; `cancellation_actor` (guest\|admin\|system) + `policy_outcome` (released\|refunded\|forfeited); promo cols (`original_total`, `discount_amount`, `promo_code`) |
 | `reservation_units` | — | links reservations ↔ units |
 | `services` / `service_bookings` | — | resort services and per-reservation bookings |
 | `payments` | — | proof submissions + verification lifecycle |
@@ -196,13 +203,16 @@ Postgres 15. Enumerations are modeled as **TEXT + CHECK** (no `CREATE TYPE`). RL
 | `ai_forecasts` / `ai_pricing_suggestions` / `ai_concierge_suggestions` | — | AI outputs |
 | `resort_services` / `resort_service_requests` | — | concierge catalog + guest requests |
 | `guest_welcome_notifications` | — | check-in welcome messages |
+| `notifications` | `notification_id` | in-app notifications (`recipient_user_id`, `category`, `severity`, `read_at`, `dedupe_key`); RLS = recipient-only; retention-pruned when read + >90d |
+| `promo_codes` / `promo_redemptions` | — | discount codes (percentage\|fixed, min-spend, caps, validity window, `auto_apply`) + per-use redemption tracking |
+| `reviews` | — | guest reviews/ratings on completed bookings; `hidden_at` for admin moderation; drives live listing average |
 | `sync_operation_receipts` / `sync_change_events` / `sync_upload_items` | — | offline sync (service-role only) |
 
 **Relationships:** `reservations` is the hub — referenced by `reservation_units`, `service_bookings`, `payments`, `checkin_logs`, `qr_tokens`, `ai_pricing_suggestions`, `resort_service_requests`, `guest_welcome_notifications`. `users` is widely referenced (FK delete rules mix CASCADE/RESTRICT/SET NULL).
 
 **Triggers:** auth-user provisioning (`handle_new_user`), `updated_at` bumpers, `bump_sync_version`, role-escalation guard (`prevent_non_admin_role_change`), reservation-status audit, sync changefeed emitters (`emit_sync_change_event`).
 
-**RPCs (highlights):** `create_reservation_atomic` / `create_tour_reservation_atomic` (unit lock `FOR UPDATE NOWAIT` + server-side rate/total/deposit recompute — anti-double-book, anti-tamper), `submit_payment_proof`, `perform_checkin`/`checkout`, `validate_qr_checkin`, `cancel_reservation`, `get_available_units`.
+**RPCs (highlights):** `create_reservation_atomic` / `create_tour_reservation_atomic` (unit lock `FOR UPDATE NOWAIT` + server-side rate/total/deposit recompute + promo resolution — anti-double-book, anti-tamper), `resolve_promo_discount` (validate code or pick best auto-apply), `submit_payment_proof`, `perform_checkin`/`checkout`, `validate_qr_checkin`, `cancel_reservation` (cascades to service bookings), `get_available_units`, `get_reservation_quick_stats` (server-side count tiles). **Lifecycle RPCs (service-role only):** `release_expired_holds` (cancel unpaid holds past the 2h window, returns the true deadline), `mark_expired_no_shows` (forfeit deposit after grace), `prune_read_notifications` (delete read notifications older than the retention window).
 
 **Storage buckets:** `payment-proofs` (private, per-user folder), `unit-images` (public read / admin write).
 
@@ -210,7 +220,7 @@ Postgres 15. Enumerations are modeled as **TEXT + CHECK** (no `CREATE TYPE`). RL
 
 ## 6. API Endpoints
 
-All under `/v2` except `/health`. Auth legend: **Public** · **Guest** (valid Supabase JWT) · **Admin** (role == admin) · **Internal** (secret-gated). ~58 endpoints total; only `/health` and `/v2/auth/session` are truly public; the payment webhook is the lone internal route.
+All under `/v2` except `/health`. Auth legend: **Public** · **Guest** (valid Supabase JWT) · **Staff+** (`require_operations`: staff/admin/super_admin) · **Admin+** (`require_admin`: admin/super_admin) · **Super** (super_admin only, e.g. Team) · **Internal** (secret-gated). ~75 endpoints total; only `/health` and `/v2/auth/session` are truly public; the payment webhook is the lone internal route. ("Admin" in the older tables below means **Admin+** under the 4-tier model.)
 
 ### Auth & identity
 | Method | Path | Purpose | Auth |
@@ -303,9 +313,25 @@ All under `/v2` except `/health`. Auth legend: **Public** · **Guest** (valid Su
 | GET | `/v2/sync/pull` | Change-feed since cursor | Guest (admin scope re-checked) |
 | POST | `/v2/sync/push` · `/uploads/commit` | Apply offline batch / commit uploads | Guest (per-op admin checks) |
 
+### Notifications / Promotions / Reviews / Team
+| Method | Path | Purpose | Auth |
+| --- | --- | --- | --- |
+| GET | `/v2/notifications` | List own notifications (`limit`/`offset`/`unread_only`, returns `has_more`) | Guest |
+| GET | `/v2/notifications/unread-count` | Unread badge count | Guest |
+| POST | `/v2/notifications/mark-read` | Mark one/all read | Guest |
+| POST | `/v2/promos/validate` | Validate a promo code against a total (kind = stay\|tour) | Guest |
+| GET / POST | `/v2/admin/promos` | List / create promo codes | Admin+ |
+| PATCH | `/v2/admin/promos/{id}` | Update / toggle a promo | Admin+ |
+| GET / POST | `/v2/reviews` | List listing reviews / submit a review on a completed booking | Guest |
+| GET | `/v2/reviews/mine` | Own submitted reviews | Guest |
+| GET / POST | `/v2/reviews/admin` | List all / moderate (hide/show) | Admin+ |
+| GET | `/v2/reservations/stats` | Server-side reservation KPI tiles | Admin+ |
+| GET / POST | `/v2/admin/team` | List staff / create staff account | Super (role-gated) |
+| PATCH | `/v2/admin/team/{id}` | Change a member's role | Super (role-gated) |
+
 ### Auth model details
 - **JWT validation:** tokens are **not decoded locally** — `verify_access_token` calls Supabase `auth.get_user(token)` (cached 30s by token hash). `api_jwt_issuer`/`api_jwt_audience` config exists but is **unused**.
-- **Role:** resolved by querying the `users` table (cached 60s); `require_admin` enforces `role == "admin"`; ownership via `ensure_reservation_access`.
+- **Role (4-tier RBAC):** resolved by querying the `users` table (cached 60s). `role_at_least` enforces the hierarchy guest < staff < admin < super_admin; `require_operations` = staff+, `require_admin` = admin+, and Team account management is super_admin-only. Ownership via `ensure_reservation_access`. A DB trigger blocks non-privileged role self-escalation.
 - **Service-role key** is the default DB client (RLS-bypassing); a user-scoped variant attaches the token for select mutations.
 - **QR signing:** Ed25519 primary (key from `QR_SIGNING_PRIVATE_KEY` or derived from legacy `QR_SIGNING_SECRET`), with legacy HMAC-SHA256 fallback. Tokens rotate (`qr_rotation_seconds`), are persisted server-side, and are **single-use**.
 
@@ -325,7 +351,8 @@ All under `/v2` except `/health`. Auth legend: **Public** · **Guest** (valid Su
 2. **Create reservation:** `POST /v2/reservations` → `routes/reservations.py` → `create_reservation_atomic` RPC (unit lock + server-side rate/deposit recompute). Status starts `pending_payment`. Optional escrow shadow-write + guest-pass NFT mint hooks fire.
 3. **Pay deposit:** guest pays the manual method (e.g. GCash — `GcashPaymentGuide.tsx`), then submits proof via `POST /v2/payments/submissions` (idempotent, min-deposit checked). Offline: queued in IndexedDB outbox + blob, replayed by the sync engine.
 4. **Admin verifies:** `app/admin/payments` → `POST /v2/payments/{id}/verify`. Reservation becomes eligible for QR/check-in.
-5. **Stale holds:** unpaid `pending_payment` reservations auto-cancel (`forfeited`) after `reservation_pending_payment_hold_minutes` (default 120).
+5. **Stale holds:** a background scheduler (`release_expired_holds`, ~10-min tick) cancels unpaid `pending_payment` reservations ~2h after booking (outcome `released`), frees the held unit/slot, cascades to linked service bookings, and notifies the guest.
+6. **No-show:** confirmed bookings past check-out with no check-in are flagged `no_show` (deposit `forfeited`) after a grace period by `mark_expired_no_shows`; staff can also mark a no-show manually. Promo discounts are applied to the total before the deposit (20%, floor ₱500, cap ₱5,000) is computed.
 
 ### 7.3 QR check-in (admin)
 1. Guest opens QR pass: `app/guest/my-stay` → `POST /v2/qr/issue` (rotating Ed25519 token), rendered with `qrcode.react`.

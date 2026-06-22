@@ -7,6 +7,11 @@ This repository contains the current capstone implementation of a Web3-hybrid Pr
 - guest booking and tour reservations
 - payment proof submission and admin payment verification
 - QR-based check-in
+- role-based back office (Front Desk / Manager / System Admin) with staff account management
+- promotions & discount codes (guest-entered + auto-applied seasonal sales)
+- guest reviews & ratings with admin moderation
+- in-app notifications for booking updates and back-office events
+- automated booking lifecycle (auto-release of unpaid holds, no-show handling)
 - admin reservation, unit, service, report, and payment dashboards
 - offline-friendly guest and admin flows
 - AI-assisted resort insights
@@ -67,15 +72,31 @@ Guest personal information is kept off-chain. The blockchain layer is used only 
 
 ## Main Features
 
+### Roles & Access
+
+The system has four role tiers (ascending privilege). Back-office labels are guest-friendly:
+
+| Role (DB) | Back-office label | Can do |
+| --- | --- | --- |
+| `guest` | — | Book stays/tours, pay, review own trips |
+| `staff` | **Front Desk** | Operations: check-in/out, walk-ins, payments, service queue |
+| `admin` | **Manager** | Front Desk + units, reservations, reports, promotions |
+| `super_admin` | **System Admin** | Everything + team/staff account management, smart pricing, records & security |
+
+Higher roles inherit lower-role access. Tiers are enforced both server-side (`require_admin` / `require_operations` / role checks on the API) and in the UI (route gating + role-aware navigation). Account creation/role changes are done from the **Team** page (System Admin / Manager).
+
 ### Guest PWA
 
 - account registration and login
 - book a stay
 - reserve tours
+- apply promotion / discount codes at checkout
 - upload payment proof
 - view booking status
 - see QR readiness
 - open check-in QR when eligible
+- leave reviews and ratings on completed stays
+- receive in-app notifications (booking updates, reminders)
 - browse resort map and services
 - use mobile bottom navigation
 - use offline-friendly Sync Center behavior
@@ -89,7 +110,11 @@ Guest personal information is kept off-chain. The blockchain layer is used only 
 - QR check-in console
 - unit inventory management
 - service request queue
-- reports and analytics
+- reports and analytics (including promo discount totals)
+- promotions & discount-code management (percentage / fixed, auto-apply seasonal)
+- team / staff account management (role-based, System Admin / Manager)
+- guest review moderation (hide / show)
+- in-app notifications for back-office events (no-shows, etc.)
 - blockchain/audit reference pages
 - AI forecasting and recommendation views
 
@@ -111,6 +136,13 @@ The current MVP payment mode is **proof-based payment verification**:
 3. Guest uploads payment proof.
 4. Admin verifies payment.
 5. Reservation becomes eligible for QR/check-in rules.
+
+**Deposit policy:** the required deposit is **20% of the total**, clamped to a **₱500 floor** and a **₱5,000 cap**. Promo discounts are applied to the total before the deposit is computed.
+
+**Automated booking lifecycle** (background schedulers, feature-flagged):
+
+- **Auto-release:** unpaid `pending_payment` holds are released automatically ~2 hours after booking, freeing the held unit/slot. The guest is notified; the booking is marked cancelled with outcome `released`.
+- **Auto no-show:** confirmed bookings whose check-out date has passed without a check-in are flagged `no_show` (deposit forfeited) after a short grace period; staff can also mark a no-show manually.
 
 Real-money blockchain escrow is not treated as production payment custody in this MVP.
 
