@@ -46,6 +46,11 @@ class Settings(BaseSettings):
     feature_auto_no_show: bool = True
     auto_no_show_interval_sec: int = 3600
     auto_no_show_grace_days: int = 1
+    # Retention: delete read notifications older than the window (unread are
+    # never pruned). Keeps the notifications table from growing without bound.
+    feature_notification_retention: bool = True
+    notification_retention_interval_sec: int = 86400
+    notification_retention_days: int = 90
     feature_checkin_welcome_notification: bool = False
     feature_checkin_schedule_bypass: bool = False
     qr_signing_secret: str = ""

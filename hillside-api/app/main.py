@@ -19,6 +19,7 @@ from app.observability.escrow_reconciliation_monitor import (
     get_escrow_reconciliation_monitor_snapshot,
 )
 from app.observability.no_show_scheduler import auto_no_show_loop
+from app.observability.notification_retention_scheduler import notification_retention_loop
 from app.observability.release_holds_scheduler import release_expired_holds_loop
 from app.observability.upcoming_stay_scheduler import upcoming_stay_reminder_loop
 
@@ -27,6 +28,7 @@ _escrow_reconciliation_task: asyncio.Task | None = None
 _upcoming_stay_reminder_task: asyncio.Task | None = None
 _release_holds_task: asyncio.Task | None = None
 _no_show_task: asyncio.Task | None = None
+_notification_retention_task: asyncio.Task | None = None
 
 
 async def _start_escrow_reconciliation_scheduler() -> None:
@@ -109,15 +111,37 @@ async def _stop_no_show_scheduler() -> None:
     _no_show_task = None
 
 
+async def _start_notification_retention_scheduler() -> None:
+    global _notification_retention_task
+    if settings.feature_notification_retention and _notification_retention_task is None:
+        _notification_retention_task = asyncio.create_task(notification_retention_loop())
+        logger.info("Started notification retention scheduler task.")
+
+
+async def _stop_notification_retention_scheduler() -> None:
+    global _notification_retention_task
+    task = _notification_retention_task
+    if task is None:
+        return
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
+    _notification_retention_task = None
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     await _start_escrow_reconciliation_scheduler()
     await _start_upcoming_stay_reminder_scheduler()
     await _start_release_holds_scheduler()
     await _start_no_show_scheduler()
+    await _start_notification_retention_scheduler()
     try:
         yield
     finally:
+        await _stop_notification_retention_scheduler()
         await _stop_no_show_scheduler()
         await _stop_release_holds_scheduler()
         await _stop_upcoming_stay_reminder_scheduler()

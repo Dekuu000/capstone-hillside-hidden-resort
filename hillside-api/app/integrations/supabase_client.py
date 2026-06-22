@@ -3231,6 +3231,32 @@ def count_unread_notifications(*, recipient_user_id: str) -> int:
         raise _runtime_error_from_exception(exc) from exc
 
 
+def prune_read_notifications(*, retention_days: int = 90) -> int:
+    """Delete read notifications older than the retention window (service-role
+    only). Unread notifications are never pruned, regardless of age. Returns the
+    number of rows deleted."""
+    try:
+        client = get_supabase_client()
+        resp = client.rpc(
+            "prune_read_notifications", {"p_retention_days": int(retention_days)}
+        ).execute()
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+    data = resp.data
+    try:
+        return int(data)
+    except (TypeError, ValueError):
+        pass
+    if isinstance(data, list) and data:
+        row = data[0]
+        if isinstance(row, dict):
+            try:
+                return int(row.get("prune_read_notifications"))
+            except (TypeError, ValueError):
+                return 0
+    return 0
+
+
 def mark_notifications_read(
     *,
     recipient_user_id: str,
