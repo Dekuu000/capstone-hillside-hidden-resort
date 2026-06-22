@@ -94,7 +94,7 @@ export function Select({
           className,
         )}
       >
-        <span className={cn("truncate", !selected && "font-medium text-[var(--color-muted)]")}>
+        <span className={cn("min-w-0 truncate", !selected && "font-medium text-[var(--color-muted)]")}>
           {selected ? selected.label : placeholder ?? "Select"}
         </span>
         <ChevronDown className={cn("h-4 w-4 shrink-0 text-[var(--color-muted)] transition-transform", open && "rotate-180")} aria-hidden="true" />

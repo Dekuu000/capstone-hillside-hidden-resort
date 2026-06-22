@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { BedDouble, CalendarCheck, ConciergeBell, ScanLine, UserPlus } from "lucide-react";
+import { BedDouble, CalendarCheck, ScanLine, UserPlus } from "lucide-react";
 import type { OperationsSnapshotResponse } from "../../../packages/shared/src/types";
 import { AdminPageHeader } from "../layout/AdminPageHeader";
 
@@ -29,12 +28,6 @@ export function StaffOperationsDashboard({
     { label: "Occupied", value: rooms?.occupied, tone: "text-[var(--color-primary)]" },
     { label: "Dirty", value: rooms?.dirty, tone: "text-amber-600" },
     { label: "Maintenance", value: rooms?.maintenance, tone: "text-red-600" },
-  ];
-
-  const actions = [
-    { href: "/admin/check-in", label: "Scan & check in", icon: ScanLine },
-    { href: "/admin/walk-in", label: "New walk-in", icon: UserPlus },
-    { href: "/admin/services", label: "Service requests", icon: ConciergeBell },
   ];
 
   return (
@@ -80,27 +73,6 @@ export function StaffOperationsDashboard({
               <p className="mt-1 text-xs font-semibold uppercase tracking-[0.1em] text-[var(--color-muted)]">{stat.label}</p>
             </div>
           ))}
-        </div>
-      </section>
-
-      <section className="surface p-5 sm:p-6">
-        <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">Quick actions</h2>
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          {actions.map((action) => {
-            const Icon = action.icon;
-            return (
-              <Link
-                key={action.href}
-                href={action.href}
-                className="flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-white p-4 font-semibold text-[var(--color-text)] transition hover:border-[color:color-mix(in_srgb,var(--color-secondary)_35%,white)] hover:bg-[var(--color-background)]"
-              >
-                <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-cta)] text-white">
-                  <Icon className="h-5 w-5" />
-                </span>
-                {action.label}
-              </Link>
-            );
-          })}
         </div>
       </section>
     </section>
