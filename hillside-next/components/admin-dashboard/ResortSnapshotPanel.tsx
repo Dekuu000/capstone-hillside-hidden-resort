@@ -136,15 +136,15 @@ export function ResortSnapshotPanel({
         </article>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-[var(--color-border)] bg-white p-3 text-xs text-[var(--color-muted)]">
-        <span className="inline-flex items-center border border-[var(--color-border)] bg-[var(--color-background)] px-2.5 py-1 font-semibold text-[var(--color-text)]">
+      <div className="mt-3 flex flex-wrap items-center gap-2 border border-[var(--color-border)] bg-white p-3 text-xs text-[var(--color-muted)]">
+        <span className="inline-flex items-center rounded-full border border-[var(--color-border)] bg-[var(--color-background)] px-2.5 py-1 font-semibold text-[var(--color-text)]">
           Active units: {snapshot?.occupancy.active_units ?? "--"}
         </span>
-        <span className="inline-flex items-center border border-[var(--color-border)] bg-[var(--color-background)] px-2.5 py-1 font-semibold text-[var(--color-text)]">
+        <span className="inline-flex items-center rounded-full border border-[var(--color-border)] bg-[var(--color-background)] px-2.5 py-1 font-semibold text-[var(--color-text)]">
           Vacant now: {remainingCleanable ?? "--"}
         </span>
         {canSeeTechnical ? (
-          <span className="inline-flex items-center border border-[var(--color-border)] bg-[var(--color-background)] px-2.5 py-1 font-semibold text-[var(--color-text)]">
+          <span className="inline-flex items-center rounded-full border border-[var(--color-border)] bg-[var(--color-background)] px-2.5 py-1 font-semibold text-[var(--color-text)]">
             Chain: {snapshot?.revenue.crypto_chain_key ?? "sepolia"}
           </span>
         ) : null}
