@@ -14,7 +14,7 @@ export function GuestVerificationPanel() {
         <div className="flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center">
           <Link
             href="/admin/check-in?mode=scan"
-            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-cta)] px-4 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(249,115,22,0.24)] transition hover:brightness-95 lg:w-auto lg:min-w-[180px]"
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(19,48,76,0.24)] transition hover:brightness-95 lg:w-auto lg:min-w-[180px]"
           >
             <ScanLine className="h-4 w-4" />
             Open scanner
