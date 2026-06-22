@@ -48,6 +48,12 @@ body {
 
 html {
   scrollbar-gutter: stable;
+  /* Stop stray wide content (e.g. data tables, form rows) from creating
+     page-level horizontal scroll, which would shift the fixed bottom nav and
+     sticky header off-screen on mobile. Applied to <html> (not <body>) so it
+     keeps the vertical scroller, preserving the sticky header. Wide tables
+     keep their own `overflow-x-auto` wrappers, so their data stays scrollable. */
+  overflow-x: hidden;
 }
 
 body {
