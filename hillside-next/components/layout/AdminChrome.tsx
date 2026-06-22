@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import {
   BarChart3,
@@ -303,15 +304,22 @@ export function AdminChrome({ children, initialName = null, initialEmail = null,
 
       <div className={`transition-[padding] duration-300 ${collapsed ? "lg:pl-[76px]" : "lg:pl-64"}`}>
         <header className="sticky top-0 z-30 bg-gradient-to-br from-[#1a4163] via-[var(--color-primary)] to-[#0e2740] text-white shadow-[0_6px_20px_-8px_rgba(19,48,76,0.6)] lg:hidden">
-          <div className="relative flex h-16 items-center justify-center px-14">
-            <Link href="/admin" className="flex min-w-0 items-center" aria-label="Hillside Hidden Resort">
-              <HillsideLogo
-                light
-                oneLine
-                className="[&_img]:h-8 [&_img]:w-8 [&_.hillside-brand-title]:text-[1rem] [&_.hillside-brand-title]:font-semibold [&_.hillside-brand-title]:tracking-[0.015em]"
+          <div className="relative flex h-16 items-center px-4">
+            {/* Emblem pinned left; title centered across the full header; bell right. */}
+            <Link href="/admin" aria-label="Hillside Hidden Resort" className="relative z-10 flex items-center">
+              <Image
+                src="/branding/hillside-logo-emblem-transparent.png"
+                alt="Hillside Hidden emblem"
+                width={56}
+                height={56}
+                className="h-9 w-9 object-contain"
+                priority
               />
             </Link>
-            <div className="absolute right-4 top-1/2 flex -translate-y-1/2 items-center">
+            <p className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 text-center text-[1rem] font-semibold tracking-[0.015em] text-white">
+              Hillside Hidden <span className="font-medium text-teal-300">Resort</span>
+            </p>
+            <div className="absolute right-4 top-1/2 z-10 flex -translate-y-1/2 items-center">
               <NotificationBell light />
             </div>
           </div>

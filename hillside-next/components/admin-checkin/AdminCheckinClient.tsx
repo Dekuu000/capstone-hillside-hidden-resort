@@ -1483,12 +1483,8 @@ export function AdminCheckinClient({
         eyebrow="Operations"
         title="Check-in console"
         subtitle="Kiosk-friendly scan flow with offline queue."
-        action={
-          <div className="flex flex-col items-start gap-2 sm:items-end">
-            <DataFreshnessBadge />
-            <ScanHeader onOpenSettings={() => setSettingsDrawerOpen(true)} />
-          </div>
-        }
+        cornerSlot={<DataFreshnessBadge variant="plain" />}
+        action={<ScanHeader onOpenSettings={() => setSettingsDrawerOpen(true)} />}
       />
 
       <div className={`grid gap-3 sm:gap-4 ${tabletView ? "xl:grid-cols-[1.35fr_0.65fr]" : "xl:grid-cols-[1.15fr_0.85fr]"} xl:items-stretch`}>

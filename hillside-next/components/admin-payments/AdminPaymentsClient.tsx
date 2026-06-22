@@ -674,13 +674,11 @@ export function AdminPaymentsClient({
         eyebrow="Management"
         title="Payments Console"
         subtitle="Verification inbox, on-site payments, and payment history."
+        cornerSlot={<DataFreshnessBadge variant="plain" />}
         action={
-          <div className="flex flex-wrap items-center gap-2">
-            <DataFreshnessBadge />
-            <div className="rounded-2xl border border-[var(--color-border)] bg-white px-4 py-3 text-xs text-[var(--color-muted)]">
-              <p className="font-semibold text-[var(--color-text)]">Queue snapshot</p>
-              <p className="mt-1">{count} total records</p>
-            </div>
+          <div className="rounded-2xl border border-[var(--color-border)] bg-white px-4 py-3 text-xs text-[var(--color-muted)]">
+            <p className="font-semibold text-[var(--color-text)]">Queue snapshot</p>
+            <p className="mt-1">{count} total records</p>
           </div>
         }
       />
