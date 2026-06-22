@@ -82,11 +82,17 @@ export function AuthShell({
               className="pointer-events-none absolute -right-2 top-6 h-16 w-16 bg-contain bg-no-repeat opacity-[0.1]"
               style={{ backgroundImage: "url('/branding/palm-leaf-shadow.svg')" }}
             />
-            <HillsideLogo
-              light
-              compact
-              className="[&_p:last-child]:text-left [&_p:last-child]:tracking-[0.3em]"
-            />
+            <Link
+              href="/"
+              aria-label="Hillside Hidden Resort — back to home"
+              className="inline-flex rounded-lg transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+            >
+              <HillsideLogo
+                light
+                compact
+                className="[&_p:last-child]:text-left [&_p:last-child]:tracking-[0.3em]"
+              />
+            </Link>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/75">{mobileBrandLine || sideTitle}</p>
           </div>
         ) : null}
@@ -96,7 +102,13 @@ export function AuthShell({
             <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url('${imageSrc}')` }} />
             <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(9,22,43,0.52),rgba(7,20,38,0.84))]" />
             <div className="relative flex h-full flex-col p-10 text-white">
-              <HillsideLogo light />
+              <Link
+                href="/"
+                aria-label="Hillside Hidden Resort — back to home"
+                className="inline-flex w-fit rounded-lg transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+              >
+                <HillsideLogo light />
+              </Link>
               <div className="mt-auto">
                 <h1 className="text-[2.6rem] font-semibold leading-[1.05]">{sideTitle}</h1>
                 <p className="mt-2 text-[2rem] font-semibold text-teal-300">{sideSubtitle}</p>

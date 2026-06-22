@@ -109,7 +109,7 @@ export default function RegisterPage() {
       return;
     }
     if (!agree) {
-      setError("Please agree to Terms and Privacy Policy.");
+      setError("Please review and accept the Terms, Privacy & Cancellation policies to continue.");
       return;
     }
 
@@ -239,16 +239,22 @@ export default function RegisterPage() {
           }
         />
 
-        <div className="flex items-start gap-2 text-sm text-[var(--color-muted)]">
-          <input
-            type="checkbox"
-            checked={agree}
-            onChange={(event) => setAgree(event.target.checked)}
-            aria-label="I have read and agree to the Terms, Privacy, and Cancellation policies"
-            className="mt-1 h-4 w-4 rounded border-[var(--color-border)] text-[var(--color-secondary)] focus-visible:ring-2 focus-visible:ring-teal-200"
-          />
-          <p>
-            I have read and agree to the{" "}
+        {/* Consent can only be granted by reviewing all three policies in the modal. */}
+        <div className="flex items-start gap-2 text-sm">
+          <span
+            aria-hidden
+            className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border text-[11px] font-bold ${
+              agree
+                ? "border-emerald-500 bg-emerald-500 text-white"
+                : "border-[var(--color-border)] text-transparent"
+            }`}
+          >
+            ✓
+          </span>
+          <p className={agree ? "text-[var(--color-text)]" : "text-[var(--color-muted)]"}>
+            {agree
+              ? "You’ve reviewed and accepted the "
+              : "To create an account, please review and accept the "}
             <button
               type="button"
               onClick={() => setShowTerms(true)}
@@ -256,6 +262,7 @@ export default function RegisterPage() {
             >
               Terms &amp; Conditions, Privacy Policy &amp; Cancellation Policy
             </button>
+            .
           </p>
         </div>
 
@@ -266,7 +273,7 @@ export default function RegisterPage() {
           type="submit"
           className="h-12 w-full rounded-xl border-0 bg-[var(--color-cta)] text-base font-semibold text-white hover:brightness-95"
           loading={busy}
-          disabled={busy}
+          disabled={busy || !agree}
         >
           {busy ? "Creating account..." : "Create Account"}
         </Button>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ScrollText, X } from "lucide-react";
+import { Check, ScrollText, X } from "lucide-react";
 import { CancellationContent, PrivacyContent, TermsContent } from "./legalContent";
 
 type TermsModalProps = {
@@ -22,12 +22,14 @@ type TabKey = (typeof TABS)[number]["key"];
 export function TermsModal({ open, onClose, onAgree }: TermsModalProps) {
   const [tab, setTab] = useState<TabKey>("terms");
   const [confirmed, setConfirmed] = useState(false);
+  const [visited, setVisited] = useState<Set<TabKey>>(() => new Set<TabKey>(["terms"]));
 
   useEffect(() => {
     if (!open) return;
     // Reset to a clean state each time the modal opens.
     setTab("terms");
     setConfirmed(false);
+    setVisited(new Set<TabKey>(["terms"]));
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
     };
@@ -41,6 +43,8 @@ export function TermsModal({ open, onClose, onAgree }: TermsModalProps) {
   }, [open, onClose]);
 
   if (!open) return null;
+
+  const allViewed = TABS.every((item) => visited.has(item.key));
 
   return (
     <div
@@ -84,14 +88,20 @@ export function TermsModal({ open, onClose, onAgree }: TermsModalProps) {
                 type="button"
                 role="tab"
                 aria-selected={active}
-                onClick={() => setTab(item.key)}
-                className={`flex-1 border-b-2 px-2 py-3 text-center text-sm font-semibold transition ${
+                onClick={() => {
+                  setTab(item.key);
+                  setVisited((prev) => new Set(prev).add(item.key));
+                }}
+                className={`flex flex-1 items-center justify-center gap-1 border-b-2 px-2 py-3 text-center text-sm font-semibold transition ${
                   active
                     ? "border-[var(--color-secondary)] text-[var(--color-secondary)]"
                     : "border-transparent text-[var(--color-muted)] hover:text-[var(--color-text)]"
                 }`}
               >
                 {item.label}
+                {visited.has(item.key) ? (
+                  <Check className="h-3.5 w-3.5 text-emerald-600" aria-label="viewed" />
+                ) : null}
               </button>
             );
           })}
@@ -105,12 +115,22 @@ export function TermsModal({ open, onClose, onAgree }: TermsModalProps) {
         {/* Footer */}
         {onAgree ? (
           <div className="space-y-3 border-t border-[var(--color-border)] bg-[color:color-mix(in_srgb,var(--color-secondary)_5%,white)] px-5 py-4">
-            <label className="flex items-start gap-2 text-sm text-[var(--color-text)]">
+            {!allViewed ? (
+              <p className="text-xs font-semibold text-[var(--color-secondary)]">
+                Please open all three sections (Terms, Privacy &amp; Cancellation) to continue.
+              </p>
+            ) : null}
+            <label
+              className={`flex items-start gap-2 text-sm ${
+                allViewed ? "text-[var(--color-text)]" : "text-[var(--color-muted)]"
+              }`}
+            >
               <input
                 type="checkbox"
                 checked={confirmed}
+                disabled={!allViewed}
                 onChange={(event) => setConfirmed(event.target.checked)}
-                className="mt-0.5 h-4 w-4 rounded border-[var(--color-border)] text-[var(--color-secondary)] focus-visible:ring-2 focus-visible:ring-teal-200"
+                className="mt-0.5 h-4 w-4 rounded border-[var(--color-border)] text-[var(--color-secondary)] focus-visible:ring-2 focus-visible:ring-teal-200 disabled:cursor-not-allowed disabled:opacity-50"
               />
               <span>
                 I confirm I have reviewed and accept the Terms &amp; Conditions, Privacy Policy &amp; Cancellation
@@ -127,7 +147,7 @@ export function TermsModal({ open, onClose, onAgree }: TermsModalProps) {
               </button>
               <button
                 type="button"
-                disabled={!confirmed}
+                disabled={!confirmed || !allViewed}
                 onClick={() => {
                   onAgree();
                   onClose();
