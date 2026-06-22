@@ -64,7 +64,8 @@ export function ResortSnapshotPanel({
               : "Unavailable"}
           </p>
         </div>
-        <StatusPill label={aiLabel} tone={aiTone} />
+        {/* Demand-model status is AI-internal — System Admin only. */}
+        {canSeeTechnical ? <StatusPill label={aiLabel} tone={aiTone} /> : null}
       </div>
 
       {error ? (
