@@ -1076,6 +1076,7 @@ class NotificationItem(BaseModel):
 class NotificationListResponse(BaseModel):
     items: list[NotificationItem] = Field(default_factory=list)
     unread_count: int = 0
+    has_more: bool = False
 
 
 class NotificationUnreadCountResponse(BaseModel):

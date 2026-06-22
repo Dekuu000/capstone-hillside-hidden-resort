@@ -3187,9 +3187,14 @@ def list_notifications(
     *,
     recipient_user_id: str,
     limit: int = 20,
+    offset: int = 0,
     unread_only: bool = False,
-) -> list[dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], bool]:
+    """Return (rows, has_more) for one page, newest first. Fetches one extra row
+    beyond the page to tell the caller whether older notifications remain."""
     try:
+        capped = max(1, min(limit, 100))
+        start = max(0, offset)
         client = get_supabase_client()
         query = (
             client.table("notifications")
@@ -3198,8 +3203,15 @@ def list_notifications(
         )
         if unread_only:
             query = query.is_("read_at", "null")
-        response = query.order("created_at", desc=True).limit(max(1, min(limit, 100))).execute()
-        return response.data or []
+        # range() is inclusive on both ends, so request capped + 1 rows.
+        response = (
+            query.order("created_at", desc=True)
+            .range(start, start + capped)
+            .execute()
+        )
+        rows = response.data or []
+        has_more = len(rows) > capped
+        return rows[:capped], has_more
     except Exception as exc:  # noqa: BLE001
         raise _runtime_error_from_exception(exc) from exc
 

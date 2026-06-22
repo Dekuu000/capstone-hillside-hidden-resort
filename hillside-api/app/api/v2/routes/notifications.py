@@ -43,16 +43,19 @@ def _to_item(row: dict[str, Any]) -> NotificationItem:
 def get_notifications(
     auth: AuthContext = Depends(require_authenticated),
     limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
     unread_only: bool = Query(False),
 ):
     try:
-        rows = list_notifications(
-            recipient_user_id=auth.user_id, limit=limit, unread_only=unread_only
+        rows, has_more = list_notifications(
+            recipient_user_id=auth.user_id, limit=limit, offset=offset, unread_only=unread_only
         )
         unread = count_unread_notifications(recipient_user_id=auth.user_id)
     except RuntimeError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
-    return NotificationListResponse(items=[_to_item(row) for row in rows], unread_count=unread)
+    return NotificationListResponse(
+        items=[_to_item(row) for row in rows], unread_count=unread, has_more=has_more
+    )
 
 
 @router.get("/unread-count", response_model=NotificationUnreadCountResponse)

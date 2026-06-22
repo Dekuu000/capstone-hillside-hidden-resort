@@ -1189,6 +1189,7 @@ export type NotificationItem = {
 export type NotificationListResponse = {
   items: NotificationItem[];
   unread_count: number;
+  has_more: boolean;
 };
 
 export type NotificationUnreadCountResponse = {

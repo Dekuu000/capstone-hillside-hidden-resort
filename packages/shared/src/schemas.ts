@@ -1121,6 +1121,7 @@ export const notificationItemSchema = z.object({
 export const notificationListResponseSchema = z.object({
   items: z.array(notificationItemSchema),
   unread_count: z.number().int().nonnegative(),
+  has_more: z.boolean().optional().default(false),
 });
 
 export const notificationUnreadCountResponseSchema = z.object({
