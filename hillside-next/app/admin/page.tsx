@@ -1,6 +1,5 @@
 import { roleAtLeast, type ContractStatusResponse, type UnitItem } from "../../../packages/shared/src/types";
 import { contractStatusResponseSchema, operationsSnapshotResponseSchema, resortSnapshotResponseSchema, unitListResponseSchema } from "../../../packages/shared/src/schemas";
-import { GuestVerificationPanel } from "../../components/admin-dashboard/GuestVerificationPanel";
 import { StaffOperationsDashboard } from "../../components/admin-dashboard/StaffOperationsDashboard";
 import { LedgerExplorerPanel } from "../../components/admin-dashboard/LedgerExplorerPanel";
 import { ResourceHeatmapPanel } from "../../components/admin-dashboard/ResourceHeatmapPanel";
@@ -87,13 +86,10 @@ export default async function AdminShellPage() {
       <AdminPageHeader
         eyebrow="Admin Dashboard"
         title="Resort View"
-        subtitle="Snapshot, room operations, and guest verification in one unified workspace."
+        subtitle="Snapshot and room operations in one unified workspace."
       />
 
-      <div className="grid gap-5 [&>*]:min-w-0 xl:grid-cols-[1.45fr_1fr] 2xl:grid-cols-[1.55fr_1fr]">
-        <ResortSnapshotPanel snapshot={snapshot} error={snapshotError} canSeeTechnical={canSeeLedger} />
-        <GuestVerificationPanel />
-      </div>
+      <ResortSnapshotPanel snapshot={snapshot} error={snapshotError} canSeeTechnical={canSeeLedger} />
 
       <div className="grid gap-5 [&>*]:min-w-0 xl:grid-cols-[1fr_1.15fr] 2xl:grid-cols-[1fr_1.2fr]">
         <RoomInventorySyncPanel units={initialUnits} />
