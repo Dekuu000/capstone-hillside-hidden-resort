@@ -2365,6 +2365,24 @@ def list_active_resort_services(*, category: str | None = None) -> list[dict[str
         raise _runtime_error_from_exception(exc) from exc
 
 
+def get_guest_active_checkin(*, user_id: str) -> dict[str, Any] | None:
+    """The guest's currently checked-in reservation (a real room/cottage they
+    occupy now), or None. Gates service requests — staff can only deliver to a
+    guest who is actually checked in."""
+    client = get_supabase_client()
+    response = (
+        client.table("reservations")
+        .select("reservation_id, reservation_code, check_in_date, check_out_date, status")
+        .eq("guest_user_id", user_id)
+        .eq("status", "checked_in")
+        .order("check_in_date", desc=True)
+        .limit(1)
+        .execute()
+    )
+    rows = response.data or []
+    return rows[0] if rows else None
+
+
 def create_resort_service_request(
     *,
     access_token: str,
@@ -2461,6 +2479,20 @@ def list_resort_service_requests(
         raise _runtime_error_from_exception(exc) from exc
 
 
+# Valid service-request state machine: new -> in_progress -> done, with
+# cancelled as a terminal off-ramp from any non-terminal state.
+_SERVICE_REQUEST_TRANSITIONS: dict[str, set[str]] = {
+    "new": {"in_progress", "cancelled"},
+    "in_progress": {"done", "cancelled"},
+    "done": set(),
+    "cancelled": set(),
+}
+
+
+class ServiceRequestTransitionError(ValueError):
+    """Raised when an admin tries an invalid service-request status change."""
+
+
 def update_resort_service_request_status(
     *,
     access_token: str,
@@ -2471,6 +2503,25 @@ def update_resort_service_request_status(
 ) -> dict[str, Any] | None:
     try:
         client = get_supabase_user_scoped_client(access_token)
+
+        # Enforce the state machine so a Done/Cancelled request can't be
+        # re-opened and an invalid jump (e.g. new -> done) is rejected.
+        current = (
+            client.table("resort_service_requests")
+            .select("status")
+            .eq("request_id", request_id)
+            .limit(1)
+            .execute()
+        )
+        current_rows = current.data or []
+        if not current_rows:
+            return None
+        current_status = str(current_rows[0].get("status"))
+        if status != current_status and status not in _SERVICE_REQUEST_TRANSITIONS.get(current_status, set()):
+            raise ServiceRequestTransitionError(
+                f"Cannot change a {current_status.replace('_', ' ')} request to {status.replace('_', ' ')}."
+            )
+
         payload: dict[str, Any] = {
             "status": status,
             "processed_by_user_id": processed_by_user_id,
@@ -2491,6 +2542,8 @@ def update_resort_service_request_status(
         )
         rows = response.data or []
         return rows[0] if rows else None
+    except ServiceRequestTransitionError:
+        raise
     except Exception as exc:  # noqa: BLE001
         raise _runtime_error_from_exception(exc) from exc
 

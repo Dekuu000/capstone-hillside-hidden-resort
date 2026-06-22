@@ -364,35 +364,46 @@ export function AdminServicesClient({ accessToken }: Props) {
                 <p className="mt-1 text-sm text-[var(--color-text)]">{activeRow.notes}</p>
               </section>
             ) : null}
-            <section className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-              <button
-                type="button"
-                disabled={actionBusy || activeRow.status === "in_progress"}
-                onClick={() => void updateStatus(activeRow.request_id, "in_progress")}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)] shadow-sm transition hover:bg-[var(--color-background)] disabled:opacity-50"
-              >
-                <PlayCircle className="h-4 w-4 text-amber-600" />
-                Start
-              </button>
-              <button
-                type="button"
-                disabled={actionBusy || activeRow.status === "done"}
-                onClick={() => void updateStatus(activeRow.request_id, "done")}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[var(--color-success)] px-3 text-sm font-semibold text-white shadow-sm transition hover:brightness-95 disabled:opacity-50"
-              >
-                {actionBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                Complete
-              </button>
-              <button
-                type="button"
-                disabled={actionBusy || activeRow.status === "cancelled"}
-                onClick={() => void updateStatus(activeRow.request_id, "cancelled")}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-rose-300 bg-rose-50 px-3 text-sm font-semibold text-rose-700 shadow-sm transition hover:bg-rose-100 disabled:opacity-50"
-              >
-                <OctagonX className="h-4 w-4" />
-                Cancel
-              </button>
-            </section>
+            {activeRow.status === "done" || activeRow.status === "cancelled" ? (
+              <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3 text-center text-sm text-[var(--color-muted)]">
+                This request is {activeRow.status === "done" ? "completed" : "cancelled"} — no further action needed.
+              </section>
+            ) : (
+              // Valid transitions only: new → Start/Cancel, in_progress → Complete/Cancel.
+              <section className="flex items-center gap-2">
+                {activeRow.status === "new" ? (
+                  <button
+                    type="button"
+                    disabled={actionBusy}
+                    onClick={() => void updateStatus(activeRow.request_id, "in_progress")}
+                    className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] px-3 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 disabled:opacity-50"
+                  >
+                    {actionBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlayCircle className="h-4 w-4" />}
+                    Start
+                  </button>
+                ) : null}
+                {activeRow.status === "in_progress" ? (
+                  <button
+                    type="button"
+                    disabled={actionBusy}
+                    onClick={() => void updateStatus(activeRow.request_id, "done")}
+                    className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--color-success)] px-3 text-sm font-semibold text-white shadow-sm transition hover:brightness-95 disabled:opacity-50"
+                  >
+                    {actionBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                    Complete
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  disabled={actionBusy}
+                  onClick={() => void updateStatus(activeRow.request_id, "cancelled")}
+                  className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-xl border border-rose-300 bg-rose-50 px-3 text-sm font-semibold text-rose-700 shadow-sm transition hover:bg-rose-100 disabled:opacity-50"
+                >
+                  <OctagonX className="h-4 w-4" />
+                  Cancel
+                </button>
+              </section>
+            )}
           </div>
         ) : null}
       </DetailDrawer>

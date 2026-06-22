@@ -22,7 +22,9 @@ export function DetailDrawer({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex">
+    // On mobile the drawer stops above the bottom tab bar (h-16) so the nav
+    // stays visible and tappable; on desktop (no bottom nav) it's full-height.
+    <div className="fixed inset-x-0 top-0 bottom-16 z-50 flex lg:bottom-0">
       <button
         type="button"
         aria-label="Close detail drawer"
