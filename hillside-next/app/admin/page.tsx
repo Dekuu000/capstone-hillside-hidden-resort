@@ -71,7 +71,7 @@ export default async function AdminShellPage() {
       />
 
       <div className="grid gap-5 [&>*]:min-w-0 xl:grid-cols-[1.45fr_1fr] 2xl:grid-cols-[1.55fr_1fr]">
-        <ResortSnapshotPanel snapshot={snapshot} error={snapshotError} />
+        <ResortSnapshotPanel snapshot={snapshot} error={snapshotError} canSeeTechnical={canSeeLedger} />
         <GuestVerificationPanel />
       </div>
 
