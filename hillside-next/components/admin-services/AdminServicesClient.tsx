@@ -329,13 +329,13 @@ export function AdminServicesClient({ accessToken }: Props) {
               </p>
             ) : (
               // Valid transitions only: new → Start/Cancel, in_progress → Complete/Cancel.
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 sm:justify-end">
                 {activeRow.status === "new" ? (
                   <button
                     type="button"
                     disabled={actionBusy}
                     onClick={() => void updateStatus(activeRow.request_id, "in_progress")}
-                    className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] px-3 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 disabled:opacity-50"
+                    className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] px-3 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 disabled:opacity-50 sm:flex-none sm:min-w-[150px]"
                   >
                     {actionBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlayCircle className="h-4 w-4" />}
                     Start
@@ -346,7 +346,7 @@ export function AdminServicesClient({ accessToken }: Props) {
                     type="button"
                     disabled={actionBusy}
                     onClick={() => void updateStatus(activeRow.request_id, "done")}
-                    className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--color-success)] px-3 text-sm font-semibold text-white shadow-sm transition hover:brightness-95 disabled:opacity-50"
+                    className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--color-success)] px-3 text-sm font-semibold text-white shadow-sm transition hover:brightness-95 disabled:opacity-50 sm:flex-none sm:min-w-[150px]"
                   >
                     {actionBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                     Complete
@@ -356,7 +356,7 @@ export function AdminServicesClient({ accessToken }: Props) {
                   type="button"
                   disabled={actionBusy}
                   onClick={() => void updateStatus(activeRow.request_id, "cancelled")}
-                  className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-xl border border-rose-300 bg-rose-50 px-3 text-sm font-semibold text-rose-700 shadow-sm transition hover:bg-rose-100 disabled:opacity-50"
+                  className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-xl border border-rose-300 bg-rose-50 px-3 text-sm font-semibold text-rose-700 shadow-sm transition hover:bg-rose-100 disabled:opacity-50 sm:flex-none sm:min-w-[150px]"
                 >
                   <OctagonX className="h-4 w-4" />
                   Cancel

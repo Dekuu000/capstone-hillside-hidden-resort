@@ -33,7 +33,9 @@ export function DetailDrawer({
         type="button"
         aria-label="Close detail drawer"
         onClick={onClose}
-        className="absolute inset-0 bg-slate-900/40 backdrop-blur-[1px] lg:static lg:h-full lg:flex-1"
+        // Extends past the container's bottom (-bottom-16) so the scrim also
+        // dims the bottom nav while the sheet floats above it.
+        className="absolute inset-x-0 top-0 -bottom-16 bg-slate-900/40 backdrop-blur-[1px] lg:static lg:bottom-0 lg:h-full lg:flex-1"
       />
       <aside
         className={cn(
