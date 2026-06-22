@@ -513,6 +513,13 @@ class ReservationListResponse(BaseModel):
     has_more: bool
 
 
+class ReservationQuickStatsResponse(BaseModel):
+    today_arrivals: int
+    pending_payment: int
+    walk_ins_today: int
+    ready_for_check_in: int
+
+
 class ReservationStatusUpdateRequest(BaseModel):
     status: BookingStatus
     notes: str | None = None

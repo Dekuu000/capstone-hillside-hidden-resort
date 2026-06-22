@@ -8,6 +8,7 @@ import type {
   AdminPaymentsResponse,
   ReservationListItem as ReservationItem,
   ReservationListResponse as ReservationsResponse,
+  ReservationQuickStatsResponse,
   ReservationStatus,
 } from "../../../packages/shared/src/types";
 import {
@@ -15,6 +16,7 @@ import {
   paymentVerifyResponseSchema,
   reservationListItemSchema,
   reservationListResponseSchema,
+  reservationQuickStatsResponseSchema,
 } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
@@ -331,33 +333,22 @@ export function AdminReservationsClient({
     if (!token) return;
     try {
       const today = todayPlusLocalIsoDate(0);
+      // Counts are computed server-side (cheap COUNT queries) so the tiles stay
+      // correct no matter how many reservations exist — instead of shipping up
+      // to N reservation rows to the browser just to count them here.
       const qs = new URLSearchParams();
-      qs.set("limit", "1000");
-      qs.set("offset", "0");
-      qs.set("sort_by", "check_in_date");
-      qs.set("sort_dir", "asc");
-      const data = await apiFetch<ReservationsResponse>(
-        `/v2/reservations?${qs.toString()}`,
+      qs.set("today", today);
+      const data = await apiFetch<ReservationQuickStatsResponse>(
+        `/v2/reservations/stats?${qs.toString()}`,
         { method: "GET" },
         token,
-        reservationListResponseSchema,
+        reservationQuickStatsResponseSchema,
       );
-      const rows = data.items ?? [];
-      const todayRows = rows.filter((item) => item.check_in_date === today);
-      const pendingPaymentCount = rows.filter((item) => needsActivePaymentAction(item)).length;
-      const walkInsToday = rows.filter((item) => {
-        const createdDate = item.created_at ? item.created_at.slice(0, 10) : "";
-        return getReservationSource(item) === "walk_in" && (item.check_in_date === today || createdDate === today);
-      }).length;
-      const readyForCheckIn = todayRows.filter((item) => {
-        if (!["confirmed", "for_verification", "pending_payment"].includes(item.status)) return false;
-        return getReservationPaymentState(item) === "settled";
-      }).length;
       setQuickStats({
-        todayArrivals: todayRows.length,
-        pendingPayment: pendingPaymentCount,
-        walkInsToday,
-        readyForCheckIn,
+        todayArrivals: data.today_arrivals,
+        pendingPayment: data.pending_payment,
+        walkInsToday: data.walk_ins_today,
+        readyForCheckIn: data.ready_for_check_in,
       });
     } catch {
       // silent: non-critical snapshot

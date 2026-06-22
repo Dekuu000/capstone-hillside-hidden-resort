@@ -37,6 +37,7 @@ from app.integrations.supabase_client import (
     get_reservation_by_code,
     get_reservation_by_id,
     get_dynamic_pricing_signals,
+    get_reservation_quick_stats,
     list_recent_reservations,
     release_expired_pending_payment_holds,
     update_reservation_policy_metadata,
@@ -58,6 +59,7 @@ from app.schemas.common import (
     ReservationStatusUpdateResponse,
     ReservationListItem,
     ReservationListResponse,
+    ReservationQuickStatsResponse,
 )
 from app.services.idempotency import (
     build_idempotency_operation_id,
@@ -1094,6 +1096,24 @@ def get_reservations(
         "offset": offset,
         "has_more": offset + len(rows) < total,
     }
+
+
+@router.get("/stats", response_model=ReservationQuickStatsResponse)
+def get_reservation_stats(
+    today: str | None = Query(
+        default=None,
+        pattern=r"^\d{4}-\d{2}-\d{2}$",
+        description="Local (resort) date used as 'today'; defaults to PHT.",
+    ),
+    _auth: AuthContext = Depends(require_admin),
+):
+    # Resort operates on Philippine time (UTC+8); fall back to that when the
+    # client does not supply its own local date.
+    resolved_today = today or datetime.now(timezone(timedelta(hours=8))).date().isoformat()
+    try:
+        return get_reservation_quick_stats(today=resolved_today)
+    except RuntimeError as exc:
+        raise_http_from_runtime_error(exc, default_status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
 @router.get("/by-code/{reservation_code}", response_model=ReservationListItem)

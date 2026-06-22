@@ -789,6 +789,74 @@ def list_recent_reservations(
     return filtered_rows[offset : offset + limit], len(filtered_rows)
 
 
+def get_reservation_quick_stats(*, today: str) -> dict[str, int]:
+    """
+    Server-side aggregate for the admin Reservations quick-stats tiles.
+
+    Uses cheap ``count="exact"`` queries instead of shipping every reservation
+    row to the browser to be counted client-side. The four counts mirror the
+    derivations in the frontend (lib/reservationView + AdminReservationsClient):
+
+    - today_arrivals     : every reservation arriving today (any status)
+    - pending_payment    : active reservations still needing a payment action
+    - walk_ins_today     : walk-in source arriving today OR created today
+    - ready_for_check_in : today's arrivals that are confirmed-ish and settled
+    """
+    client = get_supabase_client()
+
+    try:
+        tomorrow = (date.fromisoformat(today) + timedelta(days=1)).isoformat()
+    except ValueError as exc:
+        raise _runtime_error_from_exception(exc) from exc
+
+    excluded_statuses = ["cancelled", "checked_out", "no_show"]
+    ready_statuses = ["confirmed", "for_verification", "pending_payment"]
+
+    def _count(label: str, build) -> int:
+        response = _timed_execute(label, lambda: build().limit(1).execute())
+        return int(response.count or 0)
+
+    try:
+        today_arrivals = _count(
+            "db.reservations.stats.today_arrivals",
+            lambda: client.table("reservations")
+            .select("reservation_id", count="exact")
+            .eq("check_in_date", today),
+        )
+        pending_payment = _count(
+            "db.reservations.stats.pending_payment",
+            lambda: client.table("reservations")
+            .select("reservation_id", count="exact")
+            .not_.in_("status", excluded_statuses)
+            .or_("status.in.(pending_payment,for_verification),balance_due.gt.0"),
+        )
+        walk_ins_today = _count(
+            "db.reservations.stats.walk_ins_today",
+            lambda: client.table("reservations")
+            .select("reservation_id", count="exact")
+            .eq("reservation_source", "walk_in")
+            .or_(f"check_in_date.eq.{today},and(created_at.gte.{today},created_at.lt.{tomorrow})"),
+        )
+        ready_for_check_in = _count(
+            "db.reservations.stats.ready_for_check_in",
+            lambda: client.table("reservations")
+            .select("reservation_id", count="exact")
+            .eq("check_in_date", today)
+            .in_("status", ready_statuses)
+            .lte("balance_due", 0)
+            .gt("total_amount", 0),
+        )
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+    return {
+        "today_arrivals": today_arrivals,
+        "pending_payment": pending_payment,
+        "walk_ins_today": walk_ins_today,
+        "ready_for_check_in": ready_for_check_in,
+    }
+
+
 def list_reservations_for_escrow_reconciliation(
     *,
     chain_key: str,

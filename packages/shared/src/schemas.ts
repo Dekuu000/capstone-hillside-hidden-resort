@@ -322,6 +322,13 @@ export const reservationListResponseSchema = z.object({
   has_more: z.boolean(),
 });
 
+export const reservationQuickStatsResponseSchema = z.object({
+  today_arrivals: z.number().int().nonnegative(),
+  pending_payment: z.number().int().nonnegative(),
+  walk_ins_today: z.number().int().nonnegative(),
+  ready_for_check_in: z.number().int().nonnegative(),
+});
+
 export const reservationCancelResponseSchema = z.object({
   ok: z.literal(true),
   reservation_id: z.string().min(1),

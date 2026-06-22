@@ -384,6 +384,13 @@ export type ReservationListResponse = {
   has_more: boolean;
 };
 
+export type ReservationQuickStatsResponse = {
+  today_arrivals: number;
+  pending_payment: number;
+  walk_ins_today: number;
+  ready_for_check_in: number;
+};
+
 export type ReservationCancelResponse = {
   ok: true;
   reservation_id: string;
