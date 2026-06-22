@@ -303,7 +303,7 @@ export function AdminChrome({ children, initialName = null, initialEmail = null,
 
       <div className={`transition-[padding] duration-300 ${collapsed ? "lg:pl-[76px]" : "lg:pl-64"}`}>
         <header className="sticky top-0 z-30 bg-gradient-to-br from-[#1a4163] via-[var(--color-primary)] to-[#0e2740] text-white shadow-[0_6px_20px_-8px_rgba(19,48,76,0.6)] lg:hidden">
-          <div className="flex h-16 items-center gap-3 px-4">
+          <div className="relative flex h-16 items-center justify-center px-14">
             <Link href="/admin" className="flex min-w-0 items-center" aria-label="Hillside Hidden Resort">
               <HillsideLogo
                 light
@@ -311,7 +311,7 @@ export function AdminChrome({ children, initialName = null, initialEmail = null,
                 className="[&_img]:h-8 [&_img]:w-8 [&_.hillside-brand-title]:text-[1rem] [&_.hillside-brand-title]:font-semibold [&_.hillside-brand-title]:tracking-[0.015em]"
               />
             </Link>
-            <div className="ml-auto flex items-center">
+            <div className="absolute right-4 top-1/2 flex -translate-y-1/2 items-center">
               <NotificationBell light />
             </div>
           </div>
