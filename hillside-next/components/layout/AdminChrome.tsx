@@ -302,19 +302,24 @@ export function AdminChrome({ children, initialName = null, initialEmail = null,
       </aside>
 
       <div className={`transition-[padding] duration-300 ${collapsed ? "lg:pl-[76px]" : "lg:pl-64"}`}>
-        <header className="sticky top-0 z-30 border-b border-white/10 bg-[var(--color-primary)] text-white shadow-sm lg:hidden">
-          <div className="flex h-[68px] items-center gap-3 px-4">
-            <Link href="/admin" className="min-w-0" aria-label="Hillside Hidden Resort">
+        <header className="sticky top-0 z-30 bg-gradient-to-br from-[#1a4163] via-[var(--color-primary)] to-[#0e2740] text-white shadow-[0_6px_20px_-8px_rgba(19,48,76,0.6)] lg:hidden">
+          <div className="flex h-16 items-center gap-3 px-4">
+            <Link href="/admin" className="flex min-w-0 items-center" aria-label="Hillside Hidden Resort">
               <HillsideLogo
                 light
                 oneLine
-                className="[&_img]:h-9 [&_img]:w-9 [&_.hillside-brand-title]:text-[1.1rem] [&_.hillside-brand-title]:font-semibold"
+                className="[&_img]:h-9 [&_img]:w-9 [&_.hillside-brand-title]:text-[1.15rem] [&_.hillside-brand-title]:font-semibold [&_.hillside-brand-title]:tracking-[0.015em]"
               />
             </Link>
-            <div className="ml-auto">
+            <div className="ml-auto flex items-center">
               <NotificationBell light />
             </div>
           </div>
+          {/* Subtle teal hairline accent — brand-tied depth instead of a flat border. */}
+          <span
+            aria-hidden="true"
+            className="block h-px w-full bg-gradient-to-r from-transparent via-[color:color-mix(in_srgb,var(--color-secondary)_60%,transparent)] to-transparent"
+          />
         </header>
 
         <main className="px-4 py-4 pb-[84px] sm:px-6 sm:py-6 lg:px-6 lg:py-6 lg:pb-6 2xl:px-8">{children}</main>
