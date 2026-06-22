@@ -13,7 +13,6 @@ import {
   CreditCard,
   LayoutDashboard,
   LogOut,
-  Menu,
   RefreshCcw,
   ScanLine,
   ShieldCheck,
@@ -22,7 +21,6 @@ import {
   TrendingUp,
   UserPlus,
   Users,
-  X,
   type LucideIcon,
 } from "lucide-react";
 import { clearServerSessionCookie } from "../../lib/authSessionCookie";
@@ -30,7 +28,9 @@ import { getSupabaseBrowserClient, safeGetSession } from "../../lib/supabase";
 import { resolveUserDisplayName } from "../../lib/userProfile";
 import { HillsideLogo } from "../branding/HillsideLogo";
 import { NotificationBell } from "../shared/NotificationBell";
-import { canAccessTier, ROLE_LABELS, type NavTier, type Role } from "../../../packages/shared/src/types";
+import { MobileTabBar } from "./MobileTabBar";
+import { MobileMoreSheet } from "./MobileMoreSheet";
+import { canAccessTier, ROLE_LABELS, ROLES, type NavTier, type Role } from "../../../packages/shared/src/types";
 
 type AdminChromeProps = {
   children: ReactNode;
@@ -61,6 +61,38 @@ const navigation: Array<{ name: string; href: string; tier: NavTier; icon: Lucid
   { name: "Smart Pricing", href: "/admin/ai", tier: "technical", icon: TrendingUp },
 ];
 
+// Per-role mobile bottom-bar composition. Tabs are top-level destinations;
+// the optional FAB is the role's hero action. Items not pinned here fall into
+// the "More" sheet. `fabConsumes` marks a nav href that the FAB replaces (so it
+// isn't also listed in More) — used by Front Desk where the FAB *is* Check-in.
+type MobileNavConfig = {
+  tabs: string[];
+  fab: { href: string; label: string; icon: LucideIcon } | null;
+  fabConsumes?: string;
+};
+
+const MOBILE_NAV: Record<Role, MobileNavConfig> = {
+  guest: { tabs: ["/admin"], fab: null },
+  // Front Desk: the orange FAB is Check-in itself (scan-first), so there is no
+  // separate Check-in tab. All their destinations fit; More holds the account.
+  staff: {
+    tabs: ["/admin", "/admin/walk-in", "/admin/services"],
+    fab: { href: "/admin/check-in?mode=scan", label: "Check-in", icon: ScanLine },
+    fabConsumes: "/admin/check-in",
+  },
+  // Manager covers the desk, so keep a quick Scan QR action; Check-in workspace
+  // stays available in More.
+  admin: {
+    tabs: ["/admin", "/admin/reservations", "/admin/payments"],
+    fab: { href: "/admin/check-in?mode=scan", label: "Scan QR", icon: ScanLine },
+  },
+  // System Admin is oversight — five destinations, no scan action.
+  super_admin: {
+    tabs: ["/admin", "/admin/units", "/admin/reservations", "/admin/reports"],
+    fab: null,
+  },
+};
+
 const noPrefetchRoutes = new Set([
   "/admin/escrow",
   "/admin/ai",
@@ -79,7 +111,8 @@ const noPrefetchRoutes = new Set([
 export function AdminChrome({ children, initialName = null, initialEmail = null, role = null }: AdminChromeProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Mobile "More" bottom sheet (desktop uses the full sidebar instead).
+  const [moreOpen, setMoreOpen] = useState(false);
   // Desktop rail collapse. Defaults expanded so SSR/first paint matches; the
   // stored preference is applied after mount to avoid a hydration mismatch.
   const [collapsed, setCollapsed] = useState(false);
@@ -91,6 +124,33 @@ export function AdminChrome({ children, initialName = null, initialEmail = null,
     [role],
   );
   const roleLabel = ROLE_LABELS[(role || "") as Role] || "Back office";
+
+  // Mobile bottom-bar + "More" sheet, derived from the role's config and the
+  // same capability filtering as the desktop sidebar.
+  const mobileConfig = useMemo(() => {
+    const key = (ROLES as readonly string[]).includes(role || "") ? (role as Role) : "staff";
+    return MOBILE_NAV[key];
+  }, [role]);
+  const mobileTabs = useMemo(
+    () =>
+      mobileConfig.tabs
+        .map((href) => navigation.find((item) => item.href === href))
+        .filter((item): item is (typeof navigation)[number] => Boolean(item) && canAccessTier(role, item!.tier))
+        .map((item) => ({ href: item.href, name: item.name, icon: item.icon, active: pathname === item.href })),
+    [mobileConfig, role, pathname],
+  );
+  const mobileFab = useMemo(
+    () => (mobileConfig.fab ? { ...mobileConfig.fab, active: pathname.startsWith("/admin/check-in") } : null),
+    [mobileConfig, pathname],
+  );
+  const moreItems = useMemo(
+    () =>
+      visibleNavigation
+        .filter((item) => !mobileConfig.tabs.includes(item.href) && item.href !== mobileConfig.fabConsumes)
+        .map((item) => ({ href: item.href, name: item.name, icon: item.icon, active: pathname === item.href })),
+    [visibleNavigation, mobileConfig, pathname],
+  );
+  const moreActive = moreOpen || moreItems.some((item) => item.active);
 
   useEffect(() => {
     if (initialEmail) {
@@ -160,13 +220,13 @@ export function AdminChrome({ children, initialName = null, initialEmail = null,
 
   return (
     <div className="min-h-screen bg-[var(--color-background)]">
-      {sidebarOpen ? <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setSidebarOpen(false)} /> : null}
-
+      {/* Desktop sidebar. On mobile it stays off-canvas — navigation there is
+          handled by the bottom tab bar + More sheet rendered below. */}
       <aside
         id="admin-sidebar"
-        className={`fixed left-0 top-0 z-50 h-full w-64 transform bg-[var(--color-primary)] text-white transition-[transform,width] duration-300 ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-        } ${collapsed ? "lg:w-[76px]" : "lg:w-64"}`}
+        className={`fixed left-0 top-0 z-50 hidden h-full w-64 transform bg-[var(--color-primary)] text-white transition-[transform,width] duration-300 lg:block lg:translate-x-0 ${
+          collapsed ? "lg:w-[76px]" : "lg:w-64"
+        }`}
       >
         {/* Edge toggle — sits on the seam between the rail and the content,
             aligned with the header row. Desktop only; mobile uses the hamburger. */}
@@ -206,7 +266,6 @@ export function AdminChrome({ children, initialName = null, initialEmail = null,
                   className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition ${
                     active ? "bg-white/15 text-white" : "text-white/80 hover:bg-white/10 hover:text-white"
                   } ${collapsed ? "lg:justify-center lg:px-0" : ""}`}
-                  onClick={() => setSidebarOpen(false)}
                 >
                   <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
                   <span className={collapsed ? "lg:sr-only" : ""}>{item.name}</span>
@@ -245,16 +304,6 @@ export function AdminChrome({ children, initialName = null, initialEmail = null,
       <div className={`transition-[padding] duration-300 ${collapsed ? "lg:pl-[76px]" : "lg:pl-64"}`}>
         <header className="sticky top-0 z-30 border-b border-white/10 bg-[var(--color-primary)] text-white shadow-sm lg:hidden">
           <div className="flex h-[68px] items-center gap-3 px-4">
-            <button
-              type="button"
-              onClick={() => setSidebarOpen((prev) => !prev)}
-              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white transition hover:bg-white/10 active:scale-95 active:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-primary)]"
-              aria-label={sidebarOpen ? "Close admin navigation menu" : "Open admin navigation menu"}
-              aria-expanded={sidebarOpen}
-              aria-controls="admin-sidebar"
-            >
-              {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
             <Link href="/admin" className="min-w-0" aria-label="Hillside Hidden Resort">
               <HillsideLogo
                 light
@@ -268,8 +317,19 @@ export function AdminChrome({ children, initialName = null, initialEmail = null,
           </div>
         </header>
 
-        <main className="px-4 py-4 sm:px-6 sm:py-6 lg:px-6 lg:py-6 2xl:px-8">{children}</main>
+        <main className="px-4 py-4 pb-[84px] sm:px-6 sm:py-6 lg:px-6 lg:py-6 lg:pb-6 2xl:px-8">{children}</main>
       </div>
+
+      <MobileTabBar tabs={mobileTabs} fab={mobileFab} onMore={() => setMoreOpen(true)} moreActive={moreActive} />
+      <MobileMoreSheet
+        open={moreOpen}
+        onClose={() => setMoreOpen(false)}
+        items={moreItems}
+        name={name}
+        email={email}
+        initial={initial}
+        onSignOut={handleSignOut}
+      />
     </div>
   );
 }
