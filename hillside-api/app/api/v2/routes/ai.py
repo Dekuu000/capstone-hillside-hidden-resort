@@ -21,7 +21,9 @@ from app.integrations.supabase_client import (
     insert_ai_concierge_suggestion,
     insert_ai_pricing_suggestion,
     get_supabase_client,
+    get_unit_by_id,
     insert_ai_occupancy_forecast,
+    update_unit,
 )
 from app.schemas.common import AiPricingMetricsResponse, AiRecommendation
 from app.schemas.common import (
@@ -33,6 +35,7 @@ from app.schemas.common import (
     OccupancyForecastResponse,
     PricingApplyRequest,
     PricingApplyResponse,
+    PricingAppliedUnit,
     PricingRecommendationRequest,
 )
 
@@ -297,10 +300,37 @@ def apply_pricing_recommendation(
 ):
     reservation_id = payload.reservation_id or "ai_pricing_center"
     applied_at = datetime.now(timezone.utc).isoformat()
-    fingerprint_input = f"{reservation_id}|{payload.pricing_adjustment}|{payload.confidence}|{payload.explanations}|{payload.notes}"
-    fingerprint = hashlib.sha256(fingerprint_input.encode("utf-8")).hexdigest()
 
+    applied_units: list[PricingAppliedUnit] = []
     try:
+        # When unit_ids + multiplier are supplied, actually update each unit's
+        # base price (multiplier clamped to a safe band, price to a safe range).
+        if payload.unit_ids and payload.multiplier:
+            multiplier = max(0.5, min(3.0, float(payload.multiplier)))
+            for unit_id in payload.unit_ids[:50]:
+                unit = get_unit_by_id(unit_id=unit_id)
+                if not unit:
+                    continue
+                old_price = float(unit.get("base_price") or 0)
+                if old_price <= 0:
+                    continue
+                new_price = round(max(100.0, min(100_000.0, old_price * multiplier)), 2)
+                if update_unit(unit_id=unit_id, payload={"base_price": new_price}):
+                    applied_units.append(
+                        PricingAppliedUnit(
+                            unit_id=unit_id,
+                            name=unit.get("name") or None,
+                            previous_price=old_price,
+                            new_price=new_price,
+                        )
+                    )
+
+        fingerprint_input = (
+            f"{reservation_id}|{payload.pricing_adjustment}|{payload.confidence}"
+            f"|{payload.explanations}|{payload.notes}|{[u.unit_id for u in applied_units]}"
+        )
+        fingerprint = hashlib.sha256(fingerprint_input.encode("utf-8")).hexdigest()
+
         client = get_supabase_client()
         client.table("audit_logs").insert(
             {
@@ -315,6 +345,8 @@ def apply_pricing_recommendation(
                     "confidence": payload.confidence,
                     "explanations": payload.explanations,
                     "notes": payload.notes,
+                    "multiplier": payload.multiplier,
+                    "applied_units": [unit.model_dump() for unit in applied_units],
                 },
             }
         ).execute()
@@ -324,6 +356,7 @@ def apply_pricing_recommendation(
     return PricingApplyResponse(
         reservation_id=payload.reservation_id,
         applied_at=applied_at,
+        applied_units=applied_units,
     )
 
 

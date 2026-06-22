@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
   AlertTriangle,
@@ -19,12 +19,15 @@ import {
   occupancyForecastResponseSchema,
   pricingApplyResponseSchema,
   pricingRecommendationSchema,
+  unitListResponseSchema,
 } from "../../../packages/shared/src/schemas";
 import type {
   AiPricingMetricsResponse,
   ConciergeResponse,
   OccupancyForecastResponse,
+  PricingApplyResponse,
   PricingRecommendation,
+  UnitItem,
 } from "../../../packages/shared/src/types";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
@@ -151,6 +154,35 @@ export function AdminAiCenterClient({ token }: AdminAiCenterClientProps) {
   const [recommendationError, setRecommendationError] = useState<string | null>(null);
   const [pricingActionMessage, setPricingActionMessage] = useState<string | null>(null);
   const [pricingAppliedAt, setPricingAppliedAt] = useState<string | null>(null);
+  const [units, setUnits] = useState<UnitItem[]>([]);
+  const [selectedUnitIds, setSelectedUnitIds] = useState<string[]>([]);
+  const [appliedUnits, setAppliedUnits] = useState<PricingApplyResponse["applied_units"]>([]);
+
+  // Load active units once so the admin can apply a recommendation to their prices.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const data = await apiFetch(
+          "/v2/units?limit=200&offset=0",
+          { method: "GET" },
+          token,
+          unitListResponseSchema,
+        );
+        if (!cancelled) setUnits((data.items ?? []).filter((u) => u.is_active));
+      } catch {
+        if (!cancelled) setUnits([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
+  const toggleUnit = (unitId: string) =>
+    setSelectedUnitIds((prev) =>
+      prev.includes(unitId) ? prev.filter((id) => id !== unitId) : [...prev, unitId],
+    );
 
   const [forecast, setForecast] = useState<OccupancyForecastResponse | null>(null);
   const [forecastLoading, setForecastLoading] = useState(false);
@@ -321,18 +353,38 @@ export function AdminAiCenterClient({ token }: AdminAiCenterClientProps) {
             confidence: recommendation.confidence,
             explanations: recommendation.explanations,
             notes: "Applied from AI Center.",
+            unit_ids: selectedUnitIds,
+            multiplier: recommendation.suggested_multiplier ?? null,
           }),
         },
         token,
         pricingApplyResponseSchema,
       );
-      setPricingActionMessage(`Recommendation logged at ${formatDateTime(response.applied_at)}.`);
       setPricingAppliedAt(response.applied_at);
+      setAppliedUnits(response.applied_units ?? []);
+      const updatedCount = response.applied_units?.length ?? 0;
+      setPricingActionMessage(
+        updatedCount > 0
+          ? `Updated ${updatedCount} unit price${updatedCount === 1 ? "" : "s"} at ${formatDateTime(response.applied_at)}.`
+          : `Recommendation logged at ${formatDateTime(response.applied_at)} (no units selected).`,
+      );
       showToast({
         type: "success",
-        title: "Recommendation applied",
-        message: "Pricing action was logged successfully.",
+        title: updatedCount > 0 ? "Prices updated" : "Recommendation logged",
+        message:
+          updatedCount > 0
+            ? `${updatedCount} unit price${updatedCount === 1 ? "" : "s"} updated from the recommendation.`
+            : "Pricing decision logged successfully.",
       });
+      if (updatedCount > 0) {
+        setUnits((prev) =>
+          prev.map((unit) => {
+            const applied = response.applied_units?.find((a) => a.unit_id === unit.unit_id);
+            return applied ? { ...unit, base_price: applied.new_price } : unit;
+          }),
+        );
+        setSelectedUnitIds([]);
+      }
     } catch (unknownError) {
       const applyMessage = getApiErrorMessage(unknownError, "Failed to apply recommendation.");
       setPricingActionMessage(`Apply failed: ${applyMessage}`);
@@ -524,11 +576,89 @@ export function AdminAiCenterClient({ token }: AdminAiCenterClientProps) {
                   onClick={() => void applyPricingRecommendation()}
                   disabled={!recommendation}
                 >
-                  Apply recommendation
+                  {selectedUnitIds.length > 0 && recommendation?.suggested_multiplier != null
+                    ? `Apply ${Number(recommendation.suggested_multiplier).toFixed(2)}× to ${selectedUnitIds.length} unit${selectedUnitIds.length === 1 ? "" : "s"}`
+                    : "Log recommendation"}
                 </Button>
               </div>
             }
           />
+
+          {recommendation ? (
+            <section className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-sm)]">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">
+                  Apply to unit prices
+                </p>
+                {recommendation.suggested_multiplier != null ? (
+                  <span className="text-xs text-[var(--color-muted)]">
+                    Multiplier:{" "}
+                    <strong className="text-[var(--color-text)]">
+                      {Number(recommendation.suggested_multiplier).toFixed(2)}×
+                    </strong>
+                  </span>
+                ) : null}
+              </div>
+              <p className="mt-1 text-xs text-[var(--color-muted)]">
+                Pick the units to re-price with the recommended multiplier. Leave all unchecked to only log the
+                decision.
+              </p>
+              {units.length === 0 ? (
+                <p className="mt-3 text-sm text-[var(--color-muted)]">No active units to price.</p>
+              ) : (
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  {units.map((unit) => {
+                    const checked = selectedUnitIds.includes(unit.unit_id);
+                    const mult = recommendation.suggested_multiplier ?? 1;
+                    const preview = Math.max(100, Math.min(100_000, Math.round(unit.base_price * mult * 100) / 100));
+                    return (
+                      <label
+                        key={unit.unit_id}
+                        className={`flex cursor-pointer items-center justify-between gap-3 rounded-[var(--radius-sm)] border p-3 text-sm transition ${
+                          checked
+                            ? "border-[var(--color-secondary)] bg-[color:color-mix(in_srgb,var(--color-secondary)_8%,white)]"
+                            : "border-[var(--color-border)] bg-white hover:border-[color:color-mix(in_srgb,var(--color-secondary)_35%,white)]"
+                        }`}
+                      >
+                        <span className="flex min-w-0 items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggleUnit(unit.unit_id)}
+                            className="h-4 w-4 rounded border-[var(--color-border)] text-[var(--color-secondary)]"
+                          />
+                          <span className="truncate font-medium text-[var(--color-text)]">{unit.name}</span>
+                        </span>
+                        <span className="shrink-0 text-xs text-[var(--color-muted)]">
+                          {formatPeso(unit.base_price)}
+                          {checked ? (
+                            <>
+                              {" → "}
+                              <strong className="text-[var(--color-text)]">{formatPeso(preview)}</strong>
+                            </>
+                          ) : null}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+              {appliedUnits.length > 0 ? (
+                <div className="mt-3 rounded-[var(--radius-sm)] border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+                  <p className="font-semibold">Applied price changes</p>
+                  <ul className="mt-1 space-y-0.5">
+                    {appliedUnits.map((unit) => (
+                      <li key={unit.unit_id}>
+                        {unit.name ?? unit.unit_id}: {formatPeso(unit.previous_price)} →{" "}
+                        <strong>{formatPeso(unit.new_price)}</strong>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </section>
+          ) : null}
+
           {pricingActionMessage ? (
             <p className="rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-background)] p-3 text-sm text-[var(--color-text)]">
               {pricingActionMessage}

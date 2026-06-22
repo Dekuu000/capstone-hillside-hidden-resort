@@ -282,6 +282,12 @@ export type PricingApplyResponse = {
   logged: boolean;
   reservation_id?: string | null;
   applied_at: string;
+  applied_units: Array<{
+    unit_id: string;
+    name?: string | null;
+    previous_price: number;
+    new_price: number;
+  }>;
 };
 
 export type GuestMapAmenityKind = "trail" | "facility";

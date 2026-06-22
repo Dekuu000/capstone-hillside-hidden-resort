@@ -155,6 +155,17 @@ class PricingApplyRequest(BaseModel):
     confidence: float | None = Field(default=None, ge=0.0, le=1.0)
     explanations: list[str] = Field(default_factory=list)
     notes: str | None = None
+    # When both are provided, the recommendation is applied to these units'
+    # base prices (multiplier clamped server-side). Omit to only log the decision.
+    unit_ids: list[str] = Field(default_factory=list)
+    multiplier: float | None = Field(default=None, gt=0)
+
+
+class PricingAppliedUnit(BaseModel):
+    unit_id: str
+    name: str | None = None
+    previous_price: float
+    new_price: float
 
 
 class PricingApplyResponse(BaseModel):
@@ -162,6 +173,7 @@ class PricingApplyResponse(BaseModel):
     logged: bool = True
     reservation_id: str | None = None
     applied_at: str
+    applied_units: list[PricingAppliedUnit] = Field(default_factory=list)
 
 
 class ConciergeRecommendationRequest(BaseModel):

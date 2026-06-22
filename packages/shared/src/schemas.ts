@@ -226,6 +226,17 @@ export const pricingApplyResponseSchema = z.object({
   logged: z.boolean(),
   reservation_id: z.string().optional().nullable(),
   applied_at: z.string(),
+  applied_units: z
+    .array(
+      z.object({
+        unit_id: z.string(),
+        name: z.string().optional().nullable(),
+        previous_price: z.number(),
+        new_price: z.number(),
+      }),
+    )
+    .optional()
+    .default([]),
 });
 
 export const myBookingsTabSchema = z.enum(MY_BOOKINGS_TABS);
