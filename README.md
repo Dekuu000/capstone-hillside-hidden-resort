@@ -25,13 +25,7 @@ The active web application is:
 hillside-next/
 ```
 
-The previous Vite/React application is retained only as legacy reference:
-
-```txt
-hillside-app/
-```
-
-It is **not part of the active workspace build** and is not used by the current Netlify production config. A manual legacy workflow still exists for archival deployment only when explicitly triggered. The folder can be removed later in a dedicated cleanup commit after confirming no historical comparison or adviser review needs it.
+The earlier Vite/React prototype (`hillside-app/`) has been **removed** from the repository now that the Next.js PWA fully supersedes it. It remains recoverable from git history if a before/after comparison is ever needed.
 
 ## System Architecture
 
@@ -66,7 +60,6 @@ Guest personal information is kept off-chain. The blockchain layer is used only 
 |-- docs/                   Architecture, rollout, evidence, and capstone support docs
 |-- design-system/          Design notes and UI references
 |-- scripts/                Dev orchestration / helper scripts
-|-- hillside-app/           Legacy Vite app retained for reference only
 |-- netlify.toml            Netlify deployment config for hillside-next
 `-- render.yaml             Render deployment config for hillside-api
 ```

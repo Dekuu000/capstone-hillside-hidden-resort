@@ -20,7 +20,7 @@ The stack is a **polyglot monorepo**:
 - **`hillside-contracts/`** — Solidity/Hardhat contracts (escrow + guest-pass NFT).
 - **`supabase/`** — Postgres schema (109 migrations), RLS, RPCs, storage.
 - **`packages/shared/`** — Shared Zod schemas/TypeScript types (the FE↔BE contract).
-- **`hillside-app/`** — ⚠️ **Legacy Vite/React app, retained for reference only.** Not part of the active build.
+- ~~`hillside-app/`~~ — the earlier Vite/React prototype, **removed 2026-06-22** (superseded by `hillside-next/`; recoverable from git history).
 
 ---
 
@@ -89,7 +89,6 @@ capstone-hillside-hidden-resort/
 ├── packages/shared/          @hillside/shared — Zod schemas + TS types (FE↔BE contract)
 │   └── src/                      types.ts, schemas.ts, index.ts
 ├── supabase/                 Postgres: config.toml, migrations/ (77), scripts/
-├── hillside-app/             ⚠️ LEGACY Vite/React app — reference only, not built
 ├── docs/                     Architecture, rollout, evidence, capstone defense docs
 ├── design-system/            Per-page design notes / UI references
 ├── scripts/                  dev-local.ps1, run-api-python.mjs, run-hardhat.cjs
@@ -416,7 +415,7 @@ Single-file FastAPI app. Endpoints: `GET /health`, `POST /v1/pricing/recommendat
 
 ### Cross-cutting
 - The **escrow state machine is duplicated across four layers** (Solidity enum, DB CHECK, shared TS type, reconciliation logic) with no single source of truth enforcing agreement.
-- **`hillside-app/` legacy app** is still in-tree and can be confused for active code — slated for a future cleanup commit.
+- **`hillside-app/` legacy app** was removed on 2026-06-22 (superseded by `hillside-next/`); recoverable from git history if a before/after comparison is needed.
 - No `TODO/FIXME` markers exist in the backend `app/`, contracts, AI service, or migrations; the frontend has exactly one (escrow release-tx).
 
 ---
@@ -432,7 +431,7 @@ Single-file FastAPI app. Endpoints: `GET /health`, `POST /v1/pricing/recommendat
 
 ## 12. Open Questions
 
-1. **Active vs legacy:** README is explicit that `hillside-next/` is live and `hillside-app/` is reference-only — do you want the legacy Vite app removed as part of this transition, or kept for adviser comparison?
+1. **Active vs legacy:** ✅ Resolved (2026-06-22) — the legacy `hillside-app/` Vite app was removed; `hillside-next/` is the sole active web app.
 2. **Audit-log integrity:** Is the forgeable `audit_logs` INSERT policy (`WITH CHECK (true)`) acceptable for the capstone scope, or should it be locked down before defense, given the blockchain-anchoring narrative?
 3. **Blockchain mode for the demo:** Will the defense run with real on-chain escrow (`feature_escrow_onchain_lock` on, synchronous tx waits) or in shadow-write mode? This affects latency and the `.transfer()` fragility above.
 4. **Status enum drift:** Should `BOOKING_STATUSES` (shared TS) be reconciled with the DB `reservations.status` CHECK (`draft`/`escrow_locked` mismatch), or is the superset intentional?
