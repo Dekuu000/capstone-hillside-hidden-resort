@@ -156,16 +156,25 @@ export function ResortSnapshotPanel({
             <svg viewBox="0 0 520 120" className="h-28 w-full" aria-label="AI demand trend">
               <path d={demandPath} fill="none" stroke="var(--color-secondary)" strokeWidth="3" strokeLinecap="round" />
             </svg>
-            <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] text-[var(--color-muted)]">
-              {snapshot.ai_demand_7d.items.map((item) => (
-                <span
-                  key={item.date}
-                  className="inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-[var(--color-border)] px-2 py-0.5"
-                >
-                  <span className="font-semibold text-[var(--color-text)]">{item.date.slice(5)}</span>
-                  <span>{item.occupancy_pct}%</span>
-                </span>
-              ))}
+            {/* Mobile: a clean one-line strip that scrolls horizontally (scrollbar
+                hidden, right-edge fade hints there's more). sm+: wraps since all
+                7 chips fit without scrolling. */}
+            <div className="relative mt-2">
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 text-[10px] text-[var(--color-muted)] [-ms-overflow-style:none] [scrollbar-width:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden">
+                {snapshot.ai_demand_7d.items.map((item) => (
+                  <span
+                    key={item.date}
+                    className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-[var(--color-border)] px-2 py-0.5"
+                  >
+                    <span className="font-semibold text-[var(--color-text)]">{item.date.slice(5)}</span>
+                    <span>{item.occupancy_pct}%</span>
+                  </span>
+                ))}
+              </div>
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-[var(--color-background)] to-transparent sm:hidden"
+              />
             </div>
           </>
         ) : (
