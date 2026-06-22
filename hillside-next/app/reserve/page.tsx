@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { getServerAccessToken, getServerAuthContext } from "../../lib/serverAuth";
 import { isBackOffice } from "../../../packages/shared/src/types";
-import { SearchNav } from "../../components/booking/SearchNav";
 import { SiteFooter } from "../../components/booking/SiteFooter";
 import { ReserveClient } from "../../components/booking/ReserveClient";
 
@@ -14,8 +13,7 @@ export default async function ReservePage() {
   if (isBackOffice(auth.role)) redirect("/admin");
 
   return (
-    <main className="flex min-h-screen flex-col bg-[var(--color-background)]">
-      <SearchNav isAuthed isAdmin={false} />
+    <main className="flex min-h-screen flex-col bg-[var(--color-background)] pb-24 md:pb-0">
       <ReserveClient token={token} email={auth.email ?? null} />
       <SiteFooter />
     </main>

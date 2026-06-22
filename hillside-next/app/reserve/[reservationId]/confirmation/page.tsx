@@ -5,9 +5,7 @@ import { getServerAccessToken, getServerAuthContext } from "../../../../lib/serv
 import { fetchServerApiData } from "../../../../lib/serverApi";
 import { reservationListItemSchema } from "../../../../../packages/shared/src/schemas";
 import { formatPhpPeso } from "../../../../lib/formatCurrency";
-import { SearchNav } from "../../../../components/booking/SearchNav";
 import { SiteFooter } from "../../../../components/booking/SiteFooter";
-import { isBackOffice } from "../../../../../packages/shared/src/types";
 
 function formatDate(iso?: string | null): string {
   if (!iso) return "—";
@@ -49,8 +47,7 @@ export default async function ConfirmationPage({
     .join(", ");
 
   return (
-    <main className="flex min-h-screen flex-col bg-[var(--color-background)]">
-      <SearchNav isAuthed isAdmin={isBackOffice(auth.role)} />
+    <main className="flex min-h-screen flex-col bg-[var(--color-background)] pb-24 md:pb-0">
 
       <div className="mx-auto w-full max-w-[640px] px-4 py-12 md:px-6">
         <div className="flex flex-col items-center text-center">

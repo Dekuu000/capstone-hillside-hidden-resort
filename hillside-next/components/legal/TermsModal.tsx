@@ -1,19 +1,33 @@
 "use client";
 
-import { useEffect } from "react";
-import { X } from "lucide-react";
-import { LegalDocument } from "./legalContent";
+import { useEffect, useState } from "react";
+import { ScrollText, X } from "lucide-react";
+import { CancellationContent, PrivacyContent, TermsContent } from "./legalContent";
 
 type TermsModalProps = {
   open: boolean;
   onClose: () => void;
-  /** When provided, shows an "I Agree" button that calls this then closes. */
+  /** When provided, shows the confirm + "Accept & Continue" flow that calls this then closes. */
   onAgree?: () => void;
 };
 
+const TABS = [
+  { key: "terms", label: "Terms of Service" },
+  { key: "privacy", label: "Privacy Policy" },
+  { key: "cancellation", label: "Cancellation" },
+] as const;
+
+type TabKey = (typeof TABS)[number]["key"];
+
 export function TermsModal({ open, onClose, onAgree }: TermsModalProps) {
+  const [tab, setTab] = useState<TabKey>("terms");
+  const [confirmed, setConfirmed] = useState(false);
+
   useEffect(() => {
     if (!open) return;
+    // Reset to a clean state each time the modal opens.
+    setTab("terms");
+    setConfirmed(false);
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
     };
@@ -36,27 +50,96 @@ export function TermsModal({ open, onClose, onAgree }: TermsModalProps) {
       aria-labelledby="terms-modal-title"
     >
       <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden />
-      <div className="relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl bg-[var(--color-surface)] shadow-[var(--shadow-lg)] sm:max-h-[85vh] sm:rounded-3xl">
-        <div className="flex items-center justify-between border-b border-[var(--color-border)] px-5 py-4">
-          <h2 id="terms-modal-title" className="text-lg font-semibold text-[var(--color-text)]">
-            Terms, Privacy &amp; Cancellation
-          </h2>
+      <div className="relative flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl bg-[var(--color-surface)] shadow-[var(--shadow-lg)] sm:max-h-[88vh] sm:rounded-3xl">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-3 border-b border-[var(--color-border)] px-5 py-4">
+          <div className="flex items-center gap-3">
+            <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[color:color-mix(in_srgb,var(--color-secondary)_14%,white)] text-[var(--color-secondary)]">
+              <ScrollText className="h-5 w-5" />
+            </span>
+            <div>
+              <h2 id="terms-modal-title" className="text-lg font-semibold text-[var(--color-text)]">
+                Terms &amp; Policies
+              </h2>
+              <p className="text-sm text-[var(--color-muted)]">Please review before you continue.</p>
+            </div>
+          </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close terms"
+            aria-label="Close"
             className="rounded-full p-1.5 text-[var(--color-muted)] transition hover:bg-[color:color-mix(in_srgb,var(--color-secondary)_12%,white)]"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="overflow-y-auto px-5 py-5">
-          <LegalDocument />
+        {/* Tabs */}
+        <div className="flex border-b border-[var(--color-border)] px-2" role="tablist" aria-label="Policy documents">
+          {TABS.map((item) => {
+            const active = tab === item.key;
+            return (
+              <button
+                key={item.key}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setTab(item.key)}
+                className={`flex-1 border-b-2 px-2 py-3 text-center text-sm font-semibold transition ${
+                  active
+                    ? "border-[var(--color-secondary)] text-[var(--color-secondary)]"
+                    : "border-transparent text-[var(--color-muted)] hover:text-[var(--color-text)]"
+                }`}
+              >
+                {item.label}
+              </button>
+            );
+          })}
         </div>
 
+        {/* Body */}
+        <div className="overflow-y-auto px-5 py-5">
+          {tab === "terms" ? <TermsContent /> : tab === "privacy" ? <PrivacyContent /> : <CancellationContent />}
+        </div>
+
+        {/* Footer */}
         {onAgree ? (
-          <div className="flex items-center justify-end gap-3 border-t border-[var(--color-border)] px-5 py-4">
+          <div className="space-y-3 border-t border-[var(--color-border)] bg-[color:color-mix(in_srgb,var(--color-secondary)_5%,white)] px-5 py-4">
+            <label className="flex items-start gap-2 text-sm text-[var(--color-text)]">
+              <input
+                type="checkbox"
+                checked={confirmed}
+                onChange={(event) => setConfirmed(event.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-[var(--color-border)] text-[var(--color-secondary)] focus-visible:ring-2 focus-visible:ring-teal-200"
+              />
+              <span>
+                I confirm I have reviewed and accept the Terms &amp; Conditions, Privacy Policy &amp; Cancellation
+                Policy.
+              </span>
+            </label>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-full border border-[var(--color-border)] px-4 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[color:color-mix(in_srgb,var(--color-secondary)_8%,white)]"
+              >
+                Decline
+              </button>
+              <button
+                type="button"
+                disabled={!confirmed}
+                onClick={() => {
+                  onAgree();
+                  onClose();
+                }}
+                className="rounded-full bg-[var(--color-cta)] px-5 py-2 text-sm font-semibold text-white transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Accept &amp; Continue
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-end border-t border-[var(--color-border)] px-5 py-4">
             <button
               type="button"
               onClick={onClose}
@@ -64,18 +147,8 @@ export function TermsModal({ open, onClose, onAgree }: TermsModalProps) {
             >
               Close
             </button>
-            <button
-              type="button"
-              onClick={() => {
-                onAgree();
-                onClose();
-              }}
-              className="rounded-full bg-[var(--color-cta)] px-5 py-2 text-sm font-semibold text-white transition hover:brightness-95"
-            >
-              I Agree
-            </button>
           </div>
-        ) : null}
+        )}
       </div>
     </div>
   );

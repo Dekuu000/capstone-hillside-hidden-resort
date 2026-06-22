@@ -8,8 +8,8 @@ import { CalendarDays, Loader2, Pencil, Users } from "lucide-react";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
-import { reservationCreateResponseSchema } from "../../../packages/shared/src/schemas";
-import type { ReservationCreateResponse, ServiceItem } from "../../../packages/shared/src/types";
+import { promoValidationResultSchema, reservationCreateResponseSchema } from "../../../packages/shared/src/schemas";
+import type { PromoValidationResult, ReservationCreateResponse, ServiceItem } from "../../../packages/shared/src/types";
 import { clearTourDraft, readTourDraft, type TourDraft } from "../../lib/booking/tourDraft";
 import { fetchPublicServiceById, tourImageUrl, tourSchedule } from "../../lib/catalog";
 import { tourMinPayNow, tourTotal } from "../../lib/booking/pricing";
@@ -34,6 +34,10 @@ export function TourReserveClient({ token, email }: { token: string; email: stri
   const [phone, setPhone] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [promoInput, setPromoInput] = useState("");
+  const [promo, setPromo] = useState<PromoValidationResult | null>(null);
+  const [promoBusy, setPromoBusy] = useState(false);
+  const [promoError, setPromoError] = useState<string | null>(null);
 
   useEffect(() => {
     const current = readTourDraft();
@@ -48,6 +52,21 @@ export function TourReserveClient({ token, email }: { token: string; email: stri
       if (!active) return;
       setService(found);
       setLoading(false);
+      // Auto-apply preview: surface any active no-code seasonal sale for tours.
+      try {
+        const gross = found ? tourTotal(found, current.adultQty, current.kidQty) : 0;
+        if (gross > 0) {
+          const auto = await apiFetch(
+            "/v2/promos/validate",
+            { method: "POST", body: JSON.stringify({ code: "", total: gross, kind: "tours" }) },
+            token,
+            promoValidationResultSchema,
+          );
+          if (active && auto.valid && auto.discount_amount > 0) setPromo(auto);
+        }
+      } catch {
+        /* auto-promo preview is best-effort */
+      }
       try {
         const profile = await apiFetch<{ name?: string | null; phone?: string | null }>(
           "/v2/me/profile",
@@ -67,8 +86,43 @@ export function TourReserveClient({ token, email }: { token: string; email: stri
     };
   }, [router, token]);
 
-  const total = draft && service ? tourTotal(service, draft.adultQty, draft.kidQty) : 0;
+  const grossTotal = draft && service ? tourTotal(service, draft.adultQty, draft.kidQty) : 0;
+  const discount = promo?.valid ? promo.discount_amount : 0;
+  const total = Math.max(0, grossTotal - discount);
   const minPay = tourMinPayNow(total);
+
+  const applyPromo = useCallback(async () => {
+    const code = promoInput.trim();
+    if (!code) return;
+    setPromoBusy(true);
+    setPromoError(null);
+    try {
+      const result = await apiFetch(
+        "/v2/promos/validate",
+        { method: "POST", body: JSON.stringify({ code, total: grossTotal, kind: "tours" }) },
+        token,
+        promoValidationResultSchema,
+      );
+      if (result.valid) {
+        setPromo(result);
+        setPromoError(null);
+      } else {
+        setPromo(null);
+        setPromoError(result.message || "This promo code is not valid.");
+      }
+    } catch (unknownError) {
+      setPromo(null);
+      setPromoError(getApiErrorMessage(unknownError, "Couldn't check that code."));
+    } finally {
+      setPromoBusy(false);
+    }
+  }, [promoInput, grossTotal, token]);
+
+  const removePromo = useCallback(() => {
+    setPromo(null);
+    setPromoInput("");
+    setPromoError(null);
+  }, []);
 
   const confirm = useCallback(async () => {
     if (!draft || !service) return;
@@ -96,6 +150,7 @@ export function TourReserveClient({ token, email }: { token: string; email: stri
         expected_pay_now: minPay,
         notes: null,
         idempotency_key: crypto.randomUUID(),
+        promo_code: promo?.valid ? promo.code : null,
       };
       const outcome = await syncAwareMutation<typeof payload, ReservationCreateResponse>({
         path: "/v2/reservations/tours",
@@ -124,7 +179,7 @@ export function TourReserveClient({ token, email }: { token: string; email: stri
       setError(getApiErrorMessage(unknownError, "Failed to reserve this tour."));
       setBusy(false);
     }
-  }, [draft, service, name, phone, minPay, token, router]);
+  }, [draft, service, name, phone, minPay, token, router, promo]);
 
   if (loading || !draft || !service) {
     return (
@@ -203,14 +258,68 @@ export function TourReserveClient({ token, email }: { token: string; email: stri
                 </div>
               </div>
 
-              <div className="mt-5 space-y-2 border-t border-[var(--color-border)] pt-4 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="muted-text">Tour total</span>
-                  <span className="font-semibold text-[var(--color-text)]">{formatPhpPeso(total)}</span>
-                </div>
-                <div className="flex items-center justify-between rounded-xl bg-[color:color-mix(in_srgb,var(--color-secondary)_10%,white)] px-3 py-2">
-                  <span className="muted-text">Due now to reserve</span>
-                  <span className="font-semibold text-[var(--color-text)]">{formatPhpPeso(minPay)}</span>
+              <div className="mt-5 border-t border-[var(--color-border)] pt-4">
+                {promo?.valid ? (
+                  <div className="mb-3 flex items-center justify-between rounded-xl bg-[color:color-mix(in_srgb,var(--color-secondary)_10%,white)] px-3 py-2 text-sm">
+                    <span className="font-semibold text-[var(--color-secondary)]">
+                      {promo.code ? `${promo.code} applied` : "Seasonal sale applied"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={removePromo}
+                      className="text-xs font-semibold text-[var(--color-muted)] transition hover:text-[var(--color-text)]"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <div className="mb-3">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={promoInput}
+                        onChange={(event) => setPromoInput(event.target.value.toUpperCase())}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            void applyPromo();
+                          }
+                        }}
+                        placeholder="Promo code"
+                        className="h-10 w-full rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm font-semibold uppercase tracking-wide text-[var(--color-text)] placeholder:font-normal placeholder:normal-case placeholder:tracking-normal placeholder:text-[var(--color-muted)] focus:border-[var(--color-secondary)] focus:outline-none focus:ring-2 focus:ring-[color:color-mix(in_srgb,var(--color-secondary)_25%,white)]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => void applyPromo()}
+                        disabled={promoBusy || !promoInput.trim()}
+                        className="h-10 shrink-0 rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-secondary)] transition hover:bg-[var(--color-background)] disabled:opacity-50"
+                      >
+                        {promoBusy ? "…" : "Apply"}
+                      </button>
+                    </div>
+                    {promoError ? <p className="mt-1.5 text-xs text-[var(--color-error)]">{promoError}</p> : null}
+                  </div>
+                )}
+
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="muted-text">Tour total</span>
+                    <span className="font-semibold text-[var(--color-text)]">{formatPhpPeso(grossTotal)}</span>
+                  </div>
+                  {discount > 0 ? (
+                    <div className="flex items-center justify-between text-[var(--color-secondary)]">
+                      <span className="font-semibold">Promo{promo?.code ? ` (${promo.code})` : ""}</span>
+                      <span className="font-semibold">−{formatPhpPeso(discount)}</span>
+                    </div>
+                  ) : null}
+                  <div className="flex items-center justify-between border-t border-[var(--color-border)] pt-2 font-semibold text-[var(--color-text)]">
+                    <span>Total</span>
+                    <span>{formatPhpPeso(total)}</span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-xl bg-[color:color-mix(in_srgb,var(--color-secondary)_10%,white)] px-3 py-2">
+                    <span className="muted-text">Due now to reserve</span>
+                    <span className="font-semibold text-[var(--color-text)]">{formatPhpPeso(minPay)}</span>
+                  </div>
                 </div>
               </div>
 

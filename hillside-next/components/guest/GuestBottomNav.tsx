@@ -13,8 +13,9 @@ const TABS = [
 ];
 
 /**
- * Airbnb-style mobile tab bar. Self-contained so it can sit on both the
- * logged-in guest shell and the public browse pages for a consistent nav.
+ * Airbnb-style mobile tab bar. Every tab has the SAME size + structure (equal
+ * width, fixed icon box, label always shown) so switching tabs never reflows the
+ * bar — active is shown via a filled icon pill + colour, not a different shape.
  */
 export function GuestBottomNav() {
   const pathname = usePathname();
@@ -27,7 +28,7 @@ export function GuestBottomNav() {
 
   return (
     <nav data-testid="guest-bottom-nav" className="fixed inset-x-0 bottom-0 z-30 border-t border-[var(--color-border)] bg-[var(--color-surface)]/90 px-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur md:hidden">
-      <div className="mx-auto flex h-[72px] w-full max-w-[430px] items-center justify-around gap-1 rounded-[2rem] bg-[var(--color-surface)] px-2 shadow-[var(--shadow-md)]">
+      <div className="mx-auto flex h-[72px] w-full max-w-[430px] items-stretch gap-1 rounded-[2rem] bg-[var(--color-surface)] px-2 shadow-[var(--shadow-md)]">
         {TABS.map((item) => {
           const active = isActive(item.href);
           const Icon = item.icon;
@@ -36,15 +37,26 @@ export function GuestBottomNav() {
               key={item.label}
               href={item.href}
               aria-current={active ? "page" : undefined}
-              className={cn(
-                "inline-flex min-w-0 items-center justify-center rounded-2xl transition",
-                active
-                  ? "h-12 w-12 bg-[var(--color-primary)] text-white shadow-sm"
-                  : "flex-col gap-1 px-2 py-2 text-[10px] font-semibold text-[var(--color-muted)] min-[380px]:text-[11px]",
-              )}
+              className="flex flex-1 flex-col items-center justify-center gap-1 rounded-2xl"
             >
-              <Icon className="h-4 w-4 shrink-0" />
-              {!active ? <span className="truncate">{item.label}</span> : null}
+              <span
+                className={cn(
+                  "flex h-9 w-9 items-center justify-center rounded-xl transition",
+                  active
+                    ? "bg-[var(--color-primary)] text-white shadow-sm"
+                    : "text-[var(--color-muted)]",
+                )}
+              >
+                <Icon className="h-5 w-5 shrink-0" />
+              </span>
+              <span
+                className={cn(
+                  "text-[10px] font-semibold leading-none transition min-[380px]:text-[11px]",
+                  active ? "text-[var(--color-primary)]" : "text-[var(--color-muted)]",
+                )}
+              >
+                {item.label}
+              </span>
             </Link>
           );
         })}

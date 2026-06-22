@@ -8,8 +8,8 @@ import { CalendarDays, Loader2, Pencil, Users } from "lucide-react";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
-import { reservationCreateResponseSchema } from "../../../packages/shared/src/schemas";
-import type { ReservationCreateResponse } from "../../../packages/shared/src/types";
+import { promoValidationResultSchema, reservationCreateResponseSchema } from "../../../packages/shared/src/schemas";
+import type { PromoValidationResult, ReservationCreateResponse } from "../../../packages/shared/src/types";
 import { clearBookingDraft, readBookingDraft, type BookingDraft } from "../../lib/booking/draft";
 import { fetchPublicUnitById, unitImageUrl, unitTypeLabel, type PublicUnit } from "../../lib/catalog";
 import { getUnitNightlyRate } from "../../lib/booking/pricing";
@@ -39,6 +39,10 @@ export function ReserveClient({ token, email }: { token: string; email: string |
   const [phone, setPhone] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [promoInput, setPromoInput] = useState("");
+  const [promo, setPromo] = useState<PromoValidationResult | null>(null);
+  const [promoBusy, setPromoBusy] = useState(false);
+  const [promoError, setPromoError] = useState<string | null>(null);
 
   useEffect(() => {
     const current = readBookingDraft();
@@ -53,6 +57,22 @@ export function ReserveClient({ token, email }: { token: string; email: string |
       if (!active) return;
       setUnit(found);
       setLoading(false);
+      // Auto-apply preview: surface any active no-code seasonal sale for stays.
+      try {
+        const nightCount = nightsBetween(current.checkInDate, current.checkOutDate);
+        const gross = found ? getUnitNightlyRate(found, current.guestCount) * nightCount : 0;
+        if (gross > 0) {
+          const auto = await apiFetch(
+            "/v2/promos/validate",
+            { method: "POST", body: JSON.stringify({ code: "", total: gross, kind: "stays" }) },
+            token,
+            promoValidationResultSchema,
+          );
+          if (active && auto.valid && auto.discount_amount > 0) setPromo(auto);
+        }
+      } catch {
+        /* auto-promo preview is best-effort */
+      }
       try {
         const profile = await apiFetch<{ name?: string | null; phone?: string | null }>(
           "/v2/me/profile",
@@ -74,6 +94,41 @@ export function ReserveClient({ token, email }: { token: string; email: string |
 
   const nights = draft ? nightsBetween(draft.checkInDate, draft.checkOutDate) : 0;
   const nightlyRate = unit && draft ? getUnitNightlyRate(unit, draft.guestCount) : 0;
+  const grossTotal = nightlyRate * Math.max(0, nights);
+  const discount = promo?.valid ? promo.discount_amount : 0;
+
+  const applyPromo = useCallback(async () => {
+    const code = promoInput.trim();
+    if (!code) return;
+    setPromoBusy(true);
+    setPromoError(null);
+    try {
+      const result = await apiFetch(
+        "/v2/promos/validate",
+        { method: "POST", body: JSON.stringify({ code, total: grossTotal }) },
+        token,
+        promoValidationResultSchema,
+      );
+      if (result.valid) {
+        setPromo(result);
+        setPromoError(null);
+      } else {
+        setPromo(null);
+        setPromoError(result.message || "This promo code is not valid.");
+      }
+    } catch (unknownError) {
+      setPromo(null);
+      setPromoError(getApiErrorMessage(unknownError, "Couldn't check that code."));
+    } finally {
+      setPromoBusy(false);
+    }
+  }, [promoInput, grossTotal, token]);
+
+  const removePromo = useCallback(() => {
+    setPromo(null);
+    setPromoInput("");
+    setPromoError(null);
+  }, []);
   const editHref = useMemo(() => {
     if (!draft) return "/stays";
     const params = new URLSearchParams({
@@ -107,6 +162,7 @@ export function ReserveClient({ token, email }: { token: string; email: string |
         unit_ids: [draft.unitId],
         guest_count: draft.guestCount,
         idempotency_key: crypto.randomUUID(),
+        promo_code: promo?.valid ? promo.code : null,
       };
       const outcome = await syncAwareMutation<typeof payload, ReservationCreateResponse>({
         path: "/v2/reservations",
@@ -140,7 +196,7 @@ export function ReserveClient({ token, email }: { token: string; email: string |
       }
       setBusy(false);
     }
-  }, [draft, unit, name, phone, token, router]);
+  }, [draft, unit, name, phone, token, router, promo]);
 
   if (loading || !draft || !unit) {
     return (
@@ -224,7 +280,54 @@ export function ReserveClient({ token, email }: { token: string; email: string |
               </div>
 
               <div className="mt-5 border-t border-[var(--color-border)] pt-4">
-                <PriceBreakdown nightlyRate={nightlyRate} nights={nights} guests={draft.guestCount} />
+                {promo?.valid ? (
+                  <div className="mb-3 flex items-center justify-between rounded-xl bg-[color:color-mix(in_srgb,var(--color-secondary)_10%,white)] px-3 py-2 text-sm">
+                    <span className="font-semibold text-[var(--color-secondary)]">{promo.code} applied</span>
+                    <button
+                      type="button"
+                      onClick={removePromo}
+                      className="text-xs font-semibold text-[var(--color-muted)] transition hover:text-[var(--color-text)]"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <div className="mb-3">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={promoInput}
+                        onChange={(event) => setPromoInput(event.target.value.toUpperCase())}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            void applyPromo();
+                          }
+                        }}
+                        placeholder="Promo code"
+                        className="h-10 w-full rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm font-semibold uppercase tracking-wide text-[var(--color-text)] placeholder:font-normal placeholder:normal-case placeholder:tracking-normal placeholder:text-[var(--color-muted)] focus:border-[var(--color-secondary)] focus:outline-none focus:ring-2 focus:ring-[color:color-mix(in_srgb,var(--color-secondary)_25%,white)]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => void applyPromo()}
+                        disabled={promoBusy || !promoInput.trim()}
+                        className="h-10 shrink-0 rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-secondary)] transition hover:bg-[var(--color-background)] disabled:opacity-50"
+                      >
+                        {promoBusy ? "…" : "Apply"}
+                      </button>
+                    </div>
+                    {promoError ? (
+                      <p className="mt-1.5 text-xs text-[var(--color-error)]">{promoError}</p>
+                    ) : null}
+                  </div>
+                )}
+                <PriceBreakdown
+                  nightlyRate={nightlyRate}
+                  nights={nights}
+                  guests={draft.guestCount}
+                  discount={discount}
+                  promoCode={promo?.code}
+                />
               </div>
 
               {error ? (

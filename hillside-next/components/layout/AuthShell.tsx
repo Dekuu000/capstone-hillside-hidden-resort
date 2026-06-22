@@ -100,7 +100,7 @@ export function AuthShell({
               <div className="mt-auto">
                 <h1 className="text-[2.6rem] font-semibold leading-[1.05]">{sideTitle}</h1>
                 <p className="mt-2 text-[2rem] font-semibold text-teal-300">{sideSubtitle}</p>
-                <p className="mt-4 max-w-sm text-base leading-relaxed text-white/90">{sideDescription}</p>
+                <p className="mt-4 whitespace-nowrap text-base leading-relaxed text-white/90">{sideDescription}</p>
 
                 {showSideHighlight ? (
                   <div className="mt-10 space-y-4">
@@ -185,11 +185,11 @@ export function AuthShell({
             <div className="flex h-9 items-center justify-center border-t border-[var(--color-border)] px-2 text-center text-[10px] leading-none whitespace-nowrap text-[var(--color-muted)] sm:h-auto sm:px-10 sm:py-4 sm:text-xs sm:leading-normal sm:whitespace-normal">
               <span>&copy; 2026 Hillside Hidden Resort</span>
               <span className="mx-1.5">·</span>
-              <Link href="/privacy" className="hover:text-[var(--color-primary)] hover:underline">
+              <Link href="/privacy" className="font-semibold text-[var(--color-secondary)] hover:underline">
                 Privacy Policy
               </Link>
               <span className="mx-1.5">·</span>
-              <Link href="/terms" className="hover:text-[var(--color-primary)] hover:underline">
+              <Link href="/terms" className="font-semibold text-[var(--color-secondary)] hover:underline">
                 Terms of Service
               </Link>
             </div>

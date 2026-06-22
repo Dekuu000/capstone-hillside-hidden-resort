@@ -197,7 +197,7 @@ export function NotificationBell({
           {/* Mobile backdrop so the panel reads as a sheet (desktop uses a popover). */}
           <div className="fixed inset-0 z-40 bg-black/20 sm:hidden" aria-hidden="true" onClick={() => setOpen(false)} />
           <div
-            className={`fixed inset-x-3 top-[74px] z-50 overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)] sm:absolute sm:inset-x-auto sm:top-auto sm:w-[360px] ${
+            className={`fixed inset-x-3 top-[74px] z-50 overflow-hidden whitespace-normal rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)] sm:absolute sm:inset-x-auto sm:top-auto sm:w-[360px] ${
               placement === "top-start"
                 ? "sm:bottom-full sm:left-0 sm:mb-2"
                 : "sm:top-full sm:right-0 sm:mt-2"
@@ -226,7 +226,7 @@ export function NotificationBell({
               </div>
             </div>
 
-          <div className="max-h-[min(70vh,420px)] overflow-y-auto">
+          <div className="max-h-[min(70vh,420px)] overflow-y-auto overflow-x-hidden">
             {loading && items.length === 0 ? (
               <div className="space-y-2 p-3">
                 <div className="skeleton h-12 w-full" />
@@ -244,7 +244,7 @@ export function NotificationBell({
                       type="button"
                       onClick={() => void openItem(item)}
                       className={`flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-[var(--color-background)] ${
-                        item.read_at ? "" : "bg-[color:color-mix(in_srgb,var(--color-secondary)_6%,white)]"
+                        item.read_at ? "" : "bg-[color:color-mix(in_srgb,var(--color-secondary)_10%,white)]"
                       }`}
                     >
                       <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${SEVERITY_DOT[item.severity] ?? SEVERITY_DOT.info}`} />
@@ -253,7 +253,7 @@ export function NotificationBell({
                           <span className="truncate text-sm font-semibold text-[var(--color-text)]">{item.title}</span>
                           <span className="shrink-0 text-[11px] text-[var(--color-muted)]">{relativeTime(item.created_at)}</span>
                         </span>
-                        {item.body ? <span className="mt-0.5 block text-xs text-[var(--color-muted)]">{item.body}</span> : null}
+                        {item.body ? <span className="mt-0.5 block break-words text-xs leading-relaxed text-[var(--color-muted)]">{item.body}</span> : null}
                       </span>
                     </button>
                   </li>

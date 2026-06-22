@@ -43,14 +43,23 @@ export function ProfilePill({ initialName = null }: { initialName?: string | nul
       aria-label="Profile and account"
       aria-current={active ? "page" : undefined}
       className={cn(
-        "inline-flex h-11 items-center gap-2 rounded-full border bg-[var(--color-surface)] px-2 pr-3 shadow-sm transition hover:bg-[color:color-mix(in_srgb,var(--color-secondary)_8%,white)]",
-        active ? "border-[var(--color-primary)]" : "border-[var(--color-border)]",
+        "inline-flex h-10 items-center gap-2 rounded-full pl-1 pr-4 text-sm font-semibold transition",
+        active
+          ? "bg-[var(--color-primary)] text-white shadow-sm"
+          : "text-[var(--color-text)] hover:bg-[color:color-mix(in_srgb,var(--color-secondary)_12%,white)]",
       )}
     >
-      <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[var(--color-primary)] text-xs font-semibold text-white">
+      <span
+        className={cn(
+          "inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold",
+          active
+            ? "bg-white/20 text-white"
+            : "bg-[color:color-mix(in_srgb,var(--color-primary)_12%,white)] text-[var(--color-primary)]",
+        )}
+      >
         {initial}
       </span>
-      <span className="hidden text-sm font-semibold text-[var(--color-text)] sm:inline">Profile</span>
+      <span className="hidden sm:inline">Profile</span>
     </Link>
   );
 }

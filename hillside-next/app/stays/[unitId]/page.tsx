@@ -3,14 +3,11 @@ import { notFound } from "next/navigation";
 import { ChevronLeft, MapPin, Star, Users } from "lucide-react";
 import { getServerAccessToken, getServerAuthContext } from "../../../lib/serverAuth";
 import { fetchPublicUnitById, fetchUnitReviews, unitGalleryImages, unitTypeLabel } from "../../../lib/catalog";
-import { SearchNav } from "../../../components/booking/SearchNav";
 import { SiteFooter } from "../../../components/booking/SiteFooter";
-import { GuestBottomNav } from "../../../components/guest/GuestBottomNav";
 import { ListingGallery } from "../../../components/booking/ListingGallery";
 import { AmenityList } from "../../../components/booking/AmenityList";
 import { ListingBookingCard } from "../../../components/booking/ListingBookingCard";
 import { MapPlaceholder } from "../../../components/booking/MapPlaceholder";
-import { isBackOffice } from "../../../../packages/shared/src/types";
 
 function formatReviewDate(iso: string): string {
   const date = new Date(iso);
@@ -46,7 +43,6 @@ export default async function ListingDetailPage({
 
   return (
     <main className={`flex min-h-screen flex-col bg-[var(--color-background)]${auth ? " pb-24 md:pb-0" : ""}`}>
-      <SearchNav isAuthed={Boolean(auth)} isAdmin={isBackOffice(auth?.role)} />
 
       <div className="mx-auto w-full max-w-[1120px] px-4 py-6 md:px-6 lg:px-8">
         <Link
@@ -168,7 +164,6 @@ export default async function ListingDetailPage({
       </div>
 
       <SiteFooter />
-      {auth ? <GuestBottomNav /> : null}
     </main>
   );
 }

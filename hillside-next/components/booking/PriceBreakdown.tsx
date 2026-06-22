@@ -5,16 +5,22 @@ type PriceBreakdownProps = {
   nightlyRate: number;
   nights: number;
   guests: number;
+  /** Peso discount from an applied promo code (default 0). */
+  discount?: number;
+  /** Applied promo code, for the discount line label. */
+  promoCode?: string | null;
 };
 
 /**
  * Live price breakdown. Mirrors the real resort model: total = nightly × nights,
- * with a GCash deposit due now (computeStayDepositPreview) and the balance at check-in.
- * No cleaning/service fees — the resort doesn't charge them.
+ * with a deposit due now (computeStayDepositPreview, on the discounted total) and
+ * the balance at check-in. An applied promo code subtracts before the deposit.
  */
-export function PriceBreakdown({ nightlyRate, nights, guests }: PriceBreakdownProps) {
+export function PriceBreakdown({ nightlyRate, nights, guests, discount = 0, promoCode }: PriceBreakdownProps) {
   const safeNights = Math.max(0, nights);
-  const total = nightlyRate * safeNights;
+  const gross = nightlyRate * safeNights;
+  const safeDiscount = Math.min(Math.max(0, discount), gross);
+  const total = gross - safeDiscount;
   const deposit = computeStayDepositPreview(total);
   const balance = Math.max(0, total - deposit);
 
@@ -25,8 +31,14 @@ export function PriceBreakdown({ nightlyRate, nights, guests }: PriceBreakdownPr
           {formatPhpPeso(nightlyRate)} × {safeNights} {safeNights === 1 ? "night" : "nights"}
           <span className="muted-text"> · {guests} {guests === 1 ? "guest" : "guests"}</span>
         </span>
-        <span>{formatPhpPeso(total)}</span>
+        <span>{formatPhpPeso(gross)}</span>
       </div>
+      {safeDiscount > 0 ? (
+        <div className="flex items-center justify-between text-[var(--color-secondary)]">
+          <span className="font-semibold">Promo{promoCode ? ` (${promoCode})` : ""}</span>
+          <span className="font-semibold">−{formatPhpPeso(safeDiscount)}</span>
+        </div>
+      ) : null}
       <div className="flex items-center justify-between border-t border-[var(--color-border)] pt-2 font-semibold text-[var(--color-text)]">
         <span>Total</span>
         <span>{formatPhpPeso(total)}</span>

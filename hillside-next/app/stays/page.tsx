@@ -1,11 +1,8 @@
 import { getServerAccessToken, getServerAuthContext } from "../../lib/serverAuth";
 import { fetchAvailableUnits, fetchPublicUnits, type PublicUnit } from "../../lib/catalog";
-import { SearchNav } from "../../components/booking/SearchNav";
-import { isBackOffice } from "../../../packages/shared/src/types";
 import { SearchWidget } from "../../components/booking/SearchWidget";
 import { StaysResults } from "../../components/booking/StaysResults";
 import { SiteFooter } from "../../components/booking/SiteFooter";
-import { GuestBottomNav } from "../../components/guest/GuestBottomNav";
 import type { CategoryKey } from "../../components/booking/CategoryFilterRow";
 
 function toCategory(type?: string): CategoryKey {
@@ -52,7 +49,6 @@ export default async function StaysPage({
 
   return (
     <main className={`flex min-h-screen flex-col bg-[var(--color-background)]${auth ? " pb-24 md:pb-0" : ""}`}>
-      <SearchNav isAuthed={Boolean(auth)} isAdmin={isBackOffice(auth?.role)} />
 
       <div className="border-b border-[var(--color-border)] bg-[var(--color-surface)]">
         <div className="mx-auto w-full max-w-[1280px] px-4 py-5 md:px-6 lg:px-8">
@@ -81,7 +77,6 @@ export default async function StaysPage({
       />
 
       <SiteFooter />
-      {auth ? <GuestBottomNav /> : null}
     </main>
   );
 }

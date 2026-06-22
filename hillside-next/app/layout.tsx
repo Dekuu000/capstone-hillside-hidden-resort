@@ -5,6 +5,9 @@ import { ServiceWorkerRegister } from "../components/shared/ServiceWorkerRegiste
 import { SyncEngineProvider } from "../components/shared/SyncEngineProvider";
 import { ToastProvider } from "../components/shared/ToastProvider";
 import { OfflineStatusBanner } from "../components/shared/OfflineStatusBanner";
+import { GuestHeaderGate } from "../components/layout/GuestHeaderGate";
+import { getServerAccessToken, getServerAuthContext } from "../lib/serverAuth";
+import { isBackOffice } from "../../packages/shared/src/types";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -32,9 +35,14 @@ export const viewport: Viewport = {
   themeColor: "#13304c",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  // Resolve auth once so the persistent guest header renders with the correct
+  // signed-in state from first paint (no flash). Cached + null-safe.
+  const token = await getServerAccessToken();
+  const auth = token ? await getServerAuthContext(token) : null;
+
   return (
     <html lang="en" className={inter.variable}>
       <body>
@@ -42,7 +50,13 @@ export default function RootLayout({
           <SyncEngineProvider>
             <ServiceWorkerRegister />
             <OfflineStatusBanner />
-            {children}
+            <GuestHeaderGate
+              initialAuthed={Boolean(auth)}
+              initialIsAdmin={isBackOffice(auth?.role)}
+              initialName={auth?.email ?? null}
+            >
+              {children}
+            </GuestHeaderGate>
           </SyncEngineProvider>
         </ToastProvider>
       </body>

@@ -1,10 +1,7 @@
 import { TreePalm } from "lucide-react";
 import { getServerAccessToken, getServerAuthContext } from "../../lib/serverAuth";
 import { fetchPublicServices } from "../../lib/catalog";
-import { isBackOffice } from "../../../packages/shared/src/types";
-import { SearchNav } from "../../components/booking/SearchNav";
 import { SiteFooter } from "../../components/booking/SiteFooter";
-import { GuestBottomNav } from "../../components/guest/GuestBottomNav";
 import { TourCard } from "../../components/booking/TourCard";
 
 export default async function ToursPage() {
@@ -14,7 +11,6 @@ export default async function ToursPage() {
 
   return (
     <main className={`flex min-h-screen flex-col bg-[var(--color-background)]${auth ? " pb-24 md:pb-0" : ""}`}>
-      <SearchNav isAuthed={Boolean(auth)} isAdmin={isBackOffice(auth?.role)} />
 
       <section className="border-b border-[var(--color-border)] bg-[var(--color-surface)]">
         <div className="mx-auto w-full max-w-[1280px] px-4 py-8 md:px-6 lg:px-8">
@@ -46,7 +42,6 @@ export default async function ToursPage() {
       </section>
 
       <SiteFooter />
-      {auth ? <GuestBottomNav /> : null}
     </main>
   );
 }

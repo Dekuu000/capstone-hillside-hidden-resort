@@ -1081,6 +1081,11 @@ export function MyBookingsClient({
                     <p className="text-lg font-bold leading-tight text-[var(--color-text)]">
                       {formatPeso(isPaymentTab ? remaining : total)}
                     </p>
+                    {!isPaymentTab && Number(booking.discount_amount ?? 0) > 0 ? (
+                      <p className="mt-0.5 text-[11px] font-semibold text-[var(--color-secondary)]">
+                        {booking.promo_code ? `${booking.promo_code} · ` : ""}−{formatPeso(Number(booking.discount_amount))} off
+                      </p>
+                    ) : null}
                     {isPaymentTab && minimumPayNow > 0 ? (
                       <p className="mt-0.5 text-[11px] text-[var(--color-muted)]">Min. now {formatPeso(minimumPayNow)}</p>
                     ) : null}

@@ -61,8 +61,8 @@ export function CancellationContent() {
   return (
     <div className="space-y-3 text-sm leading-relaxed text-[var(--color-muted)]">
       <p>
-        <strong>If you cancel a confirmed booking,</strong> the deposit you paid (20% of your total,
-        between ₱500 and ₱1,000) is non-refundable. Any amount you paid above the deposit is refunded.
+        <strong>If you cancel a confirmed booking,</strong> the deposit you paid (20% of your total, with a
+        minimum of ₱500) is non-refundable. Any amount you paid above the deposit is refunded.
       </p>
       <p>
         <strong>If the resort cancels your booking,</strong> you receive a full refund of everything you

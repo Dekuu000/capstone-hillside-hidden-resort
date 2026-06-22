@@ -11,7 +11,6 @@ import { resolveUserProfileName } from "../../lib/userProfile";
 import { Button } from "../../components/shared/Button";
 import { Toast } from "../../components/shared/Toast";
 import { AuthShell } from "../../components/layout/AuthShell";
-import { TermsModal } from "../../components/legal/TermsModal";
 import { isBackOffice } from "../../../packages/shared/src/types";
 
 const AUTO_BOOTSTRAP_GUARD_KEY = "hs_login_auto_bootstrap_target";
@@ -74,8 +73,6 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [agree, setAgree] = useState(false);
-  const [showTerms, setShowTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [nextPath] = useState(() => {
@@ -227,11 +224,6 @@ export default function LoginPage() {
     setBusy(true);
     setError(null);
     window.sessionStorage.removeItem(AUTO_BOOTSTRAP_GUARD_KEY);
-    if (!agree) {
-      setBusy(false);
-      setError("Please agree to the Terms and Privacy Policy before signing in.");
-      return;
-    }
     try {
       const supabase = getSupabaseBrowserClient();
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
@@ -312,7 +304,7 @@ export default function LoginPage() {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold text-[var(--color-text)]">Password</span>
-            <Link href="/auth/forgot-password" className="text-sm font-semibold text-[var(--color-secondary)] hover:underline md:hidden">
+            <Link href="/auth/forgot-password" className="text-sm font-semibold text-[var(--color-secondary)] hover:underline">
               Forgot Password?
             </Link>
           </div>
@@ -331,32 +323,6 @@ export default function LoginPage() {
               </button>
             }
           />
-        </div>
-
-        <div className="hidden justify-end md:flex">
-          <Link href="/auth/forgot-password" className="text-sm font-semibold text-[var(--color-secondary)] hover:underline">
-            Forgot Password?
-          </Link>
-        </div>
-
-        <div className="flex items-start gap-2 text-sm text-[var(--color-muted)]">
-          <input
-            type="checkbox"
-            checked={agree}
-            onChange={(event) => setAgree(event.target.checked)}
-            aria-label="I have read and agree to the Terms, Privacy, and Cancellation policies"
-            className="mt-1 h-4 w-4 rounded border-[var(--color-border)] text-[var(--color-secondary)] focus-visible:ring-2 focus-visible:ring-teal-200"
-          />
-          <p>
-            I have read and agree to the{" "}
-            <button
-              type="button"
-              onClick={() => setShowTerms(true)}
-              className="text-left font-semibold text-[var(--color-secondary)] underline-offset-2 hover:underline"
-            >
-              Terms &amp; Conditions, Privacy Policy &amp; Cancellation Policy
-            </button>
-          </p>
         </div>
 
         {error ? <Toast type="error" title="Sign in failed" message={error} /> : null}
@@ -378,7 +344,6 @@ export default function LoginPage() {
         </Link>
       </div>
 
-      <TermsModal open={showTerms} onClose={() => setShowTerms(false)} onAgree={() => setAgree(true)} />
     </AuthShell>
   );
 }
