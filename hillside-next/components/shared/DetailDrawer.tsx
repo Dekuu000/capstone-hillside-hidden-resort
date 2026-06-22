@@ -37,7 +37,7 @@ export function DetailDrawer({
       />
       <aside
         className={cn(
-          "relative z-10 flex max-h-[85vh] w-full flex-col rounded-t-2xl bg-[var(--color-surface)] shadow-[var(--shadow-lg)] motion-safe:animate-[slideUp_220ms_ease-out]",
+          "relative z-10 mb-3 flex max-h-[85vh] w-full flex-col rounded-t-2xl bg-[var(--color-surface)] shadow-[var(--shadow-lg)] motion-safe:animate-[slideUp_220ms_ease-out] lg:mb-0",
           "lg:z-0 lg:h-full lg:max-h-none lg:rounded-l-[var(--radius-xl)] lg:rounded-t-none lg:overflow-hidden lg:animate-none",
           size === "sm" && "lg:max-w-[420px]",
           size === "md" && "lg:max-w-[560px]",
