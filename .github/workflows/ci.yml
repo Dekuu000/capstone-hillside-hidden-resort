@@ -172,7 +172,12 @@ jobs:
           if-no-files-found: ignore
 
   release-gate-sepolia-smoke:
-    if: ${{ github.event_name != 'workflow_call' || inputs.run_sepolia_smoke }}
+    # This gate boots the API against live Sepolia + a cloud Supabase and the
+    # smoke script mutates data (creates reservations / override check-ins, guarded
+    # by -AllowDataWrites). It must NEVER run automatically on push/PR — only when
+    # an operator explicitly dispatches it, or a caller workflow opts in. Otherwise
+    # it trips the script's safety-stop and shows a permanent red on every PR.
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_call' && inputs.run_sepolia_smoke) }}
     runs-on: ubuntu-latest
     timeout-minutes: 40
     needs:
