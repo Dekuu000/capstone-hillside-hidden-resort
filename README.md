@@ -39,7 +39,7 @@ It is **not part of the active workspace build** and is not used by the current 
 | --- | --- | --- |
 | Frontend PWA | Next.js 15, React 19, TypeScript, Tailwind 4 | Guest portal, booking flow, admin dashboard, QR UI, offline-friendly UI |
 | Backend API | FastAPI | Trusted business logic, reservations, QR validation, payments, blockchain bridge |
-| Database/Auth/Storage | Supabase | Off-chain source of truth for users, reservations, payments, QR metadata, media, audit logs |
+| Database/Auth/Storage | Supabase | Off-chain source of truth for users/roles, reservations, payments, QR metadata, media, audit logs, notifications, reviews, and promotions |
 | AI Service | Prophet / scikit-learn with fallback behavior | Forecasting, pricing recommendations, concierge suggestions |
 | Blockchain | Ethereum Sepolia now, Polygon L2 later | Immutable hashes, transaction references, audit proofs, escrow concept |
 | Smart Contracts | Solidity / Hardhat | Demo escrow and guest-pass contracts |
@@ -65,6 +65,7 @@ Guest personal information is kept off-chain. The blockchain layer is used only 
 |-- supabase/               Database migrations and SQL utilities
 |-- docs/                   Architecture, rollout, evidence, and capstone support docs
 |-- design-system/          Design notes and UI references
+|-- scripts/                Dev orchestration / helper scripts
 |-- hillside-app/           Legacy Vite app retained for reference only
 |-- netlify.toml            Netlify deployment config for hillside-next
 `-- render.yaml             Render deployment config for hillside-api
@@ -312,6 +313,7 @@ npm --workspace hillside-next run build
 
 Important reviewer-facing docs:
 
+- `PROJECT_OVERVIEW.md` - current single-source overview (stack, architecture, schema, endpoints, key flows)
 - `PROJECT_ALIGNMENT.md` - primary project direction and architecture alignment guide
 - `docs/capstone/` - demo runbook, defense talk track, and capstone support checklists
 - `docs/re-architecture-core/` - detailed architecture and V2 implementation notes
@@ -325,7 +327,7 @@ Important reviewer-facing docs:
 Recommended review order:
 
 1. Read this root `README.md`.
-2. Read `PROJECT_ALIGNMENT.md`.
+2. Read `PROJECT_OVERVIEW.md` (current system overview) and `PROJECT_ALIGNMENT.md` (project direction).
 3. Inspect `hillside-next/` for the active PWA UI.
 4. Inspect `hillside-api/` for backend reservation/payment/QR logic.
 5. Inspect `supabase/migrations/` for database changes.
@@ -343,4 +345,4 @@ Recommended review order:
 
 ## One-Sentence Summary
 
-Hillside Hidden Resort is a Next.js 15 PWA with FastAPI, Supabase, QR-based check-in, offline-friendly guest/admin workflows, AI-assisted resort intelligence, and Sepolia-backed auditability, with Polygon L2 retained as a future deployment target.
+Hillside Hidden Resort is a Next.js 15 PWA with FastAPI, Supabase, role-based staff access, QR-based check-in, promotions, reviews, in-app notifications, an automated booking lifecycle, offline-friendly guest/admin workflows, AI-assisted resort intelligence, and Sepolia-backed auditability, with Polygon L2 retained as a future deployment target.
