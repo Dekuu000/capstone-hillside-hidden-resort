@@ -29,7 +29,7 @@ function TabButton({ tab }: { tab: MobileTab }) {
     <Link
       href={tab.href}
       aria-current={tab.active ? "page" : undefined}
-      className={`flex min-h-[44px] flex-1 flex-col items-center justify-center gap-0.5 px-1 py-1.5 text-[11px] font-medium transition-colors ${
+      className={`flex min-h-[44px] flex-1 flex-col items-center justify-center gap-0.5 px-1 py-1.5 text-[11px] font-medium transition-colors active:bg-[var(--color-background)] active:text-[var(--color-primary)] ${
         tab.active ? "text-[var(--color-primary)]" : "text-[var(--color-muted)] hover:text-[var(--color-text)]"
       }`}
     >
@@ -65,7 +65,7 @@ export function MobileTabBar({ tabs, fab, onMore, moreActive }: MobileTabBarProp
               className="-mt-5 flex flex-col items-center gap-0.5"
             >
               <span
-                className={`flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-cta)] text-white shadow-[var(--shadow-md)] ring-4 ring-[var(--color-surface)] transition-transform active:scale-95 ${
+                className={`flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-cta)] text-white shadow-[var(--shadow-md)] ring-4 ring-[var(--color-surface)] transition-transform active:scale-90 active:brightness-90 ${
                   fab.active ? "scale-105" : ""
                 }`}
               >
@@ -85,7 +85,7 @@ export function MobileTabBar({ tabs, fab, onMore, moreActive }: MobileTabBarProp
           onClick={onMore}
           aria-haspopup="dialog"
           aria-label="More menu"
-          className={`flex min-h-[44px] flex-1 flex-col items-center justify-center gap-0.5 px-1 py-1.5 text-[11px] font-medium transition-colors ${
+          className={`flex min-h-[44px] flex-1 flex-col items-center justify-center gap-0.5 px-1 py-1.5 text-[11px] font-medium transition-colors active:bg-[var(--color-background)] active:text-[var(--color-primary)] ${
             moreActive ? "text-[var(--color-primary)]" : "text-[var(--color-muted)] hover:text-[var(--color-text)]"
           }`}
         >

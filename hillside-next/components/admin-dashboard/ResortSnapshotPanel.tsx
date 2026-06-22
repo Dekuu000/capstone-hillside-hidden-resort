@@ -71,7 +71,7 @@ export function ResortSnapshotPanel({
         <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-4 text-sm text-red-700">{error}</div>
       ) : null}
 
-      <div className={`mt-5 grid gap-3 sm:grid-cols-2 ${canSeeTechnical ? "xl:grid-cols-4" : "xl:grid-cols-3"}`}>
+      <div className={`mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 ${canSeeTechnical ? "xl:grid-cols-4" : "xl:grid-cols-3"}`}>
         <article className="group h-full min-h-[132px] rounded-2xl border border-[var(--color-border)] bg-white p-4 transition-colors duration-200 hover:border-[color:color-mix(in_srgb,var(--color-secondary)_35%,white)]">
           <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">
             <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">

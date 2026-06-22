@@ -54,6 +54,9 @@ html {
      keeps the vertical scroller, preserving the sticky header. Wide tables
      keep their own `overflow-x-auto` wrappers, so their data stays scrollable. */
   overflow-x: hidden;
+  /* Brand-tinted tap flash on touch devices so every button/link gives
+     immediate press feedback on mobile (iOS Safari / Chrome Android). */
+  -webkit-tap-highlight-color: color-mix(in srgb, var(--color-primary) 18%, transparent);
 }
 
 body {

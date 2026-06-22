@@ -42,7 +42,7 @@ export function StaffOperationsDashboard({
         <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-4 text-sm text-red-700">{error}</div>
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {kpis.map((kpi) => {
           const Icon = kpi.icon;
           return (
