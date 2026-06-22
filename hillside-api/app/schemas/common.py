@@ -447,6 +447,25 @@ class ResortSnapshotResponse(BaseModel):
     ai_demand_7d: ResortSnapshotAiDemand
 
 
+class OperationsRoomCounts(BaseModel):
+    cleaned: int = 0
+    occupied: int = 0
+    maintenance: int = 0
+    dirty: int = 0
+    total: int = 0
+
+
+class OperationsSnapshotResponse(BaseModel):
+    """Front-desk operations snapshot — no revenue, crypto, or AI internals.
+    Safe for the staff (Front Desk) dashboard."""
+    as_of: datetime
+    rooms: OperationsRoomCounts
+    today_arrivals: int = 0
+    ready_for_check_in: int = 0
+    pending_payment: int = 0
+    walk_ins_today: int = 0
+
+
 class ReservationGuestSummary(BaseModel):
     name: str | None = None
     email: str | None = None

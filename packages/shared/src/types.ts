@@ -694,6 +694,21 @@ export type ResortSnapshotResponse = {
   ai_demand_7d: ResortSnapshotAiDemand;
 };
 
+export type OperationsSnapshotResponse = {
+  as_of: string;
+  rooms: {
+    cleaned: number;
+    occupied: number;
+    maintenance: number;
+    dirty: number;
+    total: number;
+  };
+  today_arrivals: number;
+  ready_for_check_in: number;
+  pending_payment: number;
+  walk_ins_today: number;
+};
+
 export type QrVerifyResponse = {
   reservation_id: string;
   reservation_code: string;

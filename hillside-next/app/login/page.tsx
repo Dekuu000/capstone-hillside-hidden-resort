@@ -106,8 +106,9 @@ export default function LoginPage() {
     const safePath = requestedPath && requestedPath.startsWith("/") ? requestedPath : "";
     const role = await resolveBackOfficeRole();
     const backOffice = isBackOffice(role);
-    // Front Desk lands on check-in; Manager/System Admin on the admin home; guests on their trips.
-    const home = role === "staff" ? "/admin/check-in" : backOffice ? "/admin" : "/guest/my-stay";
+    // All back-office roles land on the dashboard (Front Desk sees the operations
+    // cockpit, Manager/System Admin the full view); guests on their trips.
+    const home = backOffice ? "/admin" : "/guest/my-stay";
     if (!safePath) return home;
     if (!safePath.startsWith("/admin")) return safePath;
     return backOffice ? safePath : "/my-bookings";

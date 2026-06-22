@@ -3,20 +3,26 @@ from decimal import Decimal, InvalidOperation
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.core.auth import AuthContext, require_admin
+from app.core.auth import AuthContext, require_admin, require_operations
 from app.core.cache import TTLCache
 from app.core.chains import get_active_chain
 from app.core.config import settings
 from app.integrations.supabase_client import (
     get_latest_ai_occupancy_forecast_any,
     get_report_summary as get_report_summary_rpc,
+    get_reservation_quick_stats,
     list_admin_payments,
     list_recent_reservations,
     list_units_admin,
 )
 from app.observability.escrow_reconciliation_monitor import get_cached_escrow_reconciliation_page
 from app.observability.perf_metrics import perf_metrics
-from app.schemas.common import DashboardSummaryResponse, ResortSnapshotResponse
+from app.schemas.common import (
+    DashboardSummaryResponse,
+    OperationsRoomCounts,
+    OperationsSnapshotResponse,
+    ResortSnapshotResponse,
+)
 
 router = APIRouter()
 _CACHE = TTLCache(settings.cache_ttl_seconds)
@@ -252,6 +258,36 @@ def get_resort_snapshot(
     }
     _CACHE.set(cache_key, payload)
     return payload
+
+
+@router.get("/operations", response_model=OperationsSnapshotResponse)
+def get_operations_snapshot(
+    auth: AuthContext = Depends(require_operations),
+):
+    """Front-desk operations snapshot (staff and up). Deliberately excludes
+    revenue, crypto, and AI internals — just today's arrivals, payments to
+    review, and room housekeeping status."""
+    today = datetime.now(timezone(timedelta(hours=8))).date().isoformat()
+    try:
+        _, total = list_units_admin(limit=1, offset=0, is_active=True)
+        counts: dict[str, int] = {}
+        for room_status in ("cleaned", "occupied", "maintenance", "dirty"):
+            _, count = list_units_admin(
+                limit=1, offset=0, is_active=True, operational_status=room_status
+            )
+            counts[room_status] = count
+        stats = get_reservation_quick_stats(today=today)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+
+    return OperationsSnapshotResponse(
+        as_of=datetime.now(timezone.utc),
+        rooms=OperationsRoomCounts(total=total, **counts),
+        today_arrivals=stats.get("today_arrivals", 0),
+        ready_for_check_in=stats.get("ready_for_check_in", 0),
+        pending_payment=stats.get("pending_payment", 0),
+        walk_ins_today=stats.get("walk_ins_today", 0),
+    )
 
 
 @router.get("/perf")
