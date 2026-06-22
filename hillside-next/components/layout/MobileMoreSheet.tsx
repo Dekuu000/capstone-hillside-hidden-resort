@@ -70,7 +70,7 @@ export function MobileMoreSheet({ open, onClose, items, name, email, initial, on
                 aria-current={item.active ? "page" : undefined}
                 className={`flex min-h-[76px] flex-col items-center justify-center gap-1.5 rounded-xl border p-2 text-center text-xs font-medium transition-colors ${
                   item.active
-                    ? "border-[var(--color-primary)] bg-[color-mix(in_srgb,var(--color-primary)_8%,white)] text-[var(--color-primary)]"
+                    ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
                     : "border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-background)]"
                 }`}
               >
