@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { PlusCircle, Search, X } from "lucide-react";
+import { CalendarCheck, CreditCard, PlusCircle, ScanLine, Search, UserPlus, X } from "lucide-react";
 import type {
   AdminPaymentItem,
   AdminPaymentsResponse,
@@ -30,6 +30,7 @@ import { getSupabaseBrowserClient } from "../../lib/supabase";
 import { ReservationDetailDrawer } from "./ReservationDetailDrawer";
 import { AdminPageHeader } from "../layout/AdminPageHeader";
 import { DataFreshnessBadge } from "../shared/DataFreshnessBadge";
+import { KpiTile } from "../shared/KpiTile";
 import { Pagination } from "../shared/Pagination";
 import { Select } from "../shared/Select";
 import { FancyDatePicker } from "../shared/FancyDatePicker";
@@ -532,33 +533,28 @@ export function AdminReservationsClient({
             </div>
           }
         />
-        <div className="grid grid-cols-2 gap-2 text-xs xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
           {[
-            { id: "today_arrivals" as StatQuickFilter, label: "Today arrivals", value: quickStats.todayArrivals },
-            { id: "pending_payment" as StatQuickFilter, label: "Pending payment", value: quickStats.pendingPayment },
-            { id: "walk_ins_today" as StatQuickFilter, label: "Walk-ins today", value: quickStats.walkInsToday },
-            { id: "ready_for_checkin" as StatQuickFilter, label: "Ready for check-in", value: quickStats.readyForCheckIn },
+            { id: "today_arrivals" as StatQuickFilter, label: "Today arrivals", value: quickStats.todayArrivals, icon: CalendarCheck, tone: "teal" as const },
+            { id: "pending_payment" as StatQuickFilter, label: "Pending payment", value: quickStats.pendingPayment, icon: CreditCard, tone: "amber" as const },
+            { id: "walk_ins_today" as StatQuickFilter, label: "Walk-ins today", value: quickStats.walkInsToday, icon: UserPlus, tone: "primary" as const },
+            { id: "ready_for_checkin" as StatQuickFilter, label: "Ready for check-in", value: quickStats.readyForCheckIn, icon: ScanLine, tone: "emerald" as const },
           ].map((card) => {
             const active = statQuickFilter === card.id;
             return (
-              <button
+              <KpiTile
                 key={card.id}
-                type="button"
-                aria-pressed={active}
+                icon={card.icon}
+                tone={card.tone}
+                label={card.label}
+                value={card.value}
+                active={active}
                 onClick={() => {
                   const next = active ? "none" : card.id;
                   setStatQuickFilter(next);
                   setPage(1);
                 }}
-                className={`rounded-xl border px-3 py-2.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)] ${
-                  active
-                    ? "border-[color:color-mix(in_srgb,var(--color-secondary)_45%,white)] bg-[color:color-mix(in_srgb,var(--color-secondary)_10%,white)]"
-                    : "border-[var(--color-border)] bg-white hover:border-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
-                }`}
-              >
-                <p className="truncate text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--color-muted)]">{card.label}</p>
-                <p className="mt-1 text-xl font-bold text-[var(--color-text)]">{card.value}</p>
-              </button>
+              />
             );
           })}
         </div>
