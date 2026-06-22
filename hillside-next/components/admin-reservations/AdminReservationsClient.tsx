@@ -520,17 +520,15 @@ export function AdminReservationsClient({
           eyebrow="Operations"
           title="Admin Reservations"
           subtitle="Manage arrivals, payment state, and walk-ins from one queue."
+          cornerSlot={<DataFreshnessBadge variant="plain" />}
           action={
-            <div className="flex flex-wrap items-center gap-2">
-              <DataFreshnessBadge />
-              <Link
-                href="/admin/walk-in"
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[var(--color-primary)] bg-[var(--color-primary)] px-4 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
-              >
-                <PlusCircle className="h-4 w-4" />
-                <span>Walk-in Reservation</span>
-              </Link>
-            </div>
+            <Link
+              href="/admin/walk-in"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[var(--color-primary)] bg-[var(--color-primary)] px-4 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
+            >
+              <PlusCircle className="h-4 w-4" />
+              <span>Walk-in Reservation</span>
+            </Link>
           }
         />
         <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">

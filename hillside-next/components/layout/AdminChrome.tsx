@@ -308,7 +308,7 @@ export function AdminChrome({ children, initialName = null, initialEmail = null,
               <HillsideLogo
                 light
                 oneLine
-                className="[&_img]:h-9 [&_img]:w-9 [&_.hillside-brand-title]:text-[1.15rem] [&_.hillside-brand-title]:font-semibold [&_.hillside-brand-title]:tracking-[0.015em]"
+                className="[&_img]:h-8 [&_img]:w-8 [&_.hillside-brand-title]:text-[1rem] [&_.hillside-brand-title]:font-semibold [&_.hillside-brand-title]:tracking-[0.015em]"
               />
             </Link>
             <div className="ml-auto flex items-center">

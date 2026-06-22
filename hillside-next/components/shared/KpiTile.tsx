@@ -40,7 +40,7 @@ export function KpiTile({
   className?: string;
 }) {
   const base = cn(
-    "group h-full min-h-[116px] rounded-2xl border bg-white p-4 text-left transition-colors duration-200 sm:min-h-[124px]",
+    "group h-full min-h-[84px] rounded-2xl border bg-white p-3.5 text-left transition-colors duration-200 sm:min-h-[92px]",
     active
       ? "border-[var(--color-secondary)] ring-1 ring-[color:color-mix(in_srgb,var(--color-secondary)_45%,white)]"
       : "border-[var(--color-border)] hover:border-[color:color-mix(in_srgb,var(--color-secondary)_35%,white)]",
@@ -50,13 +50,13 @@ export function KpiTile({
   const inner = (
     <>
       <p className="flex items-start gap-2 text-[11px] font-semibold uppercase leading-tight tracking-[0.12em] text-[var(--color-muted)]">
-        <span className={cn("inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full", TONE_CLASSES[tone])}>
-          <Icon className="h-4 w-4" aria-hidden="true" />
+        <span className={cn("inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full", TONE_CLASSES[tone])}>
+          <Icon className="h-3.5 w-3.5" aria-hidden="true" />
         </span>
-        <span className="min-w-0 pt-1.5">{label}</span>
+        <span className="min-w-0 pt-1">{label}</span>
       </p>
-      <p className="mt-3 text-3xl font-bold tracking-[-0.01em] text-[var(--color-text)]">{value}</p>
-      {hint ? <p className="mt-1 text-xs text-[var(--color-muted)]">{hint}</p> : null}
+      <p className="mt-2 text-2xl font-bold tracking-[-0.01em] text-[var(--color-text)]">{value}</p>
+      {hint ? <p className="mt-0.5 text-xs text-[var(--color-muted)]">{hint}</p> : null}
     </>
   );
 

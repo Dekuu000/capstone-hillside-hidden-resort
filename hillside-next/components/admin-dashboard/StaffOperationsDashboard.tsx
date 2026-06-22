@@ -46,13 +46,13 @@ export function StaffOperationsDashboard({
         {kpis.map((kpi) => {
           const Icon = kpi.icon;
           return (
-            <article key={kpi.label} className="surface flex items-center gap-4 p-5">
-              <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[color:color-mix(in_srgb,var(--color-secondary)_14%,white)] text-[var(--color-secondary)]">
-                <Icon className="h-5 w-5" />
+            <article key={kpi.label} className="surface flex items-center gap-3 p-3.5">
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[color:color-mix(in_srgb,var(--color-secondary)_14%,white)] text-[var(--color-secondary)]">
+                <Icon className="h-4 w-4" />
               </span>
               <div>
-                <p className="text-3xl font-bold tracking-[-0.01em] text-[var(--color-text)]">{kpi.value ?? "--"}</p>
-                <p className="text-sm text-[var(--color-muted)]">{kpi.label}</p>
+                <p className="text-2xl font-bold tracking-[-0.01em] text-[var(--color-text)]">{kpi.value ?? "--"}</p>
+                <p className="text-xs text-[var(--color-muted)]">{kpi.label}</p>
               </div>
             </article>
           );
@@ -68,8 +68,8 @@ export function StaffOperationsDashboard({
         </div>
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {roomStats.map((stat) => (
-            <div key={stat.label} className="rounded-2xl border border-[var(--color-border)] bg-white p-4 text-center">
-              <p className={`text-3xl font-bold ${stat.tone}`}>{stat.value ?? "--"}</p>
+            <div key={stat.label} className="rounded-2xl border border-[var(--color-border)] bg-white p-3 text-center">
+              <p className={`text-2xl font-bold ${stat.tone}`}>{stat.value ?? "--"}</p>
               <p className="mt-1 text-xs font-semibold uppercase tracking-[0.1em] text-[var(--color-muted)]">{stat.label}</p>
             </div>
           ))}

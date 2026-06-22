@@ -29,16 +29,16 @@ type MobileTabBarProps = {
 // baseline; the FAB circle just lifts above it. Active is shown with a small
 // teal top-accent bar + vivid teal icon/label (no pill).
 const CELL = "group relative flex min-h-[44px] flex-1 flex-col items-center justify-between pt-2.5 pb-1.5";
-const ICON_ACTIVE = "text-[var(--color-secondary)]";
+const ICON_ACTIVE = "text-[var(--color-primary)]";
 const ICON_IDLE = "text-[var(--color-muted)] group-hover:text-[var(--color-text)]";
-const LABEL_ACTIVE = "font-semibold text-[var(--color-secondary)]";
+const LABEL_ACTIVE = "font-semibold text-[var(--color-primary)]";
 const LABEL_IDLE = "font-medium text-[var(--color-muted)]";
 
 function ActiveBar() {
   return (
     <span
       aria-hidden="true"
-      className="absolute left-1/2 top-0 h-[3px] w-8 -translate-x-1/2 rounded-b-full bg-[var(--color-secondary)]"
+      className="absolute left-1/2 top-0 h-[3px] w-8 -translate-x-1/2 rounded-b-full bg-[var(--color-primary)]"
     />
   );
 }

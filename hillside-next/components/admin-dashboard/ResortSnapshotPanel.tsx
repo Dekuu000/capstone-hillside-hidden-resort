@@ -73,25 +73,25 @@ export function ResortSnapshotPanel({
       ) : null}
 
       <div className={`mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 ${canSeeTechnical ? "xl:grid-cols-4" : "xl:grid-cols-3"}`}>
-        <article className="group h-full min-h-[132px] rounded-2xl border border-[var(--color-border)] bg-white p-4 transition-colors duration-200 hover:border-[color:color-mix(in_srgb,var(--color-secondary)_35%,white)]">
+        <article className="group h-full min-h-[92px] rounded-2xl border border-[var(--color-border)] bg-white p-3.5 transition-colors duration-200 hover:border-[color:color-mix(in_srgb,var(--color-secondary)_35%,white)]">
           <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
               <Coins className="h-4 w-4" />
             </span>
             Cash revenue · 7d
           </p>
-          <p className="mt-3 text-3xl font-bold tracking-[-0.01em] text-[var(--color-text)]">{snapshot ? formatPeso(snapshot.revenue.fiat_php_7d) : "--"}</p>
+          <p className="mt-2 text-2xl font-bold tracking-[-0.01em] text-[var(--color-text)]">{snapshot ? formatPeso(snapshot.revenue.fiat_php_7d) : "--"}</p>
           <p className="mt-1 text-xs text-[var(--color-muted)]">Settled in 7d ({compactPeso})</p>
         </article>
 
-        <article className="group h-full min-h-[132px] rounded-2xl border border-[var(--color-border)] bg-white p-4 transition-colors duration-200 hover:border-[color:color-mix(in_srgb,var(--color-secondary)_35%,white)]">
+        <article className="group h-full min-h-[92px] rounded-2xl border border-[var(--color-border)] bg-white p-3.5 transition-colors duration-200 hover:border-[color:color-mix(in_srgb,var(--color-secondary)_35%,white)]">
           <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-sky-50 text-[var(--color-primary)]">
+            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-sky-50 text-[var(--color-primary)]">
               <Hotel className="h-4 w-4" />
             </span>
             Occupancy now
           </p>
-          <p className="mt-3 text-3xl font-bold tracking-[-0.01em] text-[var(--color-text)]">
+          <p className="mt-2 text-2xl font-bold tracking-[-0.01em] text-[var(--color-text)]">
             {occupancyPercent !== null ? `${occupancyPercent}%` : "--"}
           </p>
           <p className="mt-1 text-xs text-[var(--color-muted)]">
@@ -102,14 +102,14 @@ export function ResortSnapshotPanel({
         </article>
 
         {canSeeTechnical ? (
-          <article className="group h-full min-h-[132px] rounded-2xl border border-[var(--color-border)] bg-white p-4 transition-colors duration-200 hover:border-[color:color-mix(in_srgb,var(--color-secondary)_35%,white)]">
+          <article className="group h-full min-h-[92px] rounded-2xl border border-[var(--color-border)] bg-white p-3.5 transition-colors duration-200 hover:border-[color:color-mix(in_srgb,var(--color-secondary)_35%,white)]">
             <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">
-              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-orange-50 text-[var(--color-cta)]">
+              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-orange-50 text-[var(--color-cta)]">
                 <Activity className="h-4 w-4" />
               </span>
               Crypto revenue
             </p>
-            <p className="mt-3 text-3xl font-bold tracking-[-0.01em] text-[var(--color-text)]">
+            <p className="mt-2 text-2xl font-bold tracking-[-0.01em] text-[var(--color-text)]">
               {snapshot ? `${snapshot.revenue.crypto_native_total.toFixed(4)} ${snapshot.revenue.crypto_unit}` : "--"}
             </p>
             <p className="mt-1 text-xs text-[var(--color-muted)]">
@@ -118,14 +118,14 @@ export function ResortSnapshotPanel({
           </article>
         ) : null}
 
-        <article className="group h-full min-h-[132px] rounded-2xl border border-[var(--color-border)] bg-white p-4 transition-colors duration-200 hover:border-[color:color-mix(in_srgb,var(--color-secondary)_35%,white)]">
+        <article className="group h-full min-h-[92px] rounded-2xl border border-[var(--color-border)] bg-white p-3.5 transition-colors duration-200 hover:border-[color:color-mix(in_srgb,var(--color-secondary)_35%,white)]">
           <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[color:color-mix(in_srgb,var(--color-secondary)_14%,white)] text-[var(--color-secondary)]">
+            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[color:color-mix(in_srgb,var(--color-secondary)_14%,white)] text-[var(--color-secondary)]">
               <BrainCircuit className="h-4 w-4" />
             </span>
             AI demand · 7d
           </p>
-          <p className="mt-3 text-3xl font-bold tracking-[-0.01em] text-[var(--color-text)]">
+          <p className="mt-2 text-2xl font-bold tracking-[-0.01em] text-[var(--color-text)]">
             {snapshot ? `${snapshot.ai_demand_7d.avg_occupancy_pct}%` : "--"}
           </p>
           <p className="mt-1 text-xs text-[var(--color-muted)]">
