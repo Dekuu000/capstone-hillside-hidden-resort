@@ -81,7 +81,7 @@ export function MobileTabBar({ tabs, fab, onMore, moreActive }: MobileTabBarProp
           >
             <span
               className={cn(
-                "-mt-6 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-cta)] text-white shadow-[var(--shadow-md)] ring-4 ring-[var(--color-surface)] transition-transform active:scale-90 active:brightness-90",
+                "-mt-6 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-primary)] text-white shadow-[var(--shadow-md)] ring-4 ring-[var(--color-surface)] transition-transform active:scale-90 active:brightness-90",
                 fab.active ? "scale-105" : "",
               )}
             >
