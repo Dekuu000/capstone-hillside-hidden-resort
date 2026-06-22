@@ -1,30 +1,48 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Download } from "lucide-react";
+import { ChevronDown, Download } from "lucide-react";
 import type { ReportDailyItem, ReportMonthlyItem } from "../../../packages/shared/src/types";
-import { Button } from "../shared/Button";
 
 type Props = {
   daily: ReportDailyItem[];
   monthly: ReportMonthlyItem[];
-  compact?: boolean;
+  fromDate: string;
+  toDate: string;
+  fullWidthMobile?: boolean;
 };
 
-function toCsv(rows: Array<Record<string, string | number>>) {
-  if (!rows.length) return "";
-  const headers = Object.keys(rows[0]);
-  const escapeValue = (value: string | number) => {
-    const text = String(value ?? "");
-    if (text.includes(",") || text.includes("\"") || text.includes("\n")) {
-      return `"${text.replace(/"/g, "\"\"")}"`;
-    }
-    return text;
-  };
-  const lines = [
-    headers.join(","),
-    ...rows.map((row) => headers.map((key) => escapeValue(row[key] ?? "")).join(",")),
+const RESORT_ADDRESS = "Prk. 7, Jupiter St, Olongapo City, 2200 Zambales";
+
+function csvCell(value: string | number) {
+  const text = String(value ?? "");
+  return /[",\n]/.test(text) ? `"${text.replace(/"/g, "\"\"")}"` : text;
+}
+
+function csvLine(cells: Array<string | number>) {
+  return cells.map(csvCell).join(",");
+}
+
+/** Build a templated report CSV: letterhead + meta, then headers, rows, totals. */
+function buildReportCsv(opts: {
+  title: string;
+  fromDate: string;
+  toDate: string;
+  columns: string[];
+  rows: Array<Array<string | number>>;
+  totals?: Array<string | number>;
+}) {
+  const lines: string[] = [
+    csvLine(["Hillside Hidden Resort"]),
+    csvLine([RESORT_ADDRESS]),
+    csvLine([opts.title]),
+    csvLine(["Period", `${opts.fromDate} to ${opts.toDate}`]),
+    csvLine(["Generated", new Date().toLocaleString("en-PH")]),
+    "",
+    csvLine(opts.columns),
+    ...opts.rows.map((row) => csvLine(row)),
   ];
+  if (opts.totals) lines.push(csvLine(opts.totals));
   return lines.join("\n");
 }
 
@@ -40,58 +58,116 @@ function downloadCsv(filename: string, csv: string) {
   URL.revokeObjectURL(url);
 }
 
-export function ReportsExportButtons({ daily, monthly, compact = false }: Props) {
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const mobileMenuRef = useRef<HTMLDivElement | null>(null);
+function sum<T>(rows: T[], pick: (row: T) => number) {
+  return rows.reduce((total, row) => total + (pick(row) || 0), 0);
+}
+
+export function ReportsExportButtons({ daily, monthly, fromDate, toDate, fullWidthMobile = false }: Props) {
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
 
   const exportDaily = () => {
     downloadCsv(
       "reports-daily.csv",
-      toCsv(
-        daily.map((row) => ({
-          date: row.report_date,
-          bookings: row.bookings,
-          cancellations: row.cancellations,
-          cash_collected_php: row.cash_collected,
-          occupancy_rate: row.occupancy_rate,
-          unit_booked_value_php: row.unit_booked_value,
-          tour_booked_value_php: row.tour_booked_value,
-        })),
-      ),
+      buildReportCsv({
+        title: "Sales & Occupancy Report — Daily",
+        fromDate,
+        toDate,
+        columns: [
+          "date",
+          "bookings",
+          "cancellations",
+          "cash_collected_php",
+          "occupancy_rate",
+          "unit_booked_value_php",
+          "tour_booked_value_php",
+          "promo_discounts_php",
+          "net_booked_value_php",
+        ],
+        rows: daily.map((row) => [
+          row.report_date,
+          row.bookings,
+          row.cancellations,
+          row.cash_collected,
+          row.occupancy_rate,
+          row.unit_booked_value,
+          row.tour_booked_value,
+          row.promo_discounts,
+          row.unit_booked_value + row.tour_booked_value - row.promo_discounts,
+        ]),
+        totals: [
+          "Total",
+          sum(daily, (r) => r.bookings),
+          sum(daily, (r) => r.cancellations),
+          sum(daily, (r) => r.cash_collected),
+          "",
+          sum(daily, (r) => r.unit_booked_value),
+          sum(daily, (r) => r.tour_booked_value),
+          sum(daily, (r) => r.promo_discounts),
+          sum(daily, (r) => r.unit_booked_value + r.tour_booked_value - r.promo_discounts),
+        ],
+      }),
     );
-    setMobileOpen(false);
+    setOpen(false);
   };
 
   const exportMonthly = () => {
     downloadCsv(
       "reports-monthly.csv",
-      toCsv(
-        monthly.map((row) => ({
-          month: row.report_month,
-          bookings: row.bookings,
-          cancellations: row.cancellations,
-          cash_collected_php: row.cash_collected,
-          occupancy_rate: row.occupancy_rate,
-          unit_booked_value_php: row.unit_booked_value,
-          tour_booked_value_php: row.tour_booked_value,
-        })),
-      ),
+      buildReportCsv({
+        title: "Sales & Occupancy Report — Monthly",
+        fromDate,
+        toDate,
+        columns: [
+          "month",
+          "bookings",
+          "cancellations",
+          "cash_collected_php",
+          "occupancy_rate",
+          "unit_booked_value_php",
+          "tour_booked_value_php",
+          "promo_discounts_php",
+          "net_booked_value_php",
+        ],
+        rows: monthly.map((row) => [
+          row.report_month,
+          row.bookings,
+          row.cancellations,
+          row.cash_collected,
+          row.occupancy_rate,
+          row.unit_booked_value,
+          row.tour_booked_value,
+          row.promo_discounts,
+          row.unit_booked_value + row.tour_booked_value - row.promo_discounts,
+        ]),
+        totals: [
+          "Total",
+          sum(monthly, (r) => r.bookings),
+          sum(monthly, (r) => r.cancellations),
+          sum(monthly, (r) => r.cash_collected),
+          "",
+          sum(monthly, (r) => r.unit_booked_value),
+          sum(monthly, (r) => r.tour_booked_value),
+          sum(monthly, (r) => r.promo_discounts),
+          sum(monthly, (r) => r.unit_booked_value + r.tour_booked_value - r.promo_discounts),
+        ],
+      }),
     );
-    setMobileOpen(false);
+    setOpen(false);
   };
 
   const disableAll = !daily.length && !monthly.length;
 
   useEffect(() => {
-    if (!mobileOpen) return;
+    if (!open) return;
     const onPointerDown = (event: MouseEvent) => {
-      if (!mobileMenuRef.current) return;
-      if (!mobileMenuRef.current.contains(event.target as Node)) {
-        setMobileOpen(false);
+      if (!menuRef.current) return;
+      if (!menuRef.current.contains(event.target as Node)) {
+        setOpen(false);
       }
     };
     const onEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setMobileOpen(false);
+      if (event.key === "Escape") setOpen(false);
     };
     document.addEventListener("mousedown", onPointerDown);
     document.addEventListener("keydown", onEscape);
@@ -99,68 +175,49 @@ export function ReportsExportButtons({ daily, monthly, compact = false }: Props)
       document.removeEventListener("mousedown", onPointerDown);
       document.removeEventListener("keydown", onEscape);
     };
-  }, [mobileOpen]);
+  }, [open]);
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <div ref={mobileMenuRef} className="relative sm:hidden">
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          className={compact ? "h-8 px-2.5 text-xs" : undefined}
-          disabled={disableAll}
-          leftSlot={<Download className="h-4 w-4" />}
-          onClick={() => setMobileOpen((prev) => !prev)}
+    <div ref={menuRef} className={`relative ${fullWidthMobile ? "w-full lg:w-auto" : ""}`}>
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        disabled={disableAll}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className={`inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-white px-4 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)] disabled:opacity-50 ${
+          fullWidthMobile ? "w-full lg:w-auto" : ""
+        }`}
+      >
+        <Download className="h-4 w-4" />
+        <span>Export</span>
+        <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open ? (
+        <div
+          role="menu"
+          className="absolute right-0 top-full z-40 mt-2 min-w-[190px] rounded-xl border border-[var(--color-border)] bg-white p-1.5 shadow-[var(--shadow-md)]"
         >
-          Export
-        </Button>
-        {mobileOpen ? (
-          <div className="absolute left-0 top-full z-40 mt-2 min-w-[170px] rounded-xl border border-[var(--color-border)] bg-white p-1.5 shadow-[var(--shadow-md)]">
-            <button
-              type="button"
-              onClick={exportDaily}
-              disabled={!daily.length}
-              className="block w-full rounded-lg px-3 py-2 text-left text-xs font-semibold text-[var(--color-text)] hover:bg-slate-50 disabled:opacity-50"
-            >
-              Export Daily CSV
-            </button>
-            <button
-              type="button"
-              onClick={exportMonthly}
-              disabled={!monthly.length}
-              className="block w-full rounded-lg px-3 py-2 text-left text-xs font-semibold text-[var(--color-text)] hover:bg-slate-50 disabled:opacity-50"
-            >
-              Export Monthly CSV
-            </button>
-          </div>
-        ) : null}
-      </div>
-
-      <div className="hidden sm:flex sm:flex-wrap sm:items-center sm:gap-2">
-      <Button
-        type="button"
-        variant="secondary"
-        size="sm"
-        className={compact ? "h-8 px-2.5 text-xs" : undefined}
-        onClick={exportDaily}
-        disabled={!daily.length}
-        leftSlot={<Download className="h-4 w-4" />}
-      >
-        {compact ? "Daily CSV" : "Export Daily CSV"}
-      </Button>
-      <Button
-        type="button"
-        variant="secondary"
-        size="sm"
-        className={compact ? "h-8 px-2.5 text-xs" : undefined}
-        onClick={exportMonthly}
-        disabled={!monthly.length}
-        leftSlot={<Download className="h-4 w-4" />}
-      >
-        {compact ? "Monthly CSV" : "Export Monthly CSV"}
-      </Button>
-      </div>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={exportDaily}
+            disabled={!daily.length}
+            className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-background)] disabled:opacity-50"
+          >
+            Daily CSV
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={exportMonthly}
+            disabled={!monthly.length}
+            className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-background)] disabled:opacity-50"
+          >
+            Monthly CSV
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

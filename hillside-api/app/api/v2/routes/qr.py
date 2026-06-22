@@ -3,7 +3,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.core.auth import AuthContext, require_admin, require_authenticated
+from app.core.auth import AuthContext, require_authenticated, require_operations, role_at_least
 from app.core.config import settings
 from app.core.qr_security import (
     build_qr_signature,
@@ -101,7 +101,7 @@ def issue_token(
     reservation_id = payload.reservation_id
     reservation_row = (
         get_reservation_by_id(reservation_id)
-        if auth.role == "admin"
+        if role_at_least(auth.role, "staff")
         else get_my_booking_details(user_id=auth.user_id, reservation_id=reservation_id)
     )
     if not reservation_row:
@@ -255,7 +255,7 @@ def _verify_legacy_qr(payload: QrVerifyRequest, auth: AuthContext) -> dict:
 @router.post("/verify")
 def verify_token(
     payload: QrVerifyRequest,
-    auth: AuthContext = Depends(require_admin),
+    auth: AuthContext = Depends(require_operations),
 ):
     if not payload.reservation_code and payload.qr_token is None:
         raise HTTPException(

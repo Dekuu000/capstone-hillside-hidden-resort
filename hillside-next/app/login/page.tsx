@@ -11,7 +11,7 @@ import { resolveUserProfileName } from "../../lib/userProfile";
 import { Button } from "../../components/shared/Button";
 import { Toast } from "../../components/shared/Toast";
 import { AuthShell } from "../../components/layout/AuthShell";
-import { GoogleIcon } from "../../components/branding/GoogleIcon";
+import { isBackOffice } from "../../../packages/shared/src/types";
 
 const AUTO_BOOTSTRAP_GUARD_KEY = "hs_login_auto_bootstrap_target";
 
@@ -73,7 +73,6 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [agree, setAgree] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [nextPath] = useState(() => {
@@ -82,33 +81,36 @@ export default function LoginPage() {
     return requested && requested.startsWith("/") ? requested : "";
   });
 
-  const resolveNextPath = async (
-    requestedPath: string,
-    signedInUser?: {
-      user_metadata?: Record<string, unknown> | null;
-    } | null,
-  ) => {
-    const user = signedInUser ?? (await safeGetSession()).session?.user;
-    if (!user) return "/login";
-
-    const safePath = requestedPath && requestedPath.startsWith("/") ? requestedPath : "";
-    const metadataRole = user.user_metadata?.role;
-    const metadataIsAdmin = typeof metadataRole === "string" && metadataRole.toLowerCase() === "admin";
-
-    if (!safePath) {
-      if (metadataIsAdmin) return "/admin/reservations";
-      const supabase = getSupabaseBrowserClient();
-      const { data: isAdmin } = await supabase.rpc("is_admin");
-      return isAdmin === true ? "/admin/reservations" : "/my-bookings";
+  // Authoritative role from the API auth context (includes Front Desk/staff,
+  // which the is_admin RPC does not). Falls back to "guest" on any failure.
+  const resolveBackOfficeRole = async (): Promise<string> => {
+    try {
+      const { session } = await safeGetSession();
+      const token = session?.access_token;
+      const base = (process.env.NEXT_PUBLIC_API_BASE_URL || "").trim().replace(/\/+$/, "");
+      if (!token || !base) return "guest";
+      const response = await fetch(`${base}/v2/auth/context`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      });
+      if (!response.ok) return "guest";
+      const ctx = (await response.json()) as { role?: string };
+      return String(ctx?.role || "guest").toLowerCase();
+    } catch {
+      return "guest";
     }
+  };
 
+  const resolveNextPath = async (requestedPath: string) => {
+    const safePath = requestedPath && requestedPath.startsWith("/") ? requestedPath : "";
+    const role = await resolveBackOfficeRole();
+    const backOffice = isBackOffice(role);
+    // Front Desk lands on check-in; Manager/System Admin on the admin home; guests on their trips.
+    const home = role === "staff" ? "/admin/check-in" : backOffice ? "/admin" : "/guest/my-stay";
+    if (!safePath) return home;
     if (!safePath.startsWith("/admin")) return safePath;
-    if (metadataIsAdmin) return safePath;
-
-    const supabase = getSupabaseBrowserClient();
-    const { data: isAdmin, error: isAdminError } = await supabase.rpc("is_admin");
-    if (!isAdminError && isAdmin === true) return safePath;
-    return "/my-bookings";
+    return backOffice ? safePath : "/my-bookings";
   };
 
   const verifyApiAuthContext = async (accessToken: string): Promise<boolean> => {
@@ -134,18 +136,18 @@ export default function LoginPage() {
     const user = session?.user;
     if (!user) return;
 
-    const metadataRole = user.user_metadata?.role;
-    const insertRole = typeof metadataRole === "string" && metadataRole.toLowerCase() === "admin" ? "admin" : "guest";
     const nameValue = resolveUserProfileName(user, "Guest User");
     const phoneValue = typeof user.user_metadata?.phone === "string" ? user.user_metadata.phone : null;
 
+    // NOTE: do not write `role` here. The role is owned server-side (handle_new_user
+    // sets the default; back-office roles are seeded by a System Admin). Sending it
+    // would clobber a seeded staff/super_admin back to guest on every login.
     const { error: insertError } = await (supabase as any).from("users").upsert(
       {
         user_id: user.id,
         name: nameValue,
         email: user.email ?? null,
         phone: phoneValue,
-        role: insertRole,
       },
       {
         onConflict: "user_id",
@@ -183,7 +185,7 @@ export default function LoginPage() {
                   .then(() => true)
                   .catch(() => false),
                 verifyApiAuthContext(session.access_token),
-                resolveNextPath(nextPath, session.user),
+                resolveNextPath(nextPath),
               ]);
               if (!cookieReady || !valid) {
                 await supabase.auth.signOut().catch(() => null);
@@ -213,6 +215,8 @@ export default function LoginPage() {
     return () => {
       mounted = false;
     };
+    // resolveNextPath is stable (no reactive deps); effect intentionally runs on mount/nextPath.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigateAfterAuth, nextPath]);
 
   const onSubmit = async (event: FormEvent) => {
@@ -220,11 +224,6 @@ export default function LoginPage() {
     setBusy(true);
     setError(null);
     window.sessionStorage.removeItem(AUTO_BOOTSTRAP_GUARD_KEY);
-    if (!agree) {
-      setBusy(false);
-      setError("Please agree to the Terms and Privacy Policy before signing in.");
-      return;
-    }
     try {
       const supabase = getSupabaseBrowserClient();
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
@@ -251,7 +250,7 @@ export default function LoginPage() {
           .then(() => true)
           .catch(() => false),
         verifyApiAuthContext(accessToken),
-        resolveNextPath(nextPath, data.user),
+        resolveNextPath(nextPath),
       ]);
 
       if (!cookieReady || !valid) {
@@ -278,17 +277,12 @@ export default function LoginPage() {
     }
   };
 
-  const onGoogleSignIn = () => {
-    setError("Google sign-in is not configured yet for this environment.");
-  };
-
   return (
     <AuthShell
       fullScreen
       sideTitle="Welcome Back!"
       sideSubtitle=""
       sideDescription="Sign in to manage your bookings and enjoy your stay."
-      sideProof="Protected by industry-standard security and encrypted connections."
       mobileBrandLine="Welcome back"
       formIntro="Sign in"
       formTitle="Sign In"
@@ -310,7 +304,7 @@ export default function LoginPage() {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold text-[var(--color-text)]">Password</span>
-            <Link href="/auth/forgot-password" className="text-sm font-semibold text-[var(--color-secondary)] hover:underline md:hidden">
+            <Link href="/auth/forgot-password" className="text-sm font-semibold text-[var(--color-secondary)] hover:underline">
               Forgot Password?
             </Link>
           </div>
@@ -331,47 +325,17 @@ export default function LoginPage() {
           />
         </div>
 
-        <div className="flex items-center justify-between gap-3">
-          <label className="flex items-center gap-2 text-sm text-[var(--color-text)]">
-            <input
-              type="checkbox"
-              checked={agree}
-              onChange={(event) => setAgree(event.target.checked)}
-              className="h-4 w-4 rounded border-[var(--color-border)] text-[var(--color-secondary)] focus-visible:ring-2 focus-visible:ring-teal-200"
-            />
-            Remember me
-          </label>
-          <Link href="/auth/forgot-password" className="hidden text-sm font-semibold text-[var(--color-secondary)] hover:underline md:inline">
-            Forgot Password?
-          </Link>
-        </div>
-
         {error ? <Toast type="error" title="Sign in failed" message={error} /> : null}
 
         <Button
           type="submit"
           className="h-12 w-full rounded-xl border-0 bg-[var(--color-cta)] text-base font-semibold text-white hover:brightness-95"
           loading={busy}
-          disabled={!agree || !email.trim() || !password}
+          disabled={busy}
         >
           {busy ? "Signing in..." : "Sign In"}
         </Button>
       </form>
-
-      <div className="mt-5 flex items-center gap-3 text-sm text-[var(--color-muted)]">
-        <span className="h-px flex-1 bg-[var(--color-border)]" />
-        <span>or continue with</span>
-        <span className="h-px flex-1 bg-[var(--color-border)]" />
-      </div>
-
-      <button
-        type="button"
-        onClick={onGoogleSignIn}
-        className="mt-5 inline-flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-[var(--color-border)] bg-white text-sm font-semibold text-[var(--color-text)] transition hover:bg-slate-50"
-      >
-        <GoogleIcon />
-        Continue with Google
-      </button>
 
       <div className="mt-8 text-center text-sm text-[var(--color-muted)]">
         Don&apos;t have an account?{" "}
@@ -379,6 +343,7 @@ export default function LoginPage() {
           Sign Up
         </Link>
       </div>
+
     </AuthShell>
   );
 }

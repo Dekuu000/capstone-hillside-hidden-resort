@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { AlertCircle, BedDouble, CheckCircle2, Loader2, Phone, User, Wallet } from "lucide-react";
+import { AlertCircle, CheckCircle2, Loader2, Phone, Tag, User, Wallet } from "lucide-react";
 import type { AvailableUnitsResponse, ReservationCreateResponse, ReservationListItem } from "../../../packages/shared/src/types";
 import { availableUnitsResponseSchema, reservationCreateResponseSchema, reservationListItemSchema } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
@@ -29,6 +29,7 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
   const [guestPhone, setGuestPhone] = useState("");
   const [notes, setNotes] = useState("");
   const [expectedPayNow, setExpectedPayNow] = useState<string>("");
+  const [promoCode, setPromoCode] = useState("");
 
   const [unitsLoading, setUnitsLoading] = useState(false);
   const [unitsError, setUnitsError] = useState<string | null>(null);
@@ -147,6 +148,7 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
         guest_phone: guestPhone.trim() || null,
         notes: notes.trim() || null,
         expected_pay_now: expected,
+        promo_code: promoCode.trim() || null,
         reservation_source: "walk_in" as const,
       };
       const summarySnapshot = {
@@ -180,6 +182,7 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
         setGuestPhone("");
         setNotes("");
         setExpectedPayNow("");
+        setPromoCode("");
         showToast({
           type: "info",
           title: "Walk-in stay saved offline",
@@ -196,6 +199,7 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
       setGuestPhone("");
       setNotes("");
       setExpectedPayNow("");
+      setPromoCode("");
       showToast({
         type: "success",
         title: `Walk-in stay ${response.data.reservation_code} created`,
@@ -318,30 +322,30 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
             </div>
           </div>
 
-          <div className="mt-3 grid gap-2 rounded-lg border border-emerald-200/80 bg-white p-3 text-xs text-slate-700 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="mt-3 grid gap-2 rounded-lg border border-emerald-200/80 bg-white p-3 text-xs text-[var(--color-text)] sm:grid-cols-2 lg:grid-cols-5">
             <div>
-              <p className="font-semibold text-slate-500">Reservation code</p>
-              <p className="mt-0.5 text-sm font-semibold text-slate-900">{created.reservation_code}</p>
+              <p className="font-semibold text-[var(--color-muted)]">Reservation code</p>
+              <p className="mt-0.5 text-sm font-semibold text-[var(--color-text)]">{created.reservation_code}</p>
             </div>
             <div>
-              <p className="font-semibold text-slate-500">Selected unit</p>
-              <p className="mt-0.5 text-sm font-semibold text-slate-900">
+              <p className="font-semibold text-[var(--color-muted)]">Selected unit</p>
+              <p className="mt-0.5 text-sm font-semibold text-[var(--color-text)]">
                 {createdSummary?.unitNames?.length ? createdSummary.unitNames.join(", ") : "-"}
               </p>
             </div>
             <div>
-              <p className="font-semibold text-slate-500">Stay dates</p>
-              <p className="mt-0.5 text-sm font-semibold text-slate-900">
+              <p className="font-semibold text-[var(--color-muted)]">Stay dates</p>
+              <p className="mt-0.5 text-sm font-semibold text-[var(--color-text)]">
                 {createdSummary?.checkInDate || "-"} to {createdSummary?.checkOutDate || "-"}
               </p>
             </div>
             <div>
-              <p className="font-semibold text-slate-500">Payment status</p>
-              <p className="mt-0.5 text-sm font-semibold text-slate-900 capitalize">{createdPaymentState}</p>
+              <p className="font-semibold text-[var(--color-muted)]">Payment status</p>
+              <p className="mt-0.5 text-sm font-semibold text-[var(--color-text)] capitalize">{createdPaymentState}</p>
             </div>
             <div>
-              <p className="font-semibold text-slate-500">Amount due</p>
-              <p className="mt-0.5 text-sm font-semibold text-slate-900">{toPeso(Math.max(0, createdBalance))}</p>
+              <p className="font-semibold text-[var(--color-muted)]">Amount due</p>
+              <p className="mt-0.5 text-sm font-semibold text-[var(--color-text)]">{toPeso(Math.max(0, createdBalance))}</p>
             </div>
           </div>
 
@@ -356,7 +360,7 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
             {canCheckInNow ? (
               <Link
                 href={`/admin/check-in?mode=code&reservation_code=${encodeURIComponent(created.reservation_code)}`}
-                className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-900 bg-slate-900 px-3 text-xs font-semibold text-white"
+                className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--color-primary)] bg-[var(--color-primary)] px-3 text-xs font-semibold text-white transition hover:brightness-110"
               >
                 Check In Now
               </Link>
@@ -365,7 +369,7 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
                 href={`/admin/payments?source=walkin&walkin_type=stay&reservation_id=${encodeURIComponent(created.reservation_id)}&amount=${encodeURIComponent(
                   String(Math.max(1, Math.round(createdBalance || createdTotal || createdSummary?.estimatedTotal || 0))),
                 )}&method=cash`}
-                className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-900 bg-slate-900 px-3 text-xs font-semibold text-white"
+                className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--color-primary)] bg-[var(--color-primary)] px-3 text-xs font-semibold text-white transition hover:brightness-110"
               >
                 Record Payment
               </Link>
@@ -379,13 +383,13 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
                 setCreatedReservationError(null);
                 setCreatedSummary(null);
               }}
-              className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700"
+              className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--color-border)] bg-white px-3 text-xs font-semibold text-[var(--color-text)]"
             >
               Create Another Walk-in
             </button>
             <Link
               href={`/admin/reservations?reservation_id=${encodeURIComponent(created.reservation_id)}`}
-              className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700"
+              className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--color-border)] bg-white px-3 text-xs font-semibold text-[var(--color-text)]"
             >
               View in Reservations
             </Link>
@@ -393,7 +397,7 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
             {!canCheckInNow ? (
               <Link
                 href={`/admin/check-in?mode=code&reservation_code=${encodeURIComponent(created.reservation_code)}`}
-                className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-slate-100 px-3 text-xs font-semibold text-slate-500"
+                className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 text-xs font-semibold text-[var(--color-muted)]"
                 aria-disabled
                 tabIndex={-1}
               >
@@ -402,7 +406,7 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
             ) : null}
           </div>
           {!canCheckInNow ? (
-            <p className="mt-2 text-xs text-slate-600">
+            <p className="mt-2 text-xs text-[var(--color-muted)]">
               Check-in becomes primary after payment is fully settled and arrival date is today.
             </p>
           ) : null}
@@ -411,9 +415,12 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
 
       <div className="grid gap-5 lg:grid-cols-[1.2fr_1fr]">
         <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-sm)]">
-          <div className="mb-4 flex items-center gap-2">
-            <BedDouble className="h-4 w-4 text-[var(--color-secondary)]" />
-            <h2 className="text-lg font-semibold text-[var(--color-text)]">Available Units</h2>
+          <div className="mb-4 flex items-center gap-3">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)] text-xs font-bold text-white">1</span>
+            <div>
+              <h2 className="text-lg font-semibold text-[var(--color-text)]">Dates &amp; room</h2>
+              <p className="text-xs text-[var(--color-muted)]">Pick the stay dates, then choose an available room.</p>
+            </div>
           </div>
 
           <div className="mb-4 grid gap-3 sm:grid-cols-2">
@@ -465,7 +472,7 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
                     key={unit.unit_id}
                     className={`flex cursor-pointer items-start justify-between gap-3 rounded-xl border p-3 transition ${
                       checked
-                        ? "border-[var(--color-secondary)] bg-teal-50"
+                        ? "border-[var(--color-secondary)] bg-[color:color-mix(in_srgb,var(--color-secondary)_12%,white)]"
                         : "border-[var(--color-border)] bg-white hover:border-[var(--color-secondary)]/45"
                     }`}
                   >
@@ -495,7 +502,13 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
         </div>
 
         <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-sm)]">
-          <h2 className="mb-4 text-lg font-semibold text-[var(--color-text)]">Walk-in Details</h2>
+          <div className="mb-4 flex items-center gap-3">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)] text-xs font-bold text-white">2</span>
+            <div>
+              <h2 className="text-lg font-semibold text-[var(--color-text)]">Guest &amp; checkout</h2>
+              <p className="text-xs text-[var(--color-muted)]">Guest info is optional — then create the booking.</p>
+            </div>
+          </div>
 
           <div className="grid gap-3">
             <label className="grid gap-1 text-sm text-[var(--color-text)]">
@@ -543,6 +556,21 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
             </label>
 
             <label className="grid gap-1 text-sm text-[var(--color-text)]">
+              Promo code (optional)
+              <div className="relative">
+                <Tag className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-muted)]" />
+                <input
+                  type="text"
+                  value={promoCode}
+                  onChange={(event) => setPromoCode(event.target.value.toUpperCase())}
+                  placeholder="e.g. SUMMER20"
+                  className="w-full rounded-xl border border-[var(--color-border)] bg-white py-2 pl-9 pr-3 text-sm font-semibold uppercase tracking-wide text-[var(--color-text)] outline-none ring-[var(--color-secondary)]/20 transition focus:ring-2"
+                />
+              </div>
+              <span className="text-xs text-[var(--color-muted)]">Applied and validated when the booking is created.</span>
+            </label>
+
+            <label className="grid gap-1 text-sm text-[var(--color-text)]">
               Notes (optional)
               <textarea
                 value={notes}
@@ -554,12 +582,14 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
             </label>
           </div>
 
-          <div className="mt-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-4 text-sm">
-            <p className="text-[var(--color-muted)]">Nights: <span className="font-semibold text-[var(--color-text)]">{nights}</span></p>
-            <p className="text-[var(--color-muted)]">Selected units: <span className="font-semibold text-[var(--color-text)]">{selectedUnitIds.length}</span></p>
-            <p className="mt-1 text-[var(--color-muted)]">
-              Estimated total: <span className="text-base font-bold text-[var(--color-text)]">{toPeso(estimatedTotal)}</span>
+          <div className="mt-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-4">
+            <p className="text-sm text-[var(--color-muted)]">
+              {nights} night{nights === 1 ? "" : "s"} · {selectedUnitIds.length} room{selectedUnitIds.length === 1 ? "" : "s"} selected
             </p>
+            <div className="mt-1 flex items-baseline justify-between">
+              <span className="text-sm text-[var(--color-muted)]">Estimated total</span>
+              <span className="text-xl font-bold text-[var(--color-text)]">{toPeso(estimatedTotal)}</span>
+            </div>
           </div>
 
           <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -570,7 +600,7 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
               type="button"
               onClick={() => void handleCreate()}
               disabled={submitBusy || !selectedUnitIds.length || nights <= 0}
-              className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-[var(--color-cta)] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[220px]"
+              className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-[var(--color-cta)] px-5 text-sm font-semibold text-white shadow-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[220px]"
             >
               {submitBusy ? "Creating..." : "Create Walk-in Stay"}
             </button>

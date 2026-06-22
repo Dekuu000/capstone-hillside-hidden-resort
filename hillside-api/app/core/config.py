@@ -33,6 +33,24 @@ class Settings(BaseSettings):
     feature_nft_guest_pass: bool = False
     feature_dynamic_qr: bool = False
     feature_escrow_reconciliation_scheduler: bool = False
+    feature_upcoming_stay_reminders: bool = True
+    upcoming_stay_reminder_interval_sec: int = 3600
+    upcoming_stay_reminder_lookahead_days: int = 2
+    # Auto-release of unpaid holds: cancel pending_payment bookings older than the
+    # window so the held unit/slot frees up automatically.
+    feature_release_expired_holds: bool = True
+    release_expired_holds_interval_sec: int = 600
+    release_expired_holds_window_min: int = 120
+    # Auto no-show: flag confirmed bookings whose check-out date has passed (guest
+    # never checked in) as no_show, forfeiting the deposit.
+    feature_auto_no_show: bool = True
+    auto_no_show_interval_sec: int = 3600
+    auto_no_show_grace_days: int = 1
+    # Retention: delete read notifications older than the window (unread are
+    # never pruned). Keeps the notifications table from growing without bound.
+    feature_notification_retention: bool = True
+    notification_retention_interval_sec: int = 86400
+    notification_retention_days: int = 90
     feature_checkin_welcome_notification: bool = False
     feature_checkin_schedule_bypass: bool = False
     qr_signing_secret: str = ""

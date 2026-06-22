@@ -356,7 +356,7 @@ def test_create_tour_reservation_blocks_guest_walk_in_mode(monkeypatch) -> None:
     )
 
     assert response.status_code == 403
-    assert response.json()["detail"] == "Only admins can create walk-in tour reservations."
+    assert response.json()["detail"] == "Only resort staff can create walk-in tour reservations."
 
 
 def test_create_tour_reservation_allows_admin_walk_in_same_day(monkeypatch) -> None:

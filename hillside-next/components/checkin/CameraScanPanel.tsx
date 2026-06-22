@@ -51,7 +51,7 @@ export function CameraScanPanel({
   }, [scanActive]);
 
   return (
-    <div className="rounded-xl border border-[var(--color-border)] bg-slate-50 p-3">
+    <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
       <div className="mb-2 flex items-center justify-between gap-2">
         <p className="text-sm font-semibold text-[var(--color-text)]">Scan Camera</p>
         <div className="relative flex items-center gap-2">
@@ -75,7 +75,7 @@ export function CameraScanPanel({
                         onSwitchCamera();
                         setOptionsOpen(false);
                       }}
-                      className="inline-flex h-10 w-full items-center gap-2 rounded-lg px-3 text-left text-xs font-semibold text-[var(--color-text)] hover:bg-slate-50"
+                      className="inline-flex h-10 w-full items-center gap-2 rounded-lg px-3 text-left text-xs font-semibold text-[var(--color-text)] hover:bg-[var(--color-background)]"
                     >
                       <Repeat2 className="h-4 w-4" />
                       Switch camera
@@ -88,7 +88,7 @@ export function CameraScanPanel({
                         onToggleTorch();
                         setOptionsOpen(false);
                       }}
-                      className="inline-flex h-10 w-full items-center gap-2 rounded-lg px-3 text-left text-xs font-semibold text-[var(--color-text)] hover:bg-slate-50"
+                      className="inline-flex h-10 w-full items-center gap-2 rounded-lg px-3 text-left text-xs font-semibold text-[var(--color-text)] hover:bg-[var(--color-background)]"
                     >
                       <Flashlight className="h-4 w-4" />
                       {torchOn ? "Torch on" : "Torch off"}
@@ -137,7 +137,7 @@ export function CameraScanPanel({
 
       {permissionError ? (
         <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3">
-          <p className="text-xs font-semibold text-red-700">Camera permission required</p>
+          <p className="text-xs font-semibold text-red-700">Camera unavailable</p>
           <p className="mt-1 text-xs text-red-700">{permissionError}</p>
           <button
             type="button"

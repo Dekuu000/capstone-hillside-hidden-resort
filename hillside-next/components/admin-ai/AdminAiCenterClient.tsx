@@ -32,6 +32,7 @@ import { formatDateTime } from "../../lib/dateDisplay";
 import { formatPhpPeso as formatPeso } from "../../lib/formatCurrency";
 import { AIPricingInsightCard } from "../ai/AIPricingInsightCard";
 import { PageHeader } from "../layout/PageHeader";
+import { Select } from "../shared/Select";
 import { Badge } from "../shared/Badge";
 import { Button } from "../shared/Button";
 import { EmptyState } from "../shared/EmptyState";
@@ -392,6 +393,7 @@ export function AdminAiCenterClient({ token }: AdminAiCenterClientProps) {
   return (
     <section className="mx-auto w-full max-w-[1600px]">
       <PageHeader
+        eyebrow="Smart Pricing"
         title="AI Hospitality Intelligence"
         subtitle="Defense-ready center for pricing, occupancy forecasting, and anonymized concierge recommendations."
         rightSlot={
@@ -528,7 +530,7 @@ export function AdminAiCenterClient({ token }: AdminAiCenterClientProps) {
             }
           />
           {pricingActionMessage ? (
-            <p className="rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-slate-50 p-3 text-sm text-[var(--color-text)]">
+            <p className="rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-background)] p-3 text-sm text-[var(--color-text)]">
               {pricingActionMessage}
             </p>
           ) : null}
@@ -610,7 +612,7 @@ export function AdminAiCenterClient({ token }: AdminAiCenterClientProps) {
                 <p className="mt-1 text-xs text-[var(--color-muted)]">
                   Last forecast run: {formatDateTime(forecast.generated_at)}
                 </p>
-                <div className="mt-3 overflow-x-auto rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-slate-50 p-3">
+                <div className="mt-3 overflow-x-auto rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-background)] p-3">
                   <svg viewBox="0 0 640 180" className="h-48 w-full min-w-[500px]" role="img" aria-label="Occupancy forecast line chart">
                     <polyline
                       fill="none"
@@ -692,27 +694,29 @@ export function AdminAiCenterClient({ token }: AdminAiCenterClientProps) {
             <div className="grid gap-3 md:grid-cols-3">
               <label className="grid gap-1 text-sm text-[var(--color-text)]">
                 Segment key
-                <select
+                <Select
+                  ariaLabel="Segment key"
                   value={segmentKey}
-                  onChange={(event) => setSegmentKey(event.target.value)}
-                  className="h-10 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3"
-                >
-                  <option value="family_weekend">family_weekend</option>
-                  <option value="couple_escape">couple_escape</option>
-                  <option value="barkada_daytrip">barkada_daytrip</option>
-                </select>
+                  onChange={(next) => setSegmentKey(next)}
+                  options={[
+                    { value: "family_weekend", label: "family_weekend" },
+                    { value: "couple_escape", label: "couple_escape" },
+                    { value: "barkada_daytrip", label: "barkada_daytrip" },
+                  ]}
+                />
               </label>
               <label className="grid gap-1 text-sm text-[var(--color-text)]">
                 Stay type
-                <select
+                <Select
+                  ariaLabel="Stay type"
                   value={stayType}
-                  onChange={(event) => setStayType(event.target.value)}
-                  className="h-10 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3"
-                >
-                  <option value="stay">stay</option>
-                  <option value="day_tour">day_tour</option>
-                  <option value="advance_booking">advance_booking</option>
-                </select>
+                  onChange={(next) => setStayType(next)}
+                  options={[
+                    { value: "stay", label: "stay" },
+                    { value: "day_tour", label: "day_tour" },
+                    { value: "advance_booking", label: "advance_booking" },
+                  ]}
+                />
               </label>
               <div className="flex items-end">
                 <Button
@@ -762,7 +766,7 @@ export function AdminAiCenterClient({ token }: AdminAiCenterClientProps) {
                   >
                     <p className="text-sm font-semibold text-[var(--color-text)]">{item.title}</p>
                     <p className="mt-1 text-sm text-[var(--color-muted)]">{item.description}</p>
-                    <div className="mt-3 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-slate-50 p-3">
+                    <div className="mt-3 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-background)] p-3">
                       <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">
                         Why suggested
                       </p>
@@ -790,7 +794,7 @@ export function AdminAiCenterClient({ token }: AdminAiCenterClientProps) {
                 ))}
               </div>
               {concierge.notes.length > 0 ? (
-                <section className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-slate-50 p-4">
+                <section className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-background)] p-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">Model notes</p>
                   <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-[var(--color-text)]">
                     {concierge.notes.map((note) => (

@@ -22,7 +22,13 @@ import {
 } from "./store";
 
 const SYNC_EVENT = "hillside:sync-updated";
+// Dedicated signal fired ONLY when a new operation is queued, so the sync loop
+// can flush it immediately. Kept distinct from SYNC_EVENT (a general UI-refresh
+// ping emitted throughout a cycle) to avoid a cycle re-triggering itself.
+const SYNC_ENQUEUE_EVENT = "hillside:sync-enqueued";
 const MAX_RETRY_DELAY_MS = 5 * 60 * 1000;
+// Collapse a burst of enqueues (e.g. a few desk actions in a row) into one push.
+const ENQUEUE_DEBOUNCE_MS = 800;
 
 export function emitSyncEvent() {
   if (typeof window === "undefined") return;
@@ -34,6 +40,48 @@ export function onSyncEvent(handler: () => void): () => void {
   const listener = () => handler();
   window.addEventListener(SYNC_EVENT, listener);
   return () => window.removeEventListener(SYNC_EVENT, listener);
+}
+
+export function emitEnqueueEvent() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(SYNC_ENQUEUE_EVENT));
+}
+
+export function onEnqueueEvent(handler: () => void): () => void {
+  if (typeof window === "undefined") return () => undefined;
+  const listener = () => handler();
+  window.addEventListener(SYNC_ENQUEUE_EVENT, listener);
+  return () => window.removeEventListener(SYNC_ENQUEUE_EVENT, listener);
+}
+
+// Cross-tab poll dedup: any tab that completes a sync announces it; other tabs
+// skip their idle interval poll if a sibling synced very recently. This keeps
+// "one network poll per interval" across all open tabs without leader election —
+// single-tab is unaffected (no sibling ever announces). Degrades gracefully when
+// BroadcastChannel is unavailable (each tab polls independently).
+let syncChannel: BroadcastChannel | null = null;
+let lastGlobalSyncAt = 0;
+
+function getSyncChannel(): BroadcastChannel | null {
+  if (typeof window === "undefined" || typeof BroadcastChannel === "undefined") return null;
+  if (!syncChannel) {
+    syncChannel = new BroadcastChannel("hillside-sync");
+    syncChannel.onmessage = (event) => {
+      const at = event.data && typeof event.data.t === "number" ? event.data.t : 0;
+      if (at > lastGlobalSyncAt) lastGlobalSyncAt = at;
+    };
+  }
+  return syncChannel;
+}
+
+function announceSync() {
+  lastGlobalSyncAt = Date.now();
+  getSyncChannel()?.postMessage({ t: lastGlobalSyncAt });
+}
+
+/** Ms since any open tab last completed a sync (Infinity if none observed yet). */
+export function msSinceLastGlobalSync(): number {
+  return lastGlobalSyncAt === 0 ? Number.POSITIVE_INFINITY : Date.now() - lastGlobalSyncAt;
 }
 
 export async function enqueueOfflineOperation(
@@ -52,6 +100,7 @@ export async function enqueueOfflineOperation(
   };
   await queueOfflineOperation(next);
   emitSyncEvent();
+  emitEnqueueEvent();
   return next;
 }
 
@@ -247,6 +296,7 @@ export async function runSyncCycle(accessToken: string, scope: SyncScope): Promi
     await commitUploads(accessToken);
     await pushOutbox(accessToken, scope);
     await pullDeltas(accessToken, scope);
+    announceSync();
     emitSyncEvent();
   } catch (error) {
     await setSyncState(scope, {
@@ -262,17 +312,28 @@ export async function runSyncCycle(accessToken: string, scope: SyncScope): Promi
 export function startSyncLoop(params: {
   getAccessToken: () => Promise<string | null> | string | null;
   getScope: () => SyncScope;
+  // Role/page-aware pull cadence (ms). Operational desk pages poll fast;
+  // read-heavy dashboards and guests poll slower and lean on focus/enqueue.
+  getIntervalMs?: () => number;
   onError?: (error: Error) => void;
 }): () => void {
   if (!env.syncEnabled || typeof window === "undefined") return () => undefined;
 
+  const resolveIntervalMs = () => {
+    const value = params.getIntervalMs?.() ?? env.syncIntervalMs;
+    return Number.isFinite(value) && value >= 5000 ? value : env.syncIntervalMs;
+  };
+
   let cancelled = false;
-  let timer: number | null = null;
+  let intervalTimer: number | null = null;
+  let enqueueTimer: number | null = null;
+  let lastTickAt = 0;
 
   const tick = async () => {
     if (cancelled) return;
     const token = await params.getAccessToken();
     if (!token) return;
+    lastTickAt = Date.now();
     try {
       await runSyncCycle(token, params.getScope());
     } catch (error) {
@@ -282,21 +343,74 @@ export function startSyncLoop(params: {
     }
   };
 
+  const startInterval = () => {
+    if (intervalTimer !== null) return;
+    // Attach this tab to the cross-tab channel so it hears siblings' sync pings.
+    getSyncChannel();
+    intervalTimer = window.setInterval(() => {
+      // Skip this idle poll if another open tab already synced this interval.
+      if (msSinceLastGlobalSync() < resolveIntervalMs() * 0.8) return;
+      void tick();
+    }, resolveIntervalMs());
+  };
+
+  const stopInterval = () => {
+    if (intervalTimer !== null) {
+      window.clearInterval(intervalTimer);
+      intervalTimer = null;
+    }
+  };
+
   const handleOnline = () => {
     void tick();
   };
 
+  // Push-on-enqueue: flush a freshly queued action right away (debounced) instead
+  // of waiting up to a full interval — desk actions reach the server in ~1s.
+  const handleEnqueue = () => {
+    if (enqueueTimer !== null) window.clearTimeout(enqueueTimer);
+    enqueueTimer = window.setTimeout(() => {
+      enqueueTimer = null;
+      void tick();
+    }, ENQUEUE_DEBOUNCE_MS);
+  };
+
+  // Visibility gating: stop background polling while the tab is hidden (saves
+  // mobile battery + idle server load), and catch up the instant it returns.
+  const handleVisibility = () => {
+    if (document.visibilityState === "visible") {
+      startInterval();
+      void tick();
+    } else {
+      stopInterval();
+    }
+  };
+
+  // Pull-on-focus: refresh when the window regains OS focus (covers alt-tabbing
+  // back to an already-visible tab, which visibilitychange does not fire for).
+  // Throttled so rapid focus/blur can't hammer the pull endpoint.
+  const handleFocus = () => {
+    const minGap = Math.min(10000, resolveIntervalMs() / 2);
+    if (Date.now() - lastTickAt >= minGap) void tick();
+  };
+
   window.addEventListener("online", handleOnline);
-  timer = window.setInterval(() => {
-    void tick();
-  }, env.syncIntervalMs);
+  window.addEventListener("focus", handleFocus);
+  document.addEventListener("visibilitychange", handleVisibility);
+  const detachEnqueue = onEnqueueEvent(handleEnqueue);
+
+  if (document.visibilityState === "visible") {
+    startInterval();
+  }
   void tick();
 
   return () => {
     cancelled = true;
     window.removeEventListener("online", handleOnline);
-    if (timer !== null) {
-      window.clearInterval(timer);
-    }
+    window.removeEventListener("focus", handleFocus);
+    document.removeEventListener("visibilitychange", handleVisibility);
+    detachEnqueue();
+    stopInterval();
+    if (enqueueTimer !== null) window.clearTimeout(enqueueTimer);
   };
 }

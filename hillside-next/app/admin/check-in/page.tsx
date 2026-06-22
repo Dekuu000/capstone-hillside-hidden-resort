@@ -1,5 +1,5 @@
 import { AdminCheckinClient } from "../../../components/admin-checkin/AdminCheckinClient";
-import { getServerAccessToken } from "../../../lib/serverAuth";
+import { getServerAccessToken, getServerAuthContext } from "../../../lib/serverAuth";
 
 function normalizeMode(raw: string | undefined): "scan" | "code" | "queue" {
   if (raw === "code" || raw === "queue" || raw === "scan") return raw;
@@ -12,6 +12,7 @@ export default async function AdminCheckInPage({
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const accessToken = await getServerAccessToken();
+  const auth = accessToken ? await getServerAuthContext(accessToken) : null;
   const resolvedSearchParams = (await searchParams) ?? {};
   const modeParam = Array.isArray(resolvedSearchParams.mode) ? resolvedSearchParams.mode[0] : resolvedSearchParams.mode;
   const viewParam = Array.isArray(resolvedSearchParams.view) ? resolvedSearchParams.view[0] : resolvedSearchParams.view;
@@ -26,6 +27,7 @@ export default async function AdminCheckInPage({
       initialMode={initialMode}
       tabletView={tabletView}
       initialReservationCode={typeof reservationCodeParam === "string" ? reservationCodeParam : undefined}
+      role={auth?.role ?? null}
     />
   );
 }

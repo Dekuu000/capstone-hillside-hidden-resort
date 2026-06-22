@@ -23,6 +23,10 @@ import {
   normalizeUnitImageUrls,
   normalizeUnitThumbUrls,
 } from "../../lib/unitMedia";
+import { AdminPageHeader } from "../layout/AdminPageHeader";
+import { Modal } from "../shared/Modal";
+import { Pagination } from "../shared/Pagination";
+import { Select } from "../shared/Select";
 
 type AdminUnitsClientProps = {
   initialToken?: string | null;
@@ -455,8 +459,6 @@ export function AdminUnitsClient({
   );
 
   const totalPages = useMemo(() => Math.max(1, Math.ceil(count / PAGE_SIZE)), [count]);
-  const canPrev = page > 1;
-  const canNext = page < totalPages;
   const hasActiveFilters = Boolean(unitType || operationalStatus || searchInput || showInactive);
   const galleryImages = useMemo(() => editImageUrls.filter(Boolean), [editImageUrls]);
   const galleryThumbs = useMemo(
@@ -467,11 +469,12 @@ export function AdminUnitsClient({
 
   if (!token) {
     return (
-      <section className="mx-auto w-full max-w-[1600px]">
-        <header className="mb-4 rounded-3xl border border-slate-200/70 bg-gradient-to-br from-white via-slate-50 to-blue-50 p-6 shadow-sm">
-          <h1 className="text-3xl font-bold text-slate-900">Units</h1>
-          <p className="mt-2 text-sm text-slate-600">Manage rooms, cottages, and amenities.</p>
-        </header>
+      <section className="mx-auto w-full max-w-[1600px] space-y-5">
+        <AdminPageHeader
+          eyebrow="Inventory"
+          title="Units"
+          subtitle="Manage rooms, cottages, and amenities."
+        />
         <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
           No active session found. Sign in as admin first.
         </p>
@@ -480,86 +483,81 @@ export function AdminUnitsClient({
   }
 
   return (
-    <section className="mx-auto w-full max-w-[1600px]">
-      <header className="mb-6 rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-muted)]">Inventory</p>
-            <h1 className="mt-2 text-3xl font-bold text-[var(--color-text)]">Units</h1>
-            <p className="mt-2 text-sm text-[var(--color-muted)]">Manage rooms, cottages, and amenities with operational status.</p>
-          </div>
+    <section className="mx-auto w-full max-w-[1600px] space-y-5">
+      <AdminPageHeader
+        eyebrow="Inventory"
+        title="Units"
+        subtitle="Manage rooms, cottages, and amenities with operational status."
+        action={
           <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-xs text-[var(--color-muted)]">
             <p className="font-semibold text-[var(--color-text)]">Total</p>
             <p className="mt-1">{count} unit records</p>
           </div>
+        }
+      />
+
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        <div className="rounded-2xl border border-[var(--color-border)] bg-white p-3">
+          <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[color:color-mix(in_srgb,var(--color-secondary)_14%,white)] text-[var(--color-secondary)]">
+            <Sparkles className="h-4 w-4" />
+          </span>
+          <p className="mt-2 text-xl font-bold text-[var(--color-text)]">
+            {items.filter((u) => (u.operational_status || "cleaned") === "cleaned").length}
+          </p>
+          <p className="text-xs text-[var(--color-muted)]">Cleaned</p>
         </div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
-            <p className="inline-flex items-center gap-2 text-xs text-[var(--color-muted)]">
-              <Sparkles className="h-4 w-4 text-[var(--color-secondary)]" />
-              Cleaned
-            </p>
-            <p className="mt-1 text-lg font-semibold text-[var(--color-text)]">
-              {items.filter((u) => (u.operational_status || "cleaned") === "cleaned").length}
-            </p>
-          </div>
-          <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
-            <p className="inline-flex items-center gap-2 text-xs text-[var(--color-muted)]">
-              <BedDouble className="h-4 w-4 text-[var(--color-primary)]" />
-              Occupied
-            </p>
-            <p className="mt-1 text-lg font-semibold text-[var(--color-text)]">
-              {items.filter((u) => (u.operational_status || "cleaned") === "occupied").length}
-            </p>
-          </div>
-          <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
-            <p className="inline-flex items-center gap-2 text-xs text-[var(--color-muted)]">
-              <Wrench className="h-4 w-4 text-[var(--color-cta)]" />
-              Maintenance
-            </p>
-            <p className="mt-1 text-lg font-semibold text-[var(--color-text)]">
-              {items.filter((u) => (u.operational_status || "cleaned") === "maintenance").length}
-            </p>
-          </div>
+        <div className="rounded-2xl border border-[var(--color-border)] bg-white p-3">
+          <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-sky-50 text-[var(--color-primary)]">
+            <BedDouble className="h-4 w-4" />
+          </span>
+          <p className="mt-2 text-xl font-bold text-[var(--color-text)]">
+            {items.filter((u) => (u.operational_status || "cleaned") === "occupied").length}
+          </p>
+          <p className="text-xs text-[var(--color-muted)]">Occupied</p>
         </div>
-      </header>
+        <div className="rounded-2xl border border-[var(--color-border)] bg-white p-3">
+          <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-orange-50 text-[var(--color-cta)]">
+            <Wrench className="h-4 w-4" />
+          </span>
+          <p className="mt-2 text-xl font-bold text-[var(--color-text)]">
+            {items.filter((u) => (u.operational_status || "cleaned") === "maintenance").length}
+          </p>
+          <p className="text-xs text-[var(--color-muted)]">Maintenance</p>
+        </div>
+      </div>
 
       <div className="sticky top-[72px] z-20 mb-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-sm lg:top-4">
         <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-[160px_180px_1fr_auto_auto]">
-          <label className="grid">
-            <span className="sr-only">Filter by unit type</span>
-            <select
-              value={unitType}
-              onChange={(event) => {
-                setUnitType(event.target.value);
-                setPage(1);
-              }}
-              className="h-10 rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
-            >
-              <option value="">All types</option>
-              <option value="room">Room</option>
-              <option value="cottage">Cottage</option>
-              <option value="amenity">Amenity</option>
-            </select>
-          </label>
+          <Select
+            ariaLabel="Filter by unit type"
+            value={unitType}
+            onChange={(next) => {
+              setUnitType(next);
+              setPage(1);
+            }}
+            options={[
+              { value: "", label: "All types" },
+              { value: "room", label: "Room" },
+              { value: "cottage", label: "Cottage" },
+              { value: "amenity", label: "Amenity" },
+            ]}
+          />
 
-          <label className="grid">
-            <span className="sr-only">Filter by room status</span>
-            <select
-              value={operationalStatus}
-              onChange={(event) => {
-                setOperationalStatus(event.target.value as UnitOperationalStatus | "");
-                setPage(1);
-              }}
-              className="h-10 rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
-            >
-              <option value="">All statuses</option>
-              <option value="cleaned">Cleaned</option>
-              <option value="occupied">Occupied</option>
-              <option value="maintenance">Maintenance</option>
-              <option value="dirty">Dirty</option>
-            </select>
-          </label>
+          <Select
+            ariaLabel="Filter by room status"
+            value={operationalStatus}
+            onChange={(next) => {
+              setOperationalStatus(next as UnitOperationalStatus | "");
+              setPage(1);
+            }}
+            options={[
+              { value: "", label: "All statuses" },
+              { value: "cleaned", label: "Cleaned" },
+              { value: "occupied", label: "Occupied" },
+              { value: "maintenance", label: "Maintenance" },
+              { value: "dirty", label: "Dirty" },
+            ]}
+          />
 
           <label className="grid">
             <span className="sr-only">Search unit</span>
@@ -581,7 +579,7 @@ export function AdminUnitsClient({
             aria-pressed={showInactive}
             className={`inline-flex h-10 items-center justify-center gap-2 rounded-lg border px-3 text-sm font-semibold transition ${
               showInactive
-                ? "border-slate-900 bg-slate-900 text-white"
+                ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
                 : "border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-text)]"
             }`}
           >
@@ -614,7 +612,7 @@ export function AdminUnitsClient({
       {loading ? (
         <div className="mb-3 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-64 animate-pulse rounded-2xl border border-slate-200 bg-slate-100" />
+            <div key={i} className="h-64 animate-pulse rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)]" />
           ))}
         </div>
       ) : null}
@@ -642,8 +640,8 @@ export function AdminUnitsClient({
             return (
               <article
                 key={unit.unit_id}
-                className={`overflow-hidden rounded-2xl border bg-[var(--color-surface)] shadow-[0_8px_20px_rgba(15,23,42,0.06)] transition ${
-                  unit.is_active ? "border-[var(--color-border)] hover:shadow-[0_12px_26px_rgba(15,23,42,0.1)]" : "border-[var(--color-border)] opacity-85"
+                className={`overflow-hidden rounded-2xl border bg-[var(--color-surface)] shadow-[var(--shadow-card)] transition-colors duration-200 ${
+                  unit.is_active ? "border-[var(--color-border)] hover:border-[color:color-mix(in_srgb,var(--color-secondary)_35%,white)]" : "border-[var(--color-border)] opacity-85"
                 }`}
               >
                 {cover ? (
@@ -656,7 +654,7 @@ export function AdminUnitsClient({
                     className="h-36 w-full object-cover"
                   />
                 ) : (
-                  <div className="h-36 bg-slate-100" />
+                  <div className="h-36 bg-[var(--color-background)]" />
                 )}
                 <div className="p-3">
                   <div className="flex items-start justify-between gap-3">
@@ -695,7 +693,7 @@ export function AdminUnitsClient({
                     <button
                       type="button"
                       onClick={() => void openEditor(unit.unit_id)}
-                      className="h-9 w-full rounded-lg border border-slate-900 bg-slate-900 px-3 text-sm font-semibold text-white"
+                      className="h-9 w-full rounded-lg border border-[var(--color-primary)] bg-[var(--color-primary)] px-3 text-sm font-semibold text-white"
                     >
                       Manage
                     </button>
@@ -719,148 +717,132 @@ export function AdminUnitsClient({
         </div>
       ) : null}
 
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs text-slate-500">
-          Page {page} of {totalPages} • {count} total
-        </p>
-        <div className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white p-1 shadow-sm">
-          <button
-            type="button"
-            onClick={() => setPage(1)}
-            disabled={!canPrev}
-            className="rounded-full px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-45"
-          >
-            First
-          </button>
-          <button
-            type="button"
-            onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-            disabled={!canPrev}
-            className="rounded-full px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-45"
-          >
-            Previous
-          </button>
-          <button
-            type="button"
-            onClick={() => setPage((prev) => prev + 1)}
-            disabled={!canNext}
-            className="rounded-full px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-45"
-          >
-            Next
-          </button>
-          <button
-            type="button"
-            onClick={() => setPage(totalPages)}
-            disabled={!canNext}
-            className="rounded-full px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-45"
-          >
-            Last
-          </button>
-        </div>
-      </div>
+      <Pagination
+        className="mt-4"
+        page={page}
+        totalPages={totalPages}
+        totalCount={count}
+        pageSize={PAGE_SIZE}
+        onPageChange={(target) => setPage(Math.min(totalPages, Math.max(1, target)))}
+      />
 
-      {(editingUnitId || unitDetailLoading) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/55 p-3 md:p-4">
-          <div className="max-h-[92vh] w-full overflow-y-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 md:max-w-2xl md:p-6">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-[var(--color-text)]">Unit details</h3>
+      <Modal
+        open={Boolean(editingUnitId || unitDetailLoading)}
+        onClose={resetEditor}
+        title="Unit details"
+        size="md"
+        footer={
+          editingUnitId && !unitDetailLoading ? (
+            <>
               <button
                 type="button"
                 onClick={resetEditor}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-border)] text-[var(--color-muted)]"
-                aria-label="Close"
+                disabled={editorBusy}
+                className="inline-flex h-11 items-center justify-center rounded-xl border border-[var(--color-border)] bg-white px-4 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] disabled:opacity-50"
               >
-                <X className="h-4 w-4" />
+                Cancel
               </button>
-            </div>
+              <button
+                type="button"
+                onClick={() => void saveEditor()}
+                disabled={editorBusy || mediaActionBusy || uploadQueueCount > 0}
+                className="inline-flex h-11 items-center justify-center rounded-xl bg-[var(--color-primary)] px-5 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 disabled:opacity-50"
+              >
+                {editorBusy ? "Saving..." : "Save changes"}
+              </button>
+            </>
+          ) : null
+        }
+      >
+        {unitDetailLoading ? <p className="text-sm text-[var(--color-muted)]">Loading unit details...</p> : null}
 
-            {unitDetailLoading ? <p className="text-sm text-slate-600">Loading unit details...</p> : null}
-
-            {editingUnitId && !unitDetailLoading ? (
+        {editingUnitId && !unitDetailLoading ? (
               <div className="space-y-4">
-                <label className="grid gap-1 text-xs text-slate-600">
+                <label className="grid gap-1 text-xs text-[var(--color-muted)]">
                   Name
                   <input
                     type="text"
                     value={editName}
                     onChange={(event) => setEditName(event.target.value)}
-                    className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm"
+                    className="h-11 rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)] focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
                   />
                 </label>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <label className="grid gap-1 text-xs text-slate-600">
+                  <label className="grid gap-1 text-xs text-[var(--color-muted)]">
                     Unit code
                     <input
                       type="text"
                       value={editUnitCode}
                       onChange={(event) => setEditUnitCode(event.target.value)}
-                      className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm"
+                      className="h-11 rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)] focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
                     />
                   </label>
-                  <label className="grid gap-1 text-xs text-slate-600">
+                  <label className="grid gap-1 text-xs text-[var(--color-muted)]">
                     Room number (optional)
                     <input
                       type="text"
                       value={editRoomNumber}
                       onChange={(event) => setEditRoomNumber(event.target.value)}
                       placeholder="e.g. 203"
-                      className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm"
+                      className="h-11 rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)] focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
                     />
                   </label>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <label className="grid gap-1 text-xs text-slate-600">
+                  <label className="grid gap-1 text-xs text-[var(--color-muted)]">
                     Type
-                    <select
+                    <Select
+                      ariaLabel="Unit type"
                       value={editType}
-                      onChange={(event) => setEditType(event.target.value as "room" | "cottage" | "amenity")}
-                      className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm"
-                    >
-                      <option value="room">Room</option>
-                      <option value="cottage">Cottage</option>
-                      <option value="amenity">Amenity</option>
-                    </select>
+                      onChange={(next) => setEditType(next as "room" | "cottage" | "amenity")}
+                      options={[
+                        { value: "room", label: "Room" },
+                        { value: "cottage", label: "Cottage" },
+                        { value: "amenity", label: "Amenity" },
+                      ]}
+                    />
                   </label>
-                  <label className="grid gap-1 text-xs text-slate-600">
+                  <label className="grid gap-1 text-xs text-[var(--color-muted)]">
                     Room status
-                    <select
+                    <Select
+                      ariaLabel="Room status"
                       value={editOperationalStatus}
-                      onChange={(event) => setEditOperationalStatus(event.target.value as UnitOperationalStatus)}
-                      className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm"
-                    >
-                      <option value="cleaned">Cleaned</option>
-                      <option value="occupied">Occupied</option>
-                      <option value="maintenance">Maintenance</option>
-                      <option value="dirty">Dirty</option>
-                    </select>
+                      onChange={(next) => setEditOperationalStatus(next as UnitOperationalStatus)}
+                      options={[
+                        { value: "cleaned", label: "Cleaned" },
+                        { value: "occupied", label: "Occupied" },
+                        { value: "maintenance", label: "Maintenance" },
+                        { value: "dirty", label: "Dirty" },
+                      ]}
+                    />
                   </label>
-                  <label className="grid gap-1 text-xs text-slate-600">
+                  <label className="grid gap-1 text-xs text-[var(--color-muted)]">
                     Capacity
                     <input
                       type="number"
                       min={1}
                       value={editCapacity}
                       onChange={(event) => setEditCapacity(event.target.value)}
-                      className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm"
+                      className="h-11 rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)] focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
                     />
                   </label>
-                  <label className="grid gap-1 text-xs text-slate-600">
+                  <label className="grid gap-1 text-xs text-[var(--color-muted)]">
                     Base price
                     <input
                       type="number"
                       min={0}
                       value={editBasePrice}
                       onChange={(event) => setEditBasePrice(event.target.value)}
-                      className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm"
+                      className="h-11 rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)] focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
                     />
                   </label>
                 </div>
-                <label className="grid gap-1 text-xs text-slate-600">
+                <label className="grid gap-1 text-xs text-[var(--color-muted)]">
                   Description
                   <textarea
                     value={editDescription}
                     onChange={(event) => setEditDescription(event.target.value)}
-                    className="min-h-24 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm"
+                    className="min-h-28 rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
                   />
                 </label>
                 <section className="space-y-3">
@@ -919,61 +901,43 @@ export function AdminUnitsClient({
                     />
                   ) : null}
                 </section>
-                <div className="flex justify-end gap-2 border-t border-[var(--color-border)] pt-4">
-                  <button
-                    type="button"
-                    onClick={resetEditor}
-                    className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
-                    disabled={editorBusy}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void saveEditor()}
-                    className="rounded-lg border border-[var(--color-primary)] bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-white shadow-sm transition disabled:opacity-50"
-                    disabled={editorBusy || mediaActionBusy || uploadQueueCount > 0}
-                  >
-                    {editorBusy ? "Saving..." : "Save changes"}
-                  </button>
-                </div>
                 {uploadQueueCount > 0 ? (
                   <p className="text-xs text-[var(--color-muted)]">
                     Wait for {uploadQueueCount} upload{uploadQueueCount === 1 ? "" : "s"} before saving.
                   </p>
                 ) : null}
-
-                {pendingRemoveIndex !== null ? (
-                  <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/45 p-4">
-                    <div className="w-full max-w-sm rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-lg">
-                      <p className="text-sm font-semibold text-[var(--color-text)]">Remove this image?</p>
-                      <p className="mt-1 text-xs text-[var(--color-muted)]">
-                        This will remove the image from this unit after you save changes.
-                      </p>
-                      <div className="mt-4 grid grid-cols-2 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setPendingRemoveIndex(null)}
-                          className="h-10 rounded-lg border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)]"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="button"
-                          onClick={confirmRemoveImage}
-                          className="h-10 rounded-lg border border-red-200 bg-red-50 px-3 text-sm font-semibold text-red-700"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
               </div>
-            ) : null}
-          </div>
-        </div>
-      )}
+        ) : null}
+      </Modal>
+
+      {pendingRemoveIndex !== null ? (
+        <Modal
+          open
+          onClose={() => setPendingRemoveIndex(null)}
+          title="Remove this image?"
+          size="sm"
+          footer={
+            <>
+              <button
+                type="button"
+                onClick={() => setPendingRemoveIndex(null)}
+                className="inline-flex h-11 items-center justify-center rounded-xl border border-[var(--color-border)] bg-white px-4 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmRemoveImage}
+                className="inline-flex h-11 items-center justify-center rounded-xl bg-red-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700"
+              >
+                Remove
+              </button>
+            </>
+          }
+        >
+          <p className="text-sm text-[var(--color-muted)]">This will remove the image from this unit after you save changes.</p>
+        </Modal>
+      ) : null}
       <ImageLightbox
         open={lightboxOpen}
         images={galleryImages}

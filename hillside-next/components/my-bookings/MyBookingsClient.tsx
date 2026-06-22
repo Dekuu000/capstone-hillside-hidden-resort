@@ -4,11 +4,12 @@ import { FormEvent, useCallback, useEffect, useId, useMemo, useRef, useState } f
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
-import { Calendar, CircleCheck, CircleX, CreditCard, Eye, Loader2, QrCode, Upload } from "lucide-react";
+import { Calendar, CircleCheck, CircleX, CreditCard, Eye, Loader2, QrCode, Star, Upload } from "lucide-react";
 import type {
   MyBookingsCursor as Cursor,
   MyBookingsResponse as BookingsResponse,
   MyBookingsTab as TabKey,
+  MyReviewsResponse,
   PaymentSubmissionResponse,
   QrToken,
   ReservationListItem as Booking,
@@ -19,9 +20,11 @@ import { computeStayDepositPreview } from "../../../packages/shared/src/types";
 import {
   paymentSubmissionResponseSchema,
   myBookingsResponseSchema,
+  myReviewsResponseSchema,
   qrTokenSchema,
   reservationCancelResponseSchema,
   reservationListItemSchema,
+  reviewItemSchema,
 } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
@@ -39,10 +42,8 @@ import { getSupabaseBrowserClient } from "../../lib/supabase";
 import { compactQrTokenPayload } from "../../lib/qrPayload";
 import { BookingStatusTabs } from "../guest/BookingStatusTabs";
 import { GuestEmptyState } from "../guest/GuestEmptyState";
-import { GuestHero } from "../guest/GuestHero";
+import { GuestPageIntro } from "../guest/GuestPageIntro";
 import { GuestSearchBar } from "../guest/GuestSearchBar";
-import { GuestSyncStatus } from "../guest/GuestSyncStatus";
-import { StaySnapshotCard } from "../guest/StaySnapshotCard";
 import { ImageLightbox } from "../shared/ImageLightbox";
 import { GcashPaymentGuide } from "../shared/GcashPaymentGuide";
 import { ModalDialog } from "../shared/ModalDialog";
@@ -67,41 +68,37 @@ const TAB_LABELS: Record<TabKey, string> = {
 };
 
 const TAB_HINTS: Record<TabKey, string> = {
-  upcoming: "Your upcoming reservations and actions that need attention.",
-  pending_payment: "Bookings waiting for payment or payment verification.",
-  completed: "Finished reservations for your records.",
-  cancelled: "Cancelled reservations and policy outcomes.",
+  upcoming: "Upcoming stays and actions to take.",
+  pending_payment: "Waiting for payment or verification.",
+  completed: "Past stays, kept for your records.",
+  cancelled: "Cancelled bookings.",
 };
 
-const TAB_CARD_ACCENT: Record<TabKey, { cardBorder: string; amountPanel: string; amountText: string }> = {
-  upcoming: {
-    cardBorder: "border-blue-200/70",
-    amountPanel: "border-blue-200 bg-blue-50/60",
-    amountText: "text-blue-700",
-  },
-  pending_payment: {
-    cardBorder: "border-orange-200/70",
-    amountPanel: "border-orange-200 bg-orange-50/60",
-    amountText: "text-orange-700",
-  },
-  completed: {
-    cardBorder: "border-emerald-200/70",
-    amountPanel: "border-emerald-200 bg-emerald-50/60",
-    amountText: "text-emerald-700",
-  },
-  cancelled: {
-    cardBorder: "border-red-200/70",
-    amountPanel: "border-red-200 bg-red-50/60",
-    amountText: "text-red-700",
-  },
-};
+const STAY_BANNERS = [
+  "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b",
+  "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4",
+  "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85",
+];
+const TOUR_BANNERS = [
+  "https://images.unsplash.com/photo-1551632811-561732d1e306",
+  "https://images.unsplash.com/photo-1533240332313-0db49b459ad6",
+  "https://images.unsplash.com/photo-1465056836041-7f43ac27dcb5",
+];
 
-const TAB_PAYMENT_PILL_CLASS: Record<TabKey, string> = {
-  upcoming: "bg-blue-100 text-blue-800",
-  pending_payment: "bg-orange-100 text-orange-800",
-  completed: "bg-emerald-100 text-emerald-800",
-  cancelled: "bg-red-100 text-red-800",
-};
+/** Photo-forward banner per booking: a real unit photo when present, else a
+ *  stable per-type Unsplash image so each trip card looks distinct. */
+function bookingBannerUrl(booking: Booking, isTour: boolean): string {
+  if (!isTour) {
+    const unit = booking.units?.find((entry) => entry.unit)?.unit;
+    const real = (unit?.image_urls || []).find((url) => /^https?:\/\//i.test(url)) || unit?.image_url || "";
+    if (/^https?:\/\//i.test(real)) return real;
+  }
+  const pool = isTour ? TOUR_BANNERS : STAY_BANNERS;
+  const key = booking.reservation_code || booking.reservation_id || "";
+  let hash = 0;
+  for (let index = 0; index < key.length; index += 1) hash = (hash * 31 + key.charCodeAt(index)) >>> 0;
+  return `${pool[hash % pool.length]}?auto=format&fit=crop&w=900&q=60`;
+}
 
 function toTitleCase(value: string) {
   return value.replace(/\b\w/g, (char) => char.toUpperCase());
@@ -188,8 +185,8 @@ function getReservationStatusTone(status: string) {
     };
   }
   return {
-    dotClassName: "bg-slate-400",
-    panelClassName: "border-slate-200 bg-slate-50 text-slate-700",
+    dotClassName: "bg-[var(--color-muted)]",
+    panelClassName: "border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-text)]",
     helper: "Check the booking details below for the latest state.",
   };
 }
@@ -226,11 +223,12 @@ export function MyBookingsClient({
   const [items, setItems] = useState<Booking[]>(initialData?.items ?? []);
   const [nextCursor, setNextCursor] = useState<Cursor | null>(initialData?.nextCursor ?? null);
   const [totalCount, setTotalCount] = useState(initialData?.totalCount ?? 0);
-  const [loading, setLoading] = useState(false);
+  // Start in the loading state when there's no SSR data, so the skeleton (not the
+  // empty state) shows for the brief moment before the cached snapshot paints.
+  const [loading, setLoading] = useState(!initialData);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const requestIdRef = useRef(0);
-  const didUseInitialUpcomingDataRef = useRef(false);
   const autoOpenPayHandledRef = useRef(false);
 
   const [details, setDetails] = useState<Booking | null>(null);
@@ -262,6 +260,14 @@ export function MyBookingsClient({
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [actionHasSyncCta, setActionHasSyncCta] = useState(false);
   const [cachedViewMeta, setCachedViewMeta] = useState<string | null>(null);
+  // Reviews: which reservations the guest has already rated, and the in-flight
+  // review form.
+  const [reviewedByReservation, setReviewedByReservation] = useState<Map<string, number>>(new Map());
+  const [reviewFor, setReviewFor] = useState<Booking | null>(null);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState("");
+  const [reviewBusy, setReviewBusy] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
   const [detailGalleryImages, setDetailGalleryImages] = useState<string[]>([]);
   const [detailGalleryThumbs, setDetailGalleryThumbs] = useState<string[]>([]);
   const [detailGalleryTitle, setDetailGalleryTitle] = useState("Unit photos");
@@ -324,11 +330,13 @@ export function MyBookingsClient({
   }, [initialAutoOpenPay, initialFocusReservationId, items, openPaymentSubmissionForBooking, tab]);
 
   const fetchBookings = useCallback(
-    async (cursor: Cursor | null, mode: "replace" | "append") => {
+    async (cursor: Cursor | null, mode: "replace" | "append", opts: { silent?: boolean } = {}) => {
       if (!token) return;
       const currentRequestId = ++requestIdRef.current;
       const snapshotVariantKey = `${tab}::${searchValue || "__all__"}`;
-      if (mode === "replace") setLoading(true);
+      // `silent` = a stale-while-revalidate background refresh: keep the cached
+      // list on screen instead of flashing the skeleton.
+      if (mode === "replace" && !opts.silent) setLoading(true);
       if (mode === "append") setLoadingMore(true);
       setError(null);
 
@@ -391,22 +399,35 @@ export function MyBookingsClient({
       setNextCursor(null);
       setTotalCount(0);
       setCachedViewMeta(null);
+      setLoading(false);
       return;
     }
-    // Skip one fetch on first render when SSR already provided upcoming data.
-    // Subsequent tab switches should always fetch fresh data.
-    if (!didUseInitialUpcomingDataRef.current && initialData && !searchValue && tab === "upcoming") {
-      didUseInitialUpcomingDataRef.current = true;
-      return;
-    }
-    void fetchBookings(null, "replace");
-  }, [token, tab, searchValue, fetchBookings, initialData]);
-
-  useEffect(() => {
-    if (!token || !initialData) return;
-    const snapshotVariantKey = "upcoming::__all__";
-    void saveBookingsSnapshot("me", initialData, { variantKey: snapshotVariantKey });
-  }, [initialData, token]);
+    // Show the skeleton (not the empty state) until the cache or first fetch
+    // resolves for this tab/search.
+    setLoading(true);
+    let cancelled = false;
+    void (async () => {
+      // Stale-while-revalidate: paint the cached snapshot instantly, then refresh
+      // in the background (silently, so the cached list isn't replaced by a
+      // skeleton). On the very first visit there is no cache, so the skeleton
+      // stays up while the first fetch runs.
+      let paintedFromCache = false;
+      const cached = await loadBookingsSnapshot("me", {
+        variantKey: `${tab}::${searchValue || "__all__"}`,
+      });
+      if (!cancelled && cached?.data?.items?.length) {
+        setItems(cached.data.items);
+        setNextCursor(cached.data.nextCursor ?? null);
+        setTotalCount(cached.data.totalCount ?? 0);
+        setLoading(false);
+        paintedFromCache = true;
+      }
+      if (!cancelled) void fetchBookings(null, "replace", { silent: paintedFromCache });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [token, tab, searchValue, fetchBookings]);
 
   const openDetails = useCallback(
     async (reservationId: string) => {
@@ -629,6 +650,70 @@ export function MyBookingsClient({
     }
   }, [cancelFor, fetchBookings, token, pushActionMessage]);
 
+  // Load the guest's existing reviews so completed bookings show "Leave a review"
+  // vs "You rated …". Silent on failure (table not provisioned / offline).
+  useEffect(() => {
+    if (!token) {
+      setReviewedByReservation(new Map());
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const data = await apiFetch<MyReviewsResponse>(
+          "/v2/reviews/mine",
+          { method: "GET" },
+          token,
+          myReviewsResponseSchema,
+        );
+        if (cancelled) return;
+        const map = new Map<string, number>();
+        data.items.forEach((review) => map.set(review.reservation_id, review.rating));
+        setReviewedByReservation(map);
+      } catch {
+        /* no reviews available */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
+  const openReview = useCallback((booking: Booking) => {
+    setReviewFor(booking);
+    setReviewRating(5);
+    setReviewComment("");
+    setReviewError(null);
+  }, []);
+
+  const submitReview = useCallback(async () => {
+    if (!token || !reviewFor) return;
+    setReviewBusy(true);
+    setReviewError(null);
+    try {
+      await apiFetch(
+        "/v2/reviews",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            reservation_id: reviewFor.reservation_id,
+            rating: reviewRating,
+            comment: reviewComment.trim() || null,
+          }),
+        },
+        token,
+        reviewItemSchema,
+      );
+      setReviewedByReservation((prev) => new Map(prev).set(reviewFor.reservation_id, reviewRating));
+      setReviewFor(null);
+      pushActionMessage("Thanks for your review!");
+    } catch (unknownError) {
+      setReviewError(getApiErrorMessage(unknownError, "Couldn't submit your review."));
+    } finally {
+      setReviewBusy(false);
+    }
+  }, [pushActionMessage, reviewComment, reviewFor, reviewRating, token]);
+
   const issueCheckinQr = useCallback(
     async (reservationId: string) => {
       if (!token) return;
@@ -664,15 +749,6 @@ export function MyBookingsClient({
     [qrFor?.reservation_code, token],
   );
 
-  const copyQrPayload = useCallback(async () => {
-    if (!qrToken) return;
-    try {
-      await navigator.clipboard.writeText(JSON.stringify(compactQrTokenPayload(qrToken), null, 2));
-      pushActionMessage("QR payload copied.");
-    } catch {
-      pushActionMessage("Unable to copy QR payload.");
-    }
-  }, [pushActionMessage, qrToken]);
 
   useEffect(() => {
     if (!qrFor?.reservation_id || !token) return;
@@ -733,7 +809,6 @@ export function MyBookingsClient({
   const detailUnits = details?.units ?? [];
   const detailTours = details?.service_bookings ?? [];
   const qrCodeValue = qrToken ? JSON.stringify(compactQrTokenPayload(qrToken)) : "";
-  const qrPayload = qrToken ? JSON.stringify(compactQrTokenPayload(qrToken), null, 2) : "";
   const openUnitGallery = useCallback(
     (unit?: {
       name?: string | null;
@@ -760,39 +835,12 @@ export function MyBookingsClient({
     return date;
   }, []);
 
-  const summary = useMemo(() => {
-    const upcomingCandidates = items
-      .filter((booking) => !["checked_out", "cancelled", "no_show"].includes(booking.status))
-      .sort((a, b) => {
-        const left = new Date(`${a.check_in_date}T00:00:00`).getTime();
-        const right = new Date(`${b.check_in_date}T00:00:00`).getTime();
-        return left - right;
-      });
-
-    const nextBooking = upcomingCandidates[0] ?? null;
-    const nextDate = nextBooking
-      ? ((nextBooking.service_bookings?.[0]?.visit_date || nextBooking.check_in_date) ?? null)
-      : null;
-    const outstanding = upcomingCandidates.reduce((sum, booking) => {
-      const paid = Number(booking.amount_paid_verified ?? 0);
-      const total = Number(booking.total_amount ?? 0);
-      return sum + Math.max(0, total - paid);
-    }, 0);
-    const qrReady = nextBooking ? canShowQrForBooking(nextBooking.status) : false;
-
-    return {
-      nextDate,
-      outstanding,
-      qrReady,
-    };
-  }, [items]);
-
   if (!token) {
     return (
       <section className="mx-auto w-full max-w-5xl">
-        <header className="mb-5 rounded-3xl border border-slate-200/70 bg-gradient-to-br from-white via-slate-50 to-blue-50 p-6 shadow-sm">
-          <h1 className="text-3xl font-bold text-slate-900">My Stay</h1>
-          <p className="mt-2 text-sm text-slate-600">Track reservations, check-in QR, and payment status.</p>
+        <header className="mb-5 rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm">
+          <h1 className="text-3xl font-bold text-[var(--color-text)]">My Stay</h1>
+          <p className="mt-2 text-sm text-[var(--color-muted)]">Track reservations, check-in QR, and payment status.</p>
         </header>
         <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
           No active session found. Sign in first, then reopen this page.
@@ -803,42 +851,13 @@ export function MyBookingsClient({
 
   return (
     <section className="mx-auto flex w-full max-w-[1240px] flex-col gap-5 overflow-x-hidden lg:gap-5">
-      <div className="lg:hidden">
-        <GuestHero
-          testId="guest-hero"
-          dark
-          eyebrow="Guest Portal"
-          title="My Bookings"
-          rightSlot={(
-            <StaySnapshotCard
-              nextStayDate={formatDateWithWeekday(summary.nextDate)}
-              outstandingBalance={formatPeso(summary.outstanding)}
-              qrStatus={summary.qrReady ? "QR ready" : "No QR yet"}
-              dark
-            />
-          )}
-        />
-      </div>
-      <div className="hidden lg:block">
-        <GuestHero
-          testId="guest-hero"
-          dark
-          eyebrow="Guest Portal"
-          title="My Bookings"
-          className="rounded-[2rem] shadow-sm lg:min-h-[198px]"
-          contentClassName="lg:min-h-[174px] lg:p-6"
-          rightSlot={(
-            <StaySnapshotCard
-              nextStayDate={formatDateWithWeekday(summary.nextDate)}
-              outstandingBalance={formatPeso(summary.outstanding)}
-              qrStatus={summary.qrReady ? "QR ready" : "No QR yet"}
-              dark
-            />
-          )}
-        />
-      </div>
+      <GuestPageIntro
+        testId="guest-hero"
+        title="My trips"
+        subtitle="Your bookings, payments, and check-in passes."
+      />
 
-      <section className="rounded-[2rem] border border-slate-200/80 bg-white p-4 shadow-sm lg:p-5">
+      <section className="rounded-[2rem] border border-[var(--color-border)] bg-white p-4 shadow-sm lg:p-5">
         <div className="lg:hidden" data-testid="guest-tabs">
           <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <button
@@ -846,8 +865,8 @@ export function MyBookingsClient({
               onClick={() => setTab("upcoming")}
               className={`inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-2xl px-4 text-[13px] font-bold leading-none transition ${
                 tab === "upcoming"
-                  ? "border border-[var(--color-secondary)] bg-teal-50 text-[var(--color-secondary)] shadow-sm"
-                  : "text-slate-500 hover:bg-slate-50"
+                  ? "border border-[var(--color-secondary)] bg-[color:color-mix(in_srgb,var(--color-secondary)_12%,white)] text-[var(--color-secondary)] shadow-sm"
+                  : "text-[var(--color-muted)] hover:bg-[var(--color-background)]"
               }`}
             >
               <Calendar className="h-4 w-4 shrink-0" />
@@ -858,8 +877,8 @@ export function MyBookingsClient({
               onClick={() => setTab("pending_payment")}
               className={`inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-2xl px-4 text-[13px] font-bold leading-none transition ${
                 tab === "pending_payment"
-                  ? "border border-[var(--color-secondary)] bg-teal-50 text-[var(--color-secondary)] shadow-sm"
-                  : "text-slate-500 hover:bg-slate-50"
+                  ? "border border-[var(--color-secondary)] bg-[color:color-mix(in_srgb,var(--color-secondary)_12%,white)] text-[var(--color-secondary)] shadow-sm"
+                  : "text-[var(--color-muted)] hover:bg-[var(--color-background)]"
               }`}
             >
               <CreditCard className="h-4 w-4 shrink-0" />
@@ -870,8 +889,8 @@ export function MyBookingsClient({
               onClick={() => setTab("completed")}
               className={`inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-2xl px-4 text-[13px] font-bold leading-none transition ${
                 tab === "completed"
-                  ? "border border-[var(--color-secondary)] bg-teal-50 text-[var(--color-secondary)] shadow-sm"
-                  : "text-slate-500 hover:bg-slate-50"
+                  ? "border border-[var(--color-secondary)] bg-[color:color-mix(in_srgb,var(--color-secondary)_12%,white)] text-[var(--color-secondary)] shadow-sm"
+                  : "text-[var(--color-muted)] hover:bg-[var(--color-background)]"
               }`}
             >
               <CircleCheck className="h-4 w-4 shrink-0" />
@@ -882,8 +901,8 @@ export function MyBookingsClient({
               onClick={() => setTab("cancelled")}
               className={`inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-2xl px-4 text-[13px] font-bold leading-none transition ${
                 tab === "cancelled"
-                  ? "border border-[var(--color-secondary)] bg-teal-50 text-[var(--color-secondary)] shadow-sm"
-                  : "text-slate-500 hover:bg-slate-50"
+                  ? "border border-[var(--color-secondary)] bg-[color:color-mix(in_srgb,var(--color-secondary)_12%,white)] text-[var(--color-secondary)] shadow-sm"
+                  : "text-[var(--color-muted)] hover:bg-[var(--color-background)]"
               }`}
             >
               <CircleX className="h-4 w-4 shrink-0" />
@@ -928,9 +947,8 @@ export function MyBookingsClient({
             className="w-[390px]"
           />
         </div>
-        <div className="mt-3 flex flex-col gap-3 lg:mt-4">
-          <p className="text-sm text-slate-500">{TAB_HINTS[tab]}</p>
-          <GuestSyncStatus compact />
+        <div className="mt-3 lg:mt-4">
+          <p className="truncate text-sm text-[var(--color-muted)]">{TAB_HINTS[tab]}</p>
         </div>
       </section>
 
@@ -958,7 +976,7 @@ export function MyBookingsClient({
         {loading ? (
           <div className="grid gap-3">
             {Array.from({ length: 3 }).map((_, idx) => (
-              <div key={`booking-skeleton-${idx}`} className="rounded-2xl border border-slate-200/70 bg-white p-5 shadow-sm">
+              <div key={`booking-skeleton-${idx}`} className="rounded-2xl border border-[var(--color-border)] bg-white p-5 shadow-sm">
                 <div className="skeleton h-6 w-48" />
                 <div className="mt-2 skeleton h-4 w-64" />
                 <div className="mt-4 grid gap-2 sm:grid-cols-3">
@@ -1005,158 +1023,122 @@ export function MyBookingsClient({
           const reservationStatusLabel = toTitleCase(booking.status.replace(/_/g, " "));
           const flowHint = bookingFlowHint(booking.status);
           const showSecondaryActions = booking.status !== "pending_payment" && canCancel;
-          const accent = TAB_CARD_ACCENT[tab];
-          const paymentPillClass = tab === "pending_payment" ? paymentMeta.className : TAB_PAYMENT_PILL_CLASS[tab];
+          const banner = bookingBannerUrl(booking, isTour);
 
           return (
             <article
               key={booking.reservation_id}
               id={`booking-card-${booking.reservation_id}`}
-              className={`rounded-2xl border bg-white p-4 shadow-sm lg:p-3.5 ${accent.cardBorder}`}
+              className="overflow-hidden rounded-3xl border border-[var(--color-border)] bg-white shadow-sm"
             >
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div className="min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <h2 className="min-w-0 truncate text-[1.5rem] font-bold leading-tight text-slate-900 lg:text-[1.35rem]">
-                      {booking.reservation_code}
+              <div
+                className="relative h-36 w-full bg-[var(--color-border)] bg-cover bg-center sm:h-44"
+                style={{ backgroundImage: `url('${banner}')` }}
+                role="img"
+                aria-label={bookingTarget || `${bookingLabel} reservation`}
+              >
+                <span className="absolute left-3 top-3 inline-flex items-center rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-semibold text-[var(--color-text)] shadow-sm">
+                  {isTour ? "Tour" : "Stay"}
+                </span>
+                <span className={`absolute right-3 top-3 inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold shadow-sm ${statusMeta.className}`}>
+                  {reservationStatusLabel}
+                </span>
+                {canShowQr ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setQrFor(booking);
+                      setQrToken(null);
+                      setQrError(null);
+                      setQrSecondsLeft(0);
+                    }}
+                    className="absolute bottom-3 right-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-[var(--color-text)] shadow-[var(--shadow-md)] transition hover:scale-105"
+                    aria-label="Show check-in QR"
+                    title="Show QR"
+                  >
+                    <QrCode className="h-4 w-4 shrink-0 stroke-[2.2]" aria-hidden="true" />
+                  </button>
+                ) : null}
+              </div>
+
+              <div className="p-4 sm:p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h2 className="truncate text-lg font-semibold leading-tight text-[var(--color-text)]">
+                      {bookingTarget || `${bookingLabel} reservation`}
                     </h2>
-                    {canShowQr ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setQrFor(booking);
-                          setQrToken(null);
-                          setQrError(null);
-                          setQrSecondsLeft(0);
-                        }}
-                        className="guest-secondary-cta h-10 min-h-10 w-10 shrink-0 p-0 text-slate-700"
-                        aria-label="Show check-in QR"
-                        title="Show QR"
-                      >
-                        <QrCode className="h-4 w-4 shrink-0 stroke-[2.2]" aria-hidden="true" />
-                      </button>
+                    <p className="mt-0.5 text-sm text-[var(--color-muted)]">
+                      {isTour
+                        ? formatDateWithWeekday(visitDate)
+                        : `${formatDateWithWeekday(booking.check_in_date)} – ${formatDateWithWeekday(booking.check_out_date)}`}
+                    </p>
+                    <p className="mt-0.5 truncate text-xs text-[var(--color-muted)]">
+                      {booking.reservation_code} · Booked {formatLocalDateTime(booking.created_at)}
+                    </p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="text-xs text-[var(--color-muted)]">{isPaymentTab ? "Amount due" : "Total"}</p>
+                    <p className="text-lg font-bold leading-tight text-[var(--color-text)]">
+                      {formatPeso(isPaymentTab ? remaining : total)}
+                    </p>
+                    {!isPaymentTab && Number(booking.discount_amount ?? 0) > 0 ? (
+                      <p className="mt-0.5 text-[11px] font-semibold text-[var(--color-secondary)]">
+                        {booking.promo_code ? `${booking.promo_code} · ` : ""}−{formatPeso(Number(booking.discount_amount))} off
+                      </p>
+                    ) : null}
+                    {isPaymentTab && minimumPayNow > 0 ? (
+                      <p className="mt-0.5 text-[11px] text-[var(--color-muted)]">Min. now {formatPeso(minimumPayNow)}</p>
                     ) : null}
                   </div>
-                  <p className="mt-1 text-sm font-medium text-slate-700">{bookingTarget || `${bookingLabel} reservation`}</p>
-                  <p className="text-xs text-slate-500">Booked on {formatLocalDateTime(booking.created_at)}</p>
-                  <div className="mt-2 flex items-center gap-2">
-                    <span
-                      className={`inline-flex max-w-fit items-center rounded-full px-2 py-1 text-[10px] font-semibold tracking-wide sm:px-2.5 sm:text-[11px] ${statusMeta.className}`}
-                    >
-                      {reservationStatusLabel}
-                    </span>
-                    <span
-                      className={`inline-flex max-w-fit items-center rounded-full px-2 py-1 text-[10px] font-semibold sm:px-2.5 sm:text-[11px] ${paymentPillClass}`}
-                    >
-                      {paymentMeta.label}
-                    </span>
-                    <span className="ml-auto inline-flex items-center rounded-full bg-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-700">
-                      {isTour ? "Tour booking" : "Stay booking"}
-                    </span>
-                  </div>
                 </div>
-                <div className={`rounded-xl border p-2.5 sm:min-w-[150px] ${accent.amountPanel}`}>
-                  <p className="text-xs font-medium text-slate-600">{isPaymentTab ? "Amount due" : "Total amount"}</p>
-                  <p className={`mt-1 text-[2rem] font-bold leading-tight lg:text-[1.8rem] ${isPaymentTab ? "text-orange-700" : accent.amountText}`}>
-                    {formatPeso(isPaymentTab ? remaining : total)}
+
+                {isPaymentTab ? (
+                  <p className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium leading-relaxed text-amber-800">
+                    Pay at least the minimum deposit and submit proof to hold this booking. The deposit is non-refundable if you cancel.
                   </p>
-                  {isPaymentTab && minimumPayNow > 0 ? (
-                    <p className="mt-1 text-[11px] font-medium text-slate-600">
-                      Minimum pay now: <span className="font-semibold text-slate-800">{formatPeso(minimumPayNow)}</span>
-                    </p>
+                ) : flowHint ? (
+                  <p className="mt-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-xs font-medium leading-relaxed text-[var(--color-text)]">
+                    {flowHint}
+                  </p>
+                ) : null}
+
+                <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm">
+                  <span className="text-[var(--color-muted)]">
+                    Payment <span className="font-semibold text-[var(--color-text)]">{paymentMeta.label}</span>
+                  </span>
+                  <span className="text-[var(--color-muted)]">
+                    Paid <span className="font-semibold text-[var(--color-text)]">{formatPeso(paid)}</span>
+                  </span>
+                  {remaining > 0 ? (
+                    <span className="text-[var(--color-muted)]">
+                      Balance <span className="font-semibold text-[var(--color-secondary)]">{formatPeso(remaining)}</span>
+                    </span>
                   ) : null}
+                  <button
+                    type="button"
+                    onClick={() => void openDetails(booking.reservation_id)}
+                    className="ml-auto inline-flex items-center gap-1 font-semibold text-[var(--color-secondary)] hover:underline"
+                  >
+                    <Eye className="h-4 w-4 shrink-0 stroke-[2.2]" aria-hidden="true" />
+                    View details
+                  </button>
                 </div>
-              </div>
-              {isPaymentTab ? (
-                <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium leading-relaxed text-amber-800">
-                  To keep this reservation active, pay at least the minimum deposit first and submit proof. If you cancel this booking, the minimum deposit is non-refundable.
-                </p>
-              ) : null}
-              {flowHint ? (
-                <p className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium leading-relaxed text-slate-700">
-                  {flowHint}
-                </p>
-              ) : null}
 
-              <div className="relative mt-3 grid gap-2.5 rounded-2xl border border-slate-200/70 bg-slate-50/60 p-3.5 pr-14 sm:grid-cols-2">
-                <button
-                  type="button"
-                  onClick={() => void openDetails(booking.reservation_id)}
-                  className="guest-secondary-cta absolute right-3 top-3 h-9 min-h-9 w-9 p-0 text-slate-700"
-                  aria-label="View booking details"
-                  title="View details"
-                >
-                  <Eye className="h-4 w-4 shrink-0 stroke-[2.2]" aria-hidden="true" />
-                </button>
-                <div>
-                  <span className="block text-xs text-slate-500">{isTour ? "Visit date" : "Stay dates"}</span>
-                  <p className="text-sm font-medium text-slate-800">
-                    {isTour ? formatDateWithWeekday(visitDate) : `${formatDateWithWeekday(booking.check_in_date)} to ${formatDateWithWeekday(booking.check_out_date)}`}
-                  </p>
-                </div>
-                <div>
-                  <span className="block text-xs text-slate-500">Payment status</span>
-                  <p className="text-sm font-semibold text-slate-800">{paymentMeta.label}</p>
-                </div>
-                <div>
-                  <span className="block text-xs text-slate-500">Amount paid</span>
-                  <p className="text-sm font-semibold text-emerald-700">{formatPeso(paid)}</p>
-                </div>
-                <div>
-                  <span className="block text-xs text-slate-500">Outstanding balance</span>
-                  <p className={`text-sm font-semibold ${accent.amountText}`}>{formatPeso(remaining)}</p>
-                </div>
-              </div>
-
-              <div className="mt-3 flex items-center gap-2">
-                <div className="hidden lg:ml-auto lg:flex lg:items-center lg:justify-end lg:gap-2">
-                  {booking.status === "pending_payment" ? (
-                    <>
+                {booking.status === "pending_payment" || showSecondaryActions ? (
+                  <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
+                    {booking.status === "pending_payment" ? (
                       <button
                         type="button"
-                        className="guest-primary-cta min-h-10 h-10 w-[132px] px-3 text-xs"
+                        className="guest-primary-cta min-h-11 px-4 text-sm"
                         onClick={() => openPaymentSubmissionForBooking(booking)}
                       >
-                        Submit proof
+                        Submit payment proof
                       </button>
-                      {canCancel ? (
-                        <button
-                          type="button"
-                          className="guest-danger-cta min-h-10 h-10 w-[132px] px-3 text-xs"
-                          onClick={() => setCancelFor(booking)}
-                        >
-                          Cancel booking
-                        </button>
-                      ) : null}
-                    </>
-                  ) : null}
-
-                  {showSecondaryActions ? (
-                    <button
-                      type="button"
-                      className="guest-danger-cta min-h-10 h-10 w-[132px] px-3 text-xs"
-                      onClick={() => setCancelFor(booking)}
-                    >
-                      Cancel booking
-                    </button>
-                  ) : null}
-                </div>
-              </div>
-
-              <div className="mt-3 space-y-2 lg:hidden">
-                {booking.status === "pending_payment" ? (
-                  <div className={`grid w-full gap-2 ${canCancel ? "grid-cols-2" : "grid-cols-1"}`}>
-                    <button
-                      type="button"
-                      className="guest-primary-cta min-h-12 w-full px-3 text-sm"
-                      onClick={() => openPaymentSubmissionForBooking(booking)}
-                    >
-                      Submit proof
-                    </button>
+                    ) : null}
                     {canCancel ? (
                       <button
                         type="button"
-                        className="guest-danger-cta min-h-12 w-full px-3 text-sm"
+                        className="guest-danger-ghost min-h-11 px-4 text-sm"
                         onClick={() => setCancelFor(booking)}
                       >
                         Cancel booking
@@ -1164,18 +1146,28 @@ export function MyBookingsClient({
                     ) : null}
                   </div>
                 ) : null}
-                {showSecondaryActions ? (
-                  <div className="grid w-full grid-cols-1 gap-2">
-                    <button
-                      type="button"
-                      className="guest-danger-cta min-h-11 w-full px-3 text-sm"
-                      onClick={() => setCancelFor(booking)}
-                    >
-                      Cancel booking
-                    </button>
+
+                {booking.status === "checked_out" ? (
+                  <div className="mt-4 flex flex-col gap-2 border-t border-[var(--color-border)] pt-3 sm:flex-row sm:items-center sm:justify-between">
+                    {reviewedByReservation.has(booking.reservation_id) ? (
+                      <span className="inline-flex items-center gap-1.5 text-sm text-[var(--color-muted)]">
+                        <Star className="h-4 w-4 fill-[var(--color-cta)] text-[var(--color-cta)]" aria-hidden="true" />
+                        You rated this stay {reviewedByReservation.get(booking.reservation_id)}/5
+                      </span>
+                    ) : (
+                      <>
+                        <span className="text-sm text-[var(--color-muted)]">How was your stay?</span>
+                        <button
+                          type="button"
+                          className="guest-secondary-cta min-h-11 px-4 text-sm"
+                          onClick={() => openReview(booking)}
+                        >
+                          Leave a review
+                        </button>
+                      </>
+                    )}
                   </div>
                 ) : null}
-
               </div>
             </article>
           );
@@ -1202,12 +1194,12 @@ export function MyBookingsClient({
           title={details?.reservation_code ?? "Loading..."}
           zIndexClass="z-[70]"
           maxWidthClass="md:max-w-2xl"
-          panelClassName="max-h-[calc(100dvh-0.9rem)] border-slate-200/80 bg-white pb-[calc(1rem+env(safe-area-inset-bottom))]"
+          panelClassName="max-h-[calc(100dvh-0.9rem)] border-[var(--color-border)] bg-white pb-[calc(1rem+env(safe-area-inset-bottom))]"
           onClose={() => {
             setDetails(null);
           }}
         >
-            {detailsLoading ? <p className="text-sm text-slate-600" role="status">Loading details...</p> : null}
+            {detailsLoading ? <p className="text-sm text-[var(--color-muted)]" role="status">Loading details...</p> : null}
             {detailsError ? <p className="mb-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">{detailsError}</p> : null}
 
             {details ? (
@@ -1236,9 +1228,9 @@ export function MyBookingsClient({
 
                 {detailUnits.length > 0 ? (
                   <section>
-                    <h4 className="mb-2 text-sm font-semibold text-slate-900">Units</h4>
+                    <h4 className="mb-2 text-sm font-semibold text-[var(--color-text)]">Units</h4>
                     {detailUnits.map((row) => (
-                      <div key={row.reservation_unit_id} className="mb-2 rounded-lg border border-slate-200 p-3">
+                      <div key={row.reservation_unit_id} className="mb-2 rounded-lg border border-[var(--color-border)] p-3">
                         <div>
                           <strong>
                             {(() => {
@@ -1246,10 +1238,10 @@ export function MyBookingsClient({
                               return label.subtitle ? `${label.title} (${label.subtitle})` : label.title;
                             })()}
                           </strong>
-                          <p className="text-xs text-slate-500">
+                          <p className="text-xs text-[var(--color-muted)]">
                             {row.quantity_or_nights} night(s) x {formatPeso(row.rate_snapshot)}
                           </p>
-                          {row.unit?.amenities?.length ? <p className="text-xs text-slate-500">Amenities: {row.unit.amenities.join(", ")}</p> : null}
+                          {row.unit?.amenities?.length ? <p className="text-xs text-[var(--color-muted)]">Amenities: {row.unit.amenities.join(", ")}</p> : null}
                           {normalizeUnitImageUrls(row.unit?.image_urls, row.unit?.image_url).length ? (
                             <button
                               type="button"
@@ -1260,7 +1252,7 @@ export function MyBookingsClient({
                             </button>
                           ) : null}
                         </div>
-                        <p className="mt-2 text-sm font-semibold text-slate-800">{formatPeso(row.quantity_or_nights * row.rate_snapshot)}</p>
+                        <p className="mt-2 text-sm font-semibold text-[var(--color-text)]">{formatPeso(row.quantity_or_nights * row.rate_snapshot)}</p>
                       </div>
                     ))}
                   </section>
@@ -1268,14 +1260,14 @@ export function MyBookingsClient({
 
                 {detailTours.length > 0 ? (
                   <section>
-                    <h4 className="mb-2 text-sm font-semibold text-slate-900">Tours</h4>
+                    <h4 className="mb-2 text-sm font-semibold text-[var(--color-text)]">Tours</h4>
                     {detailTours.map((row) => (
-                      <div key={row.service_booking_id} className="mb-2 rounded-lg border border-slate-200 p-3">
+                      <div key={row.service_booking_id} className="mb-2 rounded-lg border border-[var(--color-border)] p-3">
                         <div>
                           <strong>{row.service?.service_name ?? "Tour service"}</strong>
-                          <p className="text-xs text-slate-500">Date: {formatDateWithWeekday(row.visit_date)}</p>
+                          <p className="text-xs text-[var(--color-muted)]">Date: {formatDateWithWeekday(row.visit_date)}</p>
                         </div>
-                        <p className="mt-2 text-sm font-semibold text-slate-800">{formatPeso(row.total_amount)}</p>
+                        <p className="mt-2 text-sm font-semibold text-[var(--color-text)]">{formatPeso(row.total_amount)}</p>
                       </div>
                     ))}
                   </section>
@@ -1291,37 +1283,37 @@ export function MyBookingsClient({
           title="Submit payment proof"
           zIndexClass="z-[70]"
           maxWidthClass="md:max-w-xl"
-          panelClassName="max-h-[calc(100dvh-0.75rem)] border-slate-200/80 bg-white pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
+          panelClassName="max-h-[calc(100dvh-0.75rem)] border-[var(--color-border)] bg-white pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
           onClose={() => {
             if (!submitBusy) closeSubmitModal();
           }}
         >
-            <p className="mb-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+            <p className="mb-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] p-3 text-xs text-[var(--color-muted)]">
               Next step after submit: payment status changes to <strong>For verification</strong> while admin reviews your proof. You will be returned to the <strong>Upcoming</strong> tab.
             </p>
             <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-medium leading-relaxed text-amber-800">
               Minimum deposit is required first. Guest-initiated cancellation forfeits this minimum deposit.
             </p>
-            <div className="mb-3 rounded-xl border border-slate-200 bg-white p-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Payment summary</p>
+            <div className="mb-3 rounded-xl border border-[var(--color-border)] bg-white p-3">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">Payment summary</p>
               <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
-                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                  <p className="text-xs text-slate-500">Total amount</p>
-                  <p className="font-semibold text-slate-900">{formatPeso(Number(submitFor.total_amount ?? 0))}</p>
+                <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2">
+                  <p className="text-xs text-[var(--color-muted)]">Total amount</p>
+                  <p className="font-semibold text-[var(--color-text)]">{formatPeso(Number(submitFor.total_amount ?? 0))}</p>
                 </div>
-                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                  <p className="text-xs text-slate-500">Amount paid</p>
+                <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2">
+                  <p className="text-xs text-[var(--color-muted)]">Amount paid</p>
                   <p className="font-semibold text-emerald-700">{formatPeso(Number(submitFor.amount_paid_verified ?? 0))}</p>
                 </div>
-                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                  <p className="text-xs text-slate-500">Remaining balance</p>
+                <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2">
+                  <p className="text-xs text-[var(--color-muted)]">Remaining balance</p>
                   <p className="font-semibold text-orange-700">
                     {formatPeso(Math.max(0, Number(submitFor.total_amount ?? 0) - Number(submitFor.amount_paid_verified ?? 0)))}
                   </p>
                 </div>
-                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                  <p className="text-xs text-slate-500">Minimum due now</p>
-                  <p className="font-semibold text-slate-900">
+                <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2">
+                  <p className="text-xs text-[var(--color-muted)]">Minimum due now</p>
+                  <p className="font-semibold text-[var(--color-text)]">
                     {formatPeso(Number(submitFor.expected_pay_now ?? submitFor.deposit_required ?? 0))}
                   </p>
                 </div>
@@ -1339,15 +1331,15 @@ export function MyBookingsClient({
                   className="guest-field-control"
                 />
               </label>
-              <p className="guest-surface-soft px-3 py-2 text-xs text-slate-600">
+              <p className="guest-surface-soft px-3 py-2 text-xs text-[var(--color-muted)]">
                 Minimum payment now:{" "}
-                <strong className="text-slate-800">
+                <strong className="text-[var(--color-text)]">
                   {formatPeso(
                     Number(submitFor.expected_pay_now ?? submitFor.deposit_required ?? 0),
                   )}
                 </strong>
                 {submitFor.deposit_rule_applied ? (
-                  <span className="ml-1 text-slate-500">({submitFor.deposit_rule_applied})</span>
+                  <span className="ml-1 text-[var(--color-muted)]">({submitFor.deposit_rule_applied})</span>
                 ) : null}
               </p>
               <label className="guest-form-label">
@@ -1364,7 +1356,7 @@ export function MyBookingsClient({
               <GcashPaymentGuide compact onCopyMessage={(message) => pushActionMessage(message)} />
 
               <div className="grid gap-2">
-                <p className="text-sm text-slate-700">Payment proof</p>
+                <p className="text-sm text-[var(--color-text)]">Payment proof</p>
                 <div className="flex gap-2">
                   <button
                     type="button"
@@ -1388,15 +1380,15 @@ export function MyBookingsClient({
                   <div className="grid gap-2">
                     <label
                       htmlFor={submitProofInputId}
-                      className="group inline-flex min-h-14 w-full cursor-pointer items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 transition hover:border-[var(--color-secondary)] hover:bg-teal-50/20"
+                      className="group inline-flex min-h-14 w-full cursor-pointer items-center justify-between gap-3 rounded-2xl border border-[var(--color-border)] bg-white px-4 py-3 transition hover:border-[var(--color-secondary)] hover:bg-[color:color-mix(in_srgb,var(--color-secondary)_12%,white)]/20"
                     >
-                      <span className="min-w-0 text-sm font-semibold text-slate-700 transition group-hover:text-[var(--color-secondary)]">
+                      <span className="min-w-0 text-sm font-semibold text-[var(--color-text)] transition group-hover:text-[var(--color-secondary)]">
                         <span className="block truncate">{submitProofFile ? "Change payment proof" : "Upload payment proof"}</span>
-                        <span className="block text-xs font-medium text-slate-500 transition group-hover:text-slate-600">
+                        <span className="block text-xs font-medium text-[var(--color-muted)] transition group-hover:text-[var(--color-muted)]">
                           JPG, PNG, or PDF
                         </span>
                       </span>
-                      <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-500 transition group-hover:border-[var(--color-secondary)] group-hover:bg-teal-50 group-hover:text-[var(--color-secondary)]">
+                      <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-muted)] transition group-hover:border-[var(--color-secondary)] group-hover:bg-[color:color-mix(in_srgb,var(--color-secondary)_12%,white)] group-hover:text-[var(--color-secondary)]">
                         <Upload className="h-4 w-4" />
                       </span>
                     </label>
@@ -1427,7 +1419,7 @@ export function MyBookingsClient({
                         </button>
                       </div>
                     ) : (
-                      <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                      <p className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-xs text-[var(--color-muted)]">
                         No file chosen
                       </p>
                     )}
@@ -1445,7 +1437,7 @@ export function MyBookingsClient({
               </div>
               {submitBusy ? (
                 <div
-                  className="flex items-center gap-3 rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-semibold text-teal-800"
+                  className="flex items-center gap-3 rounded-2xl border border-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)] bg-[color:color-mix(in_srgb,var(--color-secondary)_12%,white)] px-4 py-3 text-sm font-semibold text-[var(--color-secondary)]"
                   role="status"
                   aria-live="polite"
                 >
@@ -1454,7 +1446,7 @@ export function MyBookingsClient({
                 </div>
               ) : null}
               {submitError ? <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">{submitError}</p> : null}
-              <div className="sticky bottom-0 mt-1 flex justify-end gap-2 border-t border-slate-200 bg-white/95 pt-3 backdrop-blur">
+              <div className="sticky bottom-0 mt-1 flex justify-end gap-2 border-t border-[var(--color-border)] bg-white/95 pt-3 backdrop-blur">
                 <button
                   type="button"
                   onClick={closeSubmitModal}
@@ -1478,10 +1470,10 @@ export function MyBookingsClient({
       {qrFor ? (
         <ModalDialog
           titleId="checkin-qr-title"
-          title="Check-in QR Token"
+          title="Your check-in pass"
           zIndexClass="z-[70]"
           maxWidthClass="md:max-w-2xl"
-          panelClassName="max-h-[calc(100dvh-0.9rem)] border-slate-200/80 bg-white pb-[calc(1rem+env(safe-area-inset-bottom))]"
+          panelClassName="max-h-[calc(100dvh-0.9rem)] border-[var(--color-border)] bg-white pb-[calc(1rem+env(safe-area-inset-bottom))]"
           onClose={() => {
             setQrFor(null);
             setQrToken(null);
@@ -1491,66 +1483,121 @@ export function MyBookingsClient({
           }}
         >
 
-            <p className="text-sm text-slate-600">
-              Reservation: <strong>{qrFor.reservation_code}</strong>
-            </p>
-            <p className="mt-1 text-xs text-slate-500">
-              Token refreshes automatically near expiry. Share this payload with the admin scanner.
-            </p>
-            {!networkOnline ? (
-              <p className="mt-1 text-xs font-semibold text-amber-700">
-                Offline: new token issuance is unavailable. Last cached token is shown if present.
+            <div className="text-center">
+              <p className="text-sm text-[var(--color-muted)]">
+                Show this code at the front desk to check in.
               </p>
-            ) : null}
+              <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-[var(--color-background)] px-3 py-1 text-xs font-semibold text-[var(--color-text)]">
+                Booking {qrFor.reservation_code}
+              </span>
 
-            {qrError ? <p className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">{qrError}</p> : null}
-            {qrBusy ? <p className="mt-3 text-sm text-slate-600" role="status">Generating token...</p> : null}
+              {!networkOnline ? (
+                <p className="mx-auto mt-3 max-w-sm rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-xs font-semibold text-amber-800">
+                  You&rsquo;re offline — showing your last saved pass. Reconnect to refresh it.
+                </p>
+              ) : null}
 
-            {qrToken ? (
-              <>
-                <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-                  <p>
-                    Expires: <strong>{formatLocalDateTime(qrToken.expires_at)}</strong>
+              {qrError ? <p className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">{qrError}</p> : null}
+              {qrBusy && !qrToken ? <p className="mt-3 text-sm text-[var(--color-muted)]" role="status">Preparing your pass…</p> : null}
+
+              {qrToken ? (
+                <>
+                  <div className="mt-4 flex justify-center">
+                    <div className="rounded-3xl border border-[var(--color-border)] bg-white p-4 shadow-sm">
+                      <QRCodeSVG value={qrCodeValue} size={256} level="M" includeMargin />
+                    </div>
+                  </div>
+                  <p className="mt-3 inline-flex items-center gap-2 text-xs text-[var(--color-muted)]">
+                    <span className="relative flex h-2 w-2" aria-hidden="true">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                    </span>
+                    Auto-refreshes to stay valid{qrSecondsLeft > 0 ? ` · ${qrSecondsLeft}s` : ""}
                   </p>
-                  <p>
-                    Seconds left: <strong>{qrSecondsLeft}</strong>
-                  </p>
-                </div>
-                {qrFromCache ? (
-                  <p className="mt-2 text-xs font-semibold text-amber-700">
-                    Cached token loaded for offline display.
-                  </p>
-                ) : null}
-                <div className="mt-3 flex justify-center rounded-2xl border border-slate-200/70 bg-slate-50 p-4">
-                  <QRCodeSVG value={qrCodeValue} size={300} level="M" includeMargin />
-                </div>
+                  {qrFromCache ? (
+                    <p className="mt-1.5 text-xs font-semibold text-amber-700">Saved pass shown for offline use.</p>
+                  ) : null}
+                </>
+              ) : null}
 
-                <textarea
-                  readOnly
-                  value={qrPayload}
-                  className="mt-3 min-h-[200px] w-full rounded-lg border border-slate-300 bg-slate-50 p-3 font-mono text-xs text-slate-800"
-                />
-              </>
-            ) : null}
-
-            <div className="mt-3 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => void issueCheckinQr(qrFor.reservation_id)}
-                className="guest-secondary-cta min-h-10 px-3 text-sm"
-                disabled={qrBusy || !networkOnline}
-              >
-                {networkOnline ? "Refresh now" : "Reconnect to refresh"}
-              </button>
-              <button
-                type="button"
-                onClick={() => void copyQrPayload()}
-                className="guest-primary-cta min-h-10 px-3 text-sm"
-                disabled={!qrToken}
-              >
-                Copy payload
-              </button>
+              <div className="mt-5 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => void issueCheckinQr(qrFor.reservation_id)}
+                  className="guest-secondary-cta min-h-10 px-4 text-sm"
+                  disabled={qrBusy || !networkOnline}
+                >
+                  {networkOnline ? "Refresh now" : "Reconnect to refresh"}
+                </button>
+              </div>
             </div>
+        </ModalDialog>
+      ) : null}
+
+      {reviewFor ? (
+        <ModalDialog
+          titleId="leave-review-title"
+          title="Leave a review"
+          zIndexClass="z-[70]"
+          maxWidthClass="md:max-w-md"
+          panelClassName="max-h-[calc(100dvh-0.75rem)] border-[var(--color-border)] bg-white pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
+          onClose={() => setReviewFor(null)}
+        >
+          <p className="text-sm text-[var(--color-muted)]">
+            How was your stay at <strong className="text-[var(--color-text)]">{reviewFor.reservation_code}</strong>?
+          </p>
+
+          <div className="mt-4 flex items-center justify-center gap-2" role="radiogroup" aria-label="Rating">
+            {[1, 2, 3, 4, 5].map((value) => (
+              <button
+                key={`star-${value}`}
+                type="button"
+                role="radio"
+                aria-checked={reviewRating === value}
+                aria-label={`${value} star${value === 1 ? "" : "s"}`}
+                onClick={() => setReviewRating(value)}
+                className="rounded-full p-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
+              >
+                <Star
+                  className={`h-9 w-9 ${value <= reviewRating ? "fill-[var(--color-cta)] text-[var(--color-cta)]" : "fill-transparent text-[var(--color-border)]"}`}
+                  aria-hidden="true"
+                />
+              </button>
+            ))}
+          </div>
+
+          <textarea
+            value={reviewComment}
+            onChange={(event) => setReviewComment(event.target.value)}
+            maxLength={1000}
+            rows={4}
+            placeholder="Share what you loved or what could be better (optional)."
+            className="mt-4 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3 text-sm text-[var(--color-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
+          />
+
+          {reviewError ? (
+            <p className="mt-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">
+              {reviewError}
+            </p>
+          ) : null}
+
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => setReviewFor(null)}
+              className="guest-secondary-cta min-h-10 min-w-[120px] px-3 text-sm"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => void submitReview()}
+              disabled={reviewBusy}
+              className="guest-primary-cta min-h-10 min-w-[140px] px-3 text-sm"
+            >
+              {reviewBusy ? "Submitting…" : "Submit review"}
+            </button>
+          </div>
         </ModalDialog>
       ) : null}
 
@@ -1561,12 +1608,12 @@ export function MyBookingsClient({
           zIndexClass="z-[70]"
           overlayClassName="bg-slate-900/55"
           maxWidthClass="md:max-w-md"
-          panelClassName="max-h-[calc(100dvh-0.75rem)] border-slate-200/80 bg-white pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
+          panelClassName="max-h-[calc(100dvh-0.75rem)] border-[var(--color-border)] bg-white pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
           closeLabel="Close cancel booking dialog"
-          closeButtonClassName="h-10 w-10 rounded-full border-2 border-teal-200 bg-white text-slate-500"
+          closeButtonClassName="h-10 w-10 rounded-full border-2 border-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)] bg-white text-[var(--color-muted)]"
           onClose={() => setCancelFor(null)}
         >
-            <p className="text-sm text-slate-600">This booking will be cancelled and removed from active flow.</p>
+            <p className="text-sm text-[var(--color-muted)]">This booking will be cancelled and removed from active flow.</p>
             <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
               {cancellationConsequenceText(cancelFor)}
             </p>

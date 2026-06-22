@@ -1,8 +1,7 @@
 "use client";
 
+import { ArrowRight, Flag, Footprints } from "lucide-react";
 import type { GuestMapAmenityPin } from "../../../../packages/shared/src/types";
-import { InsetPanel } from "../../shared/InsetPanel";
-import { MapLegend } from "./MapLegend";
 
 export function MapDirectionsPanel({
   origin,
@@ -16,32 +15,59 @@ export function MapDirectionsPanel({
   steps: string[];
 }) {
   return (
-    <section className="surface p-4">
-      <h3 className="text-base font-semibold text-[var(--color-text)]">Route guidance</h3>
-      <p className="mt-1 text-xs text-[var(--color-muted)]">
-        Tap a map pin to set destination. Use this card for quick walking directions.
-      </p>
+    <section className="rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-sm)]">
+      <h3 className="text-base font-semibold text-[var(--color-text)]">Walking directions</h3>
+
       {origin && destination ? (
-        <p className="mt-1 text-xs text-[var(--color-muted)]">
-          Route: <span className="font-semibold text-[var(--color-text)]">{origin.name}</span> to{" "}
-          <span className="font-semibold text-[var(--color-text)]">{destination.name}</span>
-          {estimatedMinutes ? ` • about ${estimatedMinutes} min walk` : ""}
+        <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-2xl bg-[var(--color-background)] px-3 py-2.5 text-sm">
+          <span className="inline-flex items-center gap-1.5 font-semibold text-[var(--color-text)]">
+            <span className="h-2.5 w-2.5 rounded-full bg-[var(--color-primary)]" aria-hidden="true" />
+            {origin.name}
+          </span>
+          <ArrowRight className="h-4 w-4 text-[var(--color-muted)]" aria-hidden="true" />
+          <span className="inline-flex items-center gap-1.5 font-semibold text-[var(--color-cta)]">
+            <Flag className="h-3.5 w-3.5" aria-hidden="true" />
+            {destination.name}
+          </span>
+          {estimatedMinutes ? (
+            <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-[color:color-mix(in_srgb,var(--color-primary)_12%,white)] px-2.5 py-1 text-xs font-semibold text-[var(--color-primary)]">
+              <Footprints className="h-3.5 w-3.5" aria-hidden="true" />
+              ~{estimatedMinutes} min walk
+            </span>
+          ) : null}
+        </div>
+      ) : (
+        <p className="mt-1 text-sm text-[var(--color-muted)]">
+          Pick a start and destination above to see step-by-step walking directions.
         </p>
+      )}
+
+      {steps.length ? (
+        <ol className="mt-4">
+          {steps.map((step, index) => (
+            <li key={step} className="relative flex gap-3 pb-4 last:pb-0">
+              {index < steps.length - 1 ? (
+                <span
+                  className="absolute left-[13px] top-8 h-[calc(100%-1.5rem)] w-px bg-[var(--color-border)]"
+                  aria-hidden="true"
+                />
+              ) : null}
+              <span className="z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)] text-xs font-semibold text-white">
+                {index + 1}
+              </span>
+              <p className="pt-1 text-sm leading-snug text-[var(--color-text)]">{step}</p>
+            </li>
+          ))}
+        </ol>
       ) : null}
-      <ul className="mt-3 space-y-2">
-        {steps.map((step, index) => (
-          <InsetPanel as="li" key={step} className="text-sm text-[var(--color-text)]">
-            <span className="mr-1 font-semibold text-[var(--color-text)]">{index + 1}.</span>
-            {step}
-          </InsetPanel>
-        ))}
-      </ul>
+
       {destination ? (
-        <InsetPanel tone="surface" className="mt-3">
-          <p className="text-sm font-semibold text-[var(--color-text)]">Destination: {destination.name}</p>
-          <p className="mt-1 text-xs text-[var(--color-muted)]">{destination.description}</p>
-          <MapLegend />
-        </InsetPanel>
+        <div className="mt-2 rounded-2xl bg-[var(--color-background)] p-3">
+          <p className="text-sm font-semibold text-[var(--color-text)]">{destination.name}</p>
+          {destination.description ? (
+            <p className="mt-0.5 text-xs text-[var(--color-muted)]">{destination.description}</p>
+          ) : null}
+        </div>
       ) : null}
     </section>
   );

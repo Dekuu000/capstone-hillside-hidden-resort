@@ -8,6 +8,7 @@ import type {
   AdminPaymentsResponse,
   ReservationListItem as ReservationItem,
   ReservationListResponse as ReservationsResponse,
+  ReservationQuickStatsResponse,
   ReservationStatus,
 } from "../../../packages/shared/src/types";
 import {
@@ -15,6 +16,7 @@ import {
   paymentVerifyResponseSchema,
   reservationListItemSchema,
   reservationListResponseSchema,
+  reservationQuickStatsResponseSchema,
 } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
@@ -26,7 +28,10 @@ import { getReservationStatusMeta } from "../../lib/reservationStatus";
 import { getReservationPaymentState, getReservationSource } from "../../lib/reservationView";
 import { getSupabaseBrowserClient } from "../../lib/supabase";
 import { ReservationDetailDrawer } from "./ReservationDetailDrawer";
+import { AdminPageHeader } from "../layout/AdminPageHeader";
 import { DataFreshnessBadge } from "../shared/DataFreshnessBadge";
+import { Pagination } from "../shared/Pagination";
+import { Select } from "../shared/Select";
 import { FancyDatePicker } from "../shared/FancyDatePicker";
 import { useToast } from "../shared/ToastProvider";
 import { loadReservationsSnapshot, saveReservationsSnapshot } from "../../lib/offlineSync/store";
@@ -36,6 +41,7 @@ type AdminReservationsClientProps = {
   initialSessionEmail?: string | null;
   initialData?: ReservationsResponse | null;
   initialOpenReservationId?: string | null;
+  role?: string | null;
 };
 
 type ReservationQuickFilter =
@@ -59,7 +65,7 @@ function getPaymentStateMeta(state: "unpaid" | "partial" | "settled") {
   if (state === "partial") {
     return { label: "Partially Paid", className: "bg-amber-100 text-amber-800" };
   }
-  return { label: "Unpaid", className: "bg-slate-200 text-slate-700" };
+  return { label: "Unpaid", className: "bg-[var(--color-border)] text-[var(--color-text)]" };
 }
 
 function matchesPaymentFilter(reservation: ReservationItem, filter: PaymentStatusFilter) {
@@ -110,6 +116,7 @@ export function AdminReservationsClient({
   initialToken = null,
   initialData = null,
   initialOpenReservationId = null,
+  role = null,
 }: AdminReservationsClientProps) {
   const token = initialToken;
   const { showToast } = useToast();
@@ -326,33 +333,22 @@ export function AdminReservationsClient({
     if (!token) return;
     try {
       const today = todayPlusLocalIsoDate(0);
+      // Counts are computed server-side (cheap COUNT queries) so the tiles stay
+      // correct no matter how many reservations exist — instead of shipping up
+      // to N reservation rows to the browser just to count them here.
       const qs = new URLSearchParams();
-      qs.set("limit", "1000");
-      qs.set("offset", "0");
-      qs.set("sort_by", "check_in_date");
-      qs.set("sort_dir", "asc");
-      const data = await apiFetch<ReservationsResponse>(
-        `/v2/reservations?${qs.toString()}`,
+      qs.set("today", today);
+      const data = await apiFetch<ReservationQuickStatsResponse>(
+        `/v2/reservations/stats?${qs.toString()}`,
         { method: "GET" },
         token,
-        reservationListResponseSchema,
+        reservationQuickStatsResponseSchema,
       );
-      const rows = data.items ?? [];
-      const todayRows = rows.filter((item) => item.check_in_date === today);
-      const pendingPaymentCount = rows.filter((item) => needsActivePaymentAction(item)).length;
-      const walkInsToday = rows.filter((item) => {
-        const createdDate = item.created_at ? item.created_at.slice(0, 10) : "";
-        return getReservationSource(item) === "walk_in" && (item.check_in_date === today || createdDate === today);
-      }).length;
-      const readyForCheckIn = todayRows.filter((item) => {
-        if (!["confirmed", "for_verification", "pending_payment"].includes(item.status)) return false;
-        return getReservationPaymentState(item) === "settled";
-      }).length;
       setQuickStats({
-        todayArrivals: todayRows.length,
-        pendingPayment: pendingPaymentCount,
-        walkInsToday,
-        readyForCheckIn,
+        todayArrivals: data.today_arrivals,
+        pendingPayment: data.pending_payment,
+        walkInsToday: data.walk_ins_today,
+        readyForCheckIn: data.ready_for_check_in,
       });
     } catch {
       // silent: non-critical snapshot
@@ -492,8 +488,6 @@ export function AdminReservationsClient({
   }, [autoOpenedReservationId, initialOpenReservationId, openDetails, token]);
 
   const totalPages = Math.max(1, Math.ceil(count / pageSize));
-  const canPrev = page > 1;
-  const canNext = page < totalPages;
 
   const headerLabel = useMemo(() => {
     if (error === "Admin access required." || error?.includes("HTTP 403")) return "Admin access required";
@@ -511,100 +505,66 @@ export function AdminReservationsClient({
 
   if (!token) {
     return (
-      <section className="mx-auto w-full max-w-[1720px]">
-        <h1 className="text-3xl font-bold text-slate-900">Admin Reservations (V2)</h1>
-        <p className="mt-3 text-sm text-slate-600">No active session found. Sign in as admin first.</p>
+      <section className="mx-auto w-full max-w-[1600px]">
+        <h1 className="text-3xl font-bold text-[var(--color-text)]">Admin Reservations (V2)</h1>
+        <p className="mt-3 text-sm text-[var(--color-muted)]">No active session found. Sign in as admin first.</p>
       </section>
     );
   }
 
   return (
-    <section className="mx-auto w-full max-w-[1720px]">
-      <header className="relative mb-5 rounded-3xl border border-slate-200/80 bg-white p-5 shadow-[0_10px_24px_rgba(15,23,42,0.08)] sm:p-6">
-        <div className="absolute right-6 top-6 hidden lg:block">
-          <DataFreshnessBadge />
-        </div>
-        <div className="flex flex-col gap-5">
-          <div className="lg:min-w-[280px]">
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Reservations Console</p>
-            <h1 className="mt-2 text-3xl font-bold text-slate-900">Admin Reservations</h1>
-            <p className="mt-2 text-sm text-slate-600">
-              Manage arrivals, payment state, and walk-ins from one queue.
-            </p>
-            <div className="mt-3 lg:hidden">
+    <section className="mx-auto w-full max-w-[1600px]">
+      <div className="mb-5 space-y-4">
+        <AdminPageHeader
+          eyebrow="Operations"
+          title="Admin Reservations"
+          subtitle="Manage arrivals, payment state, and walk-ins from one queue."
+          action={
+            <div className="flex flex-wrap items-center gap-2">
               <DataFreshnessBadge />
-            </div>
-          </div>
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-stretch lg:justify-between">
-            <div className="grid flex-1 gap-2 text-xs sm:grid-cols-2 xl:grid-cols-4">
-              {[
-                {
-                  id: "today_arrivals" as StatQuickFilter,
-                  label: "Today arrivals",
-                  caption: "Arrivals due today",
-                  value: quickStats.todayArrivals,
-                },
-                {
-                  id: "pending_payment" as StatQuickFilter,
-                  label: "Pending payment",
-                  caption: "Needs payment action",
-                  value: quickStats.pendingPayment,
-                },
-                {
-                  id: "walk_ins_today" as StatQuickFilter,
-                  label: "Walk-ins today",
-                  caption: "Created or arriving today",
-                  value: quickStats.walkInsToday,
-                },
-                {
-                  id: "ready_for_checkin" as StatQuickFilter,
-                  label: "Ready for check-in",
-                  caption: "Eligible now",
-                  value: quickStats.readyForCheckIn,
-                },
-              ].map((card) => {
-                const active = statQuickFilter === card.id;
-                return (
-                  <button
-                    key={card.id}
-                    type="button"
-                    aria-pressed={active}
-                    onClick={() => {
-                      const next = active ? "none" : card.id;
-                      setStatQuickFilter(next);
-                      setPage(1);
-                    }}
-                    className={`group rounded-xl border px-3 py-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 ${
-                      active
-                        ? "border-blue-300 bg-blue-50 text-slate-900"
-                        : "border-slate-200 bg-white/90 text-slate-900 hover:border-slate-300 hover:bg-white"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{card.label}</p>
-                        <p className="mt-0.5 text-[11px] text-slate-600">{card.caption}</p>
-                      </div>
-                      <p className="text-lg font-bold text-slate-900">{card.value}</p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-            <div className="flex lg:min-w-[220px] lg:justify-end">
               <Link
                 href="/admin/walk-in"
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-900 bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 lg:w-auto"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[var(--color-primary)] bg-[var(--color-primary)] px-4 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
               >
                 <PlusCircle className="h-4 w-4" />
                 <span>Walk-in Reservation</span>
               </Link>
             </div>
-          </div>
+          }
+        />
+        <div className="grid grid-cols-2 gap-2 text-xs xl:grid-cols-4">
+          {[
+            { id: "today_arrivals" as StatQuickFilter, label: "Today arrivals", value: quickStats.todayArrivals },
+            { id: "pending_payment" as StatQuickFilter, label: "Pending payment", value: quickStats.pendingPayment },
+            { id: "walk_ins_today" as StatQuickFilter, label: "Walk-ins today", value: quickStats.walkInsToday },
+            { id: "ready_for_checkin" as StatQuickFilter, label: "Ready for check-in", value: quickStats.readyForCheckIn },
+          ].map((card) => {
+            const active = statQuickFilter === card.id;
+            return (
+              <button
+                key={card.id}
+                type="button"
+                aria-pressed={active}
+                onClick={() => {
+                  const next = active ? "none" : card.id;
+                  setStatQuickFilter(next);
+                  setPage(1);
+                }}
+                className={`rounded-xl border px-3 py-2.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)] ${
+                  active
+                    ? "border-[color:color-mix(in_srgb,var(--color-secondary)_45%,white)] bg-[color:color-mix(in_srgb,var(--color-secondary)_10%,white)]"
+                    : "border-[var(--color-border)] bg-white hover:border-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
+                }`}
+              >
+                <p className="truncate text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--color-muted)]">{card.label}</p>
+                <p className="mt-1 text-xl font-bold text-[var(--color-text)]">{card.value}</p>
+              </button>
+            );
+          })}
         </div>
-      </header>
+      </div>
 
-      <div className="mb-5 rounded-2xl border border-slate-200/80 bg-white p-3 shadow-[0_8px_20px_rgba(15,23,42,0.06)] lg:p-3.5">
+      <div className="mb-5 rounded-2xl border border-[var(--color-border)] bg-white p-3 shadow-[var(--shadow-card)] lg:p-3.5">
         <div className="flex flex-col gap-2">
           {statQuickFilterLabel ? (
             <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs text-blue-800">
@@ -617,14 +577,14 @@ export function AdminReservationsClient({
                   setStatQuickFilter("none");
                   setPage(1);
                 }}
-                className="rounded-md border border-slate-300 bg-white px-2 py-1 font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                className="rounded-md border border-[var(--color-border)] bg-white px-2 py-1 font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
               >
                 Reset quick filter
               </button>
             </div>
           ) : null}
           <div className="grid gap-2 lg:grid-cols-[420px_minmax(0,1fr)] lg:items-center">
-            <div className="grid grid-cols-3 gap-1 rounded-xl border border-slate-200/80 bg-slate-50 p-1">
+            <div className="grid grid-cols-3 gap-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-1">
               {QUICK_FILTERS.map((filter) => {
                 const active = quickFilter === filter.id;
                 return (
@@ -637,14 +597,14 @@ export function AdminReservationsClient({
                     }}
                     className={`inline-flex h-9 items-center justify-center rounded-lg px-2 text-xs font-semibold transition ${
                       active
-                        ? "border border-slate-900 bg-white text-slate-900 shadow-sm"
-                        : "text-slate-600 hover:bg-white hover:text-slate-900"
+                        ? "border border-[var(--color-primary)] bg-white text-[var(--color-text)] shadow-sm"
+                        : "text-[var(--color-muted)] hover:bg-white hover:text-[var(--color-text)]"
                     }`}
                   >
                     <span>{filter.label}</span>
                     <span
                       className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] ${
-                        active ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-700"
+                        active ? "bg-[var(--color-primary)] text-white" : "bg-[var(--color-border)] text-[var(--color-text)]"
                       }`}
                     >
                       {quickFilterCounts[filter.id] ?? 0}
@@ -660,7 +620,7 @@ export function AdminReservationsClient({
                 value={searchInput}
                 onChange={(event) => setSearchInput(event.target.value)}
                 placeholder="Search code, guest, unit, or phone"
-                className="h-9 w-full rounded-lg border border-slate-300 pl-9 pr-9 text-sm outline-none ring-blue-200 focus:ring-2"
+                className="h-9 w-full rounded-lg border border-[var(--color-border)] pl-9 pr-9 text-sm outline-none ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)] focus:ring-2"
               />
               {searchInput ? (
                 <button
@@ -670,7 +630,7 @@ export function AdminReservationsClient({
                     setSearchValue("");
                     setPage(1);
                   }}
-                  className="absolute right-2 top-1/2 inline-flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+                  className="absolute right-2 top-1/2 inline-flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-[var(--color-muted)] transition hover:bg-[var(--color-background)] hover:text-[var(--color-text)]"
                   aria-label="Clear search"
                 >
                   <X className="h-4 w-4" />
@@ -679,45 +639,47 @@ export function AdminReservationsClient({
             </div>
           </div>
           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-[1.1fr_1fr_0.9fr_0.8fr]">
-            <label className="grid gap-1 text-xs text-slate-600">
+            <label className="grid gap-1 text-xs text-[var(--color-muted)]">
               Reservation status
-              <select
+              <Select
+                ariaLabel="Reservation status"
                 value={reservationStatusFilter}
-                onChange={(event) => {
-                  setReservationStatusFilter(event.target.value as ReservationStatus | "all");
+                onChange={(next) => {
+                  setReservationStatusFilter(next as ReservationStatus | "all");
                   setPage(1);
                 }}
-                className="h-9 rounded-lg border border-slate-300 px-3 text-sm text-slate-700"
-              >
-                <option value="all">All statuses</option>
-                <option value="pending_payment">Pending Payment</option>
-                <option value="for_verification">For Verification</option>
-                <option value="confirmed">Confirmed</option>
-                <option value="checked_in">Checked In</option>
-                <option value="checked_out">Checked Out</option>
-                <option value="cancelled">Cancelled</option>
-                <option value="no_show">No Show</option>
-              </select>
+                options={[
+                  { value: "all", label: "All statuses" },
+                  { value: "pending_payment", label: "Pending Payment" },
+                  { value: "for_verification", label: "For Verification" },
+                  { value: "confirmed", label: "Confirmed" },
+                  { value: "checked_in", label: "Checked In" },
+                  { value: "checked_out", label: "Checked Out" },
+                  { value: "cancelled", label: "Cancelled" },
+                  { value: "no_show", label: "No Show" },
+                ]}
+              />
             </label>
 
-            <label className="grid gap-1 text-xs text-slate-600">
+            <label className="grid gap-1 text-xs text-[var(--color-muted)]">
               Payment status
-              <select
+              <Select
+                ariaLabel="Payment status"
                 value={paymentStatusFilter}
-                onChange={(event) => {
-                  setPaymentStatusFilter(event.target.value as PaymentStatusFilter);
+                onChange={(next) => {
+                  setPaymentStatusFilter(next as PaymentStatusFilter);
                   setPage(1);
                 }}
-                className="h-9 rounded-lg border border-slate-300 px-3 text-sm text-slate-700"
-              >
-                <option value="all">All payments</option>
-                <option value="unpaid">Unpaid</option>
-                <option value="partial">Partial</option>
-                <option value="settled">Paid</option>
-              </select>
+                options={[
+                  { value: "all", label: "All payments" },
+                  { value: "unpaid", label: "Unpaid" },
+                  { value: "partial", label: "Partial" },
+                  { value: "settled", label: "Paid" },
+                ]}
+              />
             </label>
 
-            <div className="grid gap-1 text-xs text-slate-600">
+            <div className="grid gap-1 text-xs text-[var(--color-muted)]">
               <FancyDatePicker
                 label="Date"
                 value={arrivalDateFilter}
@@ -727,7 +689,7 @@ export function AdminReservationsClient({
                 }}
                 allowClear
                 popoverAlign="end"
-                labelClassName="text-xs text-slate-600"
+                labelClassName="text-xs text-[var(--color-muted)]"
               />
             </div>
 
@@ -743,7 +705,7 @@ export function AdminReservationsClient({
                   setSearchValue("");
                   setPage(1);
                 }}
-                className="inline-flex h-9 w-full items-center justify-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+                className="inline-flex h-9 w-full items-center justify-center rounded-lg border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
               >
                 Clear filters
               </button>
@@ -760,12 +722,50 @@ export function AdminReservationsClient({
       ) : null}
       {error && !headerLabel ? <p className="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
       {notice ? <p className="mb-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">{notice}</p> : null}
-      {loading ? <p className="mb-3 text-sm text-slate-600">Loading reservations...</p> : null}
+      {loading ? <p className="mb-3 text-sm text-[var(--color-muted)]">Loading reservations...</p> : null}
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
-        <div className="overflow-x-auto">
+      <div className="space-y-3">
+        {/* Mobile: tappable reservation cards (the table overflows on small screens) */}
+        <div className="space-y-2 md:hidden">
+          {items.map((reservation) => {
+            const source = getReservationSource(reservation);
+            const statusMeta = getReservationStatusMeta(reservation.status);
+            return (
+              <button
+                key={reservation.reservation_id}
+                type="button"
+                onClick={() => void openDetails(reservation.reservation_id, reservation)}
+                className="flex w-full flex-col gap-2 rounded-2xl border border-[var(--color-border)] bg-white p-3 text-left shadow-[var(--shadow-card)] transition-colors hover:border-[color:color-mix(in_srgb,var(--color-secondary)_35%,white)]"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <p className="truncate font-semibold text-[var(--color-text)]">{reservation.reservation_code}</p>
+                  <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold tracking-wide ${statusMeta.className}`}>
+                    {statusMeta.label.toUpperCase()}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-2 text-sm">
+                  <span className="truncate text-[var(--color-text)]">{reservation.guest?.name || "Guest"}</span>
+                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${source === "walk_in" ? "bg-emerald-100 text-emerald-800" : "bg-blue-100 text-blue-800"}`}>
+                    {source === "walk_in" ? "Walk-in" : "Online"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-2 text-xs text-[var(--color-muted)]">
+                  <span className="truncate">{formatDateWithYear(reservation.check_in_date)} – {formatDateWithYear(reservation.check_out_date)}</span>
+                  <span className="shrink-0 font-semibold text-[var(--color-text)]">{formatPeso(reservation.total_amount)}</span>
+                </div>
+              </button>
+            );
+          })}
+          {!loading && items.length === 0 ? (
+            <p className="rounded-2xl border border-[var(--color-border)] bg-white p-6 text-center text-sm text-[var(--color-muted)]">No reservations found.</p>
+          ) : null}
+        </div>
+
+        {/* Desktop: full table */}
+        <div className="hidden overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white shadow-[var(--shadow-card)] md:block">
+          <div className="overflow-x-auto">
           <table className="min-w-full text-left text-[13px] leading-5">
-              <thead className="bg-slate-50/90 text-slate-600">
+              <thead className="bg-[var(--color-background)] text-[var(--color-muted)]">
                 <tr>
                   <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em]">Code</th>
                   <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em]">Source</th>
@@ -789,11 +789,11 @@ export function AdminReservationsClient({
                         void openDetails(reservation.reservation_id, reservation);
                       }
                     }}
-                    className="cursor-pointer border-t border-slate-100 transition hover:bg-slate-50/90 focus-within:bg-slate-50/90 even:bg-slate-50/30"
+                    className="cursor-pointer border-t border-[var(--color-border)] transition hover:bg-[var(--color-background)] focus-within:bg-[var(--color-background)] even:bg-[var(--color-background)]"
                   >
                     <td className="px-3 py-2.5 align-top">
-                      <p className="font-semibold text-slate-900">{reservation.reservation_code}</p>
-                      <p className="text-xs text-slate-500">{formatDateTime(reservation.created_at)}</p>
+                      <p className="font-semibold text-[var(--color-text)]">{reservation.reservation_code}</p>
+                      <p className="text-xs text-[var(--color-muted)]">{formatDateTime(reservation.created_at)}</p>
                     </td>
                     <td className="px-3 py-2.5 align-top">
                       {(() => {
@@ -810,11 +810,11 @@ export function AdminReservationsClient({
                       })()}
                     </td>
                     <td className="px-3 py-2.5 align-top">
-                      <p className="font-medium text-slate-800">{reservation.guest?.name || "-"}</p>
-                      <p className="text-xs text-slate-500">{reservation.guest?.email || "-"}</p>
+                      <p className="font-medium text-[var(--color-text)]">{reservation.guest?.name || "-"}</p>
+                      <p className="text-xs text-[var(--color-muted)]">{reservation.guest?.email || "-"}</p>
                     </td>
                   <td className="px-3 py-2.5 align-top">
-                    <p className="text-sm text-slate-700">
+                    <p className="text-sm text-[var(--color-text)]">
                       {formatDateWithYear(reservation.check_in_date)} to {formatDateWithYear(reservation.check_out_date)}
                     </p>
                   </td>
@@ -841,64 +841,42 @@ export function AdminReservationsClient({
                       })()}
                     </td>
                     <td className="px-3 py-2.5 align-top">
-                      <p className="font-semibold text-slate-900">{formatPeso(reservation.total_amount)}</p>
-                      <p className="text-xs text-slate-500">Paid: {formatPeso(reservation.amount_paid_verified)}</p>
+                      <p className="font-semibold text-[var(--color-text)]">{formatPeso(reservation.total_amount)}</p>
+                      <p className="text-xs text-[var(--color-muted)]">Paid: {formatPeso(reservation.amount_paid_verified)}</p>
                     </td>
                 </tr>
               ))}
               {!loading && items.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-3 py-6 text-center text-sm text-slate-600">
+                  <td colSpan={7} className="px-3 py-6 text-center text-sm text-[var(--color-muted)]">
                     No reservations found.
                   </td>
                 </tr>
               ) : null}
             </tbody>
           </table>
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 px-3 py-2.5">
-          <p className="text-xs text-slate-500">
-            Page {page} of {totalPages} | {count} total
-          </p>
-          <div className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white p-1 shadow-sm">
-            <button
-              type="button"
-              onClick={() => setPage(1)}
-              disabled={!canPrev}
-              className="rounded-full px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-45"
-            >
-              First
-            </button>
-            <button
-              type="button"
-              onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-              disabled={!canPrev}
-              className="rounded-full px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-45"
-            >
-              Previous
-            </button>
-            <button
-              type="button"
-              onClick={() => setPage((prev) => prev + 1)}
-              disabled={!canNext}
-              className="rounded-full px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-45"
-            >
-              Next
-            </button>
-            <button
-              type="button"
-              onClick={() => setPage(totalPages)}
-              disabled={!canNext}
-              className="rounded-full px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-45"
-            >
-              Last
-            </button>
-          </div>
+        <div className="rounded-2xl border border-[var(--color-border)] bg-white px-3 py-2.5 shadow-[var(--shadow-card)]">
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            totalCount={count}
+            pageSize={pageSize}
+            onPageChange={(target) => setPage(Math.min(totalPages, Math.max(1, target)))}
+          />
         </div>
       </div>
 
       <ReservationDetailDrawer
+        role={role}
+        token={token}
+        onStatusChanged={() => {
+          void fetchList();
+          setDetails(null);
+          setDetailsError(null);
+        }}
         open={Boolean(detailsLoading || details || detailsError)}
         loading={detailsLoading}
         error={detailsError}

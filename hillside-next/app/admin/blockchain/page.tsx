@@ -2,7 +2,7 @@ import type { AuditLogsResponse, ContractStatusResponse, EscrowReconciliationRes
 import { auditLogsResponseSchema, contractStatusResponseSchema, escrowReconciliationResponseSchema } from "../../../../packages/shared/src/schemas";
 import { BlockchainExplorerClient } from "../../../components/admin-blockchain/BlockchainExplorerClient";
 import { fetchServerApiData } from "../../../lib/serverApi";
-import { getServerAccessToken } from "../../../lib/serverAuth";
+import { getServerAccessToken, requireRoleAtLeastServer } from "../../../lib/serverAuth";
 
 type BlockchainTab = "status" | "reconciliation" | "audit";
 
@@ -23,6 +23,7 @@ export default async function AdminBlockchainPage({
 }: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  await requireRoleAtLeastServer("super_admin");
   const token = await getServerAccessToken();
   const resolvedSearchParams = (await searchParams) ?? {};
   const tabRaw = firstParam(resolvedSearchParams.tab);

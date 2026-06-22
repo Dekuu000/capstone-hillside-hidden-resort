@@ -40,6 +40,7 @@ import { SyncAlertBanner } from "../shared/SyncAlertBanner";
 import { UnitImageGallery } from "../shared/UnitImageGallery";
 import { normalizeUnitImageUrls, normalizeUnitThumbUrls } from "../../lib/unitMedia";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
+import { getUnitNightlyRate, isPaxPricedUnit } from "../../lib/booking/pricing";
 import { BookingStepper } from "../guest/BookingStepper";
 import { GuestHero } from "../guest/GuestHero";
 import { GuestPageShell } from "../guest/GuestPageShell";
@@ -55,27 +56,6 @@ const UNIT_TYPE_LABEL: Record<UnitTypeFilter, string> = {
   cottage: "cottages",
   amenity: "amenities",
 };
-
-const PAX_BASED_UNIT_PRICING: Record<string, { includedPax: number; fallbackMinRate: number; extraPaxRate: number }> = {
-  "AMN-EVERGREEN-PAVILION": { includedPax: 30, fallbackMinRate: 8500, extraPaxRate: 250 },
-  "AMN-PINECREST-EXCLUSIVE": { includedPax: 20, fallbackMinRate: 12000, extraPaxRate: 400 },
-};
-
-function getUnitNightlyRate(unit: AvailableUnit, partySize: number): number {
-  const baseRate = Number(unit.base_price || 0);
-  const unitCode = String(unit.unit_code || "").toUpperCase();
-  const dynamicRule = PAX_BASED_UNIT_PRICING[unitCode];
-  if (!dynamicRule) return baseRate;
-  const includedPax = dynamicRule.includedPax;
-  const minRate = baseRate > 0 ? baseRate : dynamicRule.fallbackMinRate;
-  const extraPax = Math.max(0, Math.max(1, Math.floor(partySize || 1)) - includedPax);
-  return minRate + extraPax * dynamicRule.extraPaxRate;
-}
-
-function isPaxPricedUnit(unit: AvailableUnit): boolean {
-  const unitCode = String(unit.unit_code || "").toUpperCase();
-  return Boolean(PAX_BASED_UNIT_PRICING[unitCode]);
-}
 
 type BookNowClientProps = {
   initialToken?: string | null;

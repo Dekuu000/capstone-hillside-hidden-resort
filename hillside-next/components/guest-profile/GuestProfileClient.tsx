@@ -167,7 +167,7 @@ export function GuestProfileClient({ accessToken, initialEmail = null }: GuestPr
           showSyncCta
         />
       ) : null}
-      <section className="rounded-[2rem] border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
+      <section className="rounded-[2rem] border border-[var(--color-border)] bg-white p-5 shadow-sm sm:p-6">
         <h2 className="inline-flex items-center gap-2 text-base font-semibold text-[var(--color-text)]">
           <User className="h-4 w-4 text-[var(--color-secondary)]" />
           Profile Settings
@@ -191,14 +191,11 @@ export function GuestProfileClient({ accessToken, initialEmail = null }: GuestPr
           >
             {networkOnline ? "Save profile" : "Reconnect to save"}
           </Button>
-          <p className="text-xs text-[var(--color-muted)]">
-            Wallet connect/disconnect is now available in the top-right profile menu.
-          </p>
         </div>
         {profileError ? <p className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{profileError}</p> : null}
       </section>
 
-      <section className="rounded-[2rem] border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
+      <section className="rounded-[2rem] border border-[var(--color-border)] bg-white p-5 shadow-sm sm:p-6">
         <h2 className="inline-flex items-center gap-2 text-base font-semibold text-[var(--color-text)]">
           <KeyRound className="h-4 w-4 text-[var(--color-secondary)]" />
           Account Security

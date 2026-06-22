@@ -6,9 +6,11 @@ import {
   MY_BOOKINGS_TABS,
   RESERVATION_CANCELLATION_ACTORS,
   RESERVATION_POLICY_OUTCOMES,
+  ROLES,
   UNIT_OPERATIONAL_STATUSES,
 } from "./types";
 
+export const roleSchema = z.enum(ROLES);
 export const bookingStatusSchema = z.enum(BOOKING_STATUSES);
 export const reservationCancellationActorSchema = z.enum(RESERVATION_CANCELLATION_ACTORS);
 export const reservationPolicyOutcomeSchema = z.enum(RESERVATION_POLICY_OUTCOMES);
@@ -34,13 +36,28 @@ export const escrowStateSchema = z.enum([
   "failed",
 ]);
 
+// The escrow_ref returned by the API carries the on-chain ref state, which uses
+// "pending" (see hillside-api EscrowRef), while escrowStateSchema above is the
+// DB-column state ("none"/"pending_lock"/...). Accept the union of both so the
+// reservation-create response always parses regardless of escrow mode.
+export const escrowRefStateSchema = z.enum([
+  "none",
+  "pending",
+  "pending_lock",
+  "locked",
+  "pending_release",
+  "released",
+  "refunded",
+  "failed",
+]);
+
 export const escrowRefSchema = z.object({
   chain_key: z.enum(CHAIN_KEYS).optional(),
   chain_id: z.number().int().positive(),
   contract_address: z.string().min(3),
   tx_hash: z.string().min(3),
   event_index: z.number().int().min(0),
-  state: escrowStateSchema,
+  state: escrowRefStateSchema,
 });
 
 export const qrTokenSchema = z.object({
@@ -267,6 +284,9 @@ export const reservationListItemSchema = z.object({
   check_in_date: z.string().min(1),
   check_out_date: z.string().min(1),
   total_amount: z.number(),
+  original_total: z.number().optional().nullable(),
+  discount_amount: z.number().optional().nullable(),
+  promo_code: z.string().optional().nullable(),
   amount_paid_verified: z.number().optional().nullable(),
   balance_due: z.number().optional().nullable(),
   ...reservationPaymentPolicyMetadataShape,
@@ -300,6 +320,13 @@ export const reservationListResponseSchema = z.object({
   limit: z.number().int().positive(),
   offset: z.number().int().nonnegative(),
   has_more: z.boolean(),
+});
+
+export const reservationQuickStatsResponseSchema = z.object({
+  today_arrivals: z.number().int().nonnegative(),
+  pending_payment: z.number().int().nonnegative(),
+  walk_ins_today: z.number().int().nonnegative(),
+  ready_for_check_in: z.number().int().nonnegative(),
 });
 
 export const reservationCancelResponseSchema = z.object({
@@ -524,6 +551,7 @@ export const reportSummarySchema = z.object({
   occupancy_rate: z.number(),
   unit_booked_value: z.number(),
   tour_booked_value: z.number(),
+  promo_discounts: z.number().optional().default(0),
 });
 
 export const reportDailyItemSchema = z.object({
@@ -534,6 +562,7 @@ export const reportDailyItemSchema = z.object({
   occupancy_rate: z.number(),
   unit_booked_value: z.number(),
   tour_booked_value: z.number(),
+  promo_discounts: z.number().optional().default(0),
 });
 
 export const reportMonthlyItemSchema = z.object({
@@ -544,6 +573,7 @@ export const reportMonthlyItemSchema = z.object({
   occupancy_rate: z.number(),
   unit_booked_value: z.number(),
   tour_booked_value: z.number(),
+  promo_discounts: z.number().optional().default(0),
 });
 
 export const reportsOverviewResponseSchema = z.object({
@@ -1068,4 +1098,128 @@ export const escrowReconciliationResponseSchema = z.object({
   cached: z.boolean().optional(),
   in_progress: z.boolean().optional(),
   last_reconciled_at: z.string().datetime().optional().nullable(),
+});
+
+// ---------- In-app notifications ----------
+export const notificationSeveritySchema = z.enum(["info", "success", "warning", "critical"]);
+
+export const notificationItemSchema = z.object({
+  notification_id: z.string().min(1),
+  category: z.string().min(1),
+  event_type: z.string().min(1),
+  title: z.string().min(1),
+  body: z.string().optional().nullable(),
+  severity: notificationSeveritySchema,
+  entity_type: z.string().optional().nullable(),
+  entity_id: z.string().optional().nullable(),
+  link: z.string().optional().nullable(),
+  metadata: z.record(z.string(), z.unknown()).optional().nullable(),
+  created_at: z.string().min(1),
+  read_at: z.string().optional().nullable(),
+});
+
+export const notificationListResponseSchema = z.object({
+  items: z.array(notificationItemSchema),
+  unread_count: z.number().int().nonnegative(),
+  has_more: z.boolean().optional().default(false),
+});
+
+export const notificationUnreadCountResponseSchema = z.object({
+  unread_count: z.number().int().nonnegative(),
+});
+
+export const notificationMarkReadResponseSchema = z.object({
+  updated: z.number().int().nonnegative(),
+  unread_count: z.number().int().nonnegative(),
+});
+
+// ---------- Guest reviews ----------
+export const reviewItemSchema = z.object({
+  review_id: z.string().min(1),
+  reservation_id: z.string().min(1),
+  unit_id: z.string().min(1),
+  rating: z.number().int().min(1).max(5),
+  comment: z.string().optional().nullable(),
+  guest_name: z.string().optional().nullable(),
+  created_at: z.string().min(1),
+});
+
+export const reviewSummarySchema = z.object({
+  average_rating: z.number(),
+  review_count: z.number().int().nonnegative(),
+});
+
+export const unitReviewsResponseSchema = z.object({
+  unit_id: z.string().min(1),
+  summary: reviewSummarySchema,
+  items: z.array(reviewItemSchema),
+});
+
+export const myReviewsResponseSchema = z.object({
+  items: z.array(reviewItemSchema),
+});
+
+export const adminReviewItemSchema = z.object({
+  review_id: z.string().min(1),
+  unit_id: z.string().min(1),
+  unit_name: z.string().optional().nullable(),
+  guest_name: z.string().optional().nullable(),
+  rating: z.number().int().min(0).max(5),
+  comment: z.string().optional().nullable(),
+  is_hidden: z.boolean(),
+  created_at: z.string().min(1),
+});
+
+export const adminReviewsResponseSchema = z.object({
+  items: z.array(adminReviewItemSchema),
+});
+
+// ── Team / account management ────────────────────────────────────────
+export const teamMemberSchema = z.object({
+  user_id: z.string().min(1),
+  name: z.string().optional().nullable(),
+  email: z.string().optional().nullable(),
+  role: roleSchema,
+  created_at: z.string().optional().nullable(),
+});
+
+export const teamListResponseSchema = z.object({
+  items: z.array(teamMemberSchema),
+});
+
+// ── Promo codes ──────────────────────────────────────────────────────
+export const promoDiscountTypeSchema = z.enum(["percent", "fixed"]);
+export const promoAppliesToSchema = z.enum(["stays", "tours", "all"]);
+
+export const promoValidationResultSchema = z.object({
+  valid: z.boolean(),
+  code: z.string(),
+  discount_type: promoDiscountTypeSchema.optional().nullable(),
+  discount_value: z.number().optional().nullable(),
+  discount_amount: z.number(),
+  new_total: z.number(),
+  message: z.string().optional().nullable(),
+});
+
+export const promoCodeSchema = z.object({
+  promo_id: z.string().min(1),
+  code: z.string().optional().nullable(),
+  description: z.string().optional().nullable(),
+  discount_type: promoDiscountTypeSchema,
+  discount_value: z.number(),
+  max_discount: z.number().optional().nullable(),
+  min_total: z.number(),
+  starts_at: z.string().optional().nullable(),
+  ends_at: z.string().optional().nullable(),
+  usage_limit: z.number().int().optional().nullable(),
+  used_count: z.number().int(),
+  per_user_limit: z.number().int().optional().nullable(),
+  applies_to: promoAppliesToSchema,
+  auto_apply: z.boolean(),
+  is_active: z.boolean(),
+  created_at: z.string().optional().nullable(),
+});
+
+export const promoListResponseSchema = z.object({
+  items: z.array(promoCodeSchema),
 });

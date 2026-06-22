@@ -1,4 +1,6 @@
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { roleAtLeast, type Role } from "../../packages/shared/src/types";
 
 type AuthContext = {
   user_id: string;
@@ -46,4 +48,21 @@ export async function getServerAuthContext(accessToken: string): Promise<AuthCon
 export async function getServerEmailHint() {
   const jar = await cookies();
   return jar.get(EMAIL_COOKIE)?.value || null;
+}
+
+/**
+ * Server-side role gate for back-office pages. Redirects to login if signed out,
+ * or to `redirectTo` (default the admin home) if the user's role is below `min`.
+ * Used to keep technical pages (Records & Security, Smart Pricing, etc.) System-Admin-only.
+ */
+export async function requireRoleAtLeastServer(min: Role, redirectTo = "/admin"): Promise<AuthContext> {
+  const token = await getServerAccessToken();
+  const auth = token ? await getServerAuthContext(token) : null;
+  if (!auth) {
+    redirect("/login?next=/admin");
+  }
+  if (!roleAtLeast(auth.role, min)) {
+    redirect(redirectTo);
+  }
+  return auth;
 }

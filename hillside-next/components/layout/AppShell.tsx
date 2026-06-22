@@ -5,13 +5,15 @@ export function AppShell({
   children,
   initialName,
   initialEmail,
+  role,
 }: {
   children: ReactNode;
   initialName?: string | null;
   initialEmail?: string | null;
+  role?: string | null;
 }) {
   return (
-    <AdminChrome initialName={initialName} initialEmail={initialEmail}>
+    <AdminChrome initialName={initialName} initialEmail={initialEmail} role={role}>
       {children}
     </AdminChrome>
   );

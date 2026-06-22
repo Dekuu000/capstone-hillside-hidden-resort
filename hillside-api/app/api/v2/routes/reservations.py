@@ -2,7 +2,7 @@ from datetime import date, datetime, timedelta, timezone
 import logging
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 
 from app.api.v2.routes._http_errors import raise_http_from_runtime_error
 
@@ -11,6 +11,8 @@ from app.core.auth import (
     ensure_reservation_access,
     require_admin,
     require_authenticated,
+    require_operations,
+    role_at_least,
 )
 from app.core.chains import get_active_chain, get_chain_registry
 from app.core.config import settings
@@ -26,12 +28,16 @@ from app.integrations.supabase_client import (
     create_tour_reservation_atomic as create_tour_reservation_atomic_rpc,
     create_reservation_atomic as create_reservation_atomic_rpc,
     update_reservation_status as update_reservation_status_rpc,
+    cascade_service_bookings_no_show,
+    emit_notification,
+    emit_notification_to_roles,
     get_active_service_by_id as get_active_service_by_id_rpc,
     get_available_units as get_available_units_rpc,
     cancel_reservation as cancel_reservation_rpc,
     get_reservation_by_code,
     get_reservation_by_id,
     get_dynamic_pricing_signals,
+    get_reservation_quick_stats,
     list_recent_reservations,
     release_expired_pending_payment_holds,
     update_reservation_policy_metadata,
@@ -53,6 +59,7 @@ from app.schemas.common import (
     ReservationStatusUpdateResponse,
     ReservationListItem,
     ReservationListResponse,
+    ReservationQuickStatsResponse,
 )
 from app.services.idempotency import (
     build_idempotency_operation_id,
@@ -373,6 +380,18 @@ def _maybe_mint_guest_pass(reservation_id: str) -> GuestPassRef | None:
     )
 
 
+def _schedule_guest_pass_mint(background_tasks: BackgroundTasks, reservation_id: str) -> None:
+    """Mint the NFT guest pass off the request's critical path.
+
+    The on-chain mint can take 10s+ waiting for a tx receipt, which would stall
+    the guest's "continue to payment" step. Defer it to a background task so the
+    reservation response returns immediately; the pass metadata is written to the
+    reservation row a moment later. Returns None so the create response carries
+    guest_pass_ref=None (the guest UI does not surface the pass)."""
+    background_tasks.add_task(_maybe_mint_guest_pass, reservation_id)
+    return None
+
+
 def _maybe_refund_escrow_on_cancel(reservation_row: dict) -> None:
     if not settings.feature_escrow_onchain_lock:
         return
@@ -506,6 +525,49 @@ def _apply_cancellation_side_effects(
     if decision.outcome == "refunded":
         _maybe_refund_escrow_on_cancel(reservation_row)
     return decision
+
+
+def _apply_no_show_side_effects(*, reservation_id: str, reservation_row: dict) -> None:
+    """Manual no-show (admin): forfeit the deposit + cascade to service bookings,
+    then notify the guest and the back office. Status is already set by the caller."""
+    _apply_cancellation_policy_metadata(
+        reservation_id=reservation_id,
+        actor="admin",
+        outcome="forfeited",
+        rule_applied=_resolve_reservation_policy_rule(reservation_row),
+    )
+    cascade_service_bookings_no_show(reservation_id=reservation_id)
+
+    code = str(reservation_row.get("reservation_code") or "")
+    guest_id = reservation_row.get("guest_user_id")
+    if guest_id:
+        emit_notification(
+            recipient_user_id=str(guest_id),
+            category="reservation",
+            event_type="reservation.no_show",
+            title="Marked as no-show",
+            body=(
+                f"Reservation {code} was marked as a no-show. The deposit is "
+                "non-refundable per the booking policy."
+            ),
+            severity="warning",
+            entity_type="reservation",
+            entity_id=reservation_id,
+            link="/my-bookings",
+            dedupe_key=f"no_show:{reservation_id}",
+        )
+    emit_notification_to_roles(
+        min_role="staff",
+        category="reservation",
+        event_type="ops.no_show",
+        title="Guest no-show",
+        body=f"{code} was marked a no-show by staff. Deposit forfeited; the unit/slot is now free.",
+        severity="warning",
+        entity_type="reservation",
+        entity_id=reservation_id,
+        link="/admin/reservations",
+        dedupe_prefix=f"ops_no_show:{reservation_id}",
+    )
 
 
 def _build_cancel_response(
@@ -690,15 +752,15 @@ def _validate_tour_reservation_inputs(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="visit_date cannot be in the past.",
         )
-    if auth_role != "admin" and visit_date <= today:
+    if not role_at_least(auth_role, "staff") and visit_date <= today:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="visit_date must be in the future.",
         )
-    if auth_role != "admin" and not is_advance:
+    if not role_at_least(auth_role, "staff") and not is_advance:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only admins can create walk-in tour reservations.",
+            detail="Only resort staff can create walk-in tour reservations.",
         )
 
 
@@ -729,11 +791,11 @@ def _compute_tour_total_amount(*, service: dict, adult_qty: int, kid_qty: int) -
 
 
 def _resolve_tour_reservation_source(*, auth_role: str, is_advance: bool) -> str:
-    return "walk_in" if auth_role == "admin" and not is_advance else "online"
+    return "walk_in" if role_at_least(auth_role, "staff") and not is_advance else "online"
 
 
 def _ensure_guest_only_online_booking(auth: AuthContext) -> None:
-    if auth.role == "admin":
+    if role_at_least(auth.role, "staff"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin accounts cannot create online guest reservations. Use Walk-in flow.",
@@ -743,6 +805,7 @@ def _ensure_guest_only_online_booking(auth: AuthContext) -> None:
 @router.post("", response_model=ReservationResponse)
 def create_reservation(
     payload: ReservationCreateRequest,
+    background_tasks: BackgroundTasks,
     auth: AuthContext = Depends(require_authenticated),
 ):
     _ensure_guest_only_online_booking(auth)
@@ -788,6 +851,7 @@ def create_reservation(
             total_amount=total_amount,
             guest_count=payload.guest_count,
             notes=None,
+            promo_code=payload.promo_code,
         )
     except RuntimeError as exc:
         raise_http_from_runtime_error(exc, default_status=status.HTTP_400_BAD_REQUEST)
@@ -817,7 +881,7 @@ def create_reservation(
         status=status_enum,
         **_reservation_policy_fields(created, is_tour=False),
         escrow_ref=_maybe_apply_escrow_shadow_write(reservation_id),
-        guest_pass_ref=_maybe_mint_guest_pass(reservation_id),
+        guest_pass_ref=_schedule_guest_pass_mint(background_tasks, reservation_id),
         ai_recommendation=ai_recommendation,
     )
     _store_reservation_idempotency_receipt(
@@ -832,9 +896,10 @@ def create_reservation(
 @router.post("/tours", response_model=ReservationResponse)
 def create_tour_reservation(
     payload: TourReservationCreateRequest,
+    background_tasks: BackgroundTasks,
     auth: AuthContext = Depends(require_authenticated),
 ):
-    if auth.role == "admin" and payload.is_advance:
+    if role_at_least(auth.role, "staff") and payload.is_advance:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin accounts cannot create online guest reservations. Use Walk-in flow.",
@@ -872,6 +937,7 @@ def create_tour_reservation(
             is_advance=payload.is_advance,
             expected_pay_now=payload.expected_pay_now,
             notes=payload.notes,
+            promo_code=payload.promo_code,
         )
     except RuntimeError as exc:
         raise_http_from_runtime_error(exc, default_status=status.HTTP_400_BAD_REQUEST)
@@ -901,7 +967,7 @@ def create_tour_reservation(
         status=status_enum,
         **_reservation_policy_fields(created, is_tour=True),
         escrow_ref=_maybe_apply_escrow_shadow_write(reservation_id),
-        guest_pass_ref=_maybe_mint_guest_pass(reservation_id),
+        guest_pass_ref=_schedule_guest_pass_mint(background_tasks, reservation_id),
         ai_recommendation=ai_recommendation,
     )
     _store_reservation_idempotency_receipt(
@@ -916,7 +982,8 @@ def create_tour_reservation(
 @router.post("/walk-in", response_model=ReservationResponse)
 def create_walk_in_stay_reservation(
     payload: WalkInStayCreateRequest,
-    auth: AuthContext = Depends(require_admin),
+    background_tasks: BackgroundTasks,
+    auth: AuthContext = Depends(require_operations),
 ):
     replayed = _try_replay_reservation_response(
         route_key="reservations.walk_in.create",
@@ -956,6 +1023,7 @@ def create_walk_in_stay_reservation(
             total_amount=total_amount,
             expected_pay_now=payload.expected_pay_now,
             notes=notes,
+            promo_code=payload.promo_code,
         )
     except RuntimeError as exc:
         raise_http_from_runtime_error(exc, default_status=status.HTTP_400_BAD_REQUEST)
@@ -986,7 +1054,7 @@ def create_walk_in_stay_reservation(
         status=status_enum,
         **_reservation_policy_fields(created, is_tour=False),
         escrow_ref=_maybe_apply_escrow_shadow_write(reservation_id),
-        guest_pass_ref=_maybe_mint_guest_pass(reservation_id),
+        guest_pass_ref=_schedule_guest_pass_mint(background_tasks, reservation_id),
         ai_recommendation=ai_recommendation,
     )
     _store_reservation_idempotency_receipt(
@@ -1000,7 +1068,7 @@ def create_walk_in_stay_reservation(
 
 @router.get("", response_model=ReservationListResponse)
 def get_reservations(
-    limit: int = Query(default=10, ge=1, le=500),
+    limit: int = Query(default=10, ge=1, le=1000),
     offset: int = Query(default=0, ge=0),
     status_filter: str | None = Query(default=None, alias="status"),
     source_filter: str | None = Query(default=None, alias="source", pattern="^(online|walk_in)$"),
@@ -1028,6 +1096,24 @@ def get_reservations(
         "offset": offset,
         "has_more": offset + len(rows) < total,
     }
+
+
+@router.get("/stats", response_model=ReservationQuickStatsResponse)
+def get_reservation_stats(
+    today: str | None = Query(
+        default=None,
+        pattern=r"^\d{4}-\d{2}-\d{2}$",
+        description="Local (resort) date used as 'today'; defaults to PHT.",
+    ),
+    _auth: AuthContext = Depends(require_admin),
+):
+    # Resort operates on Philippine time (UTC+8); fall back to that when the
+    # client does not supply its own local date.
+    resolved_today = today or datetime.now(timezone(timedelta(hours=8))).date().isoformat()
+    try:
+        return get_reservation_quick_stats(today=resolved_today)
+    except RuntimeError as exc:
+        raise_http_from_runtime_error(exc, default_status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
 @router.get("/by-code/{reservation_code}", response_model=ReservationListItem)
@@ -1083,6 +1169,8 @@ def patch_reservation_status(
             reservation_row=current,
             actor_role="admin",
         )
+    elif payload.status == BookingStatus.NO_SHOW:
+        _apply_no_show_side_effects(reservation_id=reservation_id, reservation_row=current)
 
     return {"ok": True, "reservation": updated}
 

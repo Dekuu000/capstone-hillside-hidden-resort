@@ -190,6 +190,7 @@ class ReservationCreateRequest(BaseModel):
     unit_ids: list[str]
     guest_count: int = Field(default=1, ge=1)
     idempotency_key: str
+    promo_code: str | None = None
 
 
 class WalkInStayCreateRequest(BaseModel):
@@ -201,12 +202,13 @@ class WalkInStayCreateRequest(BaseModel):
     notes: str | None = None
     expected_pay_now: float | None = Field(default=None, ge=0)
     idempotency_key: str | None = None
+    promo_code: str | None = None
 
 
 class ReservationPolicyMetadata(BaseModel):
     deposit_policy_version: str | None = None
     deposit_rule_applied: str | None = None
-    cancellation_actor: Literal["guest", "admin"] | None = None
+    cancellation_actor: Literal["guest", "admin", "system"] | None = None
     policy_outcome: Literal["released", "refunded", "forfeited"] | None = None
 
 
@@ -233,6 +235,7 @@ class TourReservationCreateRequest(BaseModel):
     expected_pay_now: float | None = Field(default=None, ge=0)
     notes: str | None = None
     idempotency_key: str | None = None
+    promo_code: str | None = None
 
 
 class ServiceItem(BaseModel):
@@ -344,6 +347,7 @@ class ReportDailyItem(BaseModel):
     occupancy_rate: float = 0
     unit_booked_value: float = 0
     tour_booked_value: float = 0
+    promo_discounts: float = 0
 
 
 class ReportMonthlyItem(BaseModel):
@@ -354,6 +358,7 @@ class ReportMonthlyItem(BaseModel):
     occupancy_rate: float = 0
     unit_booked_value: float = 0
     tour_booked_value: float = 0
+    promo_discounts: float = 0
 
 
 class ReportSummary(BaseModel):
@@ -363,6 +368,7 @@ class ReportSummary(BaseModel):
     occupancy_rate: float = 0
     unit_booked_value: float = 0
     tour_booked_value: float = 0
+    promo_discounts: float = 0
 
 
 class ReportsOverviewResponse(BaseModel):
@@ -486,6 +492,9 @@ class ReservationListItem(ReservationPaymentPolicyMetadata):
     check_in_date: date
     check_out_date: date
     total_amount: float
+    original_total: float | None = None
+    discount_amount: float | None = None
+    promo_code: str | None = None
     amount_paid_verified: float | None = None
     balance_due: float | None = None
     guest_count: int | None = None
@@ -502,6 +511,13 @@ class ReservationListResponse(BaseModel):
     limit: int
     offset: int
     has_more: bool
+
+
+class ReservationQuickStatsResponse(BaseModel):
+    today_arrivals: int
+    pending_payment: int
+    walk_ins_today: int
+    ready_for_check_in: int
 
 
 class ReservationStatusUpdateRequest(BaseModel):
@@ -1040,3 +1056,191 @@ class SessionRequest(BaseModel):
 class SessionResponse(BaseModel):
     session_id: str
     user: dict
+
+
+class NotificationItem(BaseModel):
+    notification_id: str
+    category: str
+    event_type: str
+    title: str
+    body: str | None = None
+    severity: str = "info"
+    entity_type: str | None = None
+    entity_id: str | None = None
+    link: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    created_at: str
+    read_at: str | None = None
+
+
+class NotificationListResponse(BaseModel):
+    items: list[NotificationItem] = Field(default_factory=list)
+    unread_count: int = 0
+    has_more: bool = False
+
+
+class NotificationUnreadCountResponse(BaseModel):
+    unread_count: int = 0
+
+
+class NotificationMarkReadRequest(BaseModel):
+    notification_ids: list[str] | None = None
+    all: bool = False
+
+
+class NotificationMarkReadResponse(BaseModel):
+    updated: int = 0
+    unread_count: int = 0
+
+
+class ReviewItem(BaseModel):
+    review_id: str
+    reservation_id: str
+    unit_id: str
+    rating: int
+    comment: str | None = None
+    guest_name: str | None = None
+    created_at: str
+
+
+class ReviewSummary(BaseModel):
+    average_rating: float = 0.0
+    review_count: int = 0
+
+
+class UnitReviewsResponse(BaseModel):
+    unit_id: str
+    summary: ReviewSummary = Field(default_factory=ReviewSummary)
+    items: list[ReviewItem] = Field(default_factory=list)
+
+
+class MyReviewsResponse(BaseModel):
+    items: list[ReviewItem] = Field(default_factory=list)
+
+
+class CreateReviewRequest(BaseModel):
+    reservation_id: str
+    rating: int = Field(ge=1, le=5)
+    comment: str | None = None
+
+
+class AdminReviewItem(BaseModel):
+    review_id: str
+    unit_id: str
+    unit_name: str | None = None
+    guest_name: str | None = None
+    rating: int
+    comment: str | None = None
+    is_hidden: bool = False
+    created_at: str
+
+
+class AdminReviewsResponse(BaseModel):
+    items: list[AdminReviewItem] = Field(default_factory=list)
+
+
+class ModerateReviewRequest(BaseModel):
+    is_hidden: bool
+
+
+# ---------------------------------------------------------------------------
+# Team / account management
+# ---------------------------------------------------------------------------
+
+
+class TeamMember(BaseModel):
+    user_id: str
+    name: str | None = None
+    email: str | None = None
+    role: str
+    created_at: str | None = None
+
+
+class TeamListResponse(BaseModel):
+    items: list[TeamMember] = Field(default_factory=list)
+
+
+class CreateTeamMemberRequest(BaseModel):
+    name: str
+    email: str
+    role: str
+    password: str
+
+
+class UpdateTeamMemberRoleRequest(BaseModel):
+    role: str
+
+
+# ---------------------------------------------------------------------------
+# Promo codes (discounts)
+# ---------------------------------------------------------------------------
+
+
+class PromoValidateRequest(BaseModel):
+    code: str
+    total: float
+    kind: str = "stays"
+
+
+class PromoValidationResult(BaseModel):
+    valid: bool
+    code: str
+    discount_type: str | None = None
+    discount_value: float | None = None
+    discount_amount: float = 0
+    new_total: float
+    message: str | None = None
+
+
+class PromoCode(BaseModel):
+    promo_id: str
+    code: str | None = None
+    description: str | None = None
+    discount_type: str
+    discount_value: float
+    max_discount: float | None = None
+    min_total: float = 0
+    starts_at: str | None = None
+    ends_at: str | None = None
+    usage_limit: int | None = None
+    used_count: int = 0
+    per_user_limit: int | None = None
+    applies_to: str = "stays"
+    auto_apply: bool = False
+    is_active: bool = True
+    created_at: str | None = None
+
+
+class PromoListResponse(BaseModel):
+    items: list[PromoCode] = Field(default_factory=list)
+
+
+class CreatePromoRequest(BaseModel):
+    code: str | None = None
+    description: str | None = None
+    discount_type: str
+    discount_value: float
+    max_discount: float | None = None
+    min_total: float = 0
+    starts_at: str | None = None
+    ends_at: str | None = None
+    usage_limit: int | None = None
+    per_user_limit: int | None = None
+    applies_to: str = "stays"
+    auto_apply: bool = False
+    is_active: bool = True
+
+
+class UpdatePromoRequest(BaseModel):
+    description: str | None = None
+    discount_type: str | None = None
+    discount_value: float | None = None
+    max_discount: float | None = None
+    min_total: float | None = None
+    starts_at: str | None = None
+    ends_at: str | None = None
+    usage_limit: int | None = None
+    per_user_limit: int | None = None
+    applies_to: str | None = None
+    auto_apply: bool | None = None
+    is_active: bool | None = None

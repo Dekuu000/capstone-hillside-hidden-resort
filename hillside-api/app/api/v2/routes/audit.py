@@ -2,7 +2,7 @@ from datetime import datetime
 
 from fastapi import APIRouter, Depends, Query, HTTPException, status
 
-from app.core.auth import AuthContext, require_admin
+from app.core.auth import AuthContext, require_technical
 from app.integrations.supabase_client import list_audit_logs
 from app.schemas.common import AuditLogsResponse
 
@@ -19,7 +19,7 @@ def get_audit_logs(
     from_ts: datetime | None = Query(default=None, alias="from"),
     to_ts: datetime | None = Query(default=None, alias="to"),
     search: str | None = Query(default=None, max_length=120),
-    _auth: AuthContext = Depends(require_admin),
+    _auth: AuthContext = Depends(require_technical),
 ):
     if from_ts and to_ts and to_ts < from_ts:
         raise HTTPException(

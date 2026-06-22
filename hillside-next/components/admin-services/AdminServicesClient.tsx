@@ -4,7 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import {
   CalendarClock,
   CheckCircle2,
+  ChevronRight,
   ClipboardList,
+  ConciergeBell,
   Hash,
   Loader2,
   NotebookText,
@@ -13,6 +15,7 @@ import {
   PlayCircle,
   ReceiptText,
   Search,
+  Sparkles,
   UserRound,
   Wrench,
 } from "lucide-react";
@@ -31,8 +34,8 @@ import { formatPhpPeso as toPeso } from "../../lib/formatCurrency";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
 import { DetailDrawer } from "../shared/DetailDrawer";
 import { EmptyState } from "../shared/EmptyState";
+import { Select } from "../shared/Select";
 import { Skeleton } from "../shared/Skeleton";
-import { Tabs } from "../shared/Tabs";
 import { useToast } from "../shared/ToastProvider";
 
 type Props = {
@@ -54,15 +57,22 @@ const STATUS_STYLE: Record<string, string> = {
   cancelled: "bg-rose-100 text-rose-800",
 };
 
-function getServiceCategoryBadge(category?: string | null) {
+function getCategoryAvatar(category?: string | null) {
   if (category === "spa") {
-    return { label: "Spa", className: "bg-purple-100 text-purple-800" };
+    return { Icon: Sparkles, className: "bg-purple-50 text-purple-600" };
   }
   if (category === "room_service") {
-    return { label: "Room Service", className: "bg-teal-100 text-teal-800" };
+    return { Icon: ConciergeBell, className: "bg-[color:color-mix(in_srgb,var(--color-secondary)_14%,white)] text-[var(--color-secondary)]" };
   }
-  return { label: "Service", className: "bg-slate-100 text-slate-700" };
+  return { Icon: Wrench, className: "bg-[var(--color-background)] text-[var(--color-muted)]" };
 }
+
+const QUEUE_TIME_FORMAT: Intl.DateTimeFormatOptions = {
+  month: "short",
+  day: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+};
 
 export function AdminServicesClient({ accessToken }: Props) {
   const { showToast } = useToast();
@@ -192,24 +202,25 @@ export function AdminServicesClient({ accessToken }: Props) {
 
   return (
     <div className="space-y-4">
-      <section className="surface p-4">
-        <div className="grid gap-3 lg:grid-cols-[1fr_auto_auto]">
-          <Tabs
-            items={STATUS_TABS.map((tab) => ({ id: tab.id, label: tab.label }))}
+      <section className="surface p-3 sm:p-4">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-[minmax(0,190px)_minmax(0,190px)_minmax(0,1fr)]">
+          <Select
+            ariaLabel="Filter by status"
             value={statusFilter}
-            onChange={(nextTab) => setStatusFilter(nextTab as "all" | ResortServiceRequestStatus)}
-            className="sm:grid-cols-5"
+            onChange={(next) => setStatusFilter(next as "all" | ResortServiceRequestStatus)}
+            options={STATUS_TABS.map((tab) => ({ value: tab.id, label: tab.id === "all" ? "All requests" : tab.label }))}
           />
-          <select
+          <Select
+            ariaLabel="Filter by category"
             value={categoryFilter}
-            onChange={(event) => setCategoryFilter(event.target.value as "all" | "room_service" | "spa")}
-            className="h-11 rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-text)]"
-          >
-            <option value="all">All categories</option>
-            <option value="room_service">Room Service</option>
-            <option value="spa">Spa</option>
-          </select>
-          <label className="inline-flex h-11 min-w-[240px] items-center gap-2 rounded-xl border border-[var(--color-border)] bg-white px-3">
+            onChange={(next) => setCategoryFilter(next as "all" | "room_service" | "spa")}
+            options={[
+              { value: "all", label: "All categories" },
+              { value: "room_service", label: "Room Service" },
+              { value: "spa", label: "Spa" },
+            ]}
+          />
+          <label className="inline-flex h-11 items-center gap-2 rounded-xl border border-[var(--color-border)] bg-white px-3 sm:col-span-2 lg:col-span-1">
             <Search className="h-4 w-4 text-[var(--color-muted)]" />
             <input
               type="search"
@@ -256,39 +267,52 @@ export function AdminServicesClient({ accessToken }: Props) {
         ) : null}
 
         <div className="space-y-2">
-          {filteredRows.map((row) => (
-            <button
-              key={row.request_id}
-              type="button"
-              onClick={() => setActiveRow(row)}
-              className="w-full rounded-xl border border-[var(--color-border)] bg-white p-3 text-left"
-            >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="font-semibold text-[var(--color-text)]">
-                  {row.service_item?.service_name || "Service request"}
-                </p>
-                <div className="flex items-center gap-1.5">
-                  <span
-                    className={`rounded-full px-2 py-1 text-xs font-semibold ${getServiceCategoryBadge(row.service_item?.category).className}`}
-                  >
-                    {getServiceCategoryBadge(row.service_item?.category).label}
+          {filteredRows.map((row) => {
+            const avatar = getCategoryAvatar(row.service_item?.category);
+            const requestedAt = formatDateTime(row.requested_at, {
+              locale: "en-PH",
+              formatOptions: QUEUE_TIME_FORMAT,
+              fallback: "",
+            });
+            return (
+              <button
+                key={row.request_id}
+                type="button"
+                onClick={() => setActiveRow(row)}
+                className="group flex w-full items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-white p-3 text-left transition-colors duration-200 hover:border-[color:color-mix(in_srgb,var(--color-secondary)_35%,white)] hover:bg-[var(--color-background)]"
+              >
+                <span className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${avatar.className}`}>
+                  <avatar.Icon className="h-5 w-5" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span className="truncate font-semibold text-[var(--color-text)]">
+                      {row.service_item?.service_name || "Service request"}
+                    </span>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[11px] font-semibold capitalize ${STATUS_STYLE[row.status] || "bg-[var(--color-background)] text-[var(--color-text)]"}`}
+                    >
+                      {row.status.replaceAll("_", " ")}
+                    </span>
                   </span>
-                  <span
-                    className={`rounded-full px-2 py-1 text-xs font-semibold ${STATUS_STYLE[row.status] || "bg-slate-100 text-slate-700"}`}
-                  >
-                    {row.status.replaceAll("_", " ")}
+                  <span className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-sm text-[var(--color-muted)]">
+                    <span className="truncate font-medium text-[var(--color-text)]">{row.guest?.name || row.guest?.email || "Guest"}</span>
+                    <span aria-hidden="true">·</span>
+                    <span>{row.reservation?.reservation_code || "No reservation"}</span>
+                    <span aria-hidden="true">·</span>
+                    <span>Qty {row.quantity}</span>
+                    {requestedAt ? (
+                      <>
+                        <span aria-hidden="true">·</span>
+                        <span>{requestedAt}</span>
+                      </>
+                    ) : null}
                   </span>
-                </div>
-              </div>
-              <div className="mt-1 text-sm text-[var(--color-muted)]">
-                <span>{row.guest?.name || row.guest?.email || "Guest"}</span>
-                <span className="mx-1">|</span>
-                <span>{row.reservation?.reservation_code || "No reservation linked"}</span>
-                <span className="mx-1">|</span>
-                <span>Qty {row.quantity}</span>
-              </div>
-            </button>
-          ))}
+                </span>
+                <ChevronRight className="h-5 w-5 shrink-0 text-[var(--color-muted)] transition-transform duration-200 group-hover:translate-x-0.5" />
+              </button>
+            );
+          })}
         </div>
       </section>
 
@@ -300,30 +324,30 @@ export function AdminServicesClient({ accessToken }: Props) {
       >
         {activeRow ? (
           <div className="space-y-4">
-            <section className="rounded-xl border border-[var(--color-border)] bg-slate-50 p-3 text-sm text-[var(--color-text)]">
+            <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3 text-sm text-[var(--color-text)]">
               <div className="grid gap-2 sm:grid-cols-2">
                 <div className="inline-flex items-start gap-2">
-                  <UserRound className="mt-0.5 h-4 w-4 text-slate-500" />
+                  <UserRound className="mt-0.5 h-4 w-4 text-[var(--color-muted)]" />
                   <p><strong>Guest:</strong> {activeRow.guest?.name || activeRow.guest?.email || "-"}</p>
                 </div>
                 <div className="inline-flex items-start gap-2">
-                  <Hash className="mt-0.5 h-4 w-4 text-slate-500" />
+                  <Hash className="mt-0.5 h-4 w-4 text-[var(--color-muted)]" />
                   <p><strong>Reservation:</strong> {activeRow.reservation?.reservation_code || "-"}</p>
                 </div>
                 <div className="inline-flex items-start gap-2">
-                  <Package className="mt-0.5 h-4 w-4 text-slate-500" />
+                  <Package className="mt-0.5 h-4 w-4 text-[var(--color-muted)]" />
                   <p><strong>Quantity:</strong> {activeRow.quantity}</p>
                 </div>
                 <div className="inline-flex items-start gap-2">
-                  <ReceiptText className="mt-0.5 h-4 w-4 text-slate-500" />
+                  <ReceiptText className="mt-0.5 h-4 w-4 text-[var(--color-muted)]" />
                   <p><strong>Price:</strong> {toPeso(Number(activeRow.service_item?.price || 0))}</p>
                 </div>
                 <div className="inline-flex items-start gap-2 sm:col-span-2">
-                  <CalendarClock className="mt-0.5 h-4 w-4 text-slate-500" />
+                  <CalendarClock className="mt-0.5 h-4 w-4 text-[var(--color-muted)]" />
                   <p><strong>Requested:</strong> {formatDateTime(activeRow.requested_at)}</p>
                 </div>
                 <div className="inline-flex items-start gap-2 sm:col-span-2">
-                  <Wrench className="mt-0.5 h-4 w-4 text-slate-500" />
+                  <Wrench className="mt-0.5 h-4 w-4 text-[var(--color-muted)]" />
                   <p>
                     <strong>Preferred time:</strong>{" "}
                     {activeRow.preferred_time ? formatDateTime(activeRow.preferred_time) : "-"}
@@ -345,7 +369,7 @@ export function AdminServicesClient({ accessToken }: Props) {
                 type="button"
                 disabled={actionBusy || activeRow.status === "in_progress"}
                 onClick={() => void updateStatus(activeRow.request_id, "in_progress")}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)] shadow-sm transition hover:bg-slate-50 disabled:opacity-50"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)] shadow-sm transition hover:bg-[var(--color-background)] disabled:opacity-50"
               >
                 <PlayCircle className="h-4 w-4 text-amber-600" />
                 Start

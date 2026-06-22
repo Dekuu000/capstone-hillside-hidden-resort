@@ -6,6 +6,7 @@ import type { AuditLogsResponse, ChainKey, ContractStatusResponse, EscrowReconci
 import { auditLogsResponseSchema, contractStatusResponseSchema, escrowReconciliationResponseSchema } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
+import { AdminPageHeader } from "../layout/AdminPageHeader";
 import { useToast } from "../shared/ToastProvider";
 import { Tabs } from "../shared/Tabs";
 import { AuditLogsPanel, type AuditFilterState } from "./AuditLogsPanel";
@@ -181,13 +182,11 @@ export function BlockchainExplorerClient({
 
   return (
     <section className="mx-auto w-full max-w-[1600px] space-y-4">
-      <header className="surface p-4 sm:p-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[var(--color-muted)]">Blockchain Explorer</p>
-        <h1 className="mt-2 text-2xl font-bold text-[var(--color-text)] sm:text-3xl">Contract Status + Audit Logs</h1>
-        <p className="mt-2 text-sm text-[var(--color-muted)]">
-          Internal observability for escrow chain health, successful transactions, and reservation audit history.
-        </p>
-      </header>
+      <AdminPageHeader
+        eyebrow="Records & Security"
+        title="Contract status & audit logs"
+        subtitle="Internal observability for escrow chain health, successful transactions, and reservation audit history."
+      />
 
       <Tabs
         items={tabItems}

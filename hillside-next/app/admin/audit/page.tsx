@@ -3,9 +3,10 @@ import { ExternalLink, RotateCcw, Search, SlidersHorizontal } from "lucide-react
 import type { AuditLogsResponse } from "../../../../packages/shared/src/types";
 import { auditLogsResponseSchema } from "../../../../packages/shared/src/schemas";
 import { Badge, statusToBadgeVariant } from "../../../components/shared/Badge";
+import { Pagination } from "../../../components/shared/Pagination";
 import { buildTxExplorerUrl } from "../../../lib/chainExplorer";
 import { formatDateTime } from "../../../lib/dateDisplay";
-import { getServerAccessToken } from "../../../lib/serverAuth";
+import { getServerAccessToken, requireRoleAtLeastServer } from "../../../lib/serverAuth";
 import { fetchServerApiData } from "../../../lib/serverApi";
 
 const PAGE_SIZE = 10;
@@ -78,6 +79,7 @@ export default async function AdminAuditPage({
 }: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  await requireRoleAtLeastServer("super_admin");
   const accessToken = await getServerAccessToken();
   if (!accessToken) {
     return (
@@ -107,8 +109,6 @@ export default async function AdminAuditPage({
 
   const totalCount = data?.count || 0;
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
-  const canPrev = page > 1;
-  const canNext = page < totalPages;
   const hasActiveFilters = Boolean(search || action || fromDate !== toIsoDate(-7) || toDate !== toIsoDate(0));
 
   return (
@@ -132,7 +132,7 @@ export default async function AdminAuditPage({
           {hasActiveFilters ? (
             <Link
               href={buildQuery({ page: 1 })}
-              className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-border)] px-2.5 py-1.5 text-xs font-medium text-[var(--color-muted)] transition hover:bg-slate-50"
+              className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-border)] px-2.5 py-1.5 text-xs font-medium text-[var(--color-muted)] transition hover:bg-[var(--color-background)]"
             >
               <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
               Reset
@@ -214,7 +214,7 @@ export default async function AdminAuditPage({
         <div className="overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm">
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-sm">
-              <thead className="bg-slate-50 text-[var(--color-muted)]">
+              <thead className="bg-[var(--color-background)] text-[var(--color-muted)]">
                 <tr>
                   <th className="px-4 py-3 font-semibold">Time</th>
                   <th className="px-4 py-3 font-semibold">Actor</th>
@@ -225,7 +225,7 @@ export default async function AdminAuditPage({
               </thead>
               <tbody>
                 {data.items.map((log) => (
-                  <tr key={log.audit_id} className="border-t border-slate-100 hover:bg-slate-50">
+                  <tr key={log.audit_id} className="border-t border-[var(--color-border)] hover:bg-[var(--color-background)]">
                     <td className="px-4 py-3">{formatDateTime(log.timestamp)}</td>
                     <td className="px-4 py-3">{log.performed_by?.name || log.performed_by?.email || log.performed_by_user_id || "-"}</td>
                     <td className="px-4 py-3">
@@ -253,46 +253,22 @@ export default async function AdminAuditPage({
             </table>
           </div>
 
-          <div className="flex items-center justify-between border-t border-[var(--color-border)] px-4 py-3">
-            <p className="text-xs text-[var(--color-muted)]">
-              Page {page} of {totalPages} | {totalCount} total
-            </p>
-            <div className="flex gap-2">
-              {canPrev ? (
-                <Link
-                  href={buildQuery({
-                    action: action || undefined,
-                    from: fromDate || undefined,
-                    to: toDate || undefined,
-                    search: search || undefined,
-                    page: page - 1,
-                  })}
-                  prefetch
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700"
-                >
-                  Previous
-                </Link>
-              ) : (
-                <span className="rounded-lg border border-slate-200 bg-slate-100 px-3 py-1.5 text-sm text-slate-400">Previous</span>
-              )}
-              {canNext ? (
-                <Link
-                  href={buildQuery({
-                    action: action || undefined,
-                    from: fromDate || undefined,
-                    to: toDate || undefined,
-                    search: search || undefined,
-                    page: page + 1,
-                  })}
-                  prefetch
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700"
-                >
-                  Next
-                </Link>
-              ) : (
-                <span className="rounded-lg border border-slate-200 bg-slate-100 px-3 py-1.5 text-sm text-slate-400">Next</span>
-              )}
-            </div>
+          <div className="border-t border-[var(--color-border)] px-4 py-3">
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              totalCount={totalCount}
+              pageSize={PAGE_SIZE}
+              hrefForPage={(n) =>
+                buildQuery({
+                  action: action || undefined,
+                  from: fromDate || undefined,
+                  to: toDate || undefined,
+                  search: search || undefined,
+                  page: n,
+                })
+              }
+            />
           </div>
         </div>
       )}

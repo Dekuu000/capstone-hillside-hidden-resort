@@ -1,43 +1,62 @@
 "use client";
 
 import Link from "next/link";
-import type { LucideIcon } from "lucide-react";
-import { TreePalm } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { BedDouble, CalendarDays, TreePalm, UserRound } from "lucide-react";
 import { cn } from "../../lib/cn";
 
-type Item = {
-  label: string;
-  href: string;
-  icon: LucideIcon;
-};
+const TABS = [
+  { label: "Stays", href: "/stays", icon: CalendarDays },
+  { label: "Tours", href: "/tours", icon: TreePalm },
+  { label: "Trips", href: "/my-bookings", icon: BedDouble },
+  { label: "Profile", href: "/guest/account", icon: UserRound },
+];
 
-type GuestBottomNavProps = {
-  items: Item[];
-  isActive: (href: string) => boolean;
-};
+/**
+ * Airbnb-style mobile tab bar. Every tab has the SAME size + structure (equal
+ * width, fixed icon box, label always shown) so switching tabs never reflows the
+ * bar — active is shown via a filled icon pill + colour, not a different shape.
+ */
+export function GuestBottomNav() {
+  const pathname = usePathname();
+  const isActive = (href: string) => {
+    if (href === "/guest/account") {
+      return pathname.startsWith("/guest/account") || pathname.startsWith("/guest/profile");
+    }
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
 
-export function GuestBottomNav({ items, isActive }: GuestBottomNavProps) {
   return (
-    <nav data-testid="guest-bottom-nav" className="fixed inset-x-0 bottom-0 z-50 border-t border-slate-200/70 bg-white/90 px-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur md:hidden">
-      <div className="mx-auto grid h-[72px] w-full max-w-[430px] grid-cols-5 items-center gap-1 rounded-[2rem] bg-white px-2 shadow-lg">
-        {items.map((item) => {
+    <nav data-testid="guest-bottom-nav" className="fixed inset-x-0 bottom-0 z-30 border-t border-[var(--color-border)] bg-[var(--color-surface)]/90 px-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur md:hidden">
+      <div className="mx-auto flex h-[72px] w-full max-w-[430px] items-stretch gap-1 rounded-[2rem] bg-[var(--color-surface)] px-2 shadow-[var(--shadow-md)]">
+        {TABS.map((item) => {
           const active = isActive(item.href);
-          const Icon = item.label === "Tours" ? TreePalm : item.icon;
-          const isBookings = item.href === "/my-bookings";
+          const Icon = item.icon;
           return (
             <Link
               key={item.label}
               href={item.href}
               aria-current={active ? "page" : undefined}
-              className={cn(
-                "inline-flex min-w-0 items-center justify-center rounded-2xl transition",
-                active
-                  ? "h-12 w-12 bg-[var(--color-primary)] text-white shadow-sm"
-                  : "flex-col gap-1 px-1 py-2 text-[10px] font-semibold text-slate-500 min-[380px]:text-[11px]",
-              )}
+              className="flex flex-1 flex-col items-center justify-center gap-1 rounded-2xl"
             >
-              <Icon className={cn(active ? "h-4 w-4 shrink-0" : "h-4 w-4")} />
-              {!active ? <span className="truncate">{isBookings ? "Bookings" : item.label}</span> : null}
+              <span
+                className={cn(
+                  "flex h-9 w-9 items-center justify-center rounded-xl transition",
+                  active
+                    ? "bg-[var(--color-primary)] text-white shadow-sm"
+                    : "text-[var(--color-muted)]",
+                )}
+              >
+                <Icon className="h-5 w-5 shrink-0" />
+              </span>
+              <span
+                className={cn(
+                  "text-[10px] font-semibold leading-none transition min-[380px]:text-[11px]",
+                  active ? "text-[var(--color-primary)]" : "text-[var(--color-muted)]",
+                )}
+              >
+                {item.label}
+              </span>
             </Link>
           );
         })}

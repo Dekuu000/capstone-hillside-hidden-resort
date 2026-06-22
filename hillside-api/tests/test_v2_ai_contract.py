@@ -19,7 +19,7 @@ def _admin_auth(_: str) -> AuthContext:
     return AuthContext(
         user_id="admin-user",
         email="admin@example.com",
-        role="admin",
+        role="super_admin",
         access_token="admin-token",
     )
 

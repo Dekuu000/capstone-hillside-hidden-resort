@@ -2,18 +2,19 @@
 
 :root {
   color-scheme: light;
-  --color-primary: #0b1f3b;
-  --color-secondary: #0ea5a4;
-  --color-cta: #f97316;
-  --color-background: #f7fafc;
+  /* Brand palette from the logo: navy wordmark + teal accent + sun-orange action */
+  --color-primary: #13304c;
+  --color-secondary: #0f8a7e;
+  --color-cta: #d56a24;
+  --color-background: #f5f7f8;
   --color-surface: #ffffff;
-  --color-text: #0f172a;
-  --color-muted: #64748b;
-  --color-border: #e2e8f0;
-  --color-success: #15803d;
-  --color-warn: #b45309;
-  --color-error: #b91c1c;
-  --color-info: #0369a1;
+  --color-text: #15222e;
+  --color-muted: #5c6b78;
+  --color-border: #e2e8ec;
+  --color-success: #1f8f63;
+  --color-warn: #c06a16;
+  --color-error: #c0392b;
+  --color-info: #0f8a7e;
   --space-xs: 4px;
   --space-sm: 8px;
   --space-md: 16px;
@@ -24,7 +25,9 @@
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
+  --radius-xl: 20px;
   --shadow-sm: 0 1px 2px rgba(2, 6, 23, 0.06);
+  --shadow-card: 0 2px 10px rgba(15, 23, 42, 0.05);
   --shadow-md: 0 8px 24px rgba(2, 6, 23, 0.08);
   --shadow-lg: 0 20px 40px rgba(2, 6, 23, 0.14);
 }
@@ -50,6 +53,7 @@ html {
 body {
   background: var(--color-background);
   color: var(--color-text);
+  font-family: var(--font-sans), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
 h1,
@@ -94,8 +98,8 @@ a:focus-visible {
 .surface {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
 }
 
 .guest-form-label {
@@ -271,6 +275,32 @@ a:focus-visible {
   min-height: 2rem;
   padding: 0.35rem 0.75rem;
   font-size: 0.75rem;
+}
+
+.guest-danger-ghost {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid color-mix(in srgb, var(--color-error) 32%, white);
+  background: transparent;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-error);
+  transition: background-color 120ms ease, border-color 120ms ease, opacity 120ms ease;
+}
+
+.guest-danger-ghost:hover {
+  background: color-mix(in srgb, var(--color-error) 8%, white);
+  border-color: color-mix(in srgb, var(--color-error) 48%, white);
+}
+
+.guest-danger-ghost:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .guest-status-pill {
@@ -484,5 +514,43 @@ a:focus-visible {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* The printable report (#printable-report) is portalled to <body> and hidden on
+   screen; it only appears when printing. The Reports page prints it in-place
+   (same window, no new tab) via the browser print dialog. */
+.print-only {
+  display: none;
+}
+
+@page {
+  size: A4;
+  margin: 12mm;
+}
+
+@media print {
+  /* When the in-place report portal is present, hide everything else and show
+     only the document. Scoped with :has() so the standalone /reports-print route
+     (no portal) still prints its full page normally. */
+  body:has(#printable-report) > *:not(#printable-report) {
+    display: none !important;
+  }
+  /* The app's gray body background would otherwise print as a block below the
+     (white) report; force the print surface white. */
+  html,
+  body {
+    background: #fff !important;
+  }
+  #printable-report {
+    display: block !important;
+    background: #fff !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 }

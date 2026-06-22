@@ -21,6 +21,7 @@ import type {
   ReservationListItem as ReservationItem,
   SyncPushResult,
 } from "../../../packages/shared/src/types";
+import { roleAtLeast } from "../../../packages/shared/src/types";
 import {
   checkOperationResponseSchema,
   qrPublicKeyResponseSchema,
@@ -47,6 +48,7 @@ import { Skeleton } from "../shared/Skeleton";
 import { ResultBanner } from "../shared/ResultBanner";
 import { StatusPill } from "../shared/StatusPill";
 import { useToast } from "../shared/ToastProvider";
+import { AdminPageHeader } from "../layout/AdminPageHeader";
 import { CameraScanPanel } from "../checkin/CameraScanPanel";
 import { ScanHeader } from "../checkin/ScanHeader";
 import { ScanSegmentedControl, type ScanMode } from "../checkin/ScanSegmentedControl";
@@ -58,6 +60,7 @@ type Props = {
   initialMode?: ScanMode;
   tabletView?: boolean;
   initialReservationCode?: string;
+  role?: string | null;
 };
 type Mode = ScanMode;
 type Outcome = "ready" | "scanning" | "valid" | "invalid" | "queued";
@@ -345,8 +348,12 @@ export function AdminCheckinClient({
   initialMode = "scan",
   tabletView = false,
   initialReservationCode = "",
+  role = null,
 }: Props) {
   const token = initialToken;
+  // The offline Queue is a technical/sync surface — System Admin only. Staff and
+  // managers keep Scan + Code (manual code lookup is their fallback when a QR won't scan).
+  const canSeeQueue = roleAtLeast(role, "super_admin");
   const { showToast } = useToast();
   const qrScannerRef = useRef<Html5Qrcode | null>(null);
   const scanHandledRef = useRef(false);
@@ -355,7 +362,7 @@ export function AdminCheckinClient({
   const primaryActionRef = useRef<HTMLButtonElement | null>(null);
   const preloadBusyRef = useRef(false);
 
-  const [mode, setMode] = useState<Mode>(initialMode);
+  const [mode, setMode] = useState<Mode>(initialMode === "queue" && !canSeeQueue ? "scan" : initialMode);
   const [outcome, setOutcome] = useState<Outcome>("ready");
   const [scanPulse, setScanPulse] = useState(false);
   const [scanActive, setScanActive] = useState(false);
@@ -768,6 +775,27 @@ export function AdminCheckinClient({
   }, [cacheValidUntil, localValidateFromCacheByToken, markResult, networkOnline, qrPublicKey, scannerId, showToast, token]);
 
   const startCamera = useCallback(async (requestedCameraId?: string) => {
+    // Camera capture requires a secure context (HTTPS or localhost). A phone
+    // opening the dev server over http://<lan-ip> is by far the most common
+    // reason the scanner "errors" on mobile: the browser hides
+    // navigator.mediaDevices entirely. Detect that up front and give an
+    // actionable message instead of a cryptic html5-qrcode failure.
+    const mediaUnavailable =
+      typeof navigator === "undefined" ||
+      !navigator.mediaDevices ||
+      typeof navigator.mediaDevices.getUserMedia !== "function";
+    const insecureContext = typeof window !== "undefined" && window.isSecureContext === false;
+    if (insecureContext || mediaUnavailable) {
+      setScanActive(false);
+      setScanLoading(false);
+      setOutcome("invalid");
+      setCameraPermissionError(
+        insecureContext
+          ? "Camera scanning needs a secure (HTTPS) connection. On a phone you're usually on http://<ip>, which browsers block. Open the site over HTTPS on this device, or use the Code tab to paste the guest's QR token instead."
+          : "This browser doesn't expose a camera here. Use a supported browser over HTTPS, or use the Code tab to paste the guest's QR token instead.",
+      );
+      return;
+    }
     setScanLoading(true);
     setOutcome("scanning");
     setCameraPermissionError(null);
@@ -1153,7 +1181,7 @@ export function AdminCheckinClient({
       } finally {
         setQueueWriteBusy(false);
       }
-      setMode("queue");
+      if (canSeeQueue) setMode("queue");
       setOutcome("queued");
       const queuedReport: SyncReportItem = {
         id: crypto.randomUUID(),
@@ -1170,7 +1198,7 @@ export function AdminCheckinClient({
       });
       return true;
     },
-    [activeTokenJti, outcome, persistQueue, queue, result, showToast, validatedAt],
+    [activeTokenJti, canSeeQueue, outcome, persistQueue, queue, result, showToast, validatedAt],
   );
 
   const loadSyncResult = useCallback((entry: SyncReportItem) => {
@@ -1293,7 +1321,7 @@ export function AdminCheckinClient({
               detail: "text-red-700",
             }
           : {
-              box: "border-[var(--color-border)] bg-slate-50",
+              box: "border-[var(--color-border)] bg-[var(--color-background)]",
               title: "text-[var(--color-text)]",
               detail: "text-[var(--color-muted)]",
             };
@@ -1451,25 +1479,17 @@ export function AdminCheckinClient({
           className="sticky top-2 z-20 shadow-[var(--shadow-sm)]"
         />
       ) : null}
-      <header className="surface p-4 sm:p-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-[var(--color-text)] sm:text-3xl">Check-in Console</h1>
-            <p className="mt-1 text-xs text-[var(--color-muted)] sm:text-sm">Kiosk-friendly scan flow with offline queue.</p>
-            <div className="mt-2 sm:hidden">
-              <DataFreshnessBadge />
-            </div>
+      <AdminPageHeader
+        eyebrow="Operations"
+        title="Check-in console"
+        subtitle="Kiosk-friendly scan flow with offline queue."
+        action={
+          <div className="flex flex-col items-start gap-2 sm:items-end">
+            <DataFreshnessBadge />
+            <ScanHeader onOpenSettings={() => setSettingsDrawerOpen(true)} />
           </div>
-          <div className="flex flex-col gap-2 sm:items-end">
-            <div className="hidden sm:block">
-              <DataFreshnessBadge />
-            </div>
-            <ScanHeader
-              onOpenSettings={() => setSettingsDrawerOpen(true)}
-            />
-          </div>
-        </div>
-      </header>
+        }
+      />
 
       <div className={`grid gap-3 sm:gap-4 ${tabletView ? "xl:grid-cols-[1.35fr_0.65fr]" : "xl:grid-cols-[1.15fr_0.85fr]"} xl:items-stretch`}>
         <section className="surface h-full p-3 sm:p-4">
@@ -1481,84 +1501,63 @@ export function AdminCheckinClient({
               icon={networkOnline ? <Wifi className="h-3.5 w-3.5" aria-hidden="true" /> : <WifiOff className="h-3.5 w-3.5" aria-hidden="true" />}
             />
           </div>
-          <ScanSegmentedControl value={mode} onChange={(value) => setMode(value as Mode)} queueCount={pendingQueueCount} />
-          <div className="mt-3 rounded-xl border border-[var(--color-border)] bg-slate-50 p-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">Offline check-in data</p>
-              <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap sm:overflow-visible">
+          <ScanSegmentedControl value={mode} onChange={(value) => setMode(value as Mode)} queueCount={pendingQueueCount} showQueue={canSeeQueue} />
+          <details className="group mt-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)]">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-2 p-3 [&::-webkit-details-marker]:hidden">
+              <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">Offline check-in pack</span>
+              <span className="flex items-center gap-2">
+                <StatusPill
+                  label={!hasCache ? "Missing" : cacheExpired ? "Expired" : "Ready"}
+                  tone={!hasCache ? "warn" : cacheExpired ? "error" : "success"}
+                />
+                <span className="text-[11px] font-semibold text-[var(--color-secondary)] group-open:hidden">Details</span>
+                <span className="hidden text-[11px] font-semibold text-[var(--color-secondary)] group-open:inline">Hide</span>
+              </span>
+            </summary>
+            <div className="space-y-2 border-t border-[var(--color-border)] p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="shrink-0 text-xs text-[var(--color-muted)]">
                   Last refresh:{" "}
                   <span className="font-semibold text-[var(--color-text)]">
-                    {formatDateTime(cacheUpdatedAt, {
-                      locale: CHECKIN_DISPLAY_LOCALE,
-                      formatOptions: CHECKIN_TIME_FORMAT_OPTIONS,
-                    })}
+                    {formatDateTime(cacheUpdatedAt, { locale: CHECKIN_DISPLAY_LOCALE, formatOptions: CHECKIN_TIME_FORMAT_OPTIONS })}
                   </span>
                 </p>
                 <button
                   type="button"
                   onClick={() => void preloadTodayArrivals()}
                   disabled={preloadBusy || !networkOnline}
-                  className="inline-flex h-8 w-[184px] shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-white px-2.5 text-[11px] font-semibold text-[var(--color-text)] disabled:opacity-50"
+                  className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-white px-2.5 text-[11px] font-semibold text-[var(--color-text)] disabled:opacity-50"
                 >
                   {preloadBusy ? <RefreshCcw className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : null}
-                  Refresh offline pack now
+                  Refresh now
                 </button>
               </div>
+              <label className="inline-flex items-center gap-2 text-xs text-[var(--color-muted)]">
+                <input
+                  type="checkbox"
+                  checked={autoRefreshPack}
+                  onChange={(event) => setAutoRefreshPack(event.target.checked)}
+                  className="h-4 w-4 rounded border-[var(--color-border)] text-[var(--color-primary)]"
+                />
+                Auto-refresh every 30 minutes (online)
+              </label>
+              <div className="flex flex-col gap-1.5 text-xs text-[var(--color-muted)] md:flex-row md:flex-wrap md:items-center md:gap-x-4">
+                <p>Count: <span className="font-semibold text-[var(--color-text)]">{cacheCount || arrivalsCache.length}</span></p>
+                <p>Generated: <span className="font-semibold text-[var(--color-text)]">{formatDateTime(cacheGeneratedAt, { locale: CHECKIN_DISPLAY_LOCALE, formatOptions: CHECKIN_DATE_TIME_FORMAT_OPTIONS })}</span></p>
+                <p>Valid until: <span className="font-semibold text-[var(--color-text)]">{formatDateTime(cacheValidUntil, { locale: CHECKIN_DISPLAY_LOCALE, formatOptions: CHECKIN_DATE_TIME_FORMAT_OPTIONS })}</span></p>
+              </div>
+              {!networkOnline && !hasCache ? (
+                <p className="text-xs font-medium text-amber-700">
+                  You are offline and no check-in pack is cached yet. Reconnect once and refresh the pack.
+                </p>
+              ) : null}
+              {!networkOnline && hasCache && cacheExpired ? (
+                <p className="text-xs font-medium text-amber-700">
+                  Cached check-in pack is expired. Reconnect and refresh for reliable code validation.
+                </p>
+              ) : null}
             </div>
-            <label className="mt-2 inline-flex items-center gap-2 text-xs text-[var(--color-muted)]">
-              <input
-                type="checkbox"
-                checked={autoRefreshPack}
-                onChange={(event) => setAutoRefreshPack(event.target.checked)}
-                className="h-4 w-4 rounded border-[var(--color-border)] text-[var(--color-primary)]"
-              />
-              Auto-refresh offline pack every 30 minutes (online)
-            </label>
-            <div className="mt-2 grid gap-2 text-xs text-[var(--color-muted)] sm:grid-cols-1">
-              <p>Count: <span className="font-semibold text-[var(--color-text)]">{cacheCount || arrivalsCache.length}</span></p>
-            </div>
-            <div className="mt-2 flex flex-col gap-1.5 text-xs text-[var(--color-muted)] md:flex-row md:items-center md:gap-3 md:whitespace-nowrap">
-              <StatusPill
-                label={
-                  !hasCache
-                    ? "Pack missing"
-                    : cacheExpired
-                      ? "Pack expired"
-                      : "Pack ready"
-                }
-                tone={!hasCache ? "warn" : cacheExpired ? "error" : "success"}
-              />
-              <p>
-                Generated:{" "}
-                <span className="font-semibold text-[var(--color-text)]">
-                  {formatDateTime(cacheGeneratedAt, {
-                    locale: CHECKIN_DISPLAY_LOCALE,
-                    formatOptions: CHECKIN_DATE_TIME_FORMAT_OPTIONS,
-                  })}
-                </span>
-              </p>
-              <p>
-                Valid until:{" "}
-                <span className="font-semibold text-[var(--color-text)]">
-                  {formatDateTime(cacheValidUntil, {
-                    locale: CHECKIN_DISPLAY_LOCALE,
-                    formatOptions: CHECKIN_DATE_TIME_FORMAT_OPTIONS,
-                  })}
-                </span>
-              </p>
-            </div>
-            {!networkOnline && !hasCache ? (
-              <p className="mt-2 text-xs font-medium text-amber-700">
-                You are offline and no check-in pack is cached yet. Reconnect once and refresh the pack.
-              </p>
-            ) : null}
-            {!networkOnline && hasCache && cacheExpired ? (
-              <p className="mt-2 text-xs font-medium text-amber-700">
-                Cached check-in pack is expired. Reconnect and refresh for reliable code validation.
-              </p>
-            ) : null}
-          </div>
+          </details>
           <div className="mt-3 space-y-3">
             {mode === "scan" ? (
               <div className="space-y-2">
@@ -1583,7 +1582,7 @@ export function AdminCheckinClient({
                   hint={SCAN_HINTS[scanHintIndex] || SCAN_HINTS[0]}
                   cameraHeightClassName={tabletView ? "h-[320px] sm:h-[440px] md:h-[520px]" : undefined}
                 />
-                <div className="rounded-lg border border-[var(--color-border)] bg-slate-50 px-3 py-2 text-xs text-[var(--color-muted)]">
+                <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-xs text-[var(--color-muted)]">
                   QR token rotates by server policy. Rescan if expired.
                   {tokenSecondsLeft != null ? (
                     <span className="ml-2 font-semibold text-[var(--color-text)]">Expires in {tokenSecondsLeft}s</span>
@@ -1664,7 +1663,7 @@ export function AdminCheckinClient({
                       type="button"
                       onClick={() => void validateManual()}
                       disabled={busy || (reservationCode.trim().length === 0 && tokenFallbackInput.trim().length === 0)}
-                      className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-60 sm:w-auto sm:min-w-[180px]"
+                      className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-primary)] px-5 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 disabled:opacity-60 sm:w-auto sm:min-w-[180px]"
                     >
                       <ShieldCheck className="h-4 w-4" />
                       {busy ? "Validating..." : "Validate"}
@@ -1675,7 +1674,7 @@ export function AdminCheckinClient({
             ) : null}
 
             {mode === "queue" ? (
-              <div className="rounded-xl border border-[var(--color-border)] bg-slate-50 p-3">
+              <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-sm font-semibold text-[var(--color-text)]">Offline Queue</p>
                   <StatusPill label={networkOnline ? "Online" : "Offline"} tone={networkOnline ? "success" : "warn"} />
@@ -1697,7 +1696,7 @@ export function AdminCheckinClient({
                 {queue.length > 0 ? (
                   <div className="mt-3 max-h-40 space-y-2 overflow-y-auto rounded-lg border border-[var(--color-border)] bg-white p-2">
                     {queue.slice(0, 8).map((item) => (
-                      <article key={item.id} className="rounded-md border border-[var(--color-border)] bg-slate-50 px-2 py-1.5">
+                      <article key={item.id} className="rounded-md border border-[var(--color-border)] bg-[var(--color-background)] px-2 py-1.5">
                         <div className="flex items-center justify-between gap-2">
                           <p className="text-[11px] font-semibold text-[var(--color-text)]">{item.reservationCode}</p>
                           <StatusPill
@@ -1763,7 +1762,7 @@ export function AdminCheckinClient({
                     </div>
                     <div className="max-h-44 space-y-1.5 overflow-y-auto pr-1">
                       {syncReport.slice(0, 12).map((entry) => (
-                        <article key={entry.id} className="rounded-md border border-[var(--color-border)] bg-slate-50 px-2 py-1.5">
+                        <article key={entry.id} className="rounded-md border border-[var(--color-border)] bg-[var(--color-background)] px-2 py-1.5">
                           <div className="flex items-center justify-between gap-2">
                             <p className="text-[11px] font-semibold text-[var(--color-text)]">{entry.label}</p>
                             <div className="flex items-center gap-1.5">
@@ -1817,10 +1816,10 @@ export function AdminCheckinClient({
 
           <section ref={resultCardRef} className={`surface flex-1 p-3 sm:p-4 xl:sticky ${tabletView ? "xl:top-2" : "xl:top-4"}`}>
             <p className="text-sm font-semibold text-[var(--color-text)] sm:text-base">Result Card</p>
-            {!result ? <p className="mt-2 rounded-xl border border-dashed border-[var(--color-border)] bg-slate-50 p-3 text-sm text-[var(--color-muted)]">No validated reservation yet.</p> : (
+            {!result ? <p className="mt-2 rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-background)] p-3 text-sm text-[var(--color-muted)]">No validated reservation yet.</p> : (
               <div className="mt-3 space-y-3">
-                <div className="grid gap-2 sm:grid-cols-2"><div className="rounded-xl border border-[var(--color-border)] bg-slate-50 p-3"><p className="text-xs text-[var(--color-muted)]">Reservation</p><p className="font-semibold">{result.reservation_code}</p></div><div className="rounded-xl border border-[var(--color-border)] bg-slate-50 p-3"><p className="text-xs text-[var(--color-muted)]">Reservation status</p><p className="font-semibold">{resultStatusLabel}</p></div></div>
-                <div className="rounded-xl border border-[var(--color-border)] bg-slate-50 p-3"><p className="text-xs text-[var(--color-muted)]">Stay dates</p>{detailLoading ? <div className="mt-1 space-y-1"><Skeleton className="h-4 w-36" /><Skeleton className="h-4 w-28" /></div> : <p className="font-semibold">{formatDateWithYear(detail?.check_in_date)} - {formatDateWithYear(detail?.check_out_date)}</p>}</div>
+                <div className="grid gap-2 sm:grid-cols-2"><div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3"><p className="text-xs text-[var(--color-muted)]">Reservation</p><p className="font-semibold">{result.reservation_code}</p></div><div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3"><p className="text-xs text-[var(--color-muted)]">Reservation status</p><p className="font-semibold">{resultStatusLabel}</p></div></div>
+                <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3"><p className="text-xs text-[var(--color-muted)]">Stay dates</p>{detailLoading ? <div className="mt-1 space-y-1"><Skeleton className="h-4 w-36" /><Skeleton className="h-4 w-28" /></div> : <p className="font-semibold">{formatDateWithYear(detail?.check_in_date)} - {formatDateWithYear(detail?.check_out_date)}</p>}</div>
                 <div className={`rounded-xl border p-3 ${flowToneClasses.box}`}>
                   <p className={`text-sm font-semibold ${flowToneClasses.title}`}>{flowStatus.label}</p>
                   <p className={`mt-1 text-xs ${flowToneClasses.detail}`}>{flowStatus.detail}</p>
@@ -1904,13 +1903,15 @@ export function AdminCheckinClient({
                 {pendingQueuedCheckin ? (
                   <div className="flex items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
                     <p className="text-xs text-amber-700">This reservation already has a pending queued check-in.</p>
-                    <button
-                      type="button"
-                      onClick={() => setMode("queue")}
-                      className="inline-flex h-8 items-center rounded-md border border-amber-300 bg-white px-2 text-xs font-semibold text-amber-900"
-                    >
-                      View queue
-                    </button>
+                    {canSeeQueue ? (
+                      <button
+                        type="button"
+                        onClick={() => setMode("queue")}
+                        className="inline-flex h-8 items-center rounded-md border border-amber-300 bg-white px-2 text-xs font-semibold text-amber-900"
+                      >
+                        View queue
+                      </button>
+                    ) : null}
                   </div>
                 ) : null}
                 {canCheckout && hasOutstandingBalance && result?.reservation_id ? (

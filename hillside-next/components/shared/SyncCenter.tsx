@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { RefreshCcw, TriangleAlert, Wifi, WifiOff } from "lucide-react";
+import { AdminPageHeader } from "../layout/AdminPageHeader";
 import { useSyncEngine } from "./SyncEngineProvider";
 import { useToast } from "./ToastProvider";
 import { env } from "../../lib/env";
@@ -282,13 +283,11 @@ export function SyncCenter({ title, description, scope }: SyncCenterProps) {
 
   return (
     <section className="space-y-4">
-      <div className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-white p-4 sm:p-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">Sync Center</p>
-            <h1 className="mt-1 text-2xl font-bold text-[var(--color-text)]">{title}</h1>
-            <p className="mt-1 text-sm text-[var(--color-muted)]">{description}</p>
-          </div>
+      <AdminPageHeader
+        eyebrow="Offline & Sync"
+        title={title}
+        subtitle={description}
+        action={
           <button
             type="button"
             onClick={() => void handleRunNow()}
@@ -298,8 +297,10 @@ export function SyncCenter({ title, description, scope }: SyncCenterProps) {
             <RefreshCcw className={`h-4 w-4 ${busy ? "animate-spin" : ""}`} />
             {busy ? "Syncing..." : "Run sync now"}
           </button>
-        </div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        }
+      />
+      <div className="surface p-5 sm:p-6">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <div className="guest-surface-soft p-3">
             <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-muted)]">Status</p>
             <p className={`mt-1 text-base font-semibold ${primaryStatus.tone}`}>
@@ -307,6 +308,11 @@ export function SyncCenter({ title, description, scope }: SyncCenterProps) {
               {primaryStatus.label}
             </p>
             <p className="mt-1 text-xs text-[var(--color-muted)]">Last sync: {formatDateTime(sync.lastSyncedAt)}</p>
+            <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-[var(--color-muted)]">
+              <span className={`h-1.5 w-1.5 rounded-full ${sync.enabled ? "bg-emerald-500" : "bg-slate-300"}`} aria-hidden="true" />
+              Auto-sync {sync.enabled ? "on" : "off"}
+              {sync.enabled ? <span className="text-[var(--color-muted)]">— runs automatically</span> : null}
+            </p>
           </div>
           <div className="guest-surface-soft p-3">
             <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-muted)]">Outbox</p>
@@ -344,7 +350,7 @@ export function SyncCenter({ title, description, scope }: SyncCenterProps) {
         ) : null}
         {!sync.online ? (
           <div className="guest-surface-soft mt-3 border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-            Offline mode: your actions stay queued locally. Reconnect and tap <strong>Run sync now</strong> to send updates.
+            Offline mode: your actions stay queued locally. They&rsquo;ll sync <strong>automatically</strong> when you reconnect — or tap <strong>Run sync now</strong> to send them immediately.
           </div>
         ) : null}
       </div>

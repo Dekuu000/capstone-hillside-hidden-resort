@@ -7,7 +7,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.core.auth import AuthContext, require_authenticated
+from app.core.auth import AuthContext, require_authenticated, role_at_least
 from app.core.config import settings
 from app.integrations.supabase_client import (
     cleanup_sync_operation_receipts,
@@ -130,14 +130,14 @@ def _apply_reservation_create(op: OfflineOperation, auth: AuthContext) -> tuple[
     is_walk_in = action_key in {"reservations.walk_in.create", "reservations.walkin.create"} or str(
         payload.get("reservation_source") or ""
     ).strip().lower() in {"walk_in", "walk-in", "walkin"}
-    if auth.role == "admin" and not is_walk_in:
-        raise RuntimeError("Admin accounts cannot create online guest reservations. Use Walk-in flow.")
+    if role_at_least(auth.role, "staff") and not is_walk_in:
+        raise RuntimeError("Back-office accounts cannot create online guest reservations. Use Walk-in flow.")
     check_in = _parse_iso_date(str(payload.get("check_in_date") or ""), "check_in_date")
     check_out = _parse_iso_date(str(payload.get("check_out_date") or ""), "check_out_date")
     if check_out <= check_in:
         raise RuntimeError("check_out_date must be after check_in_date.")
-    if is_walk_in and auth.role != "admin":
-        raise RuntimeError("Admin access required for walk-in reservation.")
+    if is_walk_in and not role_at_least(auth.role, "staff"):
+        raise RuntimeError("Staff access required for walk-in reservation.")
     if is_walk_in and check_in < date.today():
         raise RuntimeError("check_in_date cannot be in the past.")
     unit_ids = [str(unit_id) for unit_id in (payload.get("unit_ids") or []) if str(unit_id).strip()]
@@ -149,6 +149,7 @@ def _apply_reservation_create(op: OfflineOperation, auth: AuthContext) -> tuple[
     raw_notes = str(payload.get("notes") or "").strip() or None
     expected_pay_now_raw = payload.get("expected_pay_now")
     expected_pay_now = float(expected_pay_now_raw) if expected_pay_now_raw is not None else None
+    promo_code = payload.get("promo_code") or None
     notes = raw_notes
     if is_walk_in:
         notes_parts = [
@@ -196,6 +197,7 @@ def _apply_reservation_create(op: OfflineOperation, auth: AuthContext) -> tuple[
         guest_count=guest_count,
         expected_pay_now=expected_pay_now,
         notes=notes,
+        promo_code=promo_code,
     )
     reservation_id = str(created.get("reservation_id") or "")
     if reservation_id:
@@ -217,11 +219,12 @@ def _apply_tour_reservation_create(op: OfflineOperation, auth: AuthContext) -> t
     if adult_qty + kid_qty <= 0:
         raise RuntimeError("At least one guest is required.")
     is_advance = bool(payload.get("is_advance", True))
-    if auth.role == "admin" and is_advance:
-        raise RuntimeError("Admin accounts cannot create online guest reservations. Use Walk-in flow.")
+    if role_at_least(auth.role, "staff") and is_advance:
+        raise RuntimeError("Back-office accounts cannot create online guest reservations. Use Walk-in flow.")
     notes = str(payload.get("notes") or "").strip() or None
     expected_pay_now_raw = payload.get("expected_pay_now")
     expected_pay_now = float(expected_pay_now_raw) if expected_pay_now_raw is not None else None
+    tour_promo_code = payload.get("promo_code") or None
 
     service = get_active_service_by_id_rpc(service_id)
     if not service:
@@ -237,9 +240,10 @@ def _apply_tour_reservation_create(op: OfflineOperation, auth: AuthContext) -> t
         is_advance=is_advance,
         expected_pay_now=expected_pay_now,
         notes=notes,
+        promo_code=tour_promo_code,
     )
     reservation_id = str(created.get("reservation_id") or "")
-    source_value = "walk_in" if auth.role == "admin" and not is_advance else "online"
+    source_value = "walk_in" if role_at_least(auth.role, "staff") and not is_advance else "online"
     if reservation_id:
         update_reservation_source_rpc(reservation_id=reservation_id, reservation_source=source_value)
     return reservation_id or None, created
@@ -249,8 +253,8 @@ def _apply_payment_submission(op: OfflineOperation, auth: AuthContext) -> tuple[
     payload = op.payload
     action_key = op.action.strip().lower()
     if action_key in {"payments.verify", "admin.payments.verify"}:
-        if auth.role != "admin":
-            raise RuntimeError("Admin access required for payment verification.")
+        if not role_at_least(auth.role, "admin"):
+            raise RuntimeError("Manager access required for payment verification.")
         payment_id = str(payload.get("payment_id") or op.entity_id or "").strip()
         if not payment_id:
             raise RuntimeError("payment_id is required.")
@@ -258,8 +262,8 @@ def _apply_payment_submission(op: OfflineOperation, auth: AuthContext) -> tuple[
         return payment_id, {"ok": True, "payment_id": payment_id, "status": "verified"}
 
     if action_key in {"payments.reject", "admin.payments.reject"}:
-        if auth.role != "admin":
-            raise RuntimeError("Admin access required for payment rejection.")
+        if not role_at_least(auth.role, "admin"):
+            raise RuntimeError("Manager access required for payment rejection.")
         payment_id = str(payload.get("payment_id") or op.entity_id or "").strip()
         if not payment_id:
             raise RuntimeError("payment_id is required.")
@@ -276,8 +280,8 @@ def _apply_payment_submission(op: OfflineOperation, auth: AuthContext) -> tuple[
     method = str(payload.get("method") or "").strip() or "gcash"
     reference_no = str(payload.get("reference_no") or "").strip() or None
     if action_key in {"payments.on_site.create", "admin.payments.on_site.create"}:
-        if auth.role != "admin":
-            raise RuntimeError("Admin access required for on-site payment.")
+        if not role_at_least(auth.role, "staff"):
+            raise RuntimeError("Staff access required for on-site payment.")
         result = record_on_site_payment_rpc(
             access_token=auth.access_token,
             reservation_id=reservation_id,
@@ -331,8 +335,8 @@ def _apply_payment_submission(op: OfflineOperation, auth: AuthContext) -> tuple[
 
 
 def _apply_checkin(op: OfflineOperation, auth: AuthContext) -> tuple[str | None, dict[str, Any]]:
-    if auth.role != "admin":
-        raise RuntimeError("Admin access required for check-in.")
+    if not role_at_least(auth.role, "staff"):
+        raise RuntimeError("Staff access required for check-in.")
     payload = op.payload
     reservation_id = str(payload.get("reservation_id") or "").strip()
     if not reservation_id:
@@ -349,8 +353,8 @@ def _apply_checkin(op: OfflineOperation, auth: AuthContext) -> tuple[str | None,
 
 
 def _apply_checkout(op: OfflineOperation, auth: AuthContext) -> tuple[str | None, dict[str, Any]]:
-    if auth.role != "admin":
-        raise RuntimeError("Admin access required for check-out.")
+    if not role_at_least(auth.role, "staff"):
+        raise RuntimeError("Staff access required for check-out.")
     payload = op.payload
     reservation_id = str(payload.get("reservation_id") or "").strip()
     if not reservation_id:
@@ -365,8 +369,8 @@ def _apply_service_request(op: OfflineOperation, auth: AuthContext) -> tuple[str
     payload = op.payload
     action_key = op.action.strip().lower()
     if action_key in {"admin.services.requests.update_status", "service_request.update_status"}:
-        if auth.role != "admin":
-            raise RuntimeError("Admin access required for service request updates.")
+        if not role_at_least(auth.role, "staff"):
+            raise RuntimeError("Staff access required for service request updates.")
         request_id = str(payload.get("request_id") or "").strip()
         next_status = str(payload.get("status") or "").strip()
         if not request_id:
@@ -450,8 +454,8 @@ def sync_pull(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Offline sync feature is disabled.",
         )
-    if scope == "admin" and auth.role != "admin":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin scope requires admin access.")
+    if scope == "admin" and not role_at_least(auth.role, "staff"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin scope requires back-office access.")
 
     effective_limit = limit or settings.sync_pull_default_limit
     effective_limit = max(1, min(effective_limit, settings.sync_pull_max_limit))

@@ -91,6 +91,33 @@ Current v2 route groups:
   - `POST /v2/ai/concierge/recommendation`
 - NFT guest pass:
   - `GET /v2/nft/guest-pass/{reservation_id}`
+- Notifications (in-app):
+  - `GET /v2/notifications` (`limit`/`offset`/`unread_only`, returns `has_more`)
+  - `GET /v2/notifications/unread-count`
+  - `POST /v2/notifications/mark-read`
+- Promotions / discounts:
+  - `POST /v2/promos/validate` (guest; validate code against a total)
+  - `GET /v2/admin/promos`, `POST /v2/admin/promos`, `PATCH /v2/admin/promos/{promo_id}` (admin+)
+- Reviews & ratings:
+  - `GET /v2/reviews` (listing reviews), `POST /v2/reviews` (review a completed booking)
+  - `GET /v2/reviews/mine`
+  - `GET /v2/reviews/admin`, `POST /v2/reviews/admin` (hide/show moderation, admin+)
+- Team / staff accounts (super_admin, role-gated):
+  - `GET /v2/admin/team`, `POST /v2/admin/team`, `PATCH /v2/admin/team/{user_id}`
+- Reservation KPI tiles:
+  - `GET /v2/reservations/stats` (server-side counts; admin+)
+
+## Roles (4-tier RBAC)
+
+`guest` < `staff` (Front Desk) < `admin` (Manager) < `super_admin` (System Admin); higher roles inherit lower access. Guards: `require_authenticated` (any signed-in), `require_operations` (staff+), `require_admin` (admin+); Team endpoints are super_admin-only. Roles are resolved from the `users` table (cached ~60s); a DB trigger blocks non-privileged role self-escalation.
+
+## Background schedulers (lifecycle)
+
+Started in the FastAPI lifespan, each gated by a feature flag (run synchronous Supabase calls in a thread; safe to run with multiple workers):
+
+- **Auto-release** (`FEATURE_RELEASE_EXPIRED_HOLDS=true`): cancels unpaid `pending_payment` holds older than `RELEASE_EXPIRED_HOLDS_WINDOW_MIN` (default 120) every `RELEASE_EXPIRED_HOLDS_INTERVAL_SEC` (default 600). Frees the unit/slot, cascades to service bookings, notifies the guest.
+- **Auto no-show** (`FEATURE_AUTO_NO_SHOW=true`): flags confirmed bookings past check-out (with no check-in) as `no_show` / deposit forfeited after `AUTO_NO_SHOW_GRACE_DAYS` (default 1), every `AUTO_NO_SHOW_INTERVAL_SEC` (default 3600).
+- **Notification retention** (`FEATURE_NOTIFICATION_RETENTION=true`): deletes notifications that are both read and older than `NOTIFICATION_RETENTION_DAYS` (default 90), every `NOTIFICATION_RETENTION_INTERVAL_SEC` (default 86400). Unread are never pruned.
 
 ## Multi-chain configuration
 

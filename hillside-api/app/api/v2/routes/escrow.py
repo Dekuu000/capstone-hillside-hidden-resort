@@ -3,7 +3,7 @@ from typing import Literal, cast
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.core.auth import AuthContext, require_admin
+from app.core.auth import AuthContext, require_technical
 from app.core.cache import TTLCache
 from app.core.chains import get_active_chain, get_chain_registry
 from app.core.config import settings
@@ -157,7 +157,7 @@ def get_escrow_reconciliation(
     chain_key: str | None = Query(default=None),
     limit: int = Query(default=20, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
-    _auth: AuthContext = Depends(require_admin),
+    _auth: AuthContext = Depends(require_technical),
 ):
     registry = get_chain_registry()
     active_chain = get_active_chain()
@@ -236,7 +236,7 @@ def get_escrow_reconciliation(
 @router.post("/cleanup-shadow", response_model=EscrowShadowCleanupResponse)
 def cleanup_shadow_rows(
     payload: EscrowShadowCleanupRequest,
-    _auth: AuthContext = Depends(require_admin),
+    _auth: AuthContext = Depends(require_technical),
 ):
     registry = get_chain_registry()
     active_chain = get_active_chain()
@@ -290,7 +290,7 @@ def get_contract_status(
     window_days: int = Query(default=7, ge=1, le=30),
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
-    _auth: AuthContext = Depends(require_admin),
+    _auth: AuthContext = Depends(require_technical),
 ):
     registry = get_chain_registry()
     active_chain = get_active_chain()
@@ -383,7 +383,7 @@ def get_contract_status(
 
 @router.get("/reconciliation-monitor", response_model=EscrowReconciliationMonitorResponse)
 def get_reconciliation_monitor(
-    _auth: AuthContext = Depends(require_admin),
+    _auth: AuthContext = Depends(require_technical),
 ):
     snapshot = get_escrow_reconciliation_monitor_snapshot()
     snapshot["enabled"] = settings.feature_escrow_reconciliation_scheduler
@@ -392,7 +392,7 @@ def get_reconciliation_monitor(
 
 @router.post("/reconciliation-monitor/run", response_model=EscrowReconciliationMonitorResponse)
 def run_reconciliation_monitor_now(
-    _auth: AuthContext = Depends(require_admin),
+    _auth: AuthContext = Depends(require_technical),
 ):
     snapshot = run_escrow_reconciliation_once_now()
     snapshot["enabled"] = settings.feature_escrow_reconciliation_scheduler
@@ -402,7 +402,7 @@ def run_reconciliation_monitor_now(
 @router.post("/release-retry", response_model=EscrowReleaseRetryResponse)
 def retry_escrow_release(
     payload: EscrowReleaseRetryRequest,
-    _auth: AuthContext = Depends(require_admin),
+    _auth: AuthContext = Depends(require_technical),
 ):
     try:
         row = get_reservation_by_id(payload.reservation_id)

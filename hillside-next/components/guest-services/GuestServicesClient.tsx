@@ -32,6 +32,7 @@ import { syncAwareMutation } from "../../lib/offlineSync/mutation";
 import { EmptyState } from "../shared/EmptyState";
 import { InsetPanel } from "../shared/InsetPanel";
 import { ModalDialog } from "../shared/ModalDialog";
+import { Select } from "../shared/Select";
 import { Skeleton } from "../shared/Skeleton";
 import { SyncAlertBanner } from "../shared/SyncAlertBanner";
 import { Tabs } from "../shared/Tabs";
@@ -86,6 +87,14 @@ export function GuestServicesClient({ accessToken }: Props) {
 
   const [selectedService, setSelectedService] = useState<ResortServiceItem | null>(null);
   const [quantity, setQuantity] = useState(1);
+  // Editable text mirror of quantity so the field can be cleared while typing
+  // (and typing replaces instead of prepending) — clamped on blur.
+  const [quantityInput, setQuantityInput] = useState("1");
+  const applyQuantity = (next: number) => {
+    const clamped = Math.max(1, Math.min(99, Number.isFinite(next) ? next : 1));
+    setQuantity(clamped);
+    setQuantityInput(String(clamped));
+  };
   const [preferredDate, setPreferredDate] = useState("");
   const [preferredTime, setPreferredTime] = useState("");
   const [reservationId, setReservationId] = useState("");
@@ -235,6 +244,7 @@ export function GuestServicesClient({ accessToken }: Props) {
       }
       setSelectedService(null);
       setQuantity(1);
+      setQuantityInput("1");
       setPreferredDate("");
       setPreferredTime("");
       setReservationId("");
@@ -257,10 +267,6 @@ export function GuestServicesClient({ accessToken }: Props) {
     () => requests.filter((item) => item.service_item?.category === category),
     [category, requests],
   );
-  const syncSummaryText = networkOnline
-    ? "Online · requests sync automatically."
-    : "Offline · requests queue and sync automatically.";
-
   return (
     <div className="space-y-4">
       <section className="surface p-4">
@@ -273,15 +279,6 @@ export function GuestServicesClient({ accessToken }: Props) {
           activeClassName="border border-[var(--color-secondary)] bg-teal-50 text-[var(--color-secondary)] shadow-sm"
           inactiveClassName="border border-[var(--color-border)] bg-white text-slate-500 hover:bg-slate-50"
         />
-        <div className="mt-2.5 flex items-center justify-between gap-2 rounded-xl border border-slate-200/80 bg-slate-50 px-3 py-2">
-          <p className="text-xs font-medium text-slate-600">{syncSummaryText}</p>
-          <Link
-            href="/guest/sync"
-            className="inline-flex h-8 items-center rounded-full border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
-          >
-            Details
-          </Link>
-        </div>
       </section>
       <div>
         {actionMessage ? (
@@ -449,22 +446,34 @@ export function GuestServicesClient({ accessToken }: Props) {
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => setQuantity((value) => Math.max(1, value - 1))}
+                    onClick={() => applyQuantity(quantity - 1)}
+                    disabled={quantity <= 1}
                     className="guest-stepper-btn"
                     aria-label="Decrease quantity"
                   >
                     -
                   </button>
                   <input
-                    type="number"
-                    min={1}
-                    value={quantity}
-                    onChange={(event) => setQuantity(Math.max(1, Number(event.target.value || 1)))}
-                    className="guest-field-control w-24 text-center"
+                    type="text"
+                    inputMode="numeric"
+                    value={quantityInput}
+                    aria-label="Quantity"
+                    onFocus={(event) => event.currentTarget.select()}
+                    onChange={(event) => {
+                      const digits = event.target.value.replace(/\D/g, "").slice(0, 3);
+                      setQuantityInput(digits);
+                      if (digits !== "") setQuantity(Math.max(1, Math.min(99, Number(digits))));
+                    }}
+                    onBlur={(event) => {
+                      const raw = event.currentTarget.value.replace(/\D/g, "");
+                      applyQuantity(raw === "" ? 1 : Number(raw));
+                    }}
+                    className="guest-field-control min-w-0 flex-1 text-center"
                   />
                   <button
                     type="button"
-                    onClick={() => setQuantity((value) => value + 1)}
+                    onClick={() => applyQuantity(quantity + 1)}
+                    disabled={quantity >= 99}
                     className="guest-stepper-btn"
                     aria-label="Increase quantity"
                   >
@@ -477,18 +486,15 @@ export function GuestServicesClient({ accessToken }: Props) {
               </p>
               <label className="guest-form-label">
                 Attach reservation (optional)
-                <select
+                <Select
+                  ariaLabel="Attach reservation"
                   value={reservationId}
-                  onChange={(event) => setReservationId(event.target.value)}
-                  className="guest-field-control"
-                >
-                  <option value="">None</option>
-                  {reservations.map((item) => (
-                    <option key={item.reservation_id} value={item.reservation_id}>
-                      {item.reservation_code}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setReservationId}
+                  options={[
+                    { value: "", label: "None" },
+                    ...reservations.map((item) => ({ value: item.reservation_id, label: item.reservation_code })),
+                  ]}
+                />
               </label>
               <div className="guest-form-label">
                 <span>Preferred time (optional)</span>
@@ -503,19 +509,16 @@ export function GuestServicesClient({ accessToken }: Props) {
                   />
                   <label className="grid gap-1 text-xs text-[var(--color-muted)]">
                     Time
-                    <select
+                    <Select
+                      ariaLabel="Preferred time"
                       value={preferredTime}
-                      onChange={(event) => setPreferredTime(event.target.value)}
+                      onChange={setPreferredTime}
                       disabled={!preferredDate}
-                      className="guest-field-control"
-                    >
-                      <option value="">Next available</option>
-                      {TIME_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
+                      options={[
+                        { value: "", label: "Next available" },
+                        ...TIME_OPTIONS.map((option) => ({ value: option.value, label: option.label })),
+                      ]}
+                    />
                   </label>
                 </div>
                 <span className="text-xs text-[var(--color-muted)]">

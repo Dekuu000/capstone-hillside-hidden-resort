@@ -7,6 +7,7 @@ from app.integrations.supabase_client import (
     create_resort_service_request,
     list_active_resort_services,
     list_resort_service_requests,
+    notify_ops_new_service_request,
 )
 from app.schemas.common import (
     ResortServiceListResponse,
@@ -89,6 +90,7 @@ def create_guest_service_request(
 
     if not row:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to create request.")
+    notify_ops_new_service_request(row)
     if payload.idempotency_key and operation_id:
         store_operation_receipt_safely(
             operation_id=operation_id,

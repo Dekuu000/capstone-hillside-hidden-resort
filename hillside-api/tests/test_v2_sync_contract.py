@@ -328,7 +328,7 @@ def test_sync_push_blocks_admin_online_stay_reservation_create(monkeypatch) -> N
     payload = response.json()
     assert payload["conflict"] == 1
     assert payload["results"][0]["status"] == "conflict"
-    assert "Admin accounts cannot create online guest reservations" in (payload["results"][0]["error_message"] or "")
+    assert "Back-office accounts cannot create online guest reservations" in (payload["results"][0]["error_message"] or "")
 
 
 def test_sync_push_blocks_admin_online_tour_reservation_create(monkeypatch) -> None:
@@ -374,5 +374,5 @@ def test_sync_push_blocks_admin_online_tour_reservation_create(monkeypatch) -> N
     payload = response.json()
     assert payload["conflict"] == 1
     assert payload["results"][0]["status"] == "conflict"
-    assert "Admin accounts cannot create online guest reservations" in (payload["results"][0]["error_message"] or "")
+    assert "Back-office accounts cannot create online guest reservations" in (payload["results"][0]["error_message"] or "")
 

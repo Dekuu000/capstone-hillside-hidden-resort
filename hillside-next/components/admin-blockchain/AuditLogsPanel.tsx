@@ -7,8 +7,10 @@ import { buildTxExplorerUrl, shortHash } from "../../lib/chainExplorer";
 import { formatDateTime } from "../../lib/dateDisplay";
 import { Badge, statusToBadgeVariant } from "../shared/Badge";
 import { Button } from "../shared/Button";
+import { Pagination } from "../shared/Pagination";
 import { DetailDrawer } from "../shared/DetailDrawer";
 import { FancyDatePicker } from "../shared/FancyDatePicker";
+import { Select } from "../shared/Select";
 
 export type AuditFilterState = {
   search: string;
@@ -75,7 +77,7 @@ export function AuditLogsPanel({
       </div>
 
       <form
-        className="mt-4 grid grid-cols-1 gap-3 rounded-xl border border-[var(--color-border)] bg-slate-50 p-3 sm:grid-cols-2 md:grid-cols-6 2xl:grid-cols-12"
+        className="mt-4 grid grid-cols-1 gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3 sm:grid-cols-2 md:grid-cols-6 2xl:grid-cols-12"
         onSubmit={(event) => {
           event.preventDefault();
           onApplyFilters();
@@ -97,21 +99,22 @@ export function AuditLogsPanel({
 
         <label className="grid min-w-0 gap-1 text-xs text-[var(--color-muted)] md:col-span-2 2xl:col-span-2">
           Action
-          <select
+          <Select
+            ariaLabel="Action"
             value={filters.action}
-            onChange={(event) => onChangeFilters({ action: event.target.value })}
-            className="h-10 rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-text)]"
-          >
-            <option value="">All</option>
-            <option value="create">create</option>
-            <option value="update">update</option>
-            <option value="cancel">cancel</option>
-            <option value="checkin">checkin</option>
-            <option value="checkout">checkout</option>
-            <option value="verify">verify</option>
-            <option value="reject">reject</option>
-            <option value="override_checkin">override_checkin</option>
-          </select>
+            onChange={(next) => onChangeFilters({ action: next })}
+            options={[
+              { value: "", label: "All" },
+              { value: "create", label: "create" },
+              { value: "update", label: "update" },
+              { value: "cancel", label: "cancel" },
+              { value: "checkin", label: "checkin" },
+              { value: "checkout", label: "checkout" },
+              { value: "verify", label: "verify" },
+              { value: "reject", label: "reject" },
+              { value: "override_checkin", label: "override_checkin" },
+            ]}
+          />
         </label>
 
         <div className="min-w-0 md:col-span-2 2xl:col-span-2">
@@ -157,9 +160,9 @@ export function AuditLogsPanel({
       <div className="mt-4 overflow-hidden rounded-xl border border-[var(--color-border)]">
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
-            <thead className="sticky top-0 z-10 bg-slate-50 text-[var(--color-muted)]">
+            <thead className="sticky top-0 z-10 bg-[var(--color-background)] text-[var(--color-muted)]">
               <tr>
-                <th className="sticky left-0 z-10 bg-slate-50 px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.08em]">Time</th>
+                <th className="sticky left-0 z-10 bg-[var(--color-background)] px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.08em]">Time</th>
                 <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.08em]">Actor</th>
                 <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.08em]">Action</th>
                 <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.08em]">Entity</th>
@@ -191,7 +194,7 @@ export function AuditLogsPanel({
                     key={log.audit_id}
                     tabIndex={0}
                     role="button"
-                    className="cursor-pointer border-t border-[var(--color-border)] transition hover:bg-slate-50 focus-visible:bg-slate-50 focus-visible:outline-none"
+                    className="cursor-pointer border-t border-[var(--color-border)] transition hover:bg-[var(--color-background)] focus-visible:bg-[var(--color-background)] focus-visible:outline-none"
                     onClick={() => setSelectedLog(log)}
                     onKeyDown={(event) => {
                       if (event.key === "Enter" || event.key === " ") {
@@ -237,30 +240,15 @@ export function AuditLogsPanel({
         </div>
 
         {data ? (
-          <div className="flex items-center justify-between border-t border-[var(--color-border)] bg-slate-50 px-3 py-3">
-            <p className="text-xs text-[var(--color-muted)]">
-              Page {filters.page} of {totalPages} | {data.count} total
-            </p>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                disabled={filters.page <= 1 || loading}
-                onClick={() => onPageChange(Math.max(1, filters.page - 1))}
-              >
-                Previous
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                disabled={filters.page >= totalPages || loading}
-                onClick={() => onPageChange(Math.min(totalPages, filters.page + 1))}
-              >
-                Next
-              </Button>
-            </div>
+          <div className="border-t border-[var(--color-border)] bg-[var(--color-background)] px-3 py-3">
+            <Pagination
+              page={filters.page}
+              totalPages={totalPages}
+              totalCount={data.count}
+              pageSize={data.limit || 10}
+              disabled={loading}
+              onPageChange={(target) => onPageChange(Math.min(totalPages, Math.max(1, target)))}
+            />
           </div>
         ) : null}
       </div>
@@ -288,7 +276,7 @@ export function AuditLogsPanel({
               <Field label="Data hash" value={selectedLog.data_hash} mono />
               <Field label="Blockchain tx hash" value={selectedLog.blockchain_tx_hash || "--"} mono />
             </div>
-            <div className="rounded-xl border border-[var(--color-border)] bg-slate-50 p-3">
+            <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
               <p className="text-xs font-semibold uppercase tracking-[0.1em] text-[var(--color-muted)]">Metadata</p>
               <pre className="mt-2 overflow-x-auto text-xs text-[var(--color-text)]">
                 {JSON.stringify(selectedLog.metadata || {}, null, 2)}

@@ -3,7 +3,7 @@ import { QrCode, ScanLine, TabletSmartphone } from "lucide-react";
 
 export function GuestVerificationPanel() {
   return (
-    <section className="surface p-4 shadow-[0_10px_24px_rgba(15,23,42,0.08)] transition-[box-shadow,border-color] duration-200 hover:shadow-[0_14px_30px_rgba(15,23,42,0.12)] sm:p-5 lg:p-6">
+    <section className="surface p-5 sm:p-6">
       <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-muted)]">Guest Verification</p>
       <h2 className="mt-2 text-xl font-bold text-[var(--color-text)] lg:text-2xl">Scan guest QR on mobile or tablet</h2>
       <p className="mt-2 text-sm text-[var(--color-muted)]">
@@ -21,14 +21,14 @@ export function GuestVerificationPanel() {
           </Link>
           <Link
             href="/admin/check-in?mode=code"
-            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-white px-4 text-sm font-semibold text-[var(--color-text)] transition hover:bg-slate-50 lg:w-auto lg:min-w-[150px]"
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-white px-4 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] lg:w-auto lg:min-w-[150px]"
           >
             <QrCode className="h-4 w-4" />
             Code fallback
           </Link>
           <Link
             href="/admin/check-in?view=tablet&mode=scan"
-            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-white px-4 text-sm font-semibold text-[var(--color-text)] transition hover:bg-slate-50 lg:w-auto lg:min-w-[140px]"
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-white px-4 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] lg:w-auto lg:min-w-[140px]"
           >
             <TabletSmartphone className="h-4 w-4" />
             Tablet view
