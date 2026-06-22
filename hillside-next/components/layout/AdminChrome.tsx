@@ -319,7 +319,9 @@ export function AdminChrome({ children, initialName = null, initialEmail = null,
             <p className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 text-center text-[1rem] font-semibold tracking-[0.015em] text-white">
               Hillside Hidden <span className="font-medium text-teal-300">Resort</span>
             </p>
-            <div className="absolute right-4 top-1/2 z-10 flex -translate-y-1/2 items-center">
+            {/* inset-y-0 + flex centers vertically WITHOUT a transform — a
+                transformed ancestor would break the bell's fixed mobile panel. */}
+            <div className="absolute inset-y-0 right-4 z-10 flex items-center">
               <NotificationBell light />
             </div>
           </div>
