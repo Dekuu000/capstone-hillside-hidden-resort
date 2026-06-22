@@ -81,6 +81,8 @@ export function ReportsExportButtons({ daily, monthly, fromDate, toDate, fullWid
           "occupancy_rate",
           "unit_booked_value_php",
           "tour_booked_value_php",
+          "promo_discounts_php",
+          "net_booked_value_php",
         ],
         rows: daily.map((row) => [
           row.report_date,
@@ -90,6 +92,8 @@ export function ReportsExportButtons({ daily, monthly, fromDate, toDate, fullWid
           row.occupancy_rate,
           row.unit_booked_value,
           row.tour_booked_value,
+          row.promo_discounts,
+          row.unit_booked_value + row.tour_booked_value - row.promo_discounts,
         ]),
         totals: [
           "Total",
@@ -99,6 +103,8 @@ export function ReportsExportButtons({ daily, monthly, fromDate, toDate, fullWid
           "",
           sum(daily, (r) => r.unit_booked_value),
           sum(daily, (r) => r.tour_booked_value),
+          sum(daily, (r) => r.promo_discounts),
+          sum(daily, (r) => r.unit_booked_value + r.tour_booked_value - r.promo_discounts),
         ],
       }),
     );
@@ -120,6 +126,8 @@ export function ReportsExportButtons({ daily, monthly, fromDate, toDate, fullWid
           "occupancy_rate",
           "unit_booked_value_php",
           "tour_booked_value_php",
+          "promo_discounts_php",
+          "net_booked_value_php",
         ],
         rows: monthly.map((row) => [
           row.report_month,
@@ -129,6 +137,8 @@ export function ReportsExportButtons({ daily, monthly, fromDate, toDate, fullWid
           row.occupancy_rate,
           row.unit_booked_value,
           row.tour_booked_value,
+          row.promo_discounts,
+          row.unit_booked_value + row.tour_booked_value - row.promo_discounts,
         ]),
         totals: [
           "Total",
@@ -138,6 +148,8 @@ export function ReportsExportButtons({ daily, monthly, fromDate, toDate, fullWid
           "",
           sum(monthly, (r) => r.unit_booked_value),
           sum(monthly, (r) => r.tour_booked_value),
+          sum(monthly, (r) => r.promo_discounts),
+          sum(monthly, (r) => r.unit_booked_value + r.tour_booked_value - r.promo_discounts),
         ],
       }),
     );

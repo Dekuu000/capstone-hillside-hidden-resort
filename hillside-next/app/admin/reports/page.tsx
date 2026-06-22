@@ -95,9 +95,11 @@ export default async function AdminReportsPage({
   const netBookings = overview
     ? Math.max(overview.summary.bookings - overview.summary.cancellations, 0)
     : 0;
+  // Rate of cancelled reservations out of ALL reservations (active + cancelled),
+  // so it can never exceed 100%.
   const cancellationRate = overview
-    ? overview.summary.bookings > 0
-      ? overview.summary.cancellations / overview.summary.bookings
+    ? overview.summary.bookings + overview.summary.cancellations > 0
+      ? overview.summary.cancellations / (overview.summary.bookings + overview.summary.cancellations)
       : 0
     : 0;
 
@@ -171,6 +173,20 @@ export default async function AdminReportsPage({
               <p className="text-xs text-[var(--color-muted)]">Tour Booked Value</p>
               <p className="mt-1 text-2xl font-bold text-[var(--color-text)]">{formatPeso(overview.summary.tour_booked_value)}</p>
             </div>
+            <div className="rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-sm">
+              <p className="text-xs text-[var(--color-muted)]">Promo Discounts</p>
+              <p className="mt-1 text-2xl font-bold text-[var(--color-secondary)]">
+                {overview.summary.promo_discounts > 0 ? "−" : ""}{formatPeso(overview.summary.promo_discounts)}
+              </p>
+              <p className="mt-1 text-xs text-[var(--color-muted)]">Given away via promo codes</p>
+            </div>
+            <div className="rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-sm">
+              <p className="text-xs text-[var(--color-muted)]">Net Booked Value</p>
+              <p className="mt-1 text-2xl font-bold text-[var(--color-text)]">
+                {formatPeso(overview.summary.unit_booked_value + overview.summary.tour_booked_value - overview.summary.promo_discounts)}
+              </p>
+              <p className="mt-1 text-xs text-[var(--color-muted)]">Gross booked − discounts</p>
+            </div>
           </div>
 
           <div className="mb-5 flex flex-wrap items-center gap-2 rounded-2xl border border-[var(--color-border)] bg-white px-4 py-3 shadow-sm">
@@ -197,6 +213,7 @@ export default async function AdminReportsPage({
                     <tr>
                       <th className="px-4 py-2 text-left">Date</th>
                       <th className="px-4 py-2 text-center">Bookings</th>
+                      <th className="px-4 py-2 text-right">Discounts</th>
                       <th className="px-4 py-2 text-right">Cash</th>
                     </tr>
                   </thead>
@@ -205,6 +222,9 @@ export default async function AdminReportsPage({
                       <tr key={row.report_date} className="border-t border-[var(--color-border)] hover:bg-[var(--color-background)]">
                         <td className="px-4 py-2">{formatDisplayDate(row.report_date)}</td>
                         <td className="px-4 py-2 text-center">{row.bookings}</td>
+                        <td className="px-4 py-2 text-right text-[var(--color-secondary)]">
+                          {row.promo_discounts > 0 ? `−${formatPeso(row.promo_discounts)}` : "—"}
+                        </td>
                         <td className="px-4 py-2 text-right font-semibold">{formatPeso(row.cash_collected)}</td>
                       </tr>
                     ))}
@@ -224,6 +244,7 @@ export default async function AdminReportsPage({
                     <tr>
                       <th className="px-4 py-2 text-left">Month</th>
                       <th className="px-4 py-2 text-center">Bookings</th>
+                      <th className="px-4 py-2 text-right">Discounts</th>
                       <th className="px-4 py-2 text-right">Cash</th>
                     </tr>
                   </thead>
@@ -232,6 +253,9 @@ export default async function AdminReportsPage({
                       <tr key={row.report_month} className="border-t border-[var(--color-border)] hover:bg-[var(--color-background)]">
                         <td className="px-4 py-2">{formatDisplayMonth(row.report_month)}</td>
                         <td className="px-4 py-2 text-center">{row.bookings}</td>
+                        <td className="px-4 py-2 text-right text-[var(--color-secondary)]">
+                          {row.promo_discounts > 0 ? `−${formatPeso(row.promo_discounts)}` : "—"}
+                        </td>
                         <td className="px-4 py-2 text-right font-semibold">{formatPeso(row.cash_collected)}</td>
                       </tr>
                     ))}

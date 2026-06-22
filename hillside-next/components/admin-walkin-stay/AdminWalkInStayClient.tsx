@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { AlertCircle, CheckCircle2, Loader2, Phone, User, Wallet } from "lucide-react";
+import { AlertCircle, CheckCircle2, Loader2, Phone, Tag, User, Wallet } from "lucide-react";
 import type { AvailableUnitsResponse, ReservationCreateResponse, ReservationListItem } from "../../../packages/shared/src/types";
 import { availableUnitsResponseSchema, reservationCreateResponseSchema, reservationListItemSchema } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
@@ -29,6 +29,7 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
   const [guestPhone, setGuestPhone] = useState("");
   const [notes, setNotes] = useState("");
   const [expectedPayNow, setExpectedPayNow] = useState<string>("");
+  const [promoCode, setPromoCode] = useState("");
 
   const [unitsLoading, setUnitsLoading] = useState(false);
   const [unitsError, setUnitsError] = useState<string | null>(null);
@@ -147,6 +148,7 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
         guest_phone: guestPhone.trim() || null,
         notes: notes.trim() || null,
         expected_pay_now: expected,
+        promo_code: promoCode.trim() || null,
         reservation_source: "walk_in" as const,
       };
       const summarySnapshot = {
@@ -180,6 +182,7 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
         setGuestPhone("");
         setNotes("");
         setExpectedPayNow("");
+        setPromoCode("");
         showToast({
           type: "info",
           title: "Walk-in stay saved offline",
@@ -196,6 +199,7 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
       setGuestPhone("");
       setNotes("");
       setExpectedPayNow("");
+      setPromoCode("");
       showToast({
         type: "success",
         title: `Walk-in stay ${response.data.reservation_code} created`,
@@ -549,6 +553,21 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
                   className="w-full rounded-xl border border-[var(--color-border)] bg-white py-2 pl-9 pr-3 text-sm text-[var(--color-text)] outline-none ring-[var(--color-secondary)]/20 transition focus:ring-2"
                 />
               </div>
+            </label>
+
+            <label className="grid gap-1 text-sm text-[var(--color-text)]">
+              Promo code (optional)
+              <div className="relative">
+                <Tag className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-muted)]" />
+                <input
+                  type="text"
+                  value={promoCode}
+                  onChange={(event) => setPromoCode(event.target.value.toUpperCase())}
+                  placeholder="e.g. SUMMER20"
+                  className="w-full rounded-xl border border-[var(--color-border)] bg-white py-2 pl-9 pr-3 text-sm font-semibold uppercase tracking-wide text-[var(--color-text)] outline-none ring-[var(--color-secondary)]/20 transition focus:ring-2"
+                />
+              </div>
+              <span className="text-xs text-[var(--color-muted)]">Applied and validated when the booking is created.</span>
             </label>
 
             <label className="grid gap-1 text-sm text-[var(--color-text)]">

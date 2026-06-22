@@ -880,6 +880,12 @@ export function AdminReservationsClient({
 
       <ReservationDetailDrawer
         role={role}
+        token={token}
+        onStatusChanged={() => {
+          void fetchList();
+          setDetails(null);
+          setDetailsError(null);
+        }}
         open={Boolean(detailsLoading || details || detailsError)}
         loading={detailsLoading}
         error={detailsError}

@@ -5,6 +5,8 @@ import { AlertCircle, Check, ChevronDown, Copy, ExternalLink, ShieldCheck, X } f
 import { useEffect, useMemo, useState } from "react";
 import type { AdminPaymentItem, ReservationListItem } from "../../../packages/shared/src/types";
 import { roleAtLeast } from "../../../packages/shared/src/types";
+import { apiFetch } from "../../lib/apiClient";
+import { getApiErrorMessage } from "../../lib/apiError";
 import { buildTxExplorerUrl } from "../../lib/chainExplorer";
 import { formatDateTime, formatDateWithYear } from "../../lib/dateDisplay";
 import { todayPlusLocalIsoDate } from "../../lib/dateIso";
@@ -28,6 +30,8 @@ type ReservationDetailDrawerProps = {
   onOpenProof: (payment: AdminPaymentItem) => void;
   onVerifyPayment: (paymentId: string) => void;
   role?: string | null;
+  token?: string | null;
+  onStatusChanged?: () => void;
 };
 
 type ReadinessState =
@@ -97,8 +101,43 @@ export function ReservationDetailDrawer({
   onOpenProof,
   onVerifyPayment,
   role = null,
+  token = null,
+  onStatusChanged,
 }: ReservationDetailDrawerProps) {
   const [ledgerOpen, setLedgerOpen] = useState(false);
+  const [noShowBusy, setNoShowBusy] = useState(false);
+  const [noShowError, setNoShowError] = useState<string | null>(null);
+
+  // Staff can flag a no-show on a booking that's confirmed/awaiting verification
+  // and was never checked in. Forfeits the deposit (server-side).
+  const canMarkNoShow = Boolean(
+    token && reservation && ["confirmed", "for_verification"].includes(reservation.status),
+  );
+
+  const handleMarkNoShow = async () => {
+    if (!reservation || !token) return;
+    if (
+      !window.confirm(
+        "Mark this booking as a no-show? The deposit will be forfeited per the booking policy.",
+      )
+    ) {
+      return;
+    }
+    setNoShowBusy(true);
+    setNoShowError(null);
+    try {
+      await apiFetch(
+        `/v2/reservations/${encodeURIComponent(reservation.reservation_id)}/status`,
+        { method: "PATCH", body: JSON.stringify({ status: "no_show" }) },
+        token,
+      );
+      onStatusChanged?.();
+    } catch (unknownError) {
+      setNoShowError(getApiErrorMessage(unknownError, "Couldn't mark this booking as a no-show."));
+    } finally {
+      setNoShowBusy(false);
+    }
+  };
   // Blockchain/ledger internals are a System Admin tool — hidden from Front Desk and Manager.
   const canSeeLedger = roleAtLeast(role, "super_admin");
   const [copiedField, setCopiedField] = useState<
@@ -602,7 +641,20 @@ export function ReservationDetailDrawer({
                     </span>
                   ) : null}
                 </div>
-                <div className="flex flex-wrap justify-end gap-2">
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                {noShowError ? (
+                  <span className="mr-auto text-[11px] font-semibold text-[var(--color-error)]">{noShowError}</span>
+                ) : null}
+                {canMarkNoShow ? (
+                  <button
+                    type="button"
+                    onClick={() => void handleMarkNoShow()}
+                    disabled={noShowBusy}
+                    className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800 transition hover:bg-amber-100 disabled:opacity-50"
+                  >
+                    {noShowBusy ? "Marking…" : "Mark as no-show"}
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   onClick={onClose}

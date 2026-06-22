@@ -46,6 +46,9 @@ export function ReportDocument({
   const netBookings = Math.max(summary.bookings - summary.cancellations, 0);
   const reportRef = `RPT-${from_date.replace(/-/g, "")}-${to_date.replace(/-/g, "")}`;
   const dailyCashTotal = daily.reduce((sum, row) => sum + (row.cash_collected || 0), 0);
+  const dailyDiscountTotal = daily.reduce((sum, row) => sum + (row.promo_discounts || 0), 0);
+  const grossBooked = summary.unit_booked_value + summary.tour_booked_value;
+  const netBooked = grossBooked - summary.promo_discounts;
 
   return (
     <div className="bg-white text-black">
@@ -88,6 +91,9 @@ export function ReportDocument({
             <LeaderLine label="Occupancy rate" value={pct(summary.occupancy_rate)} />
             <LeaderLine label="Unit booked value" value={formatPeso(summary.unit_booked_value)} />
             <LeaderLine label="Tour booked value" value={formatPeso(summary.tour_booked_value)} />
+            <LeaderLine label="Gross booked value" value={formatPeso(grossBooked)} />
+            <LeaderLine label="Promo discounts" value={`${summary.promo_discounts > 0 ? "−" : ""}${formatPeso(summary.promo_discounts)}`} />
+            <LeaderLine label="Net booked value" value={formatPeso(netBooked)} strong />
           </div>
           <div className="mt-1 border-t-2 border-double border-black pt-1">
             <LeaderLine label="TOTAL CASH COLLECTED" value={formatPeso(summary.cash_collected)} strong />
@@ -105,6 +111,7 @@ export function ReportDocument({
                   <th className="py-1 px-2 text-right font-semibold">Bookings</th>
                   <th className="py-1 px-2 text-right font-semibold">Cancel</th>
                   <th className="py-1 px-2 text-right font-semibold">Occupancy</th>
+                  <th className="py-1 px-2 text-right font-semibold">Discounts</th>
                   <th className="py-1 pl-2 text-right font-semibold">Cash</th>
                 </tr>
               </thead>
@@ -115,6 +122,7 @@ export function ReportDocument({
                     <td className="py-1 px-2 text-right tabular-nums">{row.bookings}</td>
                     <td className="py-1 px-2 text-right tabular-nums">{row.cancellations}</td>
                     <td className="py-1 px-2 text-right tabular-nums">{pct(row.occupancy_rate)}</td>
+                    <td className="py-1 px-2 text-right tabular-nums">{row.promo_discounts > 0 ? `−${formatPeso(row.promo_discounts)}` : "—"}</td>
                     <td className="py-1 pl-2 text-right tabular-nums">{formatPeso(row.cash_collected)}</td>
                   </tr>
                 ))}
@@ -122,6 +130,7 @@ export function ReportDocument({
               <tfoot>
                 <tr className="border-t-2 border-black font-bold">
                   <td className="py-1 pr-2" colSpan={4}>Total</td>
+                  <td className="py-1 px-2 text-right tabular-nums">{dailyDiscountTotal > 0 ? `−${formatPeso(dailyDiscountTotal)}` : "—"}</td>
                   <td className="py-1 pl-2 text-right tabular-nums">{formatPeso(dailyCashTotal)}</td>
                 </tr>
               </tfoot>

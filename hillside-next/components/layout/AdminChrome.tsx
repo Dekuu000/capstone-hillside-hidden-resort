@@ -7,19 +7,21 @@ import {
   BarChart3,
   BedDouble,
   CalendarCheck,
+  ChevronLeft,
+  ChevronRight,
   ConciergeBell,
   CreditCard,
   LayoutDashboard,
   LogOut,
   Menu,
-  PanelLeftClose,
-  PanelLeftOpen,
   RefreshCcw,
   ScanLine,
   ShieldCheck,
   Star,
+  Tag,
   TrendingUp,
   UserPlus,
+  Users,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -51,6 +53,8 @@ const navigation: Array<{ name: string; href: string; tier: NavTier; icon: Lucid
   { name: "Services", href: "/admin/services", tier: "operations", icon: ConciergeBell },
   { name: "Reports", href: "/admin/reports", tier: "management", icon: BarChart3 },
   { name: "Reviews", href: "/admin/reviews", tier: "management", icon: Star },
+  { name: "Promos", href: "/admin/promos", tier: "management", icon: Tag },
+  { name: "Team", href: "/admin/team", tier: "management", icon: Users },
   // Technical tools — System Admin only, with plain-language labels.
   { name: "Records & Security", href: "/admin/blockchain", tier: "technical", icon: ShieldCheck },
   { name: "Offline & Sync", href: "/admin/sync", tier: "technical", icon: RefreshCcw },
@@ -68,6 +72,8 @@ const noPrefetchRoutes = new Set([
   "/admin/blockchain",
   "/admin/sync",
   "/admin/units",
+  "/admin/team",
+  "/admin/promos",
 ]);
 
 export function AdminChrome({ children, initialName = null, initialEmail = null, role = null }: AdminChromeProps) {
@@ -162,6 +168,19 @@ export function AdminChrome({ children, initialName = null, initialEmail = null,
           sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         } ${collapsed ? "lg:w-[76px]" : "lg:w-64"}`}
       >
+        {/* Edge toggle — sits on the seam between the rail and the content,
+            aligned with the header row. Desktop only; mobile uses the hamburger. */}
+        <button
+          type="button"
+          onClick={toggleCollapsed}
+          title={collapsed ? "Expand sidebar ([)" : "Collapse sidebar ([)"}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-pressed={collapsed}
+          className="absolute -right-3.5 top-9 z-50 hidden h-7 w-7 items-center justify-center rounded-full border border-[var(--color-border)] bg-white text-[var(--color-primary)] shadow-[var(--shadow-md)] transition hover:scale-105 hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_40%,white)] active:scale-95 lg:flex"
+        >
+          {collapsed ? <ChevronRight className="h-4 w-4" aria-hidden="true" /> : <ChevronLeft className="h-4 w-4" aria-hidden="true" />}
+        </button>
+
         <div className="flex h-full flex-col">
           <div className={`flex items-center gap-2 border-b border-white/15 px-6 py-7 ${collapsed ? "lg:justify-center lg:px-2" : ""}`}>
             <HillsideLogo
@@ -195,22 +214,6 @@ export function AdminChrome({ children, initialName = null, initialEmail = null,
               );
             })}
           </nav>
-
-          <div className="hidden border-t border-white/15 px-3 py-2 lg:block">
-            <button
-              type="button"
-              onClick={toggleCollapsed}
-              title={collapsed ? "Expand sidebar ([)" : "Collapse sidebar ([)"}
-              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-              aria-pressed={collapsed}
-              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/80 transition hover:bg-white/10 hover:text-white ${
-                collapsed ? "justify-center px-0" : ""
-              }`}
-            >
-              {collapsed ? <PanelLeftOpen className="h-5 w-5 shrink-0" aria-hidden="true" /> : <PanelLeftClose className="h-5 w-5 shrink-0" aria-hidden="true" />}
-              <span className={collapsed ? "sr-only" : ""}>Collapse</span>
-            </button>
-          </div>
 
           <div className={`border-t border-white/15 px-6 py-5 ${collapsed ? "lg:px-2" : ""}`}>
             <div className={`mb-4 flex items-center gap-3 ${collapsed ? "lg:justify-center" : ""}`}>
