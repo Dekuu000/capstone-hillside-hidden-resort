@@ -72,7 +72,7 @@ export function ResortSnapshotPanel({
         <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-4 text-sm text-red-700">{error}</div>
       ) : null}
 
-      <div className={`mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 ${canSeeTechnical ? "xl:grid-cols-4" : "xl:grid-cols-3"}`}>
+      <div className={`mt-5 grid grid-cols-2 gap-2.5 sm:gap-3 ${canSeeTechnical ? "xl:grid-cols-4" : "xl:grid-cols-3"}`}>
         <article className="group h-full min-h-[92px] rounded-2xl border border-[var(--color-border)] bg-white p-3.5 transition-colors duration-200 hover:border-[color:color-mix(in_srgb,var(--color-secondary)_35%,white)]">
           <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">
             <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
@@ -80,7 +80,7 @@ export function ResortSnapshotPanel({
             </span>
             Cash revenue · 7d
           </p>
-          <p className="mt-2 text-2xl font-bold tracking-[-0.01em] text-[var(--color-text)]">{snapshot ? formatPeso(snapshot.revenue.fiat_php_7d) : "--"}</p>
+          <p className="mt-2 text-xl font-bold tracking-[-0.01em] text-[var(--color-text)] sm:text-2xl">{snapshot ? formatPeso(snapshot.revenue.fiat_php_7d) : "--"}</p>
           <p className="mt-1 text-xs text-[var(--color-muted)]">Settled in 7d ({compactPeso})</p>
         </article>
 
@@ -91,7 +91,7 @@ export function ResortSnapshotPanel({
             </span>
             Occupancy now
           </p>
-          <p className="mt-2 text-2xl font-bold tracking-[-0.01em] text-[var(--color-text)]">
+          <p className="mt-2 text-xl font-bold tracking-[-0.01em] text-[var(--color-text)] sm:text-2xl">
             {occupancyPercent !== null ? `${occupancyPercent}%` : "--"}
           </p>
           <p className="mt-1 text-xs text-[var(--color-muted)]">
@@ -109,7 +109,7 @@ export function ResortSnapshotPanel({
               </span>
               Crypto revenue
             </p>
-            <p className="mt-2 text-2xl font-bold tracking-[-0.01em] text-[var(--color-text)]">
+            <p className="mt-2 text-xl font-bold tracking-[-0.01em] text-[var(--color-text)] sm:text-2xl">
               {snapshot ? `${snapshot.revenue.crypto_native_total.toFixed(4)} ${snapshot.revenue.crypto_unit}` : "--"}
             </p>
             <p className="mt-1 text-xs text-[var(--color-muted)]">
@@ -125,7 +125,7 @@ export function ResortSnapshotPanel({
             </span>
             AI demand · 7d
           </p>
-          <p className="mt-2 text-2xl font-bold tracking-[-0.01em] text-[var(--color-text)]">
+          <p className="mt-2 text-xl font-bold tracking-[-0.01em] text-[var(--color-text)] sm:text-2xl">
             {snapshot ? `${snapshot.ai_demand_7d.avg_occupancy_pct}%` : "--"}
           </p>
           <p className="mt-1 text-xs text-[var(--color-muted)]">
@@ -137,14 +137,14 @@ export function ResortSnapshotPanel({
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-[var(--color-border)] bg-white p-3 text-xs text-[var(--color-muted)]">
-        <span className="inline-flex items-center rounded-full border border-[var(--color-border)] bg-[var(--color-background)] px-2.5 py-1 font-semibold text-[var(--color-text)]">
+        <span className="inline-flex items-center border border-[var(--color-border)] bg-[var(--color-background)] px-2.5 py-1 font-semibold text-[var(--color-text)]">
           Active units: {snapshot?.occupancy.active_units ?? "--"}
         </span>
-        <span className="inline-flex items-center rounded-full border border-[var(--color-border)] bg-[var(--color-background)] px-2.5 py-1 font-semibold text-[var(--color-text)]">
+        <span className="inline-flex items-center border border-[var(--color-border)] bg-[var(--color-background)] px-2.5 py-1 font-semibold text-[var(--color-text)]">
           Vacant now: {remainingCleanable ?? "--"}
         </span>
         {canSeeTechnical ? (
-          <span className="inline-flex items-center rounded-full border border-[var(--color-border)] bg-[var(--color-background)] px-2.5 py-1 font-semibold text-[var(--color-text)]">
+          <span className="inline-flex items-center border border-[var(--color-border)] bg-[var(--color-background)] px-2.5 py-1 font-semibold text-[var(--color-text)]">
             Chain: {snapshot?.revenue.crypto_chain_key ?? "sepolia"}
           </span>
         ) : null}

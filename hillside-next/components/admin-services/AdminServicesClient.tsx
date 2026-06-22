@@ -329,7 +329,7 @@ export function AdminServicesClient({ accessToken }: Props) {
               </p>
             ) : (
               // Valid transitions only: new → Start/Cancel, in_progress → Complete/Cancel.
-              <div className="flex items-center gap-2 sm:justify-end">
+              <div className="flex items-center gap-2 sm:justify-center">
                 {activeRow.status === "new" ? (
                   <button
                     type="button"
