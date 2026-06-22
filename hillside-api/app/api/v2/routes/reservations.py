@@ -1066,7 +1066,7 @@ def create_walk_in_stay_reservation(
 
 @router.get("", response_model=ReservationListResponse)
 def get_reservations(
-    limit: int = Query(default=10, ge=1, le=500),
+    limit: int = Query(default=10, ge=1, le=1000),
     offset: int = Query(default=0, ge=0),
     status_filter: str | None = Query(default=None, alias="status"),
     source_filter: str | None = Query(default=None, alias="source", pattern="^(online|walk_in)$"),
