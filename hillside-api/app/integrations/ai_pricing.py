@@ -4,8 +4,8 @@ from collections import deque
 from datetime import date, timedelta
 from datetime import datetime, timezone
 from math import ceil
-from threading import Lock
-from time import perf_counter, sleep
+from threading import Lock, Thread
+from time import monotonic, perf_counter, sleep
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -275,6 +275,43 @@ def _extract_recommendation(*, reservation_id: str, payload: dict[str, Any]) -> 
     )
 
 
+_warm_lock = Lock()
+_last_warm_monotonic: float | None = None
+_WARM_MIN_INTERVAL_SEC = 30.0
+
+
+def warm_ai_service() -> bool:
+    """Fire a non-blocking ping to wake a (possibly spun-down) AI service.
+
+    Returns True if a warm-up was triggered or is already recent, False if no
+    AI service is configured. The actual HTTP request runs in a daemon thread
+    with a generous timeout, so the caller never blocks on a free-tier cold
+    start (which can take ~50s). Calls within a short window are coalesced so
+    repeated page opens don't spawn a pile of threads.
+    """
+    if not settings.ai_service_base_url:
+        return False
+
+    global _last_warm_monotonic
+    now = monotonic()
+    with _warm_lock:
+        if _last_warm_monotonic is not None and (now - _last_warm_monotonic) < _WARM_MIN_INTERVAL_SEC:
+            return True  # a warm-up is already in flight / recent
+        _last_warm_monotonic = now
+
+    endpoint = f"{settings.ai_service_base_url.rstrip('/')}/health"
+
+    def _ping() -> None:
+        try:
+            with urlopen(endpoint, timeout=70) as response:  # noqa: S310
+                response.read()
+        except Exception as exc:  # noqa: BLE001 - best-effort warm-up, never raises
+            logger.info("AI warm-up ping finished without success (%s).", exc)
+
+    Thread(target=_ping, name="ai-warmup", daemon=True).start()
+    return True
+
+
 def get_pricing_recommendation(
     *,
     reservation_id: str,
@@ -298,7 +335,7 @@ def get_pricing_recommendation(
 
     endpoint = f"{settings.ai_service_base_url.rstrip('/')}/v1/pricing/recommendation"
     # Respect env-configured timeout budget (ms) while keeping a hard safety cap.
-    timeout_sec = max(0.05, min(settings.ai_inference_timeout_ms, 10_000) / 1000)
+    timeout_sec = max(0.05, min(settings.ai_inference_timeout_ms, 15_000) / 1000)
     body = json.dumps(
         {
             "reservation_id": reservation_id,
@@ -415,7 +452,7 @@ def get_occupancy_forecast(
         return fallback
 
     endpoint = f"{settings.ai_service_base_url.rstrip('/')}/v1/occupancy/forecast"
-    timeout_sec = max(0.05, min(settings.ai_inference_timeout_ms, 10_000) / 1000)
+    timeout_sec = max(0.05, min(settings.ai_inference_timeout_ms, 15_000) / 1000)
     body = json.dumps(
         {
             "start_date": start_date,
@@ -553,7 +590,7 @@ def get_concierge_recommendation(
         return output
 
     endpoint = f"{settings.ai_service_base_url.rstrip('/')}/v1/concierge/recommendation"
-    timeout_sec = max(0.05, min(settings.ai_inference_timeout_ms, 10_000) / 1000)
+    timeout_sec = max(0.05, min(settings.ai_inference_timeout_ms, 15_000) / 1000)
     body = json.dumps(
         {
             "segment_key": segment_key,

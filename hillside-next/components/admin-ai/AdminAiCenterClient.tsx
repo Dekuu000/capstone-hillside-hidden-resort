@@ -152,6 +152,7 @@ export function AdminAiCenterClient({ token }: AdminAiCenterClientProps) {
   const [recommendation, setRecommendation] = useState<PricingRecommendation | null>(null);
   const [recommendationLoading, setRecommendationLoading] = useState(false);
   const [recommendationError, setRecommendationError] = useState<string | null>(null);
+  const [recommendationWarming, setRecommendationWarming] = useState(false);
   const [pricingActionMessage, setPricingActionMessage] = useState<string | null>(null);
   const [pricingAppliedAt, setPricingAppliedAt] = useState<string | null>(null);
   const [units, setUnits] = useState<UnitItem[]>([]);
@@ -177,6 +178,15 @@ export function AdminAiCenterClient({ token }: AdminAiCenterClientProps) {
     return () => {
       cancelled = true;
     };
+  }, [token]);
+
+  // Pre-warm the AI service on page open. A hosted (free-tier) model spins down
+  // when idle and can take ~50s to wake; firing this now means it's usually
+  // ready by the time the admin clicks "Generate recommendation". Fire-and-forget.
+  useEffect(() => {
+    void apiFetch("/v2/ai/warmup", { method: "POST" }, token).catch(() => {
+      /* best-effort warm-up; ignore failures */
+    });
   }, [token]);
 
   const toggleUnit = (unitId: string) =>
@@ -299,42 +309,67 @@ export function AdminAiCenterClient({ token }: AdminAiCenterClientProps) {
     }
   };
 
+  const fetchRecommendation = async () => {
+    const nextDay = new Date();
+    nextDay.setDate(nextDay.getDate() + 1);
+    const dayAfter = new Date();
+    dayAfter.setDate(dayAfter.getDate() + 3);
+    const checkIn = nextDay.toISOString().slice(0, 10);
+    const checkOut = dayAfter.toISOString().slice(0, 10);
+
+    return apiFetch<PricingRecommendation>(
+      "/v2/ai/pricing/recommendation",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          reservation_id: "preview",
+          check_in_date: checkIn,
+          check_out_date: checkOut,
+          total_amount: 4200,
+          party_size: 3,
+          unit_count: 1,
+          is_tour: false,
+          occupancy_context: {},
+        }),
+      },
+      token,
+      pricingRecommendationSchema,
+    );
+  };
+
+  // The API never errors on this call — it returns a rule-based "fallback"
+  // recommendation when the live model is unreachable (e.g. cold-starting).
+  const isFallbackRecommendation = (rec: PricingRecommendation) =>
+    rec.explanations.some((item) => item.toLowerCase().includes("fallback"));
+
   const generatePricingRecommendation = async () => {
     setRecommendationLoading(true);
     setRecommendationError(null);
+    setRecommendationWarming(false);
     setPricingActionMessage(null);
     setPricingAppliedAt(null);
     try {
-      const nextDay = new Date();
-      nextDay.setDate(nextDay.getDate() + 1);
-      const dayAfter = new Date();
-      dayAfter.setDate(dayAfter.getDate() + 3);
-      const checkIn = nextDay.toISOString().slice(0, 10);
-      const checkOut = dayAfter.toISOString().slice(0, 10);
+      let data = await fetchRecommendation();
 
-      const data = await apiFetch<PricingRecommendation>(
-        "/v2/ai/pricing/recommendation",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            reservation_id: "preview",
-            check_in_date: checkIn,
-            check_out_date: checkOut,
-            total_amount: 4200,
-            party_size: 3,
-            unit_count: 1,
-            is_tour: false,
-            occupancy_context: {},
-          }),
-        },
-        token,
-        pricingRecommendationSchema,
-      );
+      // If the live model was cold and we got a fallback, nudge it awake and
+      // retry once after a short pause so the first click usually lands "Live AI".
+      if (isFallbackRecommendation(data)) {
+        setRecommendationWarming(true);
+        void apiFetch("/v2/ai/warmup", { method: "POST" }, token).catch(() => {});
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+        try {
+          data = await fetchRecommendation();
+        } finally {
+          setRecommendationWarming(false);
+        }
+      }
+
       setRecommendation(data);
       setLastUpdated(new Date().toISOString());
     } catch (unknownError) {
       setRecommendationError(getApiErrorMessage(unknownError, "Failed to generate recommendation."));
     } finally {
+      setRecommendationWarming(false);
       setRecommendationLoading(false);
     }
   };
@@ -555,6 +590,7 @@ export function AdminAiCenterClient({ token }: AdminAiCenterClientProps) {
                 : undefined
             }
             actions={
+              <div className="space-y-2">
               <div className="flex flex-wrap gap-2">
                 <Button
                   variant="secondary"
@@ -580,6 +616,13 @@ export function AdminAiCenterClient({ token }: AdminAiCenterClientProps) {
                     ? `Apply ${Number(recommendation.suggested_multiplier).toFixed(2)}× to ${selectedUnitIds.length} unit${selectedUnitIds.length === 1 ? "" : "s"}`
                     : "Log recommendation"}
                 </Button>
+              </div>
+                {recommendationWarming ? (
+                  <p className="flex items-center gap-2 text-xs text-[var(--color-muted)]">
+                    <RefreshCcw className="h-3.5 w-3.5 animate-spin" />
+                    Warming up the AI service… first use after idle can take up to a minute. Retrying automatically.
+                  </p>
+                ) : null}
               </div>
             }
           />

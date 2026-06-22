@@ -95,7 +95,11 @@ class Settings(BaseSettings):
     escrow_signer_private_key: str = ""
 
     ai_service_base_url: str = ""
-    ai_inference_timeout_ms: int = 1500
+    # Inference budget for a warm remote call. Kept generous enough for a
+    # network round-trip to a hosted AI service (e.g. Render), while still
+    # bounded so a cold/unreachable service falls back quickly. Cold starts
+    # are handled by the warm-up ping + client retry, not by this timeout.
+    ai_inference_timeout_ms: int = 6000
     ai_require_prophet_forecast: bool = False
     checkin_welcome_suggestions_limit: int = 2
     payment_webhook_secret: str = ""
