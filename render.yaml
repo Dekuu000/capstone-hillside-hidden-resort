@@ -21,3 +21,22 @@ services:
         value: sepolia
       - key: CHAIN_ALLOWED_KEYS
         value: sepolia,amoy
+
+  # Optional AI microservice (Prophet / scikit-learn pricing & forecasting).
+  # After this deploys, set hillside-api's AI_SERVICE_BASE_URL (in the Render
+  # dashboard) to this service's URL — e.g. https://hillside-ai.onrender.com —
+  # to use the live model instead of the rule-based fallback.
+  # Note: on the free plan it spins down when idle (cold start), and the API
+  # falls back gracefully when it's unreachable, so this is safe to leave off.
+  - type: web
+    name: hillside-ai
+    runtime: python
+    rootDir: hillside-ai
+    plan: free
+    autoDeploy: true
+    buildCommand: pip install .
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
