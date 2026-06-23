@@ -276,6 +276,12 @@ class ServiceImagesUpdateRequest(BaseModel):
     image_thumb_urls: list[str] = []
 
 
+class ServiceUpdateRequest(BaseModel):
+    adult_rate: float | None = None
+    kid_rate: float | None = None
+    status: Literal["active", "inactive"] | None = None
+
+
 class UnitItem(BaseModel):
     unit_id: str
     name: str

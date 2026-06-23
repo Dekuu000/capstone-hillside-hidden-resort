@@ -19,7 +19,6 @@ import {
   ShieldCheck,
   Star,
   Tag,
-  TreePalm,
   TrendingUp,
   UserPlus,
   Users,
@@ -47,13 +46,12 @@ const COLLAPSE_STORAGE_KEY = "hh-admin-nav-collapsed";
 // Manager adds management; System Admin adds the technical tools.
 const navigation: Array<{ name: string; href: string; tier: NavTier; icon: LucideIcon }> = [
   { name: "Dashboard", href: "/admin", tier: "operations", icon: LayoutDashboard },
-  { name: "Units", href: "/admin/units", tier: "management", icon: BedDouble },
+  { name: "Stays & Tours", href: "/admin/units", tier: "management", icon: BedDouble },
   { name: "Reservations", href: "/admin/reservations", tier: "management", icon: CalendarCheck },
   { name: "Walk-in", href: "/admin/walk-in", tier: "operations", icon: UserPlus },
   { name: "Check-in", href: "/admin/check-in", tier: "operations", icon: ScanLine },
   { name: "Payments", href: "/admin/payments", tier: "management", icon: CreditCard },
   { name: "Services", href: "/admin/services", tier: "operations", icon: ConciergeBell },
-  { name: "Tours", href: "/admin/tours", tier: "management", icon: TreePalm },
   { name: "Reports", href: "/admin/reports", tier: "management", icon: BarChart3 },
   { name: "Reviews", href: "/admin/reviews", tier: "management", icon: Star },
   { name: "Promos", href: "/admin/promos", tier: "management", icon: Tag },

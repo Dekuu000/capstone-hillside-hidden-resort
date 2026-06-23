@@ -2394,6 +2394,26 @@ def update_service_images(
         raise _runtime_error_from_exception(exc) from exc
 
 
+def update_service(*, service_id: str, payload: dict[str, Any]) -> dict[str, Any] | None:
+    """Admin: update editable tour fields (rates, status). Returns the fresh row."""
+    try:
+        if not payload:
+            return None
+        client = get_supabase_client()
+        client.table("services").update(payload).eq("service_id", service_id).execute()
+        response = (
+            client.table("services")
+            .select(SERVICE_SELECT)
+            .eq("service_id", service_id)
+            .limit(1)
+            .execute()
+        )
+        rows = response.data or []
+        return rows[0] if rows else None
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
 def list_active_resort_services(*, category: str | None = None) -> list[dict[str, Any]]:
     try:
         client = get_supabase_client()

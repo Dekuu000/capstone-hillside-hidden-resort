@@ -9,6 +9,7 @@ from app.integrations.supabase_client import (
     list_resort_service_requests,
     notify_guest_service_request,
     update_resort_service_request_status,
+    update_service,
     update_service_images,
 )
 from app.schemas.common import (
@@ -18,10 +19,21 @@ from app.schemas.common import (
     ServiceImagesUpdateRequest,
     ServiceItem,
     ServiceListResponse,
+    ServiceUpdateRequest,
 )
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+
+def _invalidate_public_services_cache() -> None:
+    """Clear the public catalog cache so tour edits show on guest pages right away."""
+    try:
+        from app.api.v2.routes.catalog import _CACHE as catalog_cache
+
+        catalog_cache.clear()
+    except Exception:  # noqa: BLE001
+        logger.debug("Could not clear catalog cache after tour update", exc_info=True)
 
 
 @router.get("/requests", response_model=ResortServiceRequestListResponse)
@@ -107,14 +119,38 @@ def patch_service_images(
     if not row:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tour not found.")
 
-    # Invalidate the public services cache so the new photos show right away.
+    _invalidate_public_services_cache()
+    return row
+
+
+@router.patch("/catalog/{service_id}", response_model=ServiceItem)
+def patch_service_details(
+    service_id: str,
+    payload: ServiceUpdateRequest,
+    _auth: AuthContext = Depends(require_admin),
+):
+    """Admin: update a tour's rates and visibility (status)."""
+    updates = payload.model_dump(exclude_unset=True)
+    if not updates:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No tour fields provided for update.",
+        )
     try:
-        from app.api.v2.routes.catalog import _CACHE as catalog_cache
+        row = update_service(service_id=service_id, payload=updates)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Unexpected error in PATCH /v2/admin/services/catalog/%s", service_id)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Unexpected error while updating tour: {exc}",
+        ) from exc
 
-        catalog_cache.clear()
-    except Exception:  # noqa: BLE001
-        logger.debug("Could not clear catalog cache after tour image update", exc_info=True)
+    if not row:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tour not found.")
 
+    _invalidate_public_services_cache()
     return row
 
 

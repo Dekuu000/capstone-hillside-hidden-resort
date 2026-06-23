@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
-import { Clock, ImageOff, Moon, Sun, Trash2 } from "lucide-react";
+import { Clock, Eye, EyeOff, ImageOff, Loader2, Moon, Sun, Trash2 } from "lucide-react";
 import type { ServiceItem } from "../../../packages/shared/src/types";
 import { serviceItemSchema, serviceListResponseSchema } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
@@ -31,6 +31,20 @@ export function AdminToursClient({ accessToken }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
+  // Per-tour rate inputs (kept as strings so the fields can be cleared/typed).
+  const [rateInputs, setRateInputs] = useState<Record<string, { adult: string; kid: string }>>({});
+  const [savingDetailsId, setSavingDetailsId] = useState<string | null>(null);
+
+  const seedRateInputs = useCallback((items: ServiceItem[]) => {
+    setRateInputs(
+      Object.fromEntries(
+        items.map((t) => [
+          t.service_id,
+          { adult: String(t.adult_rate ?? ""), kid: String(t.kid_rate ?? "") },
+        ]),
+      ),
+    );
+  }, []);
 
   const loadTours = useCallback(async () => {
     if (!accessToken) return;
@@ -44,13 +58,14 @@ export function AdminToursClient({ accessToken }: Props) {
         serviceListResponseSchema,
       );
       setTours(data.items ?? []);
+      seedRateInputs(data.items ?? []);
     } catch (unknownError) {
       setTours([]);
       setError(getApiErrorMessage(unknownError, "Failed to load tours."));
     } finally {
       setLoading(false);
     }
-  }, [accessToken]);
+  }, [accessToken, seedRateInputs]);
 
   useEffect(() => {
     void loadTours();
@@ -134,6 +149,51 @@ export function AdminToursClient({ accessToken }: Props) {
     [accessToken, persistImages],
   );
 
+  // Save editable tour fields (rates / visibility) and reconcile with the server.
+  const persistDetails = useCallback(
+    async (serviceId: string, body: { adult_rate?: number; kid_rate?: number; status?: "active" | "inactive" }) => {
+      if (!accessToken) return;
+      setSavingDetailsId(serviceId);
+      try {
+        const row = await apiFetch(
+          `/v2/admin/services/catalog/${encodeURIComponent(serviceId)}`,
+          { method: "PATCH", body: JSON.stringify(body) },
+          accessToken,
+          serviceItemSchema,
+        );
+        setTours((prev) => prev.map((tour) => (tour.service_id === serviceId ? row : tour)));
+        setRateInputs((prev) => ({
+          ...prev,
+          [serviceId]: { adult: String(row.adult_rate ?? ""), kid: String(row.kid_rate ?? "") },
+        }));
+        showToast({ type: "success", title: "Tour updated", message: "Your changes are saved." });
+      } catch (unknownError) {
+        showToast({
+          type: "error",
+          title: "Save failed",
+          message: getApiErrorMessage(unknownError, "Could not save tour changes."),
+        });
+      } finally {
+        setSavingDetailsId(null);
+      }
+    },
+    [accessToken, showToast],
+  );
+
+  const handleSaveRates = useCallback(
+    (tour: ServiceItem) => {
+      const input = rateInputs[tour.service_id] ?? { adult: "", kid: "" };
+      const adult = Number(input.adult);
+      const kid = Number(input.kid);
+      if (!Number.isFinite(adult) || adult < 0 || !Number.isFinite(kid) || kid < 0) {
+        showToast({ type: "error", title: "Invalid price", message: "Enter valid adult and kid rates." });
+        return;
+      }
+      void persistDetails(tour.service_id, { adult_rate: adult, kid_rate: kid });
+    },
+    [persistDetails, rateInputs, showToast],
+  );
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -175,6 +235,12 @@ export function AdminToursClient({ accessToken }: Props) {
         const isNight = tour.service_type === "night_tour";
         const TypeIcon = isNight ? Moon : Sun;
         const adultRate = Number(tour.adult_rate || 0);
+        const rate = rateInputs[tour.service_id] ?? {
+          adult: String(tour.adult_rate ?? ""),
+          kid: String(tour.kid_rate ?? ""),
+        };
+        const isActive = (tour.status ?? "active") !== "inactive";
+        const detailsBusy = savingDetailsId === tour.service_id;
 
         return (
           <section key={tour.service_id} className="surface space-y-4 p-4">
@@ -205,10 +271,70 @@ export function AdminToursClient({ accessToken }: Props) {
                   </p>
                 </div>
               </div>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-white px-3 py-1 text-xs font-semibold text-[var(--color-muted)]">
-                {images.length} photo{images.length === 1 ? "" : "s"}
-                {savingId === tour.service_id ? " · saving…" : ""}
-              </span>
+              <div className="flex items-center gap-2">
+                {!isActive ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-800">
+                    <EyeOff className="h-3.5 w-3.5" />
+                    Hidden
+                  </span>
+                ) : null}
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-white px-3 py-1 text-xs font-semibold text-[var(--color-muted)]">
+                  {images.length} photo{images.length === 1 ? "" : "s"}
+                  {savingId === tour.service_id ? " · saving…" : ""}
+                </span>
+              </div>
+            </div>
+
+            {/* Pricing & visibility */}
+            <div className="flex flex-wrap items-end gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
+              <label className="flex flex-col gap-1 text-xs font-semibold text-[var(--color-muted)]">
+                Adult rate (₱)
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={rate.adult}
+                  onChange={(e) =>
+                    setRateInputs((prev) => ({
+                      ...prev,
+                      [tour.service_id]: { ...rate, adult: e.target.value.replace(/[^0-9.]/g, "") },
+                    }))
+                  }
+                  className="h-10 w-28 rounded-lg border border-[var(--color-border)] bg-white px-3 text-sm font-medium text-[var(--color-text)] outline-none focus:border-[var(--color-primary)]"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-xs font-semibold text-[var(--color-muted)]">
+                Kid rate (₱)
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={rate.kid}
+                  onChange={(e) =>
+                    setRateInputs((prev) => ({
+                      ...prev,
+                      [tour.service_id]: { ...rate, kid: e.target.value.replace(/[^0-9.]/g, "") },
+                    }))
+                  }
+                  className="h-10 w-28 rounded-lg border border-[var(--color-border)] bg-white px-3 text-sm font-medium text-[var(--color-text)] outline-none focus:border-[var(--color-primary)]"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => handleSaveRates(tour)}
+                disabled={detailsBusy}
+                className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-primary)] px-4 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-50"
+              >
+                {detailsBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                Save prices
+              </button>
+              <button
+                type="button"
+                onClick={() => persistDetails(tour.service_id, { status: isActive ? "inactive" : "active" })}
+                disabled={detailsBusy}
+                className="ml-auto inline-flex h-10 items-center gap-2 rounded-lg border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] disabled:opacity-50"
+              >
+                {isActive ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                {isActive ? "Hide from guests" : "Show to guests"}
+              </button>
             </div>
 
             {images.length ? (

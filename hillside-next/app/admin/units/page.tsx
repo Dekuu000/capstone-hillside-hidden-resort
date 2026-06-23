@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { AdminUnitsClient } from "../../../components/admin-units/AdminUnitsClient";
+import { StaysToursTabs } from "../../../components/admin-units/StaysToursTabs";
 import { getServerAccessToken } from "../../../lib/serverAuth";
 import { fetchServerApiData } from "../../../lib/serverApi";
 import { unitListResponseSchema } from "../../../../packages/shared/src/schemas";
@@ -84,11 +84,14 @@ export default async function AdminUnitsPage({
   const openUnitId = (
     Array.isArray(resolvedSearchParams.unit_id) ? resolvedSearchParams.unit_id[0] : resolvedSearchParams.unit_id
   )?.trim() || null;
+  const tabRaw = Array.isArray(resolvedSearchParams.tab) ? resolvedSearchParams.tab[0] : resolvedSearchParams.tab;
+  const initialTab = tabRaw === "tours" ? "tours" : "stays";
 
   const initialData = await fetchInitialUnits(accessToken, page, unitType, operationalStatus, search, showInactive);
   return (
-    <AdminUnitsClient
-      initialToken={accessToken}
+    <StaysToursTabs
+      token={accessToken}
+      initialTab={initialTab}
       initialData={initialData}
       initialType={unitType}
       initialOperationalStatus={operationalStatus}

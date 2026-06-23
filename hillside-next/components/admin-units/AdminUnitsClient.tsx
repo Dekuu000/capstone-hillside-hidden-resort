@@ -37,6 +37,8 @@ type AdminUnitsClientProps = {
   initialPage?: number;
   initialOpenUnitId?: string | null;
   initialOperationalStatus?: UnitOperationalStatus | "";
+  /** When embedded under the Stays & Tours tabs, the page owns the header. */
+  hideHeader?: boolean;
 };
 
 const PAGE_SIZE = 12;
@@ -78,6 +80,7 @@ export function AdminUnitsClient({
   initialPage = 1,
   initialOpenUnitId = null,
   initialOperationalStatus = "",
+  hideHeader = false,
 }: AdminUnitsClientProps) {
   const token = initialToken;
   const { showToast } = useToast();
@@ -470,11 +473,13 @@ export function AdminUnitsClient({
   if (!token) {
     return (
       <section className="mx-auto w-full max-w-[1600px] space-y-5">
-        <AdminPageHeader
-          eyebrow="Inventory"
-          title="Units"
-          subtitle="Manage rooms, cottages, and amenities."
-        />
+        {hideHeader ? null : (
+          <AdminPageHeader
+            eyebrow="Inventory"
+            title="Units"
+            subtitle="Manage rooms, cottages, and amenities."
+          />
+        )}
         <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
           No active session found. Sign in as admin first.
         </p>
@@ -484,17 +489,19 @@ export function AdminUnitsClient({
 
   return (
     <section className="mx-auto w-full max-w-[1600px] space-y-5">
-      <AdminPageHeader
-        eyebrow="Inventory"
-        title="Units"
-        subtitle="Manage rooms, cottages, and amenities with operational status."
-        action={
-          <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-xs text-[var(--color-muted)]">
-            <p className="font-semibold text-[var(--color-text)]">Total</p>
-            <p className="mt-1">{count} unit records</p>
-          </div>
-        }
-      />
+      {hideHeader ? null : (
+        <AdminPageHeader
+          eyebrow="Inventory"
+          title="Units"
+          subtitle="Manage rooms, cottages, and amenities with operational status."
+          action={
+            <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-xs text-[var(--color-muted)]">
+              <p className="font-semibold text-[var(--color-text)]">Total</p>
+              <p className="mt-1">{count} unit records</p>
+            </div>
+          }
+        />
+      )}
 
       <div className="grid grid-cols-3 gap-2 sm:gap-3">
         <div className="rounded-2xl border border-[var(--color-border)] bg-white p-3">
