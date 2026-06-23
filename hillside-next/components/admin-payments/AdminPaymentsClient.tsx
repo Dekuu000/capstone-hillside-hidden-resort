@@ -883,6 +883,12 @@ export function AdminPaymentsClient({
                     {formatPeso(reservationBalance)}
                   </span>
                 </div>
+                {Number(reservationContext?.discount_amount ?? 0) > 0 ? (
+                  <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1.5 text-xs font-semibold text-emerald-800">
+                    Promo {reservationContext?.promo_code ? `${reservationContext.promo_code} ` : ""}applied — {formatPeso(Number(reservationContext?.discount_amount ?? 0))} off
+                    {reservationContext?.original_total ? ` (subtotal ${formatPeso(Number(reservationContext.original_total))})` : ""}.
+                  </p>
+                ) : null}
                 {reservationContext?.policy_outcome ? (
                   <div className="flex items-center justify-between">
                     <span className="text-[var(--color-muted)]">Policy outcome</span>

@@ -485,6 +485,12 @@ export function ReservationDetailDrawer({
                       <p className={`mt-1 text-2xl font-bold leading-none ${remainingBalanceClass}`}>{formatPeso(reservation.balance_due)}</p>
                     </div>
                   </div>
+                  {Number(reservation.discount_amount ?? 0) > 0 ? (
+                    <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800">
+                      Promo {reservation.promo_code ? `${reservation.promo_code} ` : ""}applied — {formatPeso(Number(reservation.discount_amount ?? 0))} off
+                      {reservation.original_total ? ` (subtotal ${formatPeso(Number(reservation.original_total))})` : ""}.
+                    </p>
+                  ) : null}
                   <div className="grid gap-2 text-sm md:grid-cols-3">
                     <p><span className="text-[var(--color-muted)]">Payment method:</span> {latestPayment?.method?.toUpperCase() || "-"}</p>
                     <p><span className="text-[var(--color-muted)]">Latest payment:</span> {formatDateTime(latestPayment?.created_at)}</p>

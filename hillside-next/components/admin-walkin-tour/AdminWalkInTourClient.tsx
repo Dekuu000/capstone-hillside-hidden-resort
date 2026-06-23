@@ -116,11 +116,36 @@ export function AdminWalkInTourClient({
   const totalAmount = Math.max(0, grossAmount - discount);
   const minPayNow = tourMinPayNow(totalAmount);
 
-  // Invalidate a validated promo if the code or the priced total changes.
+  // A TYPED code must be explicitly Applied; with NO code, preview the active
+  // auto-apply promo for the current total (mirrors the online guest tour flow).
   useEffect(() => {
-    setPromo(null);
     setPromoError(null);
-  }, [promoCode, grossAmount]);
+    if (promoCode.trim()) {
+      setPromo(null);
+      return;
+    }
+    if (!token || grossAmount <= 0) {
+      setPromo(null);
+      return;
+    }
+    let active = true;
+    void (async () => {
+      try {
+        const auto = await apiFetch(
+          "/v2/promos/validate",
+          { method: "POST", body: JSON.stringify({ code: "", total: grossAmount, kind: "tours" }) },
+          token,
+          promoValidationResultSchema,
+        );
+        if (active) setPromo(auto.valid && auto.discount_amount > 0 ? auto : null);
+      } catch {
+        if (active) setPromo(null);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [promoCode, grossAmount, token]);
 
   const applyPromo = async () => {
     const code = promoCode.trim();

@@ -123,12 +123,38 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
   const discount = promo?.valid ? promo.discount_amount : 0;
   const estimatedTotal = Math.max(0, grossTotal - discount);
 
-  // Drop a previously validated promo whenever the code or the priced total
-  // changes, so a stale discount can never be applied to a different basket.
+  // Keep the displayed promo in sync with the inputs:
+  //  • a TYPED code must be explicitly Applied — clear any prior result while editing;
+  //  • with NO code, preview the active auto-apply promo for the current total
+  //    (mirrors the online guest flow) so the cashier sees the discounted total.
   useEffect(() => {
-    setPromo(null);
     setPromoError(null);
-  }, [promoCode, grossTotal]);
+    if (promoCode.trim()) {
+      setPromo(null);
+      return;
+    }
+    if (!token || grossTotal <= 0) {
+      setPromo(null);
+      return;
+    }
+    let active = true;
+    void (async () => {
+      try {
+        const auto = await apiFetch(
+          "/v2/promos/validate",
+          { method: "POST", body: JSON.stringify({ code: "", total: grossTotal, kind: "stays" }) },
+          token,
+          promoValidationResultSchema,
+        );
+        if (active) setPromo(auto.valid && auto.discount_amount > 0 ? auto : null);
+      } catch {
+        if (active) setPromo(null);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [promoCode, grossTotal, token]);
 
   const applyPromo = async () => {
     const code = promoCode.trim();
@@ -395,6 +421,13 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
               <p className="mt-0.5 text-sm font-semibold text-[var(--color-text)]">{toPeso(Math.max(0, createdBalance))}</p>
             </div>
           </div>
+
+          {Number(createdReservation?.discount_amount ?? 0) > 0 ? (
+            <p className="mt-2 text-xs font-semibold text-emerald-800">
+              Promo {createdReservation?.promo_code ? `${createdReservation.promo_code} ` : ""}applied — {toPeso(Number(createdReservation?.discount_amount ?? 0))} off
+              {createdReservation?.original_total ? ` (subtotal was ${toPeso(Number(createdReservation.original_total))})` : ""}.
+            </p>
+          ) : null}
 
           {createdReservationLoading ? (
             <p className="mt-2 text-xs text-emerald-800">Refreshing reservation totals...</p>
