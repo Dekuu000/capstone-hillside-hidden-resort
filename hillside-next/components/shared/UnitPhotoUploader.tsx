@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { ImagePlus, Loader2, RefreshCw, Upload, XCircle } from "lucide-react";
 import {
   UNIT_IMAGE_MAX_BYTES,
@@ -24,6 +24,8 @@ type UploadItem = {
 type UnitPhotoUploaderProps = {
   token: string;
   unitId: string;
+  /** Storage folder prefix in the shared bucket. "units" (default) or "tours". */
+  folder?: string;
   currentCount: number;
   maxCount?: number;
   onUploaded: (items: { mediumUrl: string; thumbUrl: string }[]) => void;
@@ -41,6 +43,7 @@ function formatFileSize(bytes: number) {
 export function UnitPhotoUploader({
   token,
   unitId,
+  folder = "units",
   currentCount,
   maxCount = UNIT_IMAGE_MAX_COUNT,
   onUploaded,
@@ -50,6 +53,7 @@ export function UnitPhotoUploader({
 }: UnitPhotoUploaderProps) {
   const [items, setItems] = useState<UploadItem[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const inputId = useId();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const runningRef = useRef(false);
 
@@ -79,7 +83,7 @@ export function UnitPhotoUploader({
         const thumbBlob = await resizeImageToWebp(item.file, 320);
         updateItem(item.id, { status: "uploading", progress: 34 });
 
-        const basePath = `units/${unitId}/${crypto.randomUUID()}`;
+        const basePath = `${folder}/${unitId}/${crypto.randomUUID()}`;
         const mediumPath = `${basePath}-m.webp`;
         const thumbPath = `${basePath}-t.webp`;
 
@@ -115,7 +119,7 @@ export function UnitPhotoUploader({
         onUploadFailed?.(item.file.name, reason);
       }
     },
-    [onUploadFailed, onUploadSuccess, onUploaded, token, unitId, updateItem],
+    [folder, onUploadFailed, onUploadSuccess, onUploaded, token, unitId, updateItem],
   );
 
   const processQueue = useCallback(async () => {
@@ -213,11 +217,11 @@ export function UnitPhotoUploader({
       </div>
 
       <label
-        htmlFor="unit-photo-upload"
+        htmlFor={inputId}
         className="flex min-h-24 cursor-pointer items-center justify-center rounded-lg border border-dashed border-[var(--color-border)] bg-white px-4 py-3 text-center text-sm text-[var(--color-muted)] transition-colors duration-150 hover:border-[var(--color-primary)]"
       >
         <input
-          id="unit-photo-upload"
+          id={inputId}
           ref={fileInputRef}
           type="file"
           accept="image/jpeg,image/png,image/webp"

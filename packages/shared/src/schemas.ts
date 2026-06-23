@@ -485,6 +485,8 @@ export const serviceItemSchema = z.object({
   kid_rate: z.number().optional().nullable(),
   max_pax: z.number().int().optional().nullable(),
   description: z.string().optional().nullable(),
+  image_urls: z.array(z.string()).optional().nullable(),
+  image_thumb_urls: z.array(z.string()).optional().nullable(),
 });
 
 export const serviceListResponseSchema = z.object({

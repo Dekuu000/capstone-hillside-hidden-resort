@@ -262,11 +262,24 @@ class ServiceItem(BaseModel):
     kid_rate: float | None = None
     max_pax: int | None = None
     description: str | None = None
+    image_urls: list[str] | None = None
+    image_thumb_urls: list[str] | None = None
 
 
 class ServiceListResponse(BaseModel):
     items: list[ServiceItem]
     count: int
+
+
+class ServiceImagesUpdateRequest(BaseModel):
+    image_urls: list[str] = []
+    image_thumb_urls: list[str] = []
+
+
+class ServiceUpdateRequest(BaseModel):
+    adult_rate: float | None = None
+    kid_rate: float | None = None
+    status: Literal["active", "inactive"] | None = None
 
 
 class UnitItem(BaseModel):

@@ -37,6 +37,8 @@ type AdminUnitsClientProps = {
   initialPage?: number;
   initialOpenUnitId?: string | null;
   initialOperationalStatus?: UnitOperationalStatus | "";
+  /** When embedded under the Stays & Tours tabs, the page owns the header. */
+  hideHeader?: boolean;
 };
 
 const PAGE_SIZE = 12;
@@ -45,8 +47,6 @@ type UnitOperationalStatus = "cleaned" | "occupied" | "maintenance" | "dirty";
 
 function formatOperationalStatus(status: string | null | undefined) {
   switch ((status || "").toLowerCase()) {
-    case "cleaned":
-      return "Cleaned";
     case "occupied":
       return "Occupied";
     case "maintenance":
@@ -55,6 +55,19 @@ function formatOperationalStatus(status: string | null | undefined) {
       return "Dirty";
     default:
       return "Cleaned";
+  }
+}
+
+function operationalStatusTextClass(status: string | null | undefined) {
+  switch ((status || "").toLowerCase()) {
+    case "occupied":
+      return "text-blue-700";
+    case "maintenance":
+      return "text-amber-700";
+    case "dirty":
+      return "text-rose-700";
+    default:
+      return "text-emerald-700";
   }
 }
 
@@ -78,6 +91,7 @@ export function AdminUnitsClient({
   initialPage = 1,
   initialOpenUnitId = null,
   initialOperationalStatus = "",
+  hideHeader = false,
 }: AdminUnitsClientProps) {
   const token = initialToken;
   const { showToast } = useToast();
@@ -470,11 +484,13 @@ export function AdminUnitsClient({
   if (!token) {
     return (
       <section className="mx-auto w-full max-w-[1600px] space-y-5">
-        <AdminPageHeader
-          eyebrow="Inventory"
-          title="Units"
-          subtitle="Manage rooms, cottages, and amenities."
-        />
+        {hideHeader ? null : (
+          <AdminPageHeader
+            eyebrow="Inventory"
+            title="Units"
+            subtitle="Manage rooms, cottages, and amenities."
+          />
+        )}
         <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
           No active session found. Sign in as admin first.
         </p>
@@ -484,17 +500,19 @@ export function AdminUnitsClient({
 
   return (
     <section className="mx-auto w-full max-w-[1600px] space-y-5">
-      <AdminPageHeader
-        eyebrow="Inventory"
-        title="Units"
-        subtitle="Manage rooms, cottages, and amenities with operational status."
-        action={
-          <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-xs text-[var(--color-muted)]">
-            <p className="font-semibold text-[var(--color-text)]">Total</p>
-            <p className="mt-1">{count} unit records</p>
-          </div>
-        }
-      />
+      {hideHeader ? null : (
+        <AdminPageHeader
+          eyebrow="Inventory"
+          title="Units"
+          subtitle="Manage rooms, cottages, and amenities with operational status."
+          action={
+            <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] px-4 py-3 text-xs text-[var(--color-muted)]">
+              <p className="font-semibold text-[var(--color-text)]">Total</p>
+              <p className="mt-1">{count} unit records</p>
+            </div>
+          }
+        />
+      )}
 
       <div className="grid grid-cols-3 gap-2 sm:gap-3">
         <div className="rounded-2xl border border-[var(--color-border)] bg-white p-3">
@@ -658,42 +676,35 @@ export function AdminUnitsClient({
                 )}
                 <div className="p-3">
                   <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h3 className="line-clamp-1 text-base font-semibold text-[var(--color-text)]">{label.title}</h3>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h3 className="line-clamp-1 text-base font-semibold text-[var(--color-text)]">{label.title}</h3>
+                        <span className={`shrink-0 text-xs font-semibold ${unit.is_active ? "text-emerald-700" : "text-red-700"}`}>
+                          {unit.is_active ? "Active" : "Inactive"}
+                        </span>
+                      </div>
                       {label.subtitle ? (
                         <p className="mt-0.5 text-xs font-medium text-[var(--color-muted)]">{label.subtitle}</p>
                       ) : null}
                     </div>
-                    <p className="text-sm font-bold text-[var(--color-text)]">{formatPeso(unit.base_price)}</p>
+                    <p className="shrink-0 text-sm font-bold text-[var(--color-text)]">{formatPeso(unit.base_price)}</p>
                   </div>
-                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                    <span className="inline-flex rounded-full border border-[var(--color-border)] bg-[var(--color-background)] px-2 py-0.5 text-[11px] font-medium capitalize text-[var(--color-muted)]">
-                      {unit.type}
-                    </span>
-                    <span
-                      className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                        unit.operational_status === "occupied"
-                          ? "bg-blue-100 text-blue-800"
-                          : unit.operational_status === "maintenance"
-                            ? "bg-amber-100 text-amber-800"
-                            : unit.operational_status === "dirty"
-                              ? "bg-rose-100 text-rose-800"
-                              : "bg-emerald-100 text-emerald-800"
-                      }`}
-                    >
+                  <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs font-medium">
+                    <span className="capitalize text-[var(--color-muted)]">{unit.type}</span>
+                    <span aria-hidden className="text-[var(--color-border)]">•</span>
+                    <span className={operationalStatusTextClass(unit.operational_status)}>
                       {formatOperationalStatus(unit.operational_status)}
                     </span>
                   </div>
                   <p className="mt-2 line-clamp-1 text-sm text-[var(--color-muted)]">{unit.description || "No description."}</p>
-                  <div className="mt-2 flex items-center justify-between text-xs text-[var(--color-muted)]">
+                  <div className="mt-2 text-xs text-[var(--color-muted)]">
                     <span>Capacity: {unit.capacity}</span>
-                    <span className={unit.is_active ? "text-emerald-700" : "text-red-700"}>{unit.is_active ? "Active" : "Inactive"}</span>
                   </div>
-                  <div className="mt-3 grid grid-cols-2 gap-2">
+                  <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
                     <button
                       type="button"
                       onClick={() => void openEditor(unit.unit_id)}
-                      className="h-9 w-full rounded-lg border border-[var(--color-primary)] bg-[var(--color-primary)] px-3 text-sm font-semibold text-white"
+                      className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--color-primary)] bg-[var(--color-primary)] px-4 text-sm font-semibold text-white transition hover:brightness-110"
                     >
                       Manage
                     </button>
@@ -701,10 +712,10 @@ export function AdminUnitsClient({
                       type="button"
                       onClick={() => void toggleStatus(unit)}
                       disabled={Boolean(toggleBusy[unit.unit_id])}
-                      className={`h-9 w-full rounded-lg border px-3 text-sm font-semibold disabled:opacity-60 ${
+                      className={`inline-flex h-9 items-center justify-center rounded-lg border px-4 text-sm font-semibold transition disabled:opacity-60 ${
                         unit.is_active
-                          ? "border-rose-200 bg-rose-50 text-rose-700"
-                          : "border-emerald-200 bg-emerald-50 text-emerald-700"
+                          ? "border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
+                          : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
                       }`}
                     >
                       {toggleBusy[unit.unit_id] ? "Updating..." : unit.is_active ? "Deactivate" : "Activate"}

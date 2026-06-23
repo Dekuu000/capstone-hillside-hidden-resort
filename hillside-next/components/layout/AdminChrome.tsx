@@ -44,9 +44,9 @@ const COLLAPSE_STORAGE_KEY = "hh-admin-nav-collapsed";
 
 // Each item is gated by capability tier. Front Desk sees operations only;
 // Manager adds management; System Admin adds the technical tools.
-const navigation: Array<{ name: string; href: string; tier: NavTier; icon: LucideIcon }> = [
+const navigation: Array<{ name: string; href: string; tier: NavTier; icon: LucideIcon; shortName?: string }> = [
   { name: "Dashboard", href: "/admin", tier: "operations", icon: LayoutDashboard },
-  { name: "Units", href: "/admin/units", tier: "management", icon: BedDouble },
+  { name: "Stays & Tours", href: "/admin/units", tier: "management", icon: BedDouble, shortName: "Stays" },
   { name: "Reservations", href: "/admin/reservations", tier: "management", icon: CalendarCheck },
   { name: "Walk-in", href: "/admin/walk-in", tier: "operations", icon: UserPlus },
   { name: "Check-in", href: "/admin/check-in", tier: "operations", icon: ScanLine },
@@ -137,7 +137,7 @@ export function AdminChrome({ children, initialName = null, initialEmail = null,
       mobileConfig.tabs
         .map((href) => navigation.find((item) => item.href === href))
         .filter((item): item is (typeof navigation)[number] => Boolean(item) && canAccessTier(role, item!.tier))
-        .map((item) => ({ href: item.href, name: item.name, icon: item.icon, active: pathname === item.href })),
+        .map((item) => ({ href: item.href, name: item.shortName ?? item.name, icon: item.icon, active: pathname === item.href })),
     [mobileConfig, role, pathname],
   );
   const mobileFab = useMemo(

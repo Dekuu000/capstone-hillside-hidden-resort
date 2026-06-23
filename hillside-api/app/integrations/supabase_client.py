@@ -97,7 +97,9 @@ SERVICE_SELECT = """
     kid_age_rule,
     status,
     capacity_limit,
-    description
+    description,
+    image_urls,
+    image_thumb_urls
 """
 
 RESORT_SERVICE_SELECT = """
@@ -2346,6 +2348,68 @@ def list_active_services() -> list[dict[str, Any]]:
             .execute(),
         )
         return response.data or []
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def list_all_services() -> list[dict[str, Any]]:
+    """Admin: every tour/day-pass service regardless of status (for management)."""
+    try:
+        client = get_supabase_client()
+        response = _timed_execute(
+            "db.services.list_all",
+            lambda: client.table("services")
+            .select(SERVICE_SELECT)
+            .order("service_type", desc=False)
+            .order("service_name", desc=False)
+            .execute(),
+        )
+        return response.data or []
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def update_service_images(
+    *,
+    service_id: str,
+    image_urls: list[str],
+    image_thumb_urls: list[str],
+) -> dict[str, Any] | None:
+    """Admin: replace the photo gallery for a tour service."""
+    try:
+        client = get_supabase_client()
+        client.table("services").update(
+            {"image_urls": image_urls, "image_thumb_urls": image_thumb_urls}
+        ).eq("service_id", service_id).execute()
+        response = (
+            client.table("services")
+            .select(SERVICE_SELECT)
+            .eq("service_id", service_id)
+            .limit(1)
+            .execute()
+        )
+        rows = response.data or []
+        return rows[0] if rows else None
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def update_service(*, service_id: str, payload: dict[str, Any]) -> dict[str, Any] | None:
+    """Admin: update editable tour fields (rates, status). Returns the fresh row."""
+    try:
+        if not payload:
+            return None
+        client = get_supabase_client()
+        client.table("services").update(payload).eq("service_id", service_id).execute()
+        response = (
+            client.table("services")
+            .select(SERVICE_SELECT)
+            .eq("service_id", service_id)
+            .limit(1)
+            .execute()
+        )
+        rows = response.data or []
+        return rows[0] if rows else None
     except Exception as exc:  # noqa: BLE001
         raise _runtime_error_from_exception(exc) from exc
 
