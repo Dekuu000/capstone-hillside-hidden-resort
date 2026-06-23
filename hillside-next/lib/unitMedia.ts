@@ -163,10 +163,17 @@ export function uploadUnitImageBlob({
   });
 }
 
+// Top-level folders we manage inside the shared unit-images bucket.
+const MANAGED_FOLDERS = ["units/", "tours/"] as const;
+
+function isManagedFolderPath(path: string): boolean {
+  return MANAGED_FOLDERS.some((folder) => path.startsWith(folder));
+}
+
 export function extractManagedUnitImagePath(url: string): string | null {
   const trimmed = (url || "").trim();
   if (!trimmed) return null;
-  if (trimmed.startsWith("units/")) {
+  if (isManagedFolderPath(trimmed)) {
     return trimmed.split("?")[0].split("#")[0];
   }
   const marker = `/storage/v1/object/public/${UNIT_IMAGES_BUCKET}/`;
@@ -175,7 +182,7 @@ export function extractManagedUnitImagePath(url: string): string | null {
   const raw = trimmed.slice(markerIndex + marker.length).split("?")[0].split("#")[0];
   if (!raw) return null;
   const decoded = decodeURIComponent(raw);
-  return decoded.startsWith("units/") ? decoded : null;
+  return isManagedFolderPath(decoded) ? decoded : null;
 }
 
 export async function deleteManagedUnitImageUrls(

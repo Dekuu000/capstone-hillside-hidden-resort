@@ -545,6 +545,8 @@ export type ServiceItem = {
   kid_rate?: number | null;
   max_pax?: number | null;
   description?: string | null;
+  image_urls?: string[] | null;
+  image_thumb_urls?: string[] | null;
 };
 
 export type ServiceListResponse = {

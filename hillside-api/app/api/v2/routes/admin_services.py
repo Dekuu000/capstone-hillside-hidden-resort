@@ -2,17 +2,22 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.core.auth import AuthContext, require_operations
+from app.core.auth import AuthContext, require_admin, require_operations
 from app.integrations.supabase_client import (
     ServiceRequestTransitionError,
+    list_all_services,
     list_resort_service_requests,
     notify_guest_service_request,
     update_resort_service_request_status,
+    update_service_images,
 )
 from app.schemas.common import (
     ResortServiceRequestItem,
     ResortServiceRequestListResponse,
     ResortServiceRequestStatusPatchRequest,
+    ServiceImagesUpdateRequest,
+    ServiceItem,
+    ServiceListResponse,
 )
 
 router = APIRouter()
@@ -59,6 +64,58 @@ def list_admin_service_requests(
         "offset": offset,
         "has_more": offset + len(rows) < total,
     }
+
+
+@router.get("/catalog", response_model=ServiceListResponse)
+def list_service_catalog(_auth: AuthContext = Depends(require_admin)):
+    """Admin: all tour/day-pass services (any status) for photo management."""
+    try:
+        rows = list_all_services()
+    except RuntimeError as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Unexpected error in GET /v2/admin/services/catalog")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Unexpected error while loading tour catalog: {exc}",
+        ) from exc
+    return {"items": rows, "count": len(rows)}
+
+
+@router.patch("/catalog/{service_id}/images", response_model=ServiceItem)
+def patch_service_images(
+    service_id: str,
+    payload: ServiceImagesUpdateRequest,
+    _auth: AuthContext = Depends(require_admin),
+):
+    """Admin: replace a tour's photo gallery (managed in storage by the client)."""
+    try:
+        row = update_service_images(
+            service_id=service_id,
+            image_urls=payload.image_urls,
+            image_thumb_urls=payload.image_thumb_urls,
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Unexpected error in PATCH /v2/admin/services/catalog/%s/images", service_id)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Unexpected error while updating tour photos: {exc}",
+        ) from exc
+
+    if not row:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tour not found.")
+
+    # Invalidate the public services cache so the new photos show right away.
+    try:
+        from app.api.v2.routes.catalog import _CACHE as catalog_cache
+
+        catalog_cache.clear()
+    except Exception:  # noqa: BLE001
+        logger.debug("Could not clear catalog cache after tour image update", exc_info=True)
+
+    return row
 
 
 @router.patch("/requests/{request_id}", response_model=ResortServiceRequestItem)

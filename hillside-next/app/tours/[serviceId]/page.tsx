@@ -19,7 +19,7 @@ export default async function TourDetailPage({
 
   const accessToken = await getServerAccessToken();
   const auth = accessToken ? await getServerAuthContext(accessToken) : null;
-  const gallery = tourGalleryImages();
+  const gallery = tourGalleryImages(service);
   const schedule = tourSchedule(service);
 
   return (

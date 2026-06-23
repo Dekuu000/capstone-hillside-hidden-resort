@@ -184,7 +184,8 @@ export function unitGalleryImages(unit: PublicUnit): string[] {
 export async function fetchPublicServices(): Promise<ServiceItem[]> {
   if (!apiBase) return [];
   try {
-    const res = await fetch(`${apiBase}/v2/catalog/services`, { next: { revalidate: 60 } });
+    // No cache so newly uploaded tour photos (and edits) show right away.
+    const res = await fetch(`${apiBase}/v2/catalog/services`, { next: { revalidate: 0 } });
     if (!res.ok) return [];
     const parsed = serviceListResponseSchema.safeParse(await res.json());
     return parsed.success ? parsed.data.items : [];
@@ -206,12 +207,18 @@ const TOUR_IMAGES = [
   "https://images.unsplash.com/photo-1501555088652-021faa106b9b",
 ];
 
-export function tourImageUrl(service: Pick<ServiceItem, "service_id">): string {
+/** A real uploaded photo if the tour has one, else a deterministic placeholder. */
+export function tourImageUrl(service: Pick<ServiceItem, "service_id" | "image_urls">): string {
+  const real = (service.image_urls || []).find((u) => /^https?:\/\//i.test(u || ""));
+  if (real) return real;
   const base = TOUR_IMAGES[stableIndex(service.service_id, TOUR_IMAGES.length)];
   return `${base}?auto=format&fit=crop&w=1200&q=80`;
 }
 
-export function tourGalleryImages(): string[] {
+/** Uploaded photos if the tour has any, else the placeholder pool. */
+export function tourGalleryImages(service?: Pick<ServiceItem, "image_urls">): string[] {
+  const real = (service?.image_urls || []).filter((u) => /^https?:\/\//i.test(u || ""));
+  if (real.length > 0) return real;
   return TOUR_IMAGES.map((base) => `${base}?auto=format&fit=crop&w=1200&q=80`);
 }
 
