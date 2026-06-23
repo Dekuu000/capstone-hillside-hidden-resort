@@ -45,6 +45,32 @@ const PAGE_SIZE = 12;
 
 type UnitOperationalStatus = "cleaned" | "occupied" | "maintenance" | "dirty";
 
+function formatOperationalStatus(status: string | null | undefined) {
+  switch ((status || "").toLowerCase()) {
+    case "occupied":
+      return "Occupied";
+    case "maintenance":
+      return "Maintenance";
+    case "dirty":
+      return "Dirty";
+    default:
+      return "Cleaned";
+  }
+}
+
+function operationalStatusTextClass(status: string | null | undefined) {
+  switch ((status || "").toLowerCase()) {
+    case "occupied":
+      return "text-blue-700";
+    case "maintenance":
+      return "text-amber-700";
+    case "dirty":
+      return "text-rose-700";
+    default:
+      return "text-emerald-700";
+  }
+}
+
 function normalizeUnitsError(error: unknown): string {
   if (error instanceof DOMException && error.name === "AbortError") {
     return "Units API timed out. Check if hillside-api is running on port 8000.";
@@ -658,9 +684,11 @@ export function AdminUnitsClient({
                     </div>
                     <p className="text-sm font-bold text-[var(--color-text)]">{formatPeso(unit.base_price)}</p>
                   </div>
-                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                    <span className="inline-flex rounded-full border border-[var(--color-border)] bg-[var(--color-background)] px-2 py-0.5 text-[11px] font-medium capitalize text-[var(--color-muted)]">
-                      {unit.type}
+                  <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs font-medium">
+                    <span className="capitalize text-[var(--color-muted)]">{unit.type}</span>
+                    <span aria-hidden className="text-[var(--color-border)]">•</span>
+                    <span className={operationalStatusTextClass(unit.operational_status)}>
+                      {formatOperationalStatus(unit.operational_status)}
                     </span>
                   </div>
                   <p className="mt-2 line-clamp-1 text-sm text-[var(--color-muted)]">{unit.description || "No description."}</p>
