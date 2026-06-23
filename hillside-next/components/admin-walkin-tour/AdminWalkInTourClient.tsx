@@ -50,8 +50,12 @@ export function AdminWalkInTourClient({
 
   const [serviceId, setServiceId] = useState("");
   const [visitDate, setVisitDate] = useState(todayPlusLocalIsoDate(0));
-  const [adultQty, setAdultQty] = useState(1);
-  const [kidQty, setKidQty] = useState(0);
+  // Held as strings so the fields can be cleared (empty) on delete and so a
+  // typed digit replaces the value instead of appending to a stuck "0".
+  const [adultQty, setAdultQty] = useState("1");
+  const [kidQty, setKidQty] = useState("0");
+  const adults = Math.max(0, Math.trunc(Number(adultQty) || 0));
+  const kids = Math.max(0, Math.trunc(Number(kidQty) || 0));
   const [guestName, setGuestName] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
   const [notes, setNotes] = useState("");
@@ -98,8 +102,8 @@ export function AdminWalkInTourClient({
   const selectedService = services.find((service) => service.service_id === serviceId);
   const totalAmount = useMemo(() => {
     if (!selectedService) return 0;
-    return adultQty * Number(selectedService.adult_rate || 0) + kidQty * Number(selectedService.kid_rate || 0);
-  }, [adultQty, kidQty, selectedService]);
+    return adults * Number(selectedService.adult_rate || 0) + kids * Number(selectedService.kid_rate || 0);
+  }, [adults, kids, selectedService]);
 
   async function submitWalkInTour() {
     if (!token) return;
@@ -111,7 +115,7 @@ export function AdminWalkInTourClient({
       setSubmitError("Visit date is required.");
       return;
     }
-    if (adultQty + kidQty <= 0) {
+    if (adults + kids <= 0) {
       setSubmitError("At least one guest is required.");
       return;
     }
@@ -137,8 +141,8 @@ export function AdminWalkInTourClient({
       const payload = {
         service_id: serviceId,
         visit_date: visitDate,
-        adult_qty: adultQty,
-        kid_qty: kidQty,
+        adult_qty: adults,
+        kid_qty: kids,
         is_advance: false,
         notes: combinedNotes || null,
       };
@@ -269,10 +273,13 @@ export function AdminWalkInTourClient({
             <label className="grid gap-1 text-sm text-[var(--color-text)]">
               Adults
               <input
-                type="number"
-                min={0}
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 value={adultQty}
-                onChange={(event) => setAdultQty(Math.max(0, Number(event.target.value || 0)))}
+                onFocus={(event) => event.target.select()}
+                onChange={(event) => setAdultQty(event.target.value.replace(/[^0-9]/g, "").replace(/^0+(?=\d)/, ""))}
+                onBlur={(event) => setAdultQty(event.target.value === "" ? "" : String(Math.max(0, Math.trunc(Number(event.target.value) || 0))))}
                 className="rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 outline-none ring-[var(--color-secondary)]/20 transition focus:ring-2"
               />
             </label>
@@ -280,10 +287,13 @@ export function AdminWalkInTourClient({
             <label className="grid gap-1 text-sm text-[var(--color-text)]">
               Kids
               <input
-                type="number"
-                min={0}
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 value={kidQty}
-                onChange={(event) => setKidQty(Math.max(0, Number(event.target.value || 0)))}
+                onFocus={(event) => event.target.select()}
+                onChange={(event) => setKidQty(event.target.value.replace(/[^0-9]/g, "").replace(/^0+(?=\d)/, ""))}
+                onBlur={(event) => setKidQty(event.target.value === "" ? "" : String(Math.max(0, Math.trunc(Number(event.target.value) || 0))))}
                 className="rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 outline-none ring-[var(--color-secondary)]/20 transition focus:ring-2"
               />
             </label>
@@ -351,7 +361,7 @@ export function AdminWalkInTourClient({
           </div>
 
           <div className="mt-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-4">
-            <p className="text-sm text-[var(--color-muted)]">{adultQty} adult{adultQty === 1 ? "" : "s"}{kidQty > 0 ? ` · ${kidQty} kid${kidQty === 1 ? "" : "s"}` : ""}</p>
+            <p className="text-sm text-[var(--color-muted)]">{adults} adult{adults === 1 ? "" : "s"}{kids > 0 ? ` · ${kids} kid${kids === 1 ? "" : "s"}` : ""}</p>
             <div className="mt-1 flex items-baseline justify-between">
               <span className="text-sm text-[var(--color-muted)]">Total</span>
               <span className="text-xl font-bold text-[var(--color-text)]">{toPeso(totalAmount)}</span>
