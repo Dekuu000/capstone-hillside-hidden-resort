@@ -3,7 +3,6 @@ import { Activity, BrainCircuit, Coins, Hotel } from "lucide-react";
 import type { ResortSnapshotResponse } from "../../../packages/shared/src/types";
 import { formatDateTime } from "../../lib/dateDisplay";
 import { formatPhpPeso as formatPeso } from "../../lib/formatCurrency";
-import { StatusPill } from "../shared/StatusPill";
 
 function toDemandPath(points: Array<{ occupancy_pct: number }>, width = 520, height = 120) {
   if (points.length === 0) return "";
@@ -29,8 +28,8 @@ export function ResortSnapshotPanel({
   canSeeTechnical?: boolean;
 }) {
   const aiStatus = snapshot?.ai_demand_7d.status ?? "missing";
-  const aiTone = aiStatus === "ready" ? "success" : aiStatus === "stale" ? "warn" : "error";
   const aiLabel = aiStatus === "ready" ? "Demand ready" : aiStatus === "stale" ? "Demand stale" : "Demand missing";
+  const aiToneClass = aiStatus === "ready" ? "text-emerald-700" : aiStatus === "stale" ? "text-amber-700" : "text-red-700";
   const demandPath = snapshot ? toDemandPath(snapshot.ai_demand_7d.items) : "";
   const occupancyPercent = snapshot ? Math.round(snapshot.occupancy.occupancy_rate * 100) : null;
   const remainingCleanable = snapshot ? Math.max(snapshot.occupancy.active_units - snapshot.occupancy.occupied_units, 0) : null;
@@ -45,27 +44,35 @@ export function ResortSnapshotPanel({
   return (
     <section className="surface p-5 sm:p-6 lg:p-7">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
+        <div className="min-w-0">
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--color-secondary)]">Resort Snapshot</p>
           <h2 className="mt-2 text-xl font-bold text-[var(--color-text)] lg:text-2xl">Current occupancy, revenue, and demand</h2>
-          <p className="mt-1 text-sm text-[var(--color-muted)]">
-            As of{" "}
-            {snapshot
-              ? formatDateTime(snapshot.as_of, {
-                  locale: "en-PH",
-                  formatOptions: {
-                    month: "short",
-                    day: "numeric",
-                    hour: "numeric",
-                    minute: "2-digit",
-                  },
-                  fallback: "Unavailable",
-                })
-              : "Unavailable"}
-          </p>
+          <div className="mt-1 flex items-center justify-between gap-3 sm:justify-start">
+            <p className="text-sm text-[var(--color-muted)]">
+              As of{" "}
+              {snapshot
+                ? formatDateTime(snapshot.as_of, {
+                    locale: "en-PH",
+                    formatOptions: {
+                      month: "short",
+                      day: "numeric",
+                      hour: "numeric",
+                      minute: "2-digit",
+                    },
+                    fallback: "Unavailable",
+                  })
+                : "Unavailable"}
+            </p>
+            {/* Mobile: demand status sits beside the timestamp. AI-internal — System Admin only. */}
+            {canSeeTechnical ? (
+              <span className={`shrink-0 text-xs font-semibold sm:hidden ${aiToneClass}`}>{aiLabel}</span>
+            ) : null}
+          </div>
         </div>
-        {/* Demand-model status is AI-internal — System Admin only. */}
-        {canSeeTechnical ? <StatusPill label={aiLabel} tone={aiTone} /> : null}
+        {/* Desktop: demand status kept at the top of the header. */}
+        {canSeeTechnical ? (
+          <span className={`hidden shrink-0 text-xs font-semibold sm:inline ${aiToneClass}`}>{aiLabel}</span>
+        ) : null}
       </div>
 
       {error ? (
