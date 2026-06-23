@@ -37,14 +37,24 @@ export default async function HomePage() {
     <main className={`flex min-h-screen flex-col bg-[var(--color-background)]${auth ? " pb-24 md:pb-0" : ""}`}>
 
       {/* Hero */}
-      <section className="relative">
+      <section className="relative bg-[#0e2740]">
+        {/* Desktop/tablet: full-bleed photo behind overlaid text. */}
         <div
-          className="absolute inset-0 bg-cover bg-top"
+          className="absolute inset-0 hidden bg-cover bg-top md:block"
           style={{ backgroundImage: `url('${HERO_IMAGE}')` }}
           aria-hidden
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/30 to-black/55" aria-hidden />
-        <div className="relative mx-auto w-full max-w-[1280px] px-4 pb-28 pt-20 md:px-6 md:pb-32 md:pt-28 lg:px-8">
+        <div className="absolute inset-0 hidden bg-gradient-to-b from-black/45 via-black/30 to-black/55 md:block" aria-hidden />
+
+        {/* Mobile: show the full signage as a banner (a portrait hero would crop
+            the wide sign), then the headline sits below it on the brand navy. */}
+        <div
+          className="aspect-[11/5] w-full bg-cover bg-top md:hidden"
+          style={{ backgroundImage: `url('${HERO_IMAGE}')` }}
+          aria-hidden
+        />
+
+        <div className="relative mx-auto w-full max-w-[1280px] px-4 pb-28 pt-8 md:px-6 md:pb-32 md:pt-28 lg:px-8">
           <p className="text-sm font-semibold uppercase tracking-[0.25em] text-white/80">Your hidden escape awaits</p>
           <h1 className="mt-3 max-w-2xl text-4xl font-semibold leading-tight text-white md:text-6xl">
             Stay where the hills meet stillness.
