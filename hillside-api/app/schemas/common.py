@@ -209,6 +209,7 @@ class WalkInStayCreateRequest(BaseModel):
     check_in_date: date
     check_out_date: date
     unit_ids: list[str]
+    guest_count: int = Field(default=1, ge=1)
     guest_name: str | None = None
     guest_phone: str | None = None
     notes: str | None = None

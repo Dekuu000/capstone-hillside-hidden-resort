@@ -2,13 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { AlertCircle, CheckCircle2, Loader2, Phone, Tag, User, Wallet } from "lucide-react";
-import type { AvailableUnitsResponse, ReservationCreateResponse, ReservationListItem } from "../../../packages/shared/src/types";
-import { availableUnitsResponseSchema, reservationCreateResponseSchema, reservationListItemSchema } from "../../../packages/shared/src/schemas";
+import { AlertCircle, CheckCircle2, Loader2, Phone, Tag, User, Users, Wallet } from "lucide-react";
+import type { AvailableUnitsResponse, PromoValidationResult, ReservationCreateResponse, ReservationListItem } from "../../../packages/shared/src/types";
+import { availableUnitsResponseSchema, promoValidationResultSchema, reservationCreateResponseSchema, reservationListItemSchema } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
 import { todayPlusLocalIsoDate } from "../../lib/dateIso";
 import { formatPhpPeso as toPeso } from "../../lib/formatCurrency";
+import { getUnitNightlyRate } from "../../lib/booking/pricing";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
 import { getUnitLabel } from "../../lib/unitLabel";
 import { FancyDatePicker } from "../shared/FancyDatePicker";
@@ -25,11 +26,17 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
 
   const [checkInDate, setCheckInDate] = useState(todayPlusLocalIsoDate(0));
   const [checkOutDate, setCheckOutDate] = useState(todayPlusLocalIsoDate(1));
+  // Party size — drives pax-based pricing for event spaces (Evergreen/Pinecrest)
+  // exactly like the online guest flow. Held as a string so the field is clearable.
+  const [guests, setGuests] = useState("2");
   const [guestName, setGuestName] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
   const [notes, setNotes] = useState("");
   const [expectedPayNow, setExpectedPayNow] = useState<string>("");
   const [promoCode, setPromoCode] = useState("");
+  const [promo, setPromo] = useState<PromoValidationResult | null>(null);
+  const [promoBusy, setPromoBusy] = useState(false);
+  const [promoError, setPromoError] = useState<string | null>(null);
 
   const [unitsLoading, setUnitsLoading] = useState(false);
   const [unitsError, setUnitsError] = useState<string | null>(null);
@@ -105,10 +112,49 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
     [availableUnits, selectedUnitIds],
   );
 
-  const estimatedTotal = useMemo(
-    () => selectedUnits.reduce((sum, unit) => sum + Number(unit.base_price || 0) * nights, 0),
-    [nights, selectedUnits],
+  const guestCount = useMemo(() => Math.max(1, Math.trunc(Number(guests) || 1)), [guests]);
+
+  // Mirror the online guest estimate: pax-based nightly rate per unit (shared
+  // pricing lib) so the cashier sees the same total the backend will charge.
+  const grossTotal = useMemo(
+    () => selectedUnits.reduce((sum, unit) => sum + getUnitNightlyRate(unit, guestCount) * nights, 0),
+    [nights, selectedUnits, guestCount],
   );
+  const discount = promo?.valid ? promo.discount_amount : 0;
+  const estimatedTotal = Math.max(0, grossTotal - discount);
+
+  // Drop a previously validated promo whenever the code or the priced total
+  // changes, so a stale discount can never be applied to a different basket.
+  useEffect(() => {
+    setPromo(null);
+    setPromoError(null);
+  }, [promoCode, grossTotal]);
+
+  const applyPromo = async () => {
+    const code = promoCode.trim();
+    if (!code || !token) return;
+    setPromoBusy(true);
+    setPromoError(null);
+    try {
+      const result = await apiFetch(
+        "/v2/promos/validate",
+        { method: "POST", body: JSON.stringify({ code, total: grossTotal, kind: "stays" }) },
+        token,
+        promoValidationResultSchema,
+      );
+      if (result.valid) {
+        setPromo(result);
+      } else {
+        setPromo(null);
+        setPromoError(result.message || "This promo code is not valid.");
+      }
+    } catch (unknownError) {
+      setPromo(null);
+      setPromoError(getApiErrorMessage(unknownError, "Could not validate promo code."));
+    } finally {
+      setPromoBusy(false);
+    }
+  };
 
   function toggleUnit(unitId: string) {
     setSelectedUnitIds((prev) => {
@@ -144,6 +190,7 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
         check_in_date: checkInDate,
         check_out_date: checkOutDate,
         unit_ids: selectedUnitIds,
+        guest_count: guestCount,
         guest_name: guestName.trim() || null,
         guest_phone: guestPhone.trim() || null,
         notes: notes.trim() || null,
@@ -432,6 +479,24 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
               min={checkInDate || todayPlusLocalIsoDate(0)}
             />
           </div>
+
+          <label className="mb-4 grid gap-1 text-sm text-[var(--color-text)]">
+            Guests
+            <div className="relative">
+              <Users className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-muted)]" />
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={guests}
+                onFocus={(event) => event.target.select()}
+                onChange={(event) => setGuests(event.target.value.replace(/[^0-9]/g, "").replace(/^0+(?=\d)/, ""))}
+                onBlur={(event) => setGuests(event.target.value === "" ? "1" : String(Math.max(1, Math.trunc(Number(event.target.value) || 1))))}
+                className="w-full rounded-xl border border-[var(--color-border)] bg-white py-2 pl-9 pr-3 text-sm text-[var(--color-text)] outline-none ring-[var(--color-secondary)]/20 transition focus:ring-2"
+              />
+            </div>
+            <span className="text-xs text-[var(--color-muted)]">Prices event spaces (Evergreen, Pinecrest) by headcount — same as online booking.</span>
+          </label>
           <div className="mb-4 flex flex-wrap gap-2">
             <button
               type="button"
@@ -555,20 +620,36 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
               </div>
             </label>
 
-            <label className="grid gap-1 text-sm text-[var(--color-text)]">
-              Promo code (optional)
-              <div className="relative">
-                <Tag className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-muted)]" />
-                <input
-                  type="text"
-                  value={promoCode}
-                  onChange={(event) => setPromoCode(event.target.value.toUpperCase())}
-                  placeholder="e.g. SUMMER20"
-                  className="w-full rounded-xl border border-[var(--color-border)] bg-white py-2 pl-9 pr-3 text-sm font-semibold uppercase tracking-wide text-[var(--color-text)] outline-none ring-[var(--color-secondary)]/20 transition focus:ring-2"
-                />
+            <div className="grid gap-1 text-sm text-[var(--color-text)]">
+              <span>Promo code (optional)</span>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Tag className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-muted)]" />
+                  <input
+                    type="text"
+                    value={promoCode}
+                    onChange={(event) => setPromoCode(event.target.value.toUpperCase())}
+                    placeholder="e.g. SUMMER20"
+                    className="w-full rounded-xl border border-[var(--color-border)] bg-white py-2 pl-9 pr-3 text-sm font-semibold uppercase tracking-wide text-[var(--color-text)] outline-none ring-[var(--color-secondary)]/20 transition focus:ring-2"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void applyPromo()}
+                  disabled={promoBusy || !promoCode.trim() || grossTotal <= 0}
+                  className="shrink-0 rounded-xl border border-[var(--color-border)] bg-white px-4 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {promoBusy ? "Checking…" : "Apply"}
+                </button>
               </div>
-              <span className="text-xs text-[var(--color-muted)]">Applied and validated when the booking is created.</span>
-            </label>
+              {promo?.valid ? (
+                <span className="text-xs font-semibold text-emerald-700">Promo applied — {toPeso(promo.discount_amount)} off.</span>
+              ) : promoError ? (
+                <span className="text-xs font-semibold text-rose-600">{promoError}</span>
+              ) : (
+                <span className="text-xs text-[var(--color-muted)]">Optional — validated on Apply; re-checked on the server when created.</span>
+              )}
+            </div>
 
             <label className="grid gap-1 text-sm text-[var(--color-text)]">
               Notes (optional)
@@ -584,8 +665,20 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
 
           <div className="mt-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-4">
             <p className="text-sm text-[var(--color-muted)]">
-              {nights} night{nights === 1 ? "" : "s"} · {selectedUnitIds.length} room{selectedUnitIds.length === 1 ? "" : "s"} selected
+              {nights} night{nights === 1 ? "" : "s"} · {selectedUnitIds.length} room{selectedUnitIds.length === 1 ? "" : "s"} · {guestCount} guest{guestCount === 1 ? "" : "s"}
             </p>
+            {discount > 0 ? (
+              <>
+                <div className="mt-2 flex items-baseline justify-between text-sm text-[var(--color-muted)]">
+                  <span>Subtotal</span>
+                  <span>{toPeso(grossTotal)}</span>
+                </div>
+                <div className="mt-1 flex items-baseline justify-between text-sm text-emerald-700">
+                  <span>Promo discount</span>
+                  <span>-{toPeso(discount)}</span>
+                </div>
+              </>
+            ) : null}
             <div className="mt-1 flex items-baseline justify-between">
               <span className="text-sm text-[var(--color-muted)]">Estimated total</span>
               <span className="text-xl font-bold text-[var(--color-text)]">{toPeso(estimatedTotal)}</span>
