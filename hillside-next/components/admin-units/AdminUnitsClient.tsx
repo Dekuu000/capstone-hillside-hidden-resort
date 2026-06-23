@@ -45,21 +45,6 @@ const PAGE_SIZE = 12;
 
 type UnitOperationalStatus = "cleaned" | "occupied" | "maintenance" | "dirty";
 
-function formatOperationalStatus(status: string | null | undefined) {
-  switch ((status || "").toLowerCase()) {
-    case "cleaned":
-      return "Cleaned";
-    case "occupied":
-      return "Occupied";
-    case "maintenance":
-      return "Maintenance";
-    case "dirty":
-      return "Dirty";
-    default:
-      return "Cleaned";
-  }
-}
-
 function normalizeUnitsError(error: unknown): string {
   if (error instanceof DOMException && error.name === "AbortError") {
     return "Units API timed out. Check if hillside-api is running on port 8000.";
@@ -677,30 +662,17 @@ export function AdminUnitsClient({
                     <span className="inline-flex rounded-full border border-[var(--color-border)] bg-[var(--color-background)] px-2 py-0.5 text-[11px] font-medium capitalize text-[var(--color-muted)]">
                       {unit.type}
                     </span>
-                    <span
-                      className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                        unit.operational_status === "occupied"
-                          ? "bg-blue-100 text-blue-800"
-                          : unit.operational_status === "maintenance"
-                            ? "bg-amber-100 text-amber-800"
-                            : unit.operational_status === "dirty"
-                              ? "bg-rose-100 text-rose-800"
-                              : "bg-emerald-100 text-emerald-800"
-                      }`}
-                    >
-                      {formatOperationalStatus(unit.operational_status)}
-                    </span>
                   </div>
                   <p className="mt-2 line-clamp-1 text-sm text-[var(--color-muted)]">{unit.description || "No description."}</p>
                   <div className="mt-2 flex items-center justify-between text-xs text-[var(--color-muted)]">
                     <span>Capacity: {unit.capacity}</span>
                     <span className={unit.is_active ? "text-emerald-700" : "text-red-700"}>{unit.is_active ? "Active" : "Inactive"}</span>
                   </div>
-                  <div className="mt-3 grid grid-cols-2 gap-2">
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
                     <button
                       type="button"
                       onClick={() => void openEditor(unit.unit_id)}
-                      className="h-9 w-full rounded-lg border border-[var(--color-primary)] bg-[var(--color-primary)] px-3 text-sm font-semibold text-white"
+                      className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--color-primary)] bg-[var(--color-primary)] px-4 text-sm font-semibold text-white transition hover:brightness-110"
                     >
                       Manage
                     </button>
@@ -708,10 +680,10 @@ export function AdminUnitsClient({
                       type="button"
                       onClick={() => void toggleStatus(unit)}
                       disabled={Boolean(toggleBusy[unit.unit_id])}
-                      className={`h-9 w-full rounded-lg border px-3 text-sm font-semibold disabled:opacity-60 ${
+                      className={`inline-flex h-9 items-center justify-center rounded-lg border px-4 text-sm font-semibold transition disabled:opacity-60 ${
                         unit.is_active
-                          ? "border-rose-200 bg-rose-50 text-rose-700"
-                          : "border-emerald-200 bg-emerald-50 text-emerald-700"
+                          ? "border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
+                          : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
                       }`}
                     >
                       {toggleBusy[unit.unit_id] ? "Updating..." : unit.is_active ? "Deactivate" : "Activate"}
