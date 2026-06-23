@@ -215,7 +215,7 @@ export function AdminToursClient({ accessToken }: Props) {
 
   return (
     <>
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {tours.map((tour) => {
           const images = normalizeUnitImageUrls(tour.image_urls);
           const thumbs = normalizeUnitThumbUrls(images, tour.image_thumb_urls);
@@ -223,46 +223,68 @@ export function AdminToursClient({ accessToken }: Props) {
           const TypeIcon = isNight ? Moon : Sun;
           const isActive = (tour.status ?? "active") !== "inactive";
           const adultRate = Number(tour.adult_rate || 0);
-          const cover = thumbs[0] || images[0];
+          const cover = thumbs[0] || images[0] || "";
 
           return (
-            <section key={tour.service_id} className="surface flex gap-3 p-4">
-              <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-xl bg-[var(--color-background)]">
-                {cover ? (
-                  <Image src={cover} alt={tour.service_name} fill sizes="112px" className="object-cover" />
-                ) : (
-                  <span className={`flex h-full w-full items-center justify-center ${isNight ? "text-indigo-400" : "text-amber-400"}`}>
-                    <TypeIcon className="h-6 w-6" />
-                  </span>
-                )}
-              </div>
-
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <h2 className="truncate text-base font-semibold text-[var(--color-text)]">{tour.service_name}</h2>
-                  <span className={`shrink-0 text-xs font-semibold ${isActive ? "text-emerald-700" : "text-amber-700"}`}>
-                    {isActive ? "Active" : "Hidden"}
-                  </span>
+            <article
+              key={tour.service_id}
+              className={`overflow-hidden rounded-2xl border bg-[var(--color-surface)] shadow-[var(--shadow-card)] transition-colors duration-200 ${
+                isActive
+                  ? "border-[var(--color-border)] hover:border-[color:color-mix(in_srgb,var(--color-secondary)_35%,white)]"
+                  : "border-[var(--color-border)] opacity-85"
+              }`}
+            >
+              {cover ? (
+                <div className="relative h-40 w-full bg-[var(--color-background)]">
+                  <Image
+                    src={cover}
+                    alt={tour.service_name}
+                    fill
+                    sizes="(min-width: 1280px) 33vw, (min-width: 640px) 50vw, 100vw"
+                    className="object-cover"
+                  />
                 </div>
-                <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs font-medium text-[var(--color-muted)]">
-                  <span>{tourTypeLabel(tour.service_type)}</span>
-                  <span aria-hidden>•</span>
-                  <span className="inline-flex items-center gap-1">
-                    <Clock className="h-3.5 w-3.5" />
-                    {tourSchedule(tour)}
-                  </span>
-                  {adultRate > 0 ? (
-                    <>
+              ) : (
+                <div
+                  className={`flex h-40 w-full items-center justify-center bg-[var(--color-background)] ${
+                    isNight ? "text-indigo-300" : "text-amber-300"
+                  }`}
+                >
+                  <TypeIcon className="h-10 w-10" />
+                </div>
+              )}
+
+              <div className="p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className="line-clamp-1 text-base font-semibold text-[var(--color-text)]">{tour.service_name}</h3>
+                      <span className={`shrink-0 text-xs font-semibold ${isActive ? "text-emerald-700" : "text-amber-700"}`}>
+                        {isActive ? "Active" : "Hidden"}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs font-medium text-[var(--color-muted)]">
+                      <span>{tourTypeLabel(tour.service_type)}</span>
                       <span aria-hidden>•</span>
-                      <span>{formatPhpPeso(adultRate)} / adult</span>
-                    </>
-                  ) : null}
-                </p>
-                <p className="mt-1 text-xs text-[var(--color-muted)]">
+                      <span className="inline-flex items-center gap-1">
+                        <Clock className="h-3.5 w-3.5" />
+                        {tourSchedule(tour)}
+                      </span>
+                    </p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="text-sm font-bold text-[var(--color-text)]">
+                      {adultRate > 0 ? formatPhpPeso(adultRate) : "—"}
+                    </p>
+                    <p className="text-[11px] text-[var(--color-muted)]">/ adult</p>
+                  </div>
+                </div>
+
+                <p className="mt-2 text-xs text-[var(--color-muted)]">
                   {images.length} photo{images.length === 1 ? "" : "s"}
                 </p>
 
-                <div className="mt-3 flex flex-wrap items-center gap-2">
+                <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
                   <button
                     type="button"
                     onClick={() => openEditor(tour)}
@@ -282,7 +304,7 @@ export function AdminToursClient({ accessToken }: Props) {
                   </button>
                 </div>
               </div>
-            </section>
+            </article>
           );
         })}
       </div>
