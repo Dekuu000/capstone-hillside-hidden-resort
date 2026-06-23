@@ -4,19 +4,6 @@ import type { ResortSnapshotResponse } from "../../../packages/shared/src/types"
 import { formatDateTime } from "../../lib/dateDisplay";
 import { formatPhpPeso as formatPeso } from "../../lib/formatCurrency";
 
-function toDemandPath(points: Array<{ occupancy_pct: number }>, width = 520, height = 120) {
-  if (points.length === 0) return "";
-  if (points.length === 1) return `M 0 ${height / 2} L ${width} ${height / 2}`;
-  const step = width / (points.length - 1);
-  return points
-    .map((point, index) => {
-      const x = index * step;
-      const y = height - (Math.max(0, Math.min(100, point.occupancy_pct)) / 100) * height;
-      return `${index === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`;
-    })
-    .join(" ");
-}
-
 export function ResortSnapshotPanel({
   snapshot,
   error,
@@ -30,7 +17,6 @@ export function ResortSnapshotPanel({
   const aiStatus = snapshot?.ai_demand_7d.status ?? "missing";
   const aiLabel = aiStatus === "ready" ? "Demand ready" : aiStatus === "stale" ? "Demand stale" : "Demand missing";
   const aiToneClass = aiStatus === "ready" ? "text-emerald-700" : aiStatus === "stale" ? "text-amber-700" : "text-red-700";
-  const demandPath = snapshot ? toDemandPath(snapshot.ai_demand_7d.items) : "";
   const occupancyPercent = snapshot ? Math.round(snapshot.occupancy.occupancy_rate * 100) : null;
   const remainingCleanable = snapshot ? Math.max(snapshot.occupancy.active_units - snapshot.occupancy.occupied_units, 0) : null;
   const compactPeso = snapshot
@@ -160,28 +146,24 @@ export function ResortSnapshotPanel({
                 </span>
               ) : null}
             </div>
-            <svg viewBox="0 0 520 120" className="h-28 w-full" aria-label="AI demand trend">
-              <path d={demandPath} fill="none" stroke="var(--color-secondary)" strokeWidth="3" strokeLinecap="round" />
-            </svg>
-            {/* Mobile: a clean one-line strip that scrolls horizontally (scrollbar
-                hidden, right-edge fade hints there's more). sm+: wraps since all
-                7 chips fit without scrolling. */}
-            <div className="relative mt-2">
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 text-[10px] text-[var(--color-muted)] [-ms-overflow-style:none] [scrollbar-width:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden">
-                {snapshot.ai_demand_7d.items.map((item) => (
-                  <span
-                    key={item.date}
-                    className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-[var(--color-border)] px-2 py-0.5"
-                  >
-                    <span className="font-semibold text-[var(--color-text)]">{item.date.slice(5)}</span>
-                    <span>{item.occupancy_pct}%</span>
-                  </span>
-                ))}
-              </div>
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-[var(--color-background)] to-transparent sm:hidden"
-              />
+            {/* Per-day bars: fill the width and keep the date + % aligned under
+                each bar on desktop and mobile alike. */}
+            <div className="mt-3 flex items-end justify-between gap-1 sm:gap-2">
+              {snapshot.ai_demand_7d.items.map((item) => {
+                const pct = Math.max(0, Math.min(100, Math.round(item.occupancy_pct)));
+                return (
+                  <div key={item.date} className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
+                    <span className="text-[10px] font-semibold text-[var(--color-text)] sm:text-xs">{pct}%</span>
+                    <div className="relative flex h-24 w-full max-w-[40px] items-end overflow-hidden rounded-md bg-[color:color-mix(in_srgb,var(--color-secondary)_12%,white)] sm:h-28">
+                      <div
+                        className="w-full rounded-md bg-[var(--color-secondary)] transition-[height] duration-500"
+                        style={{ height: `${pct}%` }}
+                      />
+                    </div>
+                    <span className="whitespace-nowrap text-[10px] text-[var(--color-muted)] sm:text-xs">{item.date.slice(5)}</span>
+                  </div>
+                );
+              })}
             </div>
           </>
         ) : (
