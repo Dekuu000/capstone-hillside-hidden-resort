@@ -7,8 +7,10 @@ import { HomeListings } from "../components/booking/HomeListings";
 import { TourCard } from "../components/booking/TourCard";
 import { SiteFooter } from "../components/booking/SiteFooter";
 
-// Real photo of the Hillside Hidden Resort entrance (served from public/).
+// Real photos of the Hillside Hidden Resort entrance (served from public/).
+// Wide shot for desktop; a portrait crop for the tall mobile hero.
 const HERO_IMAGE = "/branding/hero-hillside.png";
+const HERO_IMAGE_MOBILE = "/branding/hero-hillside-mobile.png";
 
 const HOW_IT_WORKS = [
   {
@@ -38,11 +40,15 @@ export default async function HomePage() {
 
       {/* Hero */}
       <section className="relative flex min-h-[68vh] flex-col justify-end overflow-hidden bg-[#0e2740] md:block md:min-h-0">
-        {/* Full-bleed photo, anchored to the top so the signage stays in frame.
-            Mobile is tall + dramatic (slight side-crop of the wide sign is fine);
-            desktop keeps the wide letterbox feel. */}
+        {/* Full-bleed photo. Mobile uses a portrait crop for the tall hero;
+            desktop uses the wide shot, anchored to the top so the sign stays in frame. */}
         <div
-          className="absolute inset-0 bg-cover bg-top"
+          className="absolute inset-0 bg-cover bg-center md:hidden"
+          style={{ backgroundImage: `url('${HERO_IMAGE_MOBILE}')` }}
+          aria-hidden
+        />
+        <div
+          className="absolute inset-0 hidden bg-cover bg-top md:block"
           style={{ backgroundImage: `url('${HERO_IMAGE}')` }}
           aria-hidden
         />
