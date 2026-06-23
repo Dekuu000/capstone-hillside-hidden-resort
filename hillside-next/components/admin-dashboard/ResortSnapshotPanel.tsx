@@ -148,11 +148,11 @@ export function ResortSnapshotPanel({
             </div>
             {/* Per-day bars: fill the width and keep the date + % aligned under
                 each bar on desktop and mobile alike. */}
-            <div className="mt-3 flex items-end justify-between gap-1 sm:gap-2">
+            <div className="mt-3 flex items-end justify-between gap-1 sm:justify-center sm:gap-5">
               {snapshot.ai_demand_7d.items.map((item) => {
                 const pct = Math.max(0, Math.min(100, Math.round(item.occupancy_pct)));
                 return (
-                  <div key={item.date} className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
+                  <div key={item.date} className="flex min-w-0 flex-1 flex-col items-center gap-1.5 sm:w-14 sm:flex-none">
                     <span className="text-[10px] font-semibold text-[var(--color-text)] sm:text-xs">{pct}%</span>
                     <div className="relative flex h-24 w-full max-w-[40px] items-end overflow-hidden rounded-md bg-[color:color-mix(in_srgb,var(--color-secondary)_12%,white)] sm:h-28">
                       <div
