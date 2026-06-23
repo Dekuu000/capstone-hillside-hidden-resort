@@ -676,13 +676,18 @@ export function AdminUnitsClient({
                 )}
                 <div className="p-3">
                   <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h3 className="line-clamp-1 text-base font-semibold text-[var(--color-text)]">{label.title}</h3>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h3 className="line-clamp-1 text-base font-semibold text-[var(--color-text)]">{label.title}</h3>
+                        <span className={`shrink-0 text-xs font-semibold ${unit.is_active ? "text-emerald-700" : "text-red-700"}`}>
+                          {unit.is_active ? "Active" : "Inactive"}
+                        </span>
+                      </div>
                       {label.subtitle ? (
                         <p className="mt-0.5 text-xs font-medium text-[var(--color-muted)]">{label.subtitle}</p>
                       ) : null}
                     </div>
-                    <p className="text-sm font-bold text-[var(--color-text)]">{formatPeso(unit.base_price)}</p>
+                    <p className="shrink-0 text-sm font-bold text-[var(--color-text)]">{formatPeso(unit.base_price)}</p>
                   </div>
                   <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs font-medium">
                     <span className="capitalize text-[var(--color-muted)]">{unit.type}</span>
@@ -692,9 +697,8 @@ export function AdminUnitsClient({
                     </span>
                   </div>
                   <p className="mt-2 line-clamp-1 text-sm text-[var(--color-muted)]">{unit.description || "No description."}</p>
-                  <div className="mt-2 flex items-center justify-between text-xs text-[var(--color-muted)]">
+                  <div className="mt-2 text-xs text-[var(--color-muted)]">
                     <span>Capacity: {unit.capacity}</span>
-                    <span className={unit.is_active ? "text-emerald-700" : "text-red-700"}>{unit.is_active ? "Active" : "Inactive"}</span>
                   </div>
                   <div className="mt-3 flex flex-wrap items-center gap-2">
                     <button
