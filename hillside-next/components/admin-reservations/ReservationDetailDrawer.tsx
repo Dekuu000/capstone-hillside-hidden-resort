@@ -186,10 +186,12 @@ export function ReservationDetailDrawer({
   const checkInUrl = reservation
     ? `/admin/check-in?mode=code&reservation_code=${encodeURIComponent(reservation.reservation_code)}`
     : "/admin/check-in";
+  // Deep-link the payments console pre-loaded: reservation_id fills the on-site
+  // form (and auto-sets the amount to the balance); search filters the inbox to
+  // this reservation's history. So the front desk never re-types the code.
   const paymentRecordUrl = reservation
-    ? `/admin/payments?reservation_id=${encodeURIComponent(reservation.reservation_id)}${source === "walk_in" ? "&source=walkin" : ""}`
+    ? `/admin/payments?reservation_id=${encodeURIComponent(reservation.reservation_id)}&search=${encodeURIComponent(reservation.reservation_code)}${source === "walk_in" ? "&source=walkin" : ""}`
     : "/admin/payments";
-  const paymentListUrl = reservation ? `/admin/payments?search=${encodeURIComponent(reservation.reservation_code)}` : "/admin/payments";
   const txHash = reservation?.chain_tx_hash ?? null;
   const txUrl = buildTxExplorerUrl(reservation?.chain_key, txHash);
   const checkInActionHref = paymentState === "settled" ? checkInUrl : `${checkInUrl}&override=1`;
@@ -525,11 +527,8 @@ export function ReservationDetailDrawer({
                       )}
                     </p>
                   </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <Link href={paymentListUrl} className="rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)]">
-                      View Payments
-                    </Link>
-                    {source === "online" && firstPendingPayment ? (
+                  {source === "online" && firstPendingPayment ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
                       <button
                         type="button"
                         onClick={() => onVerifyPayment(firstPendingPayment.payment_id)}
@@ -538,8 +537,8 @@ export function ReservationDetailDrawer({
                       >
                         {verifyBusy[firstPendingPayment.payment_id] ? "Verifying..." : "Verify Payment"}
                       </button>
-                    ) : null}
-                  </div>
+                    </div>
+                  ) : null}
                   {paymentsLoading ? <p className="mt-2 text-xs text-[var(--color-muted)]">Loading payments...</p> : null}
                   {paymentsError ? <p className="mt-2 rounded-lg border border-red-200 bg-red-50 p-2 text-xs text-red-700">{paymentsError}</p> : null}
                   {!paymentsLoading && payments.length > 0 ? (

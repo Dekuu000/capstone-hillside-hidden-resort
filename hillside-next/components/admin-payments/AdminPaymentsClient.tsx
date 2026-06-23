@@ -167,7 +167,16 @@ export function AdminPaymentsClient({
     const method = searchParams.get("method")?.trim().toLowerCase() || "";
     const source = searchParams.get("source")?.trim().toLowerCase() || "";
     const walkInType = searchParams.get("walkin_type")?.trim().toLowerCase() || "";
-    if (!reservationId) return;
+    if (!reservationId) {
+      // No id, but a reservation-code search (e.g. from a "view payments" link or
+      // a manual code search) should still pre-load the on-site form so staff
+      // never re-type the code.
+      const searchParam = searchParams.get("search")?.trim() || "";
+      if (searchParam && looksLikeReservationCode(searchParam)) {
+        setOnSiteReservationId(searchParam);
+      }
+      return;
+    }
 
     setOnSiteReservationId(reservationId);
     if (amount && Number.isFinite(Number(amount)) && Number(amount) > 0) {
@@ -891,7 +900,7 @@ export function AdminPaymentsClient({
                 <p className="rounded-lg border border-[var(--color-border)] bg-white px-2 py-1.5 text-xs text-[var(--color-muted)]">
                   Recording payment updates reservation balance immediately and moves eligible reservations toward check-in.
                 </p>
-                {Number.isFinite(enteredAmount) && enteredAmount > 0 ? (
+                {reservationContext && Number.isFinite(enteredAmount) && enteredAmount > 0 ? (
                   <p
                     className={`rounded-lg border px-2 py-1.5 text-xs font-semibold ${
                       projectedRemaining < 0
