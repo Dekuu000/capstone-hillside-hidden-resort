@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { LayoutDashboard } from "lucide-react";
 import { GUEST_HEADER_LOGO_CLASS, HillsideLogo } from "../branding/HillsideLogo";
@@ -26,9 +27,9 @@ export function SearchNav({ isAuthed = false, isAdmin = false, initialName = nul
     <header className="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[var(--color-surface)]">
       <div className="relative mx-auto flex h-[70px] w-full max-w-[1440px] items-center justify-between gap-3 px-4 md:h-20 md:px-6 lg:px-8">
         {/* Brand — public funnel always shows the emblem + wordmark on the left.
-            When signed in, the emblem+wordmark only shows on desktop (lg+), where
-            the center holds the nav tabs; on mobile the center is empty so we
-            show a clean centered wordmark (no emblem) instead. */}
+            When signed in, the full emblem + wordmark only shows on desktop (lg+),
+            where the center holds the nav tabs. On mobile the center is empty, so
+            we keep the emblem on the left and center just the wordmark. */}
         <Link
           href="/"
           className={`min-w-0 items-center ${isAuthed ? "hidden lg:flex" : "flex"}`}
@@ -38,15 +39,29 @@ export function SearchNav({ isAuthed = false, isAdmin = false, initialName = nul
         </Link>
 
         {isAuthed ? (
-          <Link
-            href="/"
-            aria-label="Hillside Hidden Resort home"
-            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap lg:hidden"
-          >
-            <span className="text-[1.15rem] font-semibold leading-none tracking-[0.01em] text-[#0E1F33] min-[400px]:text-[1.25rem]">
-              Hillside Hidden <span className="font-medium text-[#22A699]">Resort</span>
-            </span>
-          </Link>
+          <>
+            {/* Mobile: emblem pinned left… */}
+            <Link href="/" aria-label="Hillside Hidden Resort home" className="flex shrink-0 items-center lg:hidden">
+              <Image
+                src="/branding/hillside-logo-emblem-transparent.png"
+                alt="Hillside Hidden emblem"
+                width={56}
+                height={56}
+                className="h-10 w-10 object-contain"
+                priority
+              />
+            </Link>
+            {/* …with the wordmark centered. */}
+            <Link
+              href="/"
+              aria-label="Hillside Hidden Resort home"
+              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap lg:hidden"
+            >
+              <span className="text-[1.1rem] font-semibold leading-none tracking-[0.01em] text-[#0E1F33] min-[400px]:text-[1.2rem]">
+                Hillside Hidden <span className="font-medium text-[#22A699]">Resort</span>
+              </span>
+            </Link>
+          </>
         ) : null}
 
         {isAuthed ? <PrimaryNavTabs /> : null}
