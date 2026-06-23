@@ -39,7 +39,7 @@ export default async function HomePage() {
       {/* Hero */}
       <section className="relative">
         <div
-          className="absolute inset-0 bg-cover bg-center"
+          className="absolute inset-0 bg-cover bg-top"
           style={{ backgroundImage: `url('${HERO_IMAGE}')` }}
           aria-hidden
         />
