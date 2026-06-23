@@ -7,8 +7,8 @@ import { HomeListings } from "../components/booking/HomeListings";
 import { TourCard } from "../components/booking/TourCard";
 import { SiteFooter } from "../components/booking/SiteFooter";
 
-const HERO_IMAGE =
-  "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=2000&q=80";
+// Real photo of the Hillside Hidden Resort entrance (served from public/).
+const HERO_IMAGE = "/branding/hero-hillside.png";
 
 const HOW_IT_WORKS = [
   {
