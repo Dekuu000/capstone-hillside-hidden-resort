@@ -64,36 +64,33 @@ export function ResortSnapshotPanel({
               : "Unavailable"}
           </p>
         </div>
-        <StatusPill label={aiLabel} tone={aiTone} />
+        {/* Demand-model status is AI-internal — System Admin only. */}
+        {canSeeTechnical ? <StatusPill label={aiLabel} tone={aiTone} /> : null}
       </div>
 
       {error ? (
         <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-4 text-sm text-red-700">{error}</div>
       ) : null}
 
-      <div className={`mt-5 grid gap-3 sm:grid-cols-2 ${canSeeTechnical ? "xl:grid-cols-4" : "xl:grid-cols-3"}`}>
-        <article className="group h-full min-h-[132px] rounded-2xl border border-[var(--color-border)] bg-white p-4 transition-colors duration-200 hover:border-[color:color-mix(in_srgb,var(--color-secondary)_35%,white)]">
-          <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
-              <Coins className="h-4 w-4" />
-            </span>
-            Cash revenue · 7d
-          </p>
-          <p className="mt-3 text-3xl font-bold tracking-[-0.01em] text-[var(--color-text)]">{snapshot ? formatPeso(snapshot.revenue.fiat_php_7d) : "--"}</p>
-          <p className="mt-1 text-xs text-[var(--color-muted)]">Settled in 7d ({compactPeso})</p>
+      <div className={`mt-5 grid grid-cols-2 gap-2.5 sm:gap-3 ${canSeeTechnical ? "xl:grid-cols-4" : "xl:grid-cols-3"}`}>
+        <article className="group h-full min-h-[92px] rounded-2xl border border-[var(--color-border)] bg-white p-3.5 transition-colors duration-200 hover:border-[color:color-mix(in_srgb,var(--color-secondary)_35%,white)]">
+          <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+            <Coins className="h-3.5 w-3.5" />
+          </span>
+          <p className="mt-2 truncate text-[10px] font-semibold uppercase tracking-[0.04em] text-[var(--color-muted)]">Cash revenue · 7d</p>
+          <p className="mt-1 text-xl font-bold tracking-[-0.01em] text-[var(--color-text)] sm:text-2xl">{snapshot ? formatPeso(snapshot.revenue.fiat_php_7d) : "--"}</p>
+          <p className="mt-0.5 text-[11px] leading-snug text-[var(--color-muted)]">Settled in 7d ({compactPeso})</p>
         </article>
 
-        <article className="group h-full min-h-[132px] rounded-2xl border border-[var(--color-border)] bg-white p-4 transition-colors duration-200 hover:border-[color:color-mix(in_srgb,var(--color-secondary)_35%,white)]">
-          <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-sky-50 text-[var(--color-primary)]">
-              <Hotel className="h-4 w-4" />
-            </span>
-            Occupancy now
-          </p>
-          <p className="mt-3 text-3xl font-bold tracking-[-0.01em] text-[var(--color-text)]">
+        <article className="group h-full min-h-[92px] rounded-2xl border border-[var(--color-border)] bg-white p-3.5 transition-colors duration-200 hover:border-[color:color-mix(in_srgb,var(--color-secondary)_35%,white)]">
+          <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-sky-50 text-[var(--color-primary)]">
+            <Hotel className="h-3.5 w-3.5" />
+          </span>
+          <p className="mt-2 truncate text-[10px] font-semibold uppercase tracking-[0.04em] text-[var(--color-muted)]">Occupancy now</p>
+          <p className="mt-1 text-xl font-bold tracking-[-0.01em] text-[var(--color-text)] sm:text-2xl">
             {occupancyPercent !== null ? `${occupancyPercent}%` : "--"}
           </p>
-          <p className="mt-1 text-xs text-[var(--color-muted)]">
+          <p className="mt-0.5 text-[11px] leading-snug text-[var(--color-muted)]">
             {snapshot
               ? `${snapshot.occupancy.occupied_units}/${snapshot.occupancy.active_units} occupied`
               : "No live occupancy data"}
@@ -101,33 +98,29 @@ export function ResortSnapshotPanel({
         </article>
 
         {canSeeTechnical ? (
-          <article className="group h-full min-h-[132px] rounded-2xl border border-[var(--color-border)] bg-white p-4 transition-colors duration-200 hover:border-[color:color-mix(in_srgb,var(--color-secondary)_35%,white)]">
-            <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">
-              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-orange-50 text-[var(--color-cta)]">
-                <Activity className="h-4 w-4" />
-              </span>
-              Crypto revenue
-            </p>
-            <p className="mt-3 text-3xl font-bold tracking-[-0.01em] text-[var(--color-text)]">
+          <article className="group h-full min-h-[92px] rounded-2xl border border-[var(--color-border)] bg-white p-3.5 transition-colors duration-200 hover:border-[color:color-mix(in_srgb,var(--color-secondary)_35%,white)]">
+            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-orange-50 text-[var(--color-cta)]">
+              <Activity className="h-3.5 w-3.5" />
+            </span>
+            <p className="mt-2 truncate text-[10px] font-semibold uppercase tracking-[0.04em] text-[var(--color-muted)]">Crypto revenue</p>
+            <p className="mt-1 text-xl font-bold tracking-[-0.01em] text-[var(--color-text)] sm:text-2xl">
               {snapshot ? `${snapshot.revenue.crypto_native_total.toFixed(4)} ${snapshot.revenue.crypto_unit}` : "--"}
             </p>
-            <p className="mt-1 text-xs text-[var(--color-muted)]">
+            <p className="mt-0.5 text-[11px] leading-snug text-[var(--color-muted)]">
               {snapshot ? `${snapshot.revenue.crypto_tx_count} tx · ${snapshot.revenue.crypto_chain_key.toUpperCase()}` : "No chain activity"}
             </p>
           </article>
         ) : null}
 
-        <article className="group h-full min-h-[132px] rounded-2xl border border-[var(--color-border)] bg-white p-4 transition-colors duration-200 hover:border-[color:color-mix(in_srgb,var(--color-secondary)_35%,white)]">
-          <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[color:color-mix(in_srgb,var(--color-secondary)_14%,white)] text-[var(--color-secondary)]">
-              <BrainCircuit className="h-4 w-4" />
-            </span>
-            AI demand · 7d
-          </p>
-          <p className="mt-3 text-3xl font-bold tracking-[-0.01em] text-[var(--color-text)]">
+        <article className="group h-full min-h-[92px] rounded-2xl border border-[var(--color-border)] bg-white p-3.5 transition-colors duration-200 hover:border-[color:color-mix(in_srgb,var(--color-secondary)_35%,white)]">
+          <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[color:color-mix(in_srgb,var(--color-secondary)_14%,white)] text-[var(--color-secondary)]">
+            <BrainCircuit className="h-3.5 w-3.5" />
+          </span>
+          <p className="mt-2 truncate text-[10px] font-semibold uppercase tracking-[0.04em] text-[var(--color-muted)]">AI demand · 7d</p>
+          <p className="mt-1 text-xl font-bold tracking-[-0.01em] text-[var(--color-text)] sm:text-2xl">
             {snapshot ? `${snapshot.ai_demand_7d.avg_occupancy_pct}%` : "--"}
           </p>
-          <p className="mt-1 text-xs text-[var(--color-muted)]">
+          <p className="mt-0.5 text-[11px] leading-snug text-[var(--color-muted)]">
             {snapshot?.ai_demand_7d.peak_date
               ? `Peak ${snapshot.ai_demand_7d.peak_occupancy_pct}% · ${snapshot.ai_demand_7d.peak_date}`
               : "No forecast generated yet"}
@@ -135,7 +128,7 @@ export function ResortSnapshotPanel({
         </article>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-[var(--color-border)] bg-white p-3 text-xs text-[var(--color-muted)]">
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-[var(--color-muted)]">
         <span className="inline-flex items-center rounded-full border border-[var(--color-border)] bg-[var(--color-background)] px-2.5 py-1 font-semibold text-[var(--color-text)]">
           Active units: {snapshot?.occupancy.active_units ?? "--"}
         </span>
@@ -163,12 +156,25 @@ export function ResortSnapshotPanel({
             <svg viewBox="0 0 520 120" className="h-28 w-full" aria-label="AI demand trend">
               <path d={demandPath} fill="none" stroke="var(--color-secondary)" strokeWidth="3" strokeLinecap="round" />
             </svg>
-            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[var(--color-muted)]">
-              {snapshot.ai_demand_7d.items.map((item) => (
-                <span key={item.date} className="rounded-full border border-[var(--color-border)] px-2 py-0.5">
-                  {item.date.slice(5)} | {item.occupancy_pct}%
-                </span>
-              ))}
+            {/* Mobile: a clean one-line strip that scrolls horizontally (scrollbar
+                hidden, right-edge fade hints there's more). sm+: wraps since all
+                7 chips fit without scrolling. */}
+            <div className="relative mt-2">
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 text-[10px] text-[var(--color-muted)] [-ms-overflow-style:none] [scrollbar-width:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden">
+                {snapshot.ai_demand_7d.items.map((item) => (
+                  <span
+                    key={item.date}
+                    className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-[var(--color-border)] px-2 py-0.5"
+                  >
+                    <span className="font-semibold text-[var(--color-text)]">{item.date.slice(5)}</span>
+                    <span>{item.occupancy_pct}%</span>
+                  </span>
+                ))}
+              </div>
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-[var(--color-background)] to-transparent sm:hidden"
+              />
             </div>
           </>
         ) : (

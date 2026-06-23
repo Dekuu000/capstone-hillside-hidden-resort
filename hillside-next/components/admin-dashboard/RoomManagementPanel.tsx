@@ -206,7 +206,7 @@ export function RoomManagementPanel({
         <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
       ) : null}
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-[1.1fr_1fr]">
+      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1.1fr_1fr]">
         <div className="space-y-3">
           <label className="block">
             <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">Search unit</span>
@@ -257,7 +257,7 @@ export function RoomManagementPanel({
             />
           </label>
 
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <label className="block">
               <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">Availability</span>
               <Select

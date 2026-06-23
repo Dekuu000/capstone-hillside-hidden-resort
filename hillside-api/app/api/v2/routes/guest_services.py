@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from app.core.auth import AuthContext, require_authenticated
 from app.integrations.supabase_client import (
     create_resort_service_request,
+    get_guest_active_checkin,
     list_active_resort_services,
     list_resort_service_requests,
     notify_ops_new_service_request,
@@ -69,12 +70,22 @@ def create_guest_service_request(
         if cached_payload:
             return cached_payload
 
+    # Guests can request services only while actually checked in (they have a
+    # real room/cottage to deliver to). Tie the request to that active stay so
+    # staff always know where to deliver.
+    active_stay = get_guest_active_checkin(user_id=auth.user_id)
+    if not active_stay:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Service requests are available only during your stay. Please check in first.",
+        )
+
     try:
         row = create_resort_service_request(
             access_token=auth.access_token,
             guest_user_id=auth.user_id,
             service_item_id=payload.service_item_id,
-            reservation_id=payload.reservation_id,
+            reservation_id=str(active_stay.get("reservation_id")),
             quantity=payload.quantity,
             preferred_time=payload.preferred_time.isoformat() if payload.preferred_time else None,
             notes=payload.notes,

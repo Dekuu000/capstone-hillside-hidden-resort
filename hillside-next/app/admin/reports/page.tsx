@@ -1,5 +1,6 @@
 ﻿import type { Metadata } from "next";
-import { Coins } from "lucide-react";
+import { BedDouble, CalendarCheck, Coins, Hotel, ListChecks, Palmtree, Tag, Wallet, XCircle } from "lucide-react";
+import { KpiTile } from "../../../components/shared/KpiTile";
 import type { ReportsOverviewResponse, Role } from "../../../../packages/shared/src/types";
 import { ROLE_LABELS } from "../../../../packages/shared/src/types";
 import { reportsOverviewResponseSchema } from "../../../../packages/shared/src/schemas";
@@ -138,55 +139,35 @@ export default async function AdminReportsPage({
       ) : (
         <>
           <PrintableReport overview={overview} preparedBy={preparedBy} generatedAt={generatedAt} />
-          <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <div className="rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-[var(--shadow-card)] xl:col-span-2">
-              <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">
-                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
-                  <Coins className="h-4 w-4" />
-                </span>
-                Cash Collected
-              </p>
-              <p className="mt-3 text-3xl font-bold tracking-[-0.01em] text-[var(--color-text)]">{formatPeso(overview.summary.cash_collected)}</p>
-              <p className="mt-1 text-xs text-[var(--color-muted)]">Primary KPI for the selected period</p>
-            </div>
-            <div className="rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-sm">
-              <p className="text-xs text-[var(--color-muted)]">Bookings</p>
-              <p className="mt-1 text-2xl font-bold text-[var(--color-text)]">{overview.summary.bookings}</p>
-            </div>
-            <div className="rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-sm">
-              <p className="text-xs text-[var(--color-muted)]">Occupancy Rate</p>
-              <p className="mt-1 text-2xl font-bold text-[var(--color-text)]">{formatPercent(overview.summary.occupancy_rate)}</p>
-            </div>
-            <div className="rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-sm">
-              <p className="text-xs text-[var(--color-muted)]">Net Bookings</p>
-              <p className="mt-1 text-2xl font-bold text-[var(--color-text)]">{netBookings}</p>
-            </div>
-            <div className="rounded-2xl border border-rose-200/70 bg-rose-50/40 p-4 shadow-sm">
-              <p className="text-xs text-rose-700">Cancellations</p>
-              <p className="mt-1 text-2xl font-bold text-rose-700">{overview.summary.cancellations}</p>
-            </div>
-            <div className="rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-sm">
-              <p className="text-xs text-[var(--color-muted)]">Unit Booked Value</p>
-              <p className="mt-1 text-2xl font-bold text-[var(--color-text)]">{formatPeso(overview.summary.unit_booked_value)}</p>
-            </div>
-            <div className="rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-sm">
-              <p className="text-xs text-[var(--color-muted)]">Tour Booked Value</p>
-              <p className="mt-1 text-2xl font-bold text-[var(--color-text)]">{formatPeso(overview.summary.tour_booked_value)}</p>
-            </div>
-            <div className="rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-sm">
-              <p className="text-xs text-[var(--color-muted)]">Promo Discounts</p>
-              <p className="mt-1 text-2xl font-bold text-[var(--color-secondary)]">
-                {overview.summary.promo_discounts > 0 ? "−" : ""}{formatPeso(overview.summary.promo_discounts)}
-              </p>
-              <p className="mt-1 text-xs text-[var(--color-muted)]">Given away via promo codes</p>
-            </div>
-            <div className="rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-sm">
-              <p className="text-xs text-[var(--color-muted)]">Net Booked Value</p>
-              <p className="mt-1 text-2xl font-bold text-[var(--color-text)]">
-                {formatPeso(overview.summary.unit_booked_value + overview.summary.tour_booked_value - overview.summary.promo_discounts)}
-              </p>
-              <p className="mt-1 text-xs text-[var(--color-muted)]">Gross booked − discounts</p>
-            </div>
+          <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <KpiTile
+              icon={Coins}
+              tone="emerald"
+              label="Cash Collected"
+              value={formatPeso(overview.summary.cash_collected)}
+              hint="Primary KPI for the selected period"
+              className="xl:col-span-2"
+            />
+            <KpiTile icon={CalendarCheck} tone="primary" label="Bookings" value={overview.summary.bookings} />
+            <KpiTile icon={Hotel} tone="teal" label="Occupancy Rate" value={formatPercent(overview.summary.occupancy_rate)} />
+            <KpiTile icon={ListChecks} tone="sky" label="Net Bookings" value={netBookings} />
+            <KpiTile icon={XCircle} tone="rose" label="Cancellations" value={overview.summary.cancellations} />
+            <KpiTile icon={BedDouble} tone="primary" label="Unit Booked Value" value={formatPeso(overview.summary.unit_booked_value)} />
+            <KpiTile icon={Palmtree} tone="teal" label="Tour Booked Value" value={formatPeso(overview.summary.tour_booked_value)} />
+            <KpiTile
+              icon={Tag}
+              tone="teal"
+              label="Promo Discounts"
+              value={`${overview.summary.promo_discounts > 0 ? "−" : ""}${formatPeso(overview.summary.promo_discounts)}`}
+              hint="Given away via promo codes"
+            />
+            <KpiTile
+              icon={Wallet}
+              tone="emerald"
+              label="Net Booked Value"
+              value={formatPeso(overview.summary.unit_booked_value + overview.summary.tour_booked_value - overview.summary.promo_discounts)}
+              hint="Gross booked − discounts"
+            />
           </div>
 
           <div className="mb-5 flex flex-wrap items-center gap-2 rounded-2xl border border-[var(--color-border)] bg-white px-4 py-3 shadow-sm">

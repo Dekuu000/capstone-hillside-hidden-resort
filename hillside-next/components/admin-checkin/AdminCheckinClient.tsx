@@ -1483,23 +1483,22 @@ export function AdminCheckinClient({
         eyebrow="Operations"
         title="Check-in console"
         subtitle="Kiosk-friendly scan flow with offline queue."
-        action={
-          <div className="flex flex-col items-start gap-2 sm:items-end">
-            <DataFreshnessBadge />
-            <ScanHeader onOpenSettings={() => setSettingsDrawerOpen(true)} />
-          </div>
-        }
+        cornerSlot={<DataFreshnessBadge variant="plain" />}
+        action={<ScanHeader onOpenSettings={() => setSettingsDrawerOpen(true)} />}
       />
 
       <div className={`grid gap-3 sm:gap-4 ${tabletView ? "xl:grid-cols-[1.35fr_0.65fr]" : "xl:grid-cols-[1.15fr_0.85fr]"} xl:items-stretch`}>
         <section className="surface h-full p-3 sm:p-4">
           <div className="mb-2 flex items-center justify-between gap-2">
-            <p className="text-sm font-semibold text-[var(--color-text)] sm:text-base">Manual fallback + system status</p>
-            <StatusPill
-              label={networkOnline ? "Online" : "Offline"}
-              tone={networkOnline ? "success" : "warn"}
-              icon={networkOnline ? <Wifi className="h-3.5 w-3.5" aria-hidden="true" /> : <WifiOff className="h-3.5 w-3.5" aria-hidden="true" />}
-            />
+            <p className="text-xs font-semibold text-[var(--color-text)] sm:text-sm">Manual fallback + system status</p>
+            <span
+              className={`inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold ${
+                networkOnline ? "text-emerald-600" : "text-amber-600"
+              }`}
+            >
+              {networkOnline ? <Wifi className="h-3 w-3" aria-hidden="true" /> : <WifiOff className="h-3 w-3" aria-hidden="true" />}
+              {networkOnline ? "Online" : "Offline"}
+            </span>
           </div>
           <ScanSegmentedControl value={mode} onChange={(value) => setMode(value as Mode)} queueCount={pendingQueueCount} showQueue={canSeeQueue} />
           <details className="group mt-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)]">

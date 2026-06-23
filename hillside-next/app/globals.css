@@ -48,6 +48,15 @@ body {
 
 html {
   scrollbar-gutter: stable;
+  /* Stop stray wide content (e.g. data tables, form rows) from creating
+     page-level horizontal scroll, which would shift the fixed bottom nav and
+     sticky header off-screen on mobile. Applied to <html> (not <body>) so it
+     keeps the vertical scroller, preserving the sticky header. Wide tables
+     keep their own `overflow-x-auto` wrappers, so their data stays scrollable. */
+  overflow-x: hidden;
+  /* No tap-highlight rectangle on touch — it reads as an unwanted box behind
+     buttons and bottom-nav cells. Press feedback comes from :active styles. */
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -80,10 +89,23 @@ button {
   cursor: pointer;
 }
 
-button:focus-visible,
-a:focus-visible {
-  outline: 2px solid transparent;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-secondary) 22%, white);
+/* Keyboard focus ring — only on devices with a real pointer + keyboard
+   (desktop). Touch devices get no ring at all, so tapping a button or a
+   bottom-nav item never leaves a lingering outline/halo box. Uses a crisp
+   outline (not a box-shadow) so it never reads as a drop shadow. */
+@media (hover: hover) and (pointer: fine) {
+  button:focus-visible,
+  a:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--color-secondary) 60%, white);
+    outline-offset: 2px;
+  }
+}
+
+/* Belt-and-suspenders: strip any focus ring when focus came from a pointer
+   (covers browsers that would otherwise leave a halo lingering after a tap). */
+button:focus:not(:focus-visible),
+a:focus:not(:focus-visible) {
+  outline: none;
 }
 
 .no-scrollbar {
@@ -386,6 +408,24 @@ a:focus-visible {
   }
   to {
     background-position: -200% 0;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
   }
 }
 

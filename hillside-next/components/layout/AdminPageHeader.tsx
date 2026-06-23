@@ -11,6 +11,7 @@ export function AdminPageHeader({
   subtitle,
   action,
   meta,
+  cornerSlot,
 }: {
   eyebrow?: string;
   title: ReactNode;
@@ -18,9 +19,12 @@ export function AdminPageHeader({
   action?: ReactNode;
   /** Optional status row (badges, freshness chips) rendered under the subtitle. */
   meta?: ReactNode;
+  /** Small element pinned to the card's top-right corner (e.g. a freshness chip). */
+  cornerSlot?: ReactNode;
 }) {
   return (
-    <header className="surface flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-7 lg:p-8">
+    <header className="surface relative flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-7 lg:p-8">
+      {cornerSlot ? <div className="absolute right-4 top-4 sm:right-6 sm:top-6">{cornerSlot}</div> : null}
       <div className="min-w-0">
         {eyebrow ? (
           <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--color-secondary)]">{eyebrow}</p>

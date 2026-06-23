@@ -120,7 +120,7 @@ export function CameraScanPanel({
           type="button"
           onClick={onToggleCamera}
           disabled={scanLoading}
-          className={`inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold disabled:opacity-60 sm:w-auto sm:min-w-[180px] ${scanActive ? "border border-[var(--color-border)] bg-white text-[var(--color-text)]" : "bg-[var(--color-cta)] text-white"}`}
+          className={`inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold disabled:opacity-60 sm:w-auto sm:min-w-[180px] ${scanActive ? "border border-[var(--color-border)] bg-white text-[var(--color-text)]" : "bg-[var(--color-primary)] text-white"}`}
         >
           {scanActive ? <CameraOff className="h-4 w-4" /> : <Camera className="h-4 w-4" />}
           {scanLoading ? "Starting..." : scanActive ? "Stop camera" : "Start camera"}

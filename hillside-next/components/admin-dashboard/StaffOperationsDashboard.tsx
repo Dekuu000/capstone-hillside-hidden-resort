@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { BedDouble, CalendarCheck, ConciergeBell, ScanLine, UserPlus } from "lucide-react";
+import { BedDouble, CalendarCheck, ScanLine, UserPlus } from "lucide-react";
 import type { OperationsSnapshotResponse } from "../../../packages/shared/src/types";
 import { AdminPageHeader } from "../layout/AdminPageHeader";
 
@@ -31,12 +30,6 @@ export function StaffOperationsDashboard({
     { label: "Maintenance", value: rooms?.maintenance, tone: "text-red-600" },
   ];
 
-  const actions = [
-    { href: "/admin/check-in", label: "Scan & check in", icon: ScanLine },
-    { href: "/admin/walk-in", label: "New walk-in", icon: UserPlus },
-    { href: "/admin/services", label: "Service requests", icon: ConciergeBell },
-  ];
-
   return (
     <section className="mx-auto w-full max-w-[1600px] space-y-5 pb-2">
       <AdminPageHeader
@@ -49,17 +42,17 @@ export function StaffOperationsDashboard({
         <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-4 text-sm text-red-700">{error}</div>
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {kpis.map((kpi) => {
           const Icon = kpi.icon;
           return (
-            <article key={kpi.label} className="surface flex items-center gap-4 p-5">
-              <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[color:color-mix(in_srgb,var(--color-secondary)_14%,white)] text-[var(--color-secondary)]">
-                <Icon className="h-5 w-5" />
+            <article key={kpi.label} className="surface flex items-center gap-3 p-3.5">
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[color:color-mix(in_srgb,var(--color-secondary)_14%,white)] text-[var(--color-secondary)]">
+                <Icon className="h-4 w-4" />
               </span>
               <div>
-                <p className="text-3xl font-bold tracking-[-0.01em] text-[var(--color-text)]">{kpi.value ?? "--"}</p>
-                <p className="text-sm text-[var(--color-muted)]">{kpi.label}</p>
+                <p className="text-2xl font-bold tracking-[-0.01em] text-[var(--color-text)]">{kpi.value ?? "--"}</p>
+                <p className="text-xs text-[var(--color-muted)]">{kpi.label}</p>
               </div>
             </article>
           );
@@ -75,32 +68,11 @@ export function StaffOperationsDashboard({
         </div>
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {roomStats.map((stat) => (
-            <div key={stat.label} className="rounded-2xl border border-[var(--color-border)] bg-white p-4 text-center">
-              <p className={`text-3xl font-bold ${stat.tone}`}>{stat.value ?? "--"}</p>
+            <div key={stat.label} className="rounded-2xl border border-[var(--color-border)] bg-white p-3 text-center">
+              <p className={`text-2xl font-bold ${stat.tone}`}>{stat.value ?? "--"}</p>
               <p className="mt-1 text-xs font-semibold uppercase tracking-[0.1em] text-[var(--color-muted)]">{stat.label}</p>
             </div>
           ))}
-        </div>
-      </section>
-
-      <section className="surface p-5 sm:p-6">
-        <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">Quick actions</h2>
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          {actions.map((action) => {
-            const Icon = action.icon;
-            return (
-              <Link
-                key={action.href}
-                href={action.href}
-                className="flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-white p-4 font-semibold text-[var(--color-text)] transition hover:border-[color:color-mix(in_srgb,var(--color-secondary)_35%,white)] hover:bg-[var(--color-background)]"
-              >
-                <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-cta)] text-white">
-                  <Icon className="h-5 w-5" />
-                </span>
-                {action.label}
-              </Link>
-            );
-          })}
         </div>
       </section>
     </section>

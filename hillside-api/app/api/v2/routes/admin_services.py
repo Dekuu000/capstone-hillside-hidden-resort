@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.core.auth import AuthContext, require_operations
 from app.integrations.supabase_client import (
+    ServiceRequestTransitionError,
     list_resort_service_requests,
     notify_guest_service_request,
     update_resort_service_request_status,
@@ -74,6 +75,8 @@ def patch_admin_service_request(
             processed_by_user_id=auth.user_id,
             notes=payload.notes,
         )
+    except ServiceRequestTransitionError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     except RuntimeError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
     except Exception as exc:  # noqa: BLE001
