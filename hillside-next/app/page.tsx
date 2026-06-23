@@ -46,15 +46,19 @@ export default async function HomePage() {
         />
         <div className="absolute inset-0 hidden bg-gradient-to-b from-black/45 via-black/30 to-black/55 md:block" aria-hidden />
 
-        {/* Mobile: show the full signage as a banner (a portrait hero would crop
-            the wide sign), then the headline sits below it on the brand navy. */}
-        <div
-          className="aspect-[11/5] w-full bg-cover bg-top md:hidden"
-          style={{ backgroundImage: `url('${HERO_IMAGE}')` }}
-          aria-hidden
-        />
+        {/* Mobile: the full signage as a banner (a portrait hero would crop the
+            wide sign), with its base fading into the brand navy so the photo and
+            the headline below read as one continuous hero — not two stacked boxes. */}
+        <div className="relative md:hidden">
+          <div
+            className="aspect-[11/5] w-full bg-cover bg-top"
+            style={{ backgroundImage: `url('${HERO_IMAGE}')` }}
+            aria-hidden
+          />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-b from-transparent to-[#0e2740]" aria-hidden />
+        </div>
 
-        <div className="relative mx-auto w-full max-w-[1280px] px-4 pb-28 pt-8 md:px-6 md:pb-32 md:pt-28 lg:px-8">
+        <div className="relative mx-auto w-full max-w-[1280px] px-4 pb-28 pt-4 md:px-6 md:pb-32 md:pt-28 lg:px-8">
           <p className="text-sm font-semibold uppercase tracking-[0.25em] text-white/80">Your hidden escape awaits</p>
           <h1 className="mt-3 max-w-2xl text-4xl font-semibold leading-tight text-white md:text-6xl">
             Stay where the hills meet stillness.
