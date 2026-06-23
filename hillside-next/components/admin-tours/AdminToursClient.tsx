@@ -286,7 +286,7 @@ export function AdminToursClient({ accessToken }: Props) {
             </div>
 
             {/* Pricing & visibility */}
-            <div className="flex flex-wrap items-end gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
+            <div className="grid gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3 sm:grid-cols-[auto_auto_1fr] sm:items-end">
               <label className="flex flex-col gap-1 text-xs font-semibold text-[var(--color-muted)]">
                 Adult rate (₱)
                 <input
@@ -299,7 +299,7 @@ export function AdminToursClient({ accessToken }: Props) {
                       [tour.service_id]: { ...rate, adult: e.target.value.replace(/[^0-9.]/g, "") },
                     }))
                   }
-                  className="h-10 w-28 rounded-lg border border-[var(--color-border)] bg-white px-3 text-sm font-medium text-[var(--color-text)] outline-none focus:border-[var(--color-primary)]"
+                  className="h-10 w-full rounded-lg border border-[var(--color-border)] bg-white px-3 text-sm font-medium text-[var(--color-text)] outline-none focus:border-[var(--color-primary)] sm:w-28"
                 />
               </label>
               <label className="flex flex-col gap-1 text-xs font-semibold text-[var(--color-muted)]">
@@ -314,27 +314,29 @@ export function AdminToursClient({ accessToken }: Props) {
                       [tour.service_id]: { ...rate, kid: e.target.value.replace(/[^0-9.]/g, "") },
                     }))
                   }
-                  className="h-10 w-28 rounded-lg border border-[var(--color-border)] bg-white px-3 text-sm font-medium text-[var(--color-text)] outline-none focus:border-[var(--color-primary)]"
+                  className="h-10 w-full rounded-lg border border-[var(--color-border)] bg-white px-3 text-sm font-medium text-[var(--color-text)] outline-none focus:border-[var(--color-primary)] sm:w-28"
                 />
               </label>
-              <button
-                type="button"
-                onClick={() => handleSaveRates(tour)}
-                disabled={detailsBusy}
-                className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--color-primary)] px-4 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-50"
-              >
-                {detailsBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                Save prices
-              </button>
-              <button
-                type="button"
-                onClick={() => persistDetails(tour.service_id, { status: isActive ? "inactive" : "active" })}
-                disabled={detailsBusy}
-                className="ml-auto inline-flex h-10 items-center gap-2 rounded-lg border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] disabled:opacity-50"
-              >
-                {isActive ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                {isActive ? "Hide from guests" : "Show to guests"}
-              </button>
+              <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                <button
+                  type="button"
+                  onClick={() => handleSaveRates(tour)}
+                  disabled={detailsBusy}
+                  className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-lg bg-[var(--color-primary)] px-4 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-50 sm:flex-none"
+                >
+                  {detailsBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  Save prices
+                </button>
+                <button
+                  type="button"
+                  onClick={() => persistDetails(tour.service_id, { status: isActive ? "inactive" : "active" })}
+                  disabled={detailsBusy}
+                  className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] disabled:opacity-50 sm:flex-none"
+                >
+                  {isActive ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {isActive ? "Hide" : "Show"}
+                </button>
+              </div>
             </div>
 
             {images.length ? (

@@ -4,7 +4,6 @@ import { useState } from "react";
 import { BedDouble, TreePalm } from "lucide-react";
 import type { UnitListResponse } from "../../../packages/shared/src/types";
 import { AdminPageHeader } from "../layout/AdminPageHeader";
-import { Tabs } from "../shared/Tabs";
 import { AdminUnitsClient } from "./AdminUnitsClient";
 import { AdminToursClient } from "../admin-tours/AdminToursClient";
 
@@ -23,9 +22,9 @@ type StaysToursTabsProps = {
   initialOperationalStatus?: UnitOperationalStatus | "";
 };
 
-const TAB_ITEMS = [
-  { id: "stays", label: "Stays", icon: <BedDouble className="h-4 w-4" /> },
-  { id: "tours", label: "Tours", icon: <TreePalm className="h-4 w-4" /> },
+const TAB_ITEMS: Array<{ id: "stays" | "tours"; label: string; Icon: typeof BedDouble }> = [
+  { id: "stays", label: "Stays", Icon: BedDouble },
+  { id: "tours", label: "Tours", Icon: TreePalm },
 ];
 
 /**
@@ -55,13 +54,31 @@ export function StaysToursTabs({ token, initialTab, ...unitsProps }: StaysToursT
         subtitle="Manage rooms, cottages, and event spaces, plus your day and night tours."
       />
 
-      <Tabs
-        items={TAB_ITEMS}
-        value={tab}
-        onChange={onTabChange}
-        ariaLabel="Switch between stays and tours"
-        className="sm:max-w-md sm:grid-cols-2"
-      />
+      <div
+        role="group"
+        aria-label="Switch between stays and tours"
+        className="grid grid-cols-2 gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-2 shadow-[var(--shadow-sm)] sm:mx-auto sm:w-full sm:max-w-[420px]"
+      >
+        {TAB_ITEMS.map(({ id, label, Icon }) => {
+          const active = id === tab;
+          return (
+            <button
+              key={id}
+              type="button"
+              aria-pressed={active}
+              onClick={() => onTabChange(id)}
+              className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
+                active
+                  ? "bg-[var(--color-primary)] text-white shadow-sm"
+                  : "bg-transparent text-[var(--color-muted)] hover:bg-[var(--color-background)]"
+              }`}
+            >
+              <Icon className="h-4 w-4" />
+              {label}
+            </button>
+          );
+        })}
+      </div>
 
       {tab === "stays" ? (
         <AdminUnitsClient initialToken={token} hideHeader {...unitsProps} />
