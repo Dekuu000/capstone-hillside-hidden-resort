@@ -49,19 +49,16 @@ export default async function AdminBlockchainPage({
         accessToken: token,
         path: "/v2/escrow/contract-status?window_days=7&limit=5&offset=0",
         schema: contractStatusResponseSchema,
-        revalidate: 30,
       }),
       fetchServerApiData({
         accessToken: token,
         path: auditPath,
         schema: auditLogsResponseSchema,
-        revalidate: 30,
       }),
       fetchServerApiData({
         accessToken: token,
         path: "/v2/escrow/reconciliation?limit=10&offset=0",
         schema: escrowReconciliationResponseSchema,
-        revalidate: 30,
       }),
     ]);
     if (contractData) {

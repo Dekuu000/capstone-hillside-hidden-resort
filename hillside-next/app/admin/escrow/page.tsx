@@ -32,7 +32,6 @@ async function fetchEscrowReconciliation(
     accessToken,
     path: `/v2/escrow/reconciliation?limit=${PAGE_SIZE}&offset=${offset}`,
     schema: escrowReconciliationResponseSchema,
-    revalidate: 15,
   });
 }
 

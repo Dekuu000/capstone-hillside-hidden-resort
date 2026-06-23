@@ -251,6 +251,7 @@ export const reservationGuestSchema = z.object({
   name: z.string().optional().nullable(),
   email: z.string().optional().nullable(),
   phone: z.string().optional().nullable(),
+  role: z.string().optional().nullable(),
 });
 
 export const reservationUnitSchema = z.object({

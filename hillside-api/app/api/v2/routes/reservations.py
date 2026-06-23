@@ -1004,11 +1004,19 @@ def create_walk_in_stay_reservation(
         check_out_date=payload.check_out_date,
     )
     _ensure_selected_units_available(unit_ids=payload.unit_ids, unit_map=unit_map)
+    # Mirror the guest stay path: enforce capacity and apply pax-based pricing
+    # from guest_count so walk-in bookings charge identically to online ones.
+    _ensure_guest_count_within_capacity(
+        unit_ids=payload.unit_ids,
+        unit_map=unit_map,
+        guest_count=payload.guest_count,
+    )
     nights, rates, total_amount = _compute_stay_rates_and_total(
         check_in_date=payload.check_in_date,
         check_out_date=payload.check_out_date,
         unit_ids=payload.unit_ids,
         unit_map=unit_map,
+        guest_count=payload.guest_count,
     )
     notes = _build_walk_in_notes(payload)
 

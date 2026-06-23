@@ -47,7 +47,6 @@ async function fetchInitialUnits(
     accessToken,
     path: `/v2/units?${qs.toString()}`,
     schema: unitListResponseSchema,
-    revalidate: 10,
     timeoutMs: 5000,
   });
 }

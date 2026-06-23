@@ -22,7 +22,6 @@ export default async function AdminShellPage() {
       accessToken: token,
       path: "/v2/dashboard/operations",
       schema: operationsSnapshotResponseSchema,
-      revalidate: 30,
     });
     return (
       <StaffOperationsDashboard
@@ -47,13 +46,11 @@ export default async function AdminShellPage() {
         accessToken: token,
         path: "/v2/dashboard/resort-snapshot",
         schema: resortSnapshotResponseSchema,
-        revalidate: 30,
       }),
       fetchServerApiData({
         accessToken: token,
         path: "/v2/units?limit=200&offset=0",
         schema: unitListResponseSchema,
-        revalidate: 30,
       }),
     ]);
     if (snapshotData) {
@@ -71,7 +68,6 @@ export default async function AdminShellPage() {
         accessToken: token,
         path: "/v2/escrow/contract-status?window_days=7&limit=8&offset=0",
         schema: contractStatusResponseSchema,
-        revalidate: 30,
       });
       if (!contractStatus) {
         ledgerError = "Unable to load ledger transactions. Open Records & Security for full diagnostics.";

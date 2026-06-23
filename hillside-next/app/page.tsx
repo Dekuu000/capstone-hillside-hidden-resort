@@ -7,8 +7,10 @@ import { HomeListings } from "../components/booking/HomeListings";
 import { TourCard } from "../components/booking/TourCard";
 import { SiteFooter } from "../components/booking/SiteFooter";
 
-const HERO_IMAGE =
-  "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=2000&q=80";
+// Real photos of the Hillside Hidden Resort entrance (served from public/).
+// Wide shot for desktop; a portrait crop for the tall mobile hero.
+const HERO_IMAGE = "/branding/hero-hillside.png";
+const HERO_IMAGE_MOBILE = "/branding/hero-hillside-mobile.png";
 
 const HOW_IT_WORKS = [
   {
@@ -37,14 +39,24 @@ export default async function HomePage() {
     <main className={`flex min-h-screen flex-col bg-[var(--color-background)]${auth ? " pb-24 md:pb-0" : ""}`}>
 
       {/* Hero */}
-      <section className="relative">
+      <section className="relative flex min-h-[68vh] flex-col justify-end overflow-hidden bg-[#0e2740] md:block md:min-h-0">
+        {/* Full-bleed photo. Mobile uses a portrait crop for the tall hero;
+            desktop uses the wide shot, anchored to the top so the sign stays in frame. */}
         <div
-          className="absolute inset-0 bg-cover bg-center"
+          className="absolute inset-0 bg-cover bg-center md:hidden"
+          style={{ backgroundImage: `url('${HERO_IMAGE_MOBILE}')` }}
+          aria-hidden
+        />
+        <div
+          className="absolute inset-0 hidden bg-cover bg-top md:block"
           style={{ backgroundImage: `url('${HERO_IMAGE}')` }}
           aria-hidden
         />
+        {/* Scrim — the same balanced dark wash on mobile and desktop so both
+            heroes read identically. */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/30 to-black/55" aria-hidden />
-        <div className="relative mx-auto w-full max-w-[1280px] px-4 pb-28 pt-20 md:px-6 md:pb-32 md:pt-28 lg:px-8">
+
+        <div className="relative mx-auto w-full max-w-[1280px] px-4 pb-24 pt-10 md:px-6 md:pb-32 md:pt-28 lg:px-8">
           <p className="text-sm font-semibold uppercase tracking-[0.25em] text-white/80">Your hidden escape awaits</p>
           <h1 className="mt-3 max-w-2xl text-4xl font-semibold leading-tight text-white md:text-6xl">
             Stay where the hills meet stillness.

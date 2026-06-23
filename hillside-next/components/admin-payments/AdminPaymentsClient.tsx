@@ -80,15 +80,6 @@ function policyOutcomeMeta(outcome?: string | null) {
   return null;
 }
 
-function policyRuleLabel(rule?: string | null) {
-  const value = String(rule || "").trim().toLowerCase();
-  if (!value) return null;
-  if (value === "room_cottage_20pct_clamp_500_1000") return "Room/Cottage: 20% (PHP 500–1000)";
-  if (value === "tour_fixed_500_or_full_if_below_500") return "Tour: PHP 500 (or full if below)";
-  if (value === "admin_override") return "Admin override";
-  return value.replaceAll("_", " ");
-}
-
 function looksLikeReservationCode(value: string) {
   return /^HR-[A-Z0-9-]+$/i.test(value.trim());
 }
@@ -176,7 +167,16 @@ export function AdminPaymentsClient({
     const method = searchParams.get("method")?.trim().toLowerCase() || "";
     const source = searchParams.get("source")?.trim().toLowerCase() || "";
     const walkInType = searchParams.get("walkin_type")?.trim().toLowerCase() || "";
-    if (!reservationId) return;
+    if (!reservationId) {
+      // No id, but a reservation-code search (e.g. from a "view payments" link or
+      // a manual code search) should still pre-load the on-site form so staff
+      // never re-type the code.
+      const searchParam = searchParams.get("search")?.trim() || "";
+      if (searchParam && looksLikeReservationCode(searchParam)) {
+        setOnSiteReservationId(searchParam);
+      }
+      return;
+    }
 
     setOnSiteReservationId(reservationId);
     if (amount && Number.isFinite(Number(amount)) && Number(amount) > 0) {
@@ -883,6 +883,12 @@ export function AdminPaymentsClient({
                     {formatPeso(reservationBalance)}
                   </span>
                 </div>
+                {Number(reservationContext?.discount_amount ?? 0) > 0 ? (
+                  <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1.5 text-xs font-semibold text-emerald-800">
+                    Promo {reservationContext?.promo_code ? `${reservationContext.promo_code} ` : ""}applied — {formatPeso(Number(reservationContext?.discount_amount ?? 0))} off
+                    {reservationContext?.original_total ? ` (subtotal ${formatPeso(Number(reservationContext.original_total))})` : ""}.
+                  </p>
+                ) : null}
                 {reservationContext?.policy_outcome ? (
                   <div className="flex items-center justify-between">
                     <span className="text-[var(--color-muted)]">Policy outcome</span>
@@ -891,15 +897,10 @@ export function AdminPaymentsClient({
                     </span>
                   </div>
                 ) : null}
-                {reservationContext?.deposit_rule_applied ? (
-                  <p className="rounded-lg border border-[var(--color-border)] bg-white px-2 py-1.5 text-xs text-[var(--color-muted)]">
-                    Deposit rule: {policyRuleLabel(reservationContext.deposit_rule_applied) ?? reservationContext.deposit_rule_applied}
-                  </p>
-                ) : null}
                 <p className="rounded-lg border border-[var(--color-border)] bg-white px-2 py-1.5 text-xs text-[var(--color-muted)]">
                   Recording payment updates reservation balance immediately and moves eligible reservations toward check-in.
                 </p>
-                {Number.isFinite(enteredAmount) && enteredAmount > 0 ? (
+                {reservationContext && Number.isFinite(enteredAmount) && enteredAmount > 0 ? (
                   <p
                     className={`rounded-lg border px-2 py-1.5 text-xs font-semibold ${
                       projectedRemaining < 0
@@ -1254,11 +1255,6 @@ export function AdminPaymentsClient({
                             </span>
                           ) : null}
                         </div>
-                        {payment.reservation?.deposit_rule_applied ? (
-                          <p className="mt-1 text-[11px] text-[var(--color-muted)]">
-                            {policyRuleLabel(payment.reservation.deposit_rule_applied) ?? payment.reservation.deposit_rule_applied}
-                          </p>
-                        ) : null}
                       </td>
                       <td className="px-3 py-2.5 align-top">
                         <p className="font-medium text-[var(--color-text)]">{payment.reservation?.guest?.name || payment.reservation?.guest?.email || "-"}</p>

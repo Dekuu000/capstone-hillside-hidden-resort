@@ -70,7 +70,6 @@ async function fetchAuditLogs(
     accessToken,
     path: `/v2/audit/logs?${qs.toString()}`,
     schema: auditLogsResponseSchema,
-    revalidate: 10,
   });
 }
 

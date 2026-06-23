@@ -60,7 +60,6 @@ async function fetchOverview(
     accessToken,
     path: `/v2/reports/overview?${qs.toString()}`,
     schema: reportsOverviewResponseSchema,
-    revalidate: 20,
   });
 }
 

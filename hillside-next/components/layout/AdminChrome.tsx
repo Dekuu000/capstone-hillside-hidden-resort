@@ -24,7 +24,7 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
-import { clearServerSessionCookie } from "../../lib/authSessionCookie";
+import { clearOfflineUserData, clearServerSessionCookie } from "../../lib/authSessionCookie";
 import { getSupabaseBrowserClient, safeGetSession } from "../../lib/supabase";
 import { resolveUserDisplayName } from "../../lib/userProfile";
 import { HillsideLogo } from "../branding/HillsideLogo";
@@ -216,7 +216,11 @@ export function AdminChrome({ children, initialName = null, initialEmail = null,
     const supabase = getSupabaseBrowserClient();
     await supabase.auth.signOut();
     await clearServerSessionCookie().catch(() => null);
-    router.replace("/login");
+    await clearOfflineUserData();
+    // Full-page navigation (not router.replace) so Next's client Router Cache is
+    // wiped — otherwise the cached, logged-in layout/header would still show the
+    // previous user after navigating back to a public/guest route.
+    window.location.assign("/login");
   };
 
   return (

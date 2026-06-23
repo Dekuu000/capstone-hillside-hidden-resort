@@ -51,7 +51,10 @@ export async function fetchPublicUnits(params?: {
   search.set("limit", String(params?.limit ?? 60));
   try {
     const res = await fetch(`${apiBase}/v2/catalog/units?${search.toString()}`, {
-      next: { revalidate: 60 },
+      // No cache so newly uploaded unit photos (and edits) show on the landing /
+      // stays pages on the next load — the catalog is small + public, so the
+      // freshness is worth more than the cache here.
+      next: { revalidate: 0 },
     });
     if (!res.ok) return [];
     const parsed = publicUnitsResponseSchema.safeParse(await res.json());
@@ -75,7 +78,8 @@ export async function fetchAvailableUnits(params: {
   if (params.unitType) search.set("unit_type", params.unitType);
   try {
     const res = await fetch(`${apiBase}/v2/catalog/units/available?${search.toString()}`, {
-      next: { revalidate: 30 },
+      // No cache so photo/price/availability edits reflect immediately in search.
+      next: { revalidate: 0 },
     });
     if (!res.ok) return null;
     const parsed = availableUnitsResponseSchema.safeParse(await res.json());

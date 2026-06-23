@@ -36,7 +36,6 @@ export default async function ReportsPrintPage({
     accessToken,
     path: `/v2/reports/overview?from_date=${encodeURIComponent(fromDate)}&to_date=${encodeURIComponent(toDate)}`,
     schema: reportsOverviewResponseSchema,
-    revalidate: 0,
   });
 
   const preparedBy = `${ROLE_LABELS[(auth.role || "") as Role] || "Back office"}${auth.email ? ` (${auth.email})` : ""}`;

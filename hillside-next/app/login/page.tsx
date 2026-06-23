@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { getApiErrorMessage } from "../../lib/apiError";
-import { setServerSessionCookie } from "../../lib/authSessionCookie";
+import { clearOfflineUserData, setServerSessionCookie } from "../../lib/authSessionCookie";
 import { getSupabaseBrowserClient, safeGetSession } from "../../lib/supabase";
 import { resolveUserProfileName } from "../../lib/userProfile";
 import { Button } from "../../components/shared/Button";
@@ -263,6 +263,20 @@ export default function LoginPage() {
             : "Signed in, but the browser session could not be initialized. Please try again.",
         );
         return;
+      }
+
+      // Shared-device safety: if a DIFFERENT user previously used this browser
+      // (e.g. a session that ended without a clean sign-out), wipe their leftover
+      // offline data so accounts never bleed together.
+      try {
+        const newUid = data.user?.id ?? null;
+        const prevUid = window.localStorage.getItem("hs_last_uid");
+        if (newUid && prevUid && prevUid !== newUid) {
+          await clearOfflineUserData();
+        }
+        if (newUid) window.localStorage.setItem("hs_last_uid", newUid);
+      } catch {
+        /* best-effort */
       }
 
       void ensureUserProfileRow().catch(() => null);

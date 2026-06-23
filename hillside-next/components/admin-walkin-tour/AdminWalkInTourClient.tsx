@@ -3,14 +3,16 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertCircle, Loader2, Phone, User } from "lucide-react";
+import { AlertCircle, Loader2, Phone, Tag, User } from "lucide-react";
 import type {
   PricingRecommendation,
+  PromoValidationResult,
   ReservationCreateResponse,
   ServiceItem,
   ServiceListResponse,
 } from "../../../packages/shared/src/types";
 import {
+  promoValidationResultSchema,
   reservationCreateResponseSchema,
   serviceListResponseSchema,
 } from "../../../packages/shared/src/schemas";
@@ -18,6 +20,7 @@ import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
 import { todayPlusLocalIsoDate } from "../../lib/dateIso";
 import { formatPhpPeso as toPeso } from "../../lib/formatCurrency";
+import { tourMinPayNow, tourTotal } from "../../lib/booking/pricing";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
 import { FancyDatePicker } from "../shared/FancyDatePicker";
 import { Select } from "../shared/Select";
@@ -59,6 +62,10 @@ export function AdminWalkInTourClient({
   const [guestName, setGuestName] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
   const [notes, setNotes] = useState("");
+  const [promoCode, setPromoCode] = useState("");
+  const [promo, setPromo] = useState<PromoValidationResult | null>(null);
+  const [promoBusy, setPromoBusy] = useState(false);
+  const [promoError, setPromoError] = useState<string | null>(null);
 
   const [submitBusy, setSubmitBusy] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -100,10 +107,71 @@ export function AdminWalkInTourClient({
   }, [initialServicesData?.items, token]);
 
   const selectedService = services.find((service) => service.service_id === serviceId);
-  const totalAmount = useMemo(() => {
-    if (!selectedService) return 0;
-    return adults * Number(selectedService.adult_rate || 0) + kids * Number(selectedService.kid_rate || 0);
-  }, [adults, kids, selectedService]);
+  // Shared tour pricing (same helper the guest funnel uses) minus any validated promo.
+  const grossAmount = useMemo(
+    () => (selectedService ? tourTotal(selectedService, adults, kids) : 0),
+    [adults, kids, selectedService],
+  );
+  const discount = promo?.valid ? promo.discount_amount : 0;
+  const totalAmount = Math.max(0, grossAmount - discount);
+  const minPayNow = tourMinPayNow(totalAmount);
+
+  // A TYPED code must be explicitly Applied; with NO code, preview the active
+  // auto-apply promo for the current total (mirrors the online guest tour flow).
+  useEffect(() => {
+    setPromoError(null);
+    if (promoCode.trim()) {
+      setPromo(null);
+      return;
+    }
+    if (!token || grossAmount <= 0) {
+      setPromo(null);
+      return;
+    }
+    let active = true;
+    void (async () => {
+      try {
+        const auto = await apiFetch(
+          "/v2/promos/validate",
+          { method: "POST", body: JSON.stringify({ code: "", total: grossAmount, kind: "tours" }) },
+          token,
+          promoValidationResultSchema,
+        );
+        if (active) setPromo(auto.valid && auto.discount_amount > 0 ? auto : null);
+      } catch {
+        if (active) setPromo(null);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [promoCode, grossAmount, token]);
+
+  const applyPromo = async () => {
+    const code = promoCode.trim();
+    if (!code || !token) return;
+    setPromoBusy(true);
+    setPromoError(null);
+    try {
+      const result = await apiFetch(
+        "/v2/promos/validate",
+        { method: "POST", body: JSON.stringify({ code, total: grossAmount, kind: "tours" }) },
+        token,
+        promoValidationResultSchema,
+      );
+      if (result.valid) {
+        setPromo(result);
+      } else {
+        setPromo(null);
+        setPromoError(result.message || "This promo code is not valid.");
+      }
+    } catch (unknownError) {
+      setPromo(null);
+      setPromoError(getApiErrorMessage(unknownError, "Could not validate promo code."));
+    } finally {
+      setPromoBusy(false);
+    }
+  };
 
   async function submitWalkInTour() {
     if (!token) return;
@@ -145,6 +213,7 @@ export function AdminWalkInTourClient({
         kid_qty: kids,
         is_advance: false,
         notes: combinedNotes || null,
+        promo_code: promoCode.trim() || null,
       };
       const created = await syncAwareMutation<typeof payload, ReservationCreateResponse>({
         path: "/v2/reservations/tours",
@@ -358,14 +427,63 @@ export function AdminWalkInTourClient({
                 className="rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 outline-none ring-[var(--color-secondary)]/20 transition focus:ring-2"
               />
             </label>
+
+            <div className="grid gap-1 text-sm text-[var(--color-text)]">
+              <span>Promo code (optional)</span>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Tag className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-muted)]" />
+                  <input
+                    type="text"
+                    value={promoCode}
+                    onChange={(event) => setPromoCode(event.target.value.toUpperCase())}
+                    placeholder="e.g. SUMMER20"
+                    className="w-full rounded-xl border border-[var(--color-border)] bg-white py-2 pl-9 pr-3 text-sm font-semibold uppercase tracking-wide text-[var(--color-text)] outline-none ring-[var(--color-secondary)]/20 transition focus:ring-2"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void applyPromo()}
+                  disabled={promoBusy || !promoCode.trim() || grossAmount <= 0}
+                  className="shrink-0 rounded-xl border border-[var(--color-border)] bg-white px-4 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {promoBusy ? "Checking…" : "Apply"}
+                </button>
+              </div>
+              {promo?.valid ? (
+                <span className="text-xs font-semibold text-emerald-700">Promo applied — {toPeso(promo.discount_amount)} off.</span>
+              ) : promoError ? (
+                <span className="text-xs font-semibold text-rose-600">{promoError}</span>
+              ) : (
+                <span className="text-xs text-[var(--color-muted)]">Optional — validated on Apply; re-checked on the server when created.</span>
+              )}
+            </div>
           </div>
 
           <div className="mt-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-4">
             <p className="text-sm text-[var(--color-muted)]">{adults} adult{adults === 1 ? "" : "s"}{kids > 0 ? ` · ${kids} kid${kids === 1 ? "" : "s"}` : ""}</p>
+            {discount > 0 ? (
+              <>
+                <div className="mt-2 flex items-baseline justify-between text-sm text-[var(--color-muted)]">
+                  <span>Subtotal</span>
+                  <span>{toPeso(grossAmount)}</span>
+                </div>
+                <div className="mt-1 flex items-baseline justify-between text-sm text-emerald-700">
+                  <span>Promo discount</span>
+                  <span>-{toPeso(discount)}</span>
+                </div>
+              </>
+            ) : null}
             <div className="mt-1 flex items-baseline justify-between">
               <span className="text-sm text-[var(--color-muted)]">Total</span>
               <span className="text-xl font-bold text-[var(--color-text)]">{toPeso(totalAmount)}</span>
             </div>
+            {totalAmount > 0 ? (
+              <div className="mt-1 flex items-baseline justify-between text-xs text-[var(--color-muted)]">
+                <span>Minimum to reserve now</span>
+                <span className="font-semibold text-[var(--color-text)]">{toPeso(minPayNow)}</span>
+              </div>
+            ) : null}
           </div>
 
           <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

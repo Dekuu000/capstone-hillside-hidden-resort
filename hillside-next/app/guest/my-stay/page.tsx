@@ -69,7 +69,6 @@ async function fetchStayDashboard(accessToken: string): Promise<StayDashboardRes
     accessToken,
     path: "/v2/me/stay-dashboard",
     schema: stayDashboardResponseSchema,
-    revalidate: 0,
   });
 }
 

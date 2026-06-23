@@ -4,7 +4,7 @@ import Link from "next/link";
 import { AlertCircle, Check, ChevronDown, Copy, ExternalLink, ShieldCheck, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { AdminPaymentItem, ReservationListItem } from "../../../packages/shared/src/types";
-import { roleAtLeast } from "../../../packages/shared/src/types";
+import { ROLE_LABELS, roleAtLeast, type Role } from "../../../packages/shared/src/types";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
 import { buildTxExplorerUrl } from "../../lib/chainExplorer";
@@ -13,7 +13,7 @@ import { todayPlusLocalIsoDate } from "../../lib/dateIso";
 import { formatPhpPeso as formatPeso } from "../../lib/formatCurrency";
 import { getReservationStatusMeta } from "../../lib/reservationStatus";
 import { getUnitLabel } from "../../lib/unitLabel";
-import { getReservationPaymentState, getReservationSource, type ReservationPaymentState } from "../../lib/reservationView";
+import { getReservationPaymentState, getReservationSource } from "../../lib/reservationView";
 
 type ReservationDetailDrawerProps = {
   open: boolean;
@@ -44,10 +44,17 @@ type ReadinessState =
 
 type PrimaryActionType = "record_payment" | "check_in" | "check_out" | "view_history" | "none";
 
-function getPaymentStateMeta(state: ReservationPaymentState) {
-  if (state === "settled") return { label: "Paid", className: "bg-emerald-100 text-emerald-800" };
-  if (state === "partial") return { label: "Partial", className: "bg-amber-100 text-amber-800" };
-  return { label: "Unpaid", className: "bg-[var(--color-border)] text-[var(--color-text)]" };
+// Walk-in bookings store the guest name/phone the cashier typed inside the
+// reservation notes (e.g. "… | Guest: Jane | Phone: 09xx …" or "Walk-in: Jane …"),
+// not on the account. Pull them out so we never show the STAFF account as the guest.
+function parseWalkInContact(notes?: string | null): { name: string | null; phone: string | null } {
+  const text = String(notes || "");
+  const nameMatch = text.match(/(?:Guest|Walk-in):\s*([^|]+?)\s*(?:\||$)/i);
+  const phoneMatch = text.match(/Phone:\s*([^|]+?)\s*(?:\||$)/i);
+  return {
+    name: nameMatch ? nameMatch[1].trim() || null : null,
+    phone: phoneMatch ? phoneMatch[1].trim() || null : null,
+  };
 }
 
 function readinessMeta(state: ReadinessState) {
@@ -58,12 +65,12 @@ function readinessMeta(state: ReadinessState) {
       className: "border-emerald-200 bg-emerald-50 text-emerald-800",
     },
     blocked_unpaid: {
-      label: "Blocked: unpaid balance",
+      label: "Awaiting payment",
       detail: "Record/verify payment first before check-in.",
       className: "border-amber-200 bg-amber-50 text-amber-800",
     },
     blocked_date: {
-      label: "Blocked: not arrival date",
+      label: "Not yet arrival date",
       detail: "Check-in is allowed only on the reservation date.",
       className: "border-red-200 bg-red-50 text-red-800",
     },
@@ -154,7 +161,6 @@ export function ReservationDetailDrawer({
   const todayKey = todayPlusLocalIsoDate(0);
   const isSameDay = Boolean(arrivalDate && arrivalDate === todayKey);
   const paymentState = reservation ? getReservationPaymentState(reservation) : "unpaid";
-  const paymentMeta = getPaymentStateMeta(paymentState);
   const reservationStatusMeta = getReservationStatusMeta(reservation?.status ?? "pending_payment");
   const isOfflineQueued = String(reservation?.notes || "").toLowerCase().includes("offline queue");
 
@@ -180,14 +186,15 @@ export function ReservationDetailDrawer({
   const checkInUrl = reservation
     ? `/admin/check-in?mode=code&reservation_code=${encodeURIComponent(reservation.reservation_code)}`
     : "/admin/check-in";
+  // Deep-link the payments console pre-loaded: reservation_id fills the on-site
+  // form (and auto-sets the amount to the balance); search filters the inbox to
+  // this reservation's history. So the front desk never re-types the code.
   const paymentRecordUrl = reservation
-    ? `/admin/payments?reservation_id=${encodeURIComponent(reservation.reservation_id)}${source === "walk_in" ? "&source=walkin" : ""}`
+    ? `/admin/payments?reservation_id=${encodeURIComponent(reservation.reservation_id)}&search=${encodeURIComponent(reservation.reservation_code)}${source === "walk_in" ? "&source=walkin" : ""}`
     : "/admin/payments";
-  const paymentListUrl = reservation ? `/admin/payments?search=${encodeURIComponent(reservation.reservation_code)}` : "/admin/payments";
   const txHash = reservation?.chain_tx_hash ?? null;
   const txUrl = buildTxExplorerUrl(reservation?.chain_key, txHash);
   const checkInActionHref = paymentState === "settled" ? checkInUrl : `${checkInUrl}&override=1`;
-  const checkInActionLabel = paymentState === "settled" ? "Check-in" : "Check-in (Override)";
   const remainingBalance = Number(reservation?.balance_due ?? 0);
   const hasRemainingBalance = remainingBalance > 0;
   const remainingBalanceClass = hasRemainingBalance ? "text-amber-700" : "text-emerald-700";
@@ -197,6 +204,54 @@ export function ReservationDetailDrawer({
   const historyUrl = reservation
     ? `/admin/blockchain?tab=audit&search=${encodeURIComponent(reservation.reservation_id)}`
     : "/admin/blockchain?tab=audit";
+
+  // Honest identity: for walk-ins, never show the staff account as the guest —
+  // use the name/phone the cashier typed (kept in notes), else "Walk-in guest".
+  const isWalkIn = source === "walk_in";
+  const walkInContact = useMemo(() => parseWalkInContact(reservation?.notes), [reservation?.notes]);
+  const displayGuestName = isWalkIn
+    ? walkInContact.name || "Walk-in guest"
+    : reservation?.guest?.name || "—";
+  const displayContact = isWalkIn
+    ? walkInContact.phone || "—"
+    : reservation?.guest?.phone || reservation?.guest?.email || "—";
+
+  // Who created the booking. For walk-ins the booking account IS the staff/manager
+  // who recorded it, so we can name them (and their role) accurately.
+  const bookerName = reservation?.guest?.name || reservation?.guest?.email || null;
+  const bookerRoleRaw = reservation?.guest?.role || null;
+  const bookerRoleLabel = bookerRoleRaw ? ROLE_LABELS[bookerRoleRaw as Role] ?? null : null;
+  const bookedViaText = isWalkIn
+    ? `Walk-in (front desk)${bookerName ? ` · by ${bookerName}${bookerRoleLabel ? ` (${bookerRoleLabel})` : ""}` : ""}`
+    : "Online (guest portal)";
+
+  // Single source of truth for "what to do next" (replaces the repeated copies).
+  const nextStepLine = useMemo(() => {
+    if (!reservation) return "";
+    switch (readinessState) {
+      case "ready":
+        return "Payment settled and arriving today — ready to check in.";
+      case "blocked_unpaid":
+        return `Collect ${formatPeso(Math.max(0, remainingBalance))} to enable check-in.`;
+      case "blocked_date":
+        return arrivalDate ? `Check-in opens on ${formatDateWithYear(arrivalDate)}.` : "Check-in opens on the arrival date.";
+      case "already_checked_in":
+        return "Guest is checked in — use check-out when they leave.";
+      case "queued_offline":
+        return "Saved offline — will sync when the connection returns.";
+      case "completed":
+        return "This reservation is closed.";
+      default:
+        return "";
+    }
+  }, [arrivalDate, readinessState, remainingBalance, reservation]);
+
+  const handleOverrideCheckIn = () => {
+    if (typeof window === "undefined") return;
+    if (window.confirm("Check in WITHOUT full payment? The outstanding balance will stay on the reservation.")) {
+      window.location.assign(checkInActionHref);
+    }
+  };
 
   const primaryAction = useMemo((): { type: PrimaryActionType; label: string; href: string | null; detail: string } => {
     if (!reservation) {
@@ -243,17 +298,6 @@ export function ReservationDetailDrawer({
         : "No direct action required right now.",
     };
   }, [checkInUrl, historyUrl, paymentRecordUrl, paymentState, readinessState, reservation]);
-
-  const paymentDynamicNote = useMemo(() => {
-    if (!reservation) return "";
-    if (paymentState === "settled") {
-      return readinessState === "ready"
-        ? "Reservation is fully settled and ready for check-in."
-        : "Reservation is fully settled.";
-    }
-    const amount = Math.max(0, remainingBalance);
-    return `Recording ${formatPeso(amount)} will unlock check-in.`;
-  }, [paymentState, readinessState, remainingBalance, reservation]);
 
   const handleCopy = async (
     field: "reservation_code" | "contact",
@@ -363,16 +407,9 @@ export function ReservationDetailDrawer({
             {reservation ? (
               <>
                 <section className={`rounded-2xl border p-3 ${readiness.className}`}>
-                  <div className="grid gap-2 md:grid-cols-2">
-                    <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] opacity-75">Current state</p>
-                      <p className="mt-1 text-sm font-semibold">{readiness.label}</p>
-                    </div>
-                    <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] opacity-75">Next step</p>
-                      <p className="mt-1 text-sm font-semibold">{primaryAction.detail}</p>
-                    </div>
-                  </div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] opacity-75">Status</p>
+                  <p className="mt-1 text-base font-bold leading-tight">{readiness.label}</p>
+                  {nextStepLine ? <p className="mt-0.5 text-sm opacity-90">{nextStepLine}</p> : null}
                 </section>
 
                 <section className="rounded-2xl border border-[var(--color-border)] p-3">
@@ -381,7 +418,7 @@ export function ReservationDetailDrawer({
                     <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-2.5">
                       <p className="text-sm">
                         <span className="text-[var(--color-muted)]">Guest:</span>{" "}
-                        <span className="font-semibold text-[var(--color-text)]">{reservation.guest?.name || "-"}</span>
+                        <span className="font-semibold text-[var(--color-text)]">{displayGuestName}</span>
                       </p>
                       <p className="mt-1 text-sm">
                         <span className="text-[var(--color-muted)]">{isTour ? "Tour" : "Unit"}:</span>{" "}
@@ -403,11 +440,11 @@ export function ReservationDetailDrawer({
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-sm">
                           <span className="text-[var(--color-muted)]">Contact:</span>{" "}
-                          <span className="font-semibold text-[var(--color-text)]">{reservation.guest?.phone || reservation.guest?.email || "-"}</span>
+                          <span className="font-semibold text-[var(--color-text)]">{displayContact}</span>
                         </p>
                         <button
                           type="button"
-                          onClick={() => handleCopy("contact", reservation.guest?.phone || reservation.guest?.email, "Contact")}
+                          onClick={() => handleCopy("contact", displayContact !== "—" ? displayContact : null, "Contact")}
                           className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[var(--color-border)] bg-white text-[var(--color-muted)] transition hover:bg-[var(--color-background)]"
                           aria-label="Copy contact"
                           title="Copy contact"
@@ -416,8 +453,7 @@ export function ReservationDetailDrawer({
                         </button>
                       </div>
                       <p className="mt-1 text-sm"><span className="text-[var(--color-muted)]">{isTour ? "Visit date:" : "Stay dates:"}</span> {isTour ? formatDateWithYear(arrivalDate) : `${formatDateWithYear(reservation.check_in_date)} to ${formatDateWithYear(reservation.check_out_date)}`}</p>
-                      <p className="mt-1 text-sm"><span className="text-[var(--color-muted)]">Booking source:</span> {source === "walk_in" ? "Walk-in front desk" : "Online guest portal"}</p>
-                      <p className="mt-1 text-sm"><span className="text-[var(--color-muted)]">Created by:</span> {source === "walk_in" ? "Front desk admin" : "Guest account"}</p>
+                      <p className="mt-1 text-sm"><span className="text-[var(--color-muted)]">Booked via:</span> {bookedViaText}</p>
                     </div>
                   </div>
                 </section>
@@ -436,7 +472,7 @@ export function ReservationDetailDrawer({
                   <div className="mb-3 grid gap-2 sm:grid-cols-3">
                     <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">Total due</p>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">Total</p>
                         <button
                           type="button"
                           onClick={() => handleCopyMoney("total_due", Number(reservation.total_amount), "Total due")}
@@ -466,64 +502,42 @@ export function ReservationDetailDrawer({
                     </div>
                     <div className={`rounded-xl border px-3 py-2 ${remainingBadgeClass}`}>
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em]">Remaining</p>
-                        <div className="flex items-center gap-1.5">
-                          <span className="rounded-full border border-current/20 bg-white/70 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em]">
-                            {hasRemainingBalance ? "Payment needed" : "Settled"}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => handleCopyMoney("remaining", Number(reservation.balance_due), "Remaining balance")}
-                            className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-current/25 bg-white/80 text-current transition hover:bg-white"
-                            aria-label="Copy remaining balance"
-                            title="Copy remaining balance"
-                          >
-                            {copiedField === "remaining" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                          </button>
-                        </div>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em]">Balance</p>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyMoney("remaining", Number(reservation.balance_due), "Balance")}
+                          className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-current/25 bg-white/80 text-current transition hover:bg-white"
+                          aria-label="Copy balance"
+                          title="Copy balance"
+                        >
+                          {copiedField === "remaining" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                        </button>
                       </div>
                       <p className={`mt-1 text-2xl font-bold leading-none ${remainingBalanceClass}`}>{formatPeso(reservation.balance_due)}</p>
                     </div>
                   </div>
+                  {Number(reservation.discount_amount ?? 0) > 0 ? (
+                    <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800">
+                      Promo {reservation.promo_code ? `${reservation.promo_code} ` : ""}applied — {formatPeso(Number(reservation.discount_amount ?? 0))} off
+                      {reservation.original_total ? ` (subtotal ${formatPeso(Number(reservation.original_total))})` : ""}.
+                    </p>
+                  ) : null}
                   <div className="grid gap-2 text-sm md:grid-cols-3">
                     <p><span className="text-[var(--color-muted)]">Payment method:</span> {latestPayment?.method?.toUpperCase() || "-"}</p>
                     <p><span className="text-[var(--color-muted)]">Latest payment:</span> {formatDateTime(latestPayment?.created_at)}</p>
                     <p>
-                      <span className="text-[var(--color-muted)]">Verification:</span>{" "}
+                      <span className="text-[var(--color-muted)]">Proof:</span>{" "}
                       {firstPendingPayment ? (
-                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">Pending verification</span>
+                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">Pending</span>
+                      ) : payments.length > 0 ? (
+                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800">Verified</span>
                       ) : (
-                        <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${paymentMeta.className}`}>{paymentMeta.label}</span>
+                        <span className="text-[var(--color-muted)]">—</span>
                       )}
                     </p>
                   </div>
-                  <p className="mt-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-2.5 py-2 text-xs text-[var(--color-text)]">
-                    {paymentDynamicNote}
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <Link href={paymentListUrl} className="rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-xs font-semibold text-[var(--color-text)]">
-                      View Payments
-                    </Link>
-                    <Link href={paymentRecordUrl} className="rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]">
-                      Open Payment Form
-                    </Link>
-                    {paymentState === "settled" ? (
-                      <Link
-                        href={checkInActionHref}
-                        className="rounded-lg border border-[var(--color-primary)] bg-[var(--color-primary)] px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_40%,white)]"
-                      >
-                        {checkInActionLabel}
-                      </Link>
-                    ) : null}
-                    {paymentState !== "settled" ? (
-                      <Link
-                        href={checkInActionHref}
-                        className="rounded-lg border border-amber-400 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800 transition hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200"
-                      >
-                        Check-in (Override)
-                      </Link>
-                    ) : null}
-                    {source === "online" && firstPendingPayment ? (
+                  {source === "online" && firstPendingPayment ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
                       <button
                         type="button"
                         onClick={() => onVerifyPayment(firstPendingPayment.payment_id)}
@@ -532,8 +546,8 @@ export function ReservationDetailDrawer({
                       >
                         {verifyBusy[firstPendingPayment.payment_id] ? "Verifying..." : "Verify Payment"}
                       </button>
-                    ) : null}
-                  </div>
+                    </div>
+                  ) : null}
                   {paymentsLoading ? <p className="mt-2 text-xs text-[var(--color-muted)]">Loading payments...</p> : null}
                   {paymentsError ? <p className="mt-2 rounded-lg border border-red-200 bg-red-50 p-2 text-xs text-red-700">{paymentsError}</p> : null}
                   {!paymentsLoading && payments.length > 0 ? (
@@ -628,13 +642,6 @@ export function ReservationDetailDrawer({
             <div className="sticky bottom-0 z-10 border-t border-[var(--color-border)] bg-white/95 p-3 backdrop-blur">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex min-h-7 items-center gap-2" aria-live="polite">
-                  <span
-                    className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold ${remainingBadgeClass}`}
-                  >
-                    {hasRemainingBalance
-                      ? `Blocked: ${formatPeso(remainingBalance)} remaining`
-                      : "Payment settled"}
-                  </span>
                   {copyToast ? (
                     <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
                       {copyToast}
@@ -653,6 +660,16 @@ export function ReservationDetailDrawer({
                     className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800 transition hover:bg-amber-100 disabled:opacity-50"
                   >
                     {noShowBusy ? "Marking…" : "Mark as no-show"}
+                  </button>
+                ) : null}
+                {readinessState === "blocked_unpaid" ? (
+                  <button
+                    type="button"
+                    onClick={handleOverrideCheckIn}
+                    title="Check in without full payment (balance stays outstanding)"
+                    className="rounded-lg px-3 py-2 text-xs font-semibold text-amber-700 underline-offset-2 transition hover:bg-amber-50 hover:underline"
+                  >
+                    Override &amp; check in
                   </button>
                 ) : null}
                 <button
