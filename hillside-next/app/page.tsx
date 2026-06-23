@@ -52,11 +52,9 @@ export default async function HomePage() {
           style={{ backgroundImage: `url('${HERO_IMAGE}')` }}
           aria-hidden
         />
-        {/* Scrim — mobile: fade up from the navy so the bottom-overlaid headline
-            stays readable while the sign up top stays bright. Desktop: the
-            balanced dark wash behind the left-aligned headline. */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0e2740] via-[#0e2740]/55 to-transparent md:hidden" aria-hidden />
-        <div className="absolute inset-0 hidden bg-gradient-to-b from-black/45 via-black/30 to-black/55 md:block" aria-hidden />
+        {/* Scrim — the same balanced dark wash on mobile and desktop so both
+            heroes read identically. */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/30 to-black/55" aria-hidden />
 
         <div className="relative mx-auto w-full max-w-[1280px] px-4 pb-24 pt-10 md:px-6 md:pb-32 md:pt-28 lg:px-8">
           <p className="text-sm font-semibold uppercase tracking-[0.25em] text-white/80">Your hidden escape awaits</p>
