@@ -80,15 +80,6 @@ function policyOutcomeMeta(outcome?: string | null) {
   return null;
 }
 
-function policyRuleLabel(rule?: string | null) {
-  const value = String(rule || "").trim().toLowerCase();
-  if (!value) return null;
-  if (value === "room_cottage_20pct_clamp_500_1000") return "Room/Cottage: 20% (PHP 500–1000)";
-  if (value === "tour_fixed_500_or_full_if_below_500") return "Tour: PHP 500 (or full if below)";
-  if (value === "admin_override") return "Admin override";
-  return value.replaceAll("_", " ");
-}
-
 function looksLikeReservationCode(value: string) {
   return /^HR-[A-Z0-9-]+$/i.test(value.trim());
 }
@@ -897,11 +888,6 @@ export function AdminPaymentsClient({
                     </span>
                   </div>
                 ) : null}
-                {reservationContext?.deposit_rule_applied ? (
-                  <p className="rounded-lg border border-[var(--color-border)] bg-white px-2 py-1.5 text-xs text-[var(--color-muted)]">
-                    Deposit rule: {policyRuleLabel(reservationContext.deposit_rule_applied) ?? reservationContext.deposit_rule_applied}
-                  </p>
-                ) : null}
                 <p className="rounded-lg border border-[var(--color-border)] bg-white px-2 py-1.5 text-xs text-[var(--color-muted)]">
                   Recording payment updates reservation balance immediately and moves eligible reservations toward check-in.
                 </p>
@@ -1260,11 +1246,6 @@ export function AdminPaymentsClient({
                             </span>
                           ) : null}
                         </div>
-                        {payment.reservation?.deposit_rule_applied ? (
-                          <p className="mt-1 text-[11px] text-[var(--color-muted)]">
-                            {policyRuleLabel(payment.reservation.deposit_rule_applied) ?? payment.reservation.deposit_rule_applied}
-                          </p>
-                        ) : null}
                       </td>
                       <td className="px-3 py-2.5 align-top">
                         <p className="font-medium text-[var(--color-text)]">{payment.reservation?.guest?.name || payment.reservation?.guest?.email || "-"}</p>
