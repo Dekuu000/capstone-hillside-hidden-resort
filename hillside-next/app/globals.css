@@ -89,10 +89,20 @@ button {
   cursor: pointer;
 }
 
+/* Keyboard-only focus ring. Use a crisp outline (not a box-shadow) so it can
+   never read as a drop shadow on the button, and is drawn only for keyboard
+   navigation (:focus-visible), never after a mouse/touch press. */
 button:focus-visible,
 a:focus-visible {
-  outline: 2px solid transparent;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-secondary) 22%, white);
+  outline: 2px solid color-mix(in srgb, var(--color-secondary) 60%, white);
+  outline-offset: 2px;
+}
+
+/* Belt-and-suspenders: strip any focus ring when focus came from a pointer
+   (covers browsers that would otherwise leave a halo lingering after a tap). */
+button:focus:not(:focus-visible),
+a:focus:not(:focus-visible) {
+  outline: none;
 }
 
 .no-scrollbar {

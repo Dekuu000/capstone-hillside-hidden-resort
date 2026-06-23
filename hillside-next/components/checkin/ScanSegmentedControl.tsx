@@ -43,7 +43,7 @@ export function ScanSegmentedControl({
             className={cn(
               "h-10 rounded-xl text-xs font-semibold transition sm:h-11 sm:text-sm",
               active
-                ? "border border-[var(--color-border)] bg-white text-[var(--color-text)] shadow-sm"
+                ? "border border-[var(--color-border)] bg-white text-[var(--color-text)]"
                 : "text-[var(--color-muted)] hover:bg-[var(--color-background)]",
             )}
           >
