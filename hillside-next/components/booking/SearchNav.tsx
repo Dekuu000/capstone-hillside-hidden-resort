@@ -24,14 +24,34 @@ const PUBLIC_NAV_LOGO_CLASS =
 export function SearchNav({ isAuthed = false, isAdmin = false, initialName = null }: SearchNavProps) {
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[var(--color-surface)]">
-      <div className="mx-auto flex h-[70px] w-full max-w-[1440px] items-center justify-between gap-3 px-4 md:h-20 md:px-6 lg:px-8">
-        <Link href="/" className="flex min-w-0 items-center" aria-label="Hillside Hidden Resort home">
+      <div className="relative mx-auto flex h-[70px] w-full max-w-[1440px] items-center justify-between gap-3 px-4 md:h-20 md:px-6 lg:px-8">
+        {/* Brand — public funnel always shows the emblem + wordmark on the left.
+            When signed in, the emblem+wordmark only shows on desktop (lg+), where
+            the center holds the nav tabs; on mobile the center is empty so we
+            show a clean centered wordmark (no emblem) instead. */}
+        <Link
+          href="/"
+          className={`min-w-0 items-center ${isAuthed ? "hidden lg:flex" : "flex"}`}
+          aria-label="Hillside Hidden Resort home"
+        >
           <HillsideLogo oneLine className={isAuthed ? GUEST_HEADER_LOGO_CLASS : PUBLIC_NAV_LOGO_CLASS} />
         </Link>
 
+        {isAuthed ? (
+          <Link
+            href="/"
+            aria-label="Hillside Hidden Resort home"
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap lg:hidden"
+          >
+            <span className="text-[1.15rem] font-semibold leading-none tracking-[0.01em] text-[#0E1F33] min-[400px]:text-[1.25rem]">
+              Hillside Hidden <span className="font-medium text-[#22A699]">Resort</span>
+            </span>
+          </Link>
+        ) : null}
+
         {isAuthed ? <PrimaryNavTabs /> : null}
 
-        <nav className="flex shrink-0 items-center gap-1 whitespace-nowrap text-[13px] font-semibold text-[var(--color-text)] sm:gap-1.5 sm:text-sm">
+        <nav className="flex shrink-0 items-center gap-1 whitespace-nowrap text-[13px] font-semibold text-[var(--color-text)] max-lg:ml-auto sm:gap-1.5 sm:text-sm">
           {isAdmin ? (
             <Link
               href="/admin"
