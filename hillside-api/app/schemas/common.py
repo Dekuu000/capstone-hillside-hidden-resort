@@ -483,6 +483,8 @@ class ReservationGuestSummary(BaseModel):
     name: str | None = None
     email: str | None = None
     phone: str | None = None
+    # Role of the booking account; for walk-ins this is the staff/manager creator.
+    role: str | None = None
 
 
 class ReservationUnitInfo(BaseModel):

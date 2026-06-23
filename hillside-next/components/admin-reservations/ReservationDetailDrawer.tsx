@@ -4,7 +4,7 @@ import Link from "next/link";
 import { AlertCircle, Check, ChevronDown, Copy, ExternalLink, ShieldCheck, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { AdminPaymentItem, ReservationListItem } from "../../../packages/shared/src/types";
-import { roleAtLeast } from "../../../packages/shared/src/types";
+import { ROLE_LABELS, roleAtLeast, type Role } from "../../../packages/shared/src/types";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
 import { buildTxExplorerUrl } from "../../lib/chainExplorer";
@@ -215,6 +215,15 @@ export function ReservationDetailDrawer({
   const displayContact = isWalkIn
     ? walkInContact.phone || "—"
     : reservation?.guest?.phone || reservation?.guest?.email || "—";
+
+  // Who created the booking. For walk-ins the booking account IS the staff/manager
+  // who recorded it, so we can name them (and their role) accurately.
+  const bookerName = reservation?.guest?.name || reservation?.guest?.email || null;
+  const bookerRoleRaw = reservation?.guest?.role || null;
+  const bookerRoleLabel = bookerRoleRaw ? ROLE_LABELS[bookerRoleRaw as Role] ?? null : null;
+  const bookedViaText = isWalkIn
+    ? `Walk-in (front desk)${bookerName ? ` · by ${bookerName}${bookerRoleLabel ? ` (${bookerRoleLabel})` : ""}` : ""}`
+    : "Online (guest portal)";
 
   // Single source of truth for "what to do next" (replaces the repeated copies).
   const nextStepLine = useMemo(() => {
@@ -444,7 +453,7 @@ export function ReservationDetailDrawer({
                         </button>
                       </div>
                       <p className="mt-1 text-sm"><span className="text-[var(--color-muted)]">{isTour ? "Visit date:" : "Stay dates:"}</span> {isTour ? formatDateWithYear(arrivalDate) : `${formatDateWithYear(reservation.check_in_date)} to ${formatDateWithYear(reservation.check_out_date)}`}</p>
-                      <p className="mt-1 text-sm"><span className="text-[var(--color-muted)]">Booked via:</span> {source === "walk_in" ? "Walk-in (front desk)" : "Online (guest portal)"}</p>
+                      <p className="mt-1 text-sm"><span className="text-[var(--color-muted)]">Booked via:</span> {bookedViaText}</p>
                     </div>
                   </div>
                 </section>

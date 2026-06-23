@@ -70,12 +70,12 @@ RESERVATION_LIST_SELECT = """
     created_at,
     notes,
     guest_user_id,
-    guest:users!guest_user_id(name,email,phone)
+    guest:users!guest_user_id(name,email,phone,role)
 """
 
 RESERVATION_DETAIL_SELECT = """
     *,
-    guest:users!guest_user_id(name,email,phone),
+    guest:users!guest_user_id(name,email,phone,role),
     units:reservation_units(
         *,
         unit:units(*)
@@ -125,7 +125,7 @@ RESORT_SERVICE_REQUEST_SELECT = """
     processed_at,
     processed_by_user_id,
     updated_at,
-    guest:users!guest_user_id(name,email,phone),
+    guest:users!guest_user_id(name,email,phone,role),
     reservation:reservations(reservation_code,status,total_amount,deposit_required,guest:users!guest_user_id(name,email)),
     service_item:resort_services(
         service_item_id,
@@ -367,7 +367,7 @@ def get_reservation_by_id(reservation_id: str) -> dict[str, Any] | None:
         .select(
             """
             *,
-            guest:users!guest_user_id(name,email,phone),
+            guest:users!guest_user_id(name,email,phone,role),
             units:reservation_units(
                 *,
                 unit:units(*)

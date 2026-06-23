@@ -315,6 +315,8 @@ export type ReservationGuest = {
   name?: string | null;
   email?: string | null;
   phone?: string | null;
+  /** Role of the booking account — for walk-ins this is the staff/manager who created it. */
+  role?: string | null;
 };
 
 export type ReservationUnit = {
