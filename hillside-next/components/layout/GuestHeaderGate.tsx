@@ -1,9 +1,10 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { SearchNav } from "../booking/SearchNav";
 import { GuestBottomNav } from "../guest/GuestBottomNav";
+import { safeGetSession } from "../../lib/supabase";
 
 // Guest-facing routes that share the one persistent header. Anything else
 // (/login, /register, /auth/*, /admin/*) renders without it.
@@ -37,13 +38,30 @@ export function GuestHeaderGate({
 }) {
   const pathname = usePathname() || "/";
   const showHeader = isGuestRoute(pathname);
-  // Bottom nav shows for signed-in guests on every guest route (incl. checkout).
-  const showBottomNav = showHeader && initialAuthed;
+
+  // Reconcile the server-provided auth state with the LIVE browser session. If a
+  // stale (client Router Cache) layout says "authed" but there's no real session,
+  // downgrade to logged-out so the header never shows a signed-out visitor as a
+  // signed-in user. This only ever downgrades — it never fabricates a session.
+  const [authed, setAuthed] = useState(initialAuthed);
+  useEffect(() => {
+    if (!initialAuthed) return; // nothing to downgrade
+    let active = true;
+    void safeGetSession().then(({ session }) => {
+      if (!active) return;
+      if (!session?.access_token) setAuthed(false);
+    });
+    return () => {
+      active = false;
+    };
+  }, [initialAuthed]);
+
+  const showBottomNav = showHeader && authed;
 
   return (
     <>
       {showHeader ? (
-        <SearchNav isAuthed={initialAuthed} isAdmin={initialIsAdmin} initialName={initialName} />
+        <SearchNav isAuthed={authed} isAdmin={authed && initialIsAdmin} initialName={authed ? initialName : null} />
       ) : null}
       {children}
       {showBottomNav ? <GuestBottomNav /> : null}

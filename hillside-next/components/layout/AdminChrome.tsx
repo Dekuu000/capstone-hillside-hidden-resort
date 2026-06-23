@@ -217,7 +217,10 @@ export function AdminChrome({ children, initialName = null, initialEmail = null,
     await supabase.auth.signOut();
     await clearServerSessionCookie().catch(() => null);
     await clearOfflineUserData();
-    router.replace("/login");
+    // Full-page navigation (not router.replace) so Next's client Router Cache is
+    // wiped — otherwise the cached, logged-in layout/header would still show the
+    // previous user after navigating back to a public/guest route.
+    window.location.assign("/login");
   };
 
   return (

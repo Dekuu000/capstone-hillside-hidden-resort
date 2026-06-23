@@ -1,13 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { clearOfflineUserData, clearServerSessionCookie } from "../../lib/authSessionCookie";
 import { getSupabaseBrowserClient } from "../../lib/supabase";
 
 export function SignOutButton() {
-  const router = useRouter();
   const [busy, setBusy] = useState(false);
 
   const handleSignOut = async () => {
@@ -17,7 +15,10 @@ export function SignOutButton() {
       await supabase.auth.signOut();
       await clearServerSessionCookie().catch(() => null);
       await clearOfflineUserData();
-      router.replace("/login");
+      // Full-page navigation (not router.replace) so Next's client Router Cache
+      // is wiped — otherwise the cached, logged-in root layout/header would still
+      // show the previous user on the landing page after sign-out.
+      window.location.assign("/login");
     } catch {
       setBusy(false);
     }
