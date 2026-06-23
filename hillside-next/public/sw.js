@@ -1,4 +1,4 @@
-const SW_VERSION = "v1.4.0";
+const SW_VERSION = "v1.5.0";
 const APP_SHELL_CACHE = `hillside-app-shell-${SW_VERSION}`;
 const RUNTIME_CACHE = `hillside-runtime-${SW_VERSION}`;
 const MAP_CACHE = `hillside-map-${SW_VERSION}`;
@@ -136,20 +136,19 @@ self.addEventListener("fetch", (event) => {
       const cached = (await cache.match(request)) || (await cache.match(new Request(url.pathname)));
 
       if (isOfflineCapableNavigation(url.pathname)) {
-        const networkRefresh = fetch(request)
+        // Network-FIRST for authenticated pages: the rendered HTML is per-user
+        // (identity, role, server data), so serving a page cached for a
+        // PREVIOUSLY signed-in user on this device would leak their account.
+        // Cache is used only as an offline fallback.
+        const networkResponse = await fetch(request)
           .then((response) => {
             cacheNavigationResponse(cache, request, url, response);
             return response;
           })
           .catch(() => null);
 
-        if (cached) {
-          event.waitUntil(networkRefresh);
-          return cached;
-        }
-
-        const networkResponse = await networkRefresh;
         if (networkResponse) return networkResponse;
+        if (cached) return cached;
         return resolveNavigationFallback(url);
       }
 

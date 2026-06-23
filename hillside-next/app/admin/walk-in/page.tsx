@@ -10,7 +10,6 @@ async function fetchInitialServices(accessToken: string): Promise<ServiceListRes
     accessToken,
     path: "/v2/catalog/services",
     schema: serviceListResponseSchema,
-    revalidate: 30,
   });
 }
 

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
-import { clearServerSessionCookie } from "../../lib/authSessionCookie";
+import { clearOfflineAppCaches, clearServerSessionCookie } from "../../lib/authSessionCookie";
 import { getSupabaseBrowserClient } from "../../lib/supabase";
 
 export function SignOutButton() {
@@ -16,6 +16,7 @@ export function SignOutButton() {
       const supabase = getSupabaseBrowserClient();
       await supabase.auth.signOut();
       await clearServerSessionCookie().catch(() => null);
+      await clearOfflineAppCaches();
       router.replace("/login");
     } catch {
       setBusy(false);

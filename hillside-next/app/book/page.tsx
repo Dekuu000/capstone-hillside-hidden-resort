@@ -28,7 +28,6 @@ async function fetchInitialAvailableUnits(
     accessToken,
     path: `/v2/catalog/units/available?${qs.toString()}`,
     schema: availableUnitsResponseSchema,
-    revalidate: 0,
   });
 }
 

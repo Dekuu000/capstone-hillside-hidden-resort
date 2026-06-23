@@ -4,7 +4,6 @@ type FetchServerApiDataParams<T> = {
   accessToken: string;
   path: string;
   schema: ZodType<T>;
-  revalidate?: number;
   timeoutMs?: number;
 };
 
@@ -17,7 +16,6 @@ export async function fetchServerApiData<T>({
   accessToken,
   path,
   schema,
-  revalidate = 10,
   timeoutMs,
 }: FetchServerApiDataParams<T>): Promise<T | null> {
   const base = normalizeApiBaseUrl();
@@ -31,7 +29,10 @@ export async function fetchServerApiData<T>({
     const response = await fetch(`${base}${normalizedPath}`, {
       method: "GET",
       headers: { Authorization: `Bearer ${accessToken}` },
-      next: { revalidate },
+      // NEVER cache per-user authenticated responses. Next's Data Cache is a
+      // SHARED server cache (not partitioned by bearer token), so caching here
+      // would let one user be served another user's data.
+      cache: "no-store",
       signal: controller?.signal,
     });
     if (!response.ok) return null;

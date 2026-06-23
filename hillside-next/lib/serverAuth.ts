@@ -35,7 +35,10 @@ export async function getServerAuthContext(accessToken: string): Promise<AuthCon
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
-      next: { revalidate: 20 },
+      // NEVER cache: this resolves the current user's identity + role from their
+      // bearer token. Next's Data Cache is a SHARED server cache (not per-user),
+      // so caching here leaks one user's role/identity to another.
+      cache: "no-store",
     });
     if (!response.ok) return null;
     return (await response.json()) as AuthContext;

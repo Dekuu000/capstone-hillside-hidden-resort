@@ -24,7 +24,7 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
-import { clearServerSessionCookie } from "../../lib/authSessionCookie";
+import { clearOfflineAppCaches, clearServerSessionCookie } from "../../lib/authSessionCookie";
 import { getSupabaseBrowserClient, safeGetSession } from "../../lib/supabase";
 import { resolveUserDisplayName } from "../../lib/userProfile";
 import { HillsideLogo } from "../branding/HillsideLogo";
@@ -216,6 +216,7 @@ export function AdminChrome({ children, initialName = null, initialEmail = null,
     const supabase = getSupabaseBrowserClient();
     await supabase.auth.signOut();
     await clearServerSessionCookie().catch(() => null);
+    await clearOfflineAppCaches();
     router.replace("/login");
   };
 

@@ -35,7 +35,6 @@ async function fetchInitialPayments(
     accessToken,
     path: `/v2/payments?${qs.toString()}`,
     schema: adminPaymentsResponseSchema,
-    revalidate: 8,
   });
 }
 

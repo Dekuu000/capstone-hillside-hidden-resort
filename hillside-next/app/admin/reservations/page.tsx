@@ -10,7 +10,6 @@ async function fetchInitialReservations(accessToken: string): Promise<Reservatio
     accessToken,
     path: "/v2/reservations?limit=10&offset=0&sort_by=created_at&sort_dir=desc",
     schema: reservationListResponseSchema,
-    revalidate: 8,
   });
 }
 
