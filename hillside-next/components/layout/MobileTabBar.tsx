@@ -45,7 +45,7 @@ function ActiveBar() {
 
 function TabButton({ tab }: { tab: MobileTab }) {
   return (
-    <Link href={tab.href} aria-current={tab.active ? "page" : undefined} className={cn(CELL, "active:bg-[var(--color-background)]")}>
+    <Link href={tab.href} aria-current={tab.active ? "page" : undefined} className={CELL}>
       {tab.active ? <ActiveBar /> : null}
       <tab.icon className={cn("h-5 w-5 shrink-0 transition-colors", tab.active ? ICON_ACTIVE : ICON_IDLE)} aria-hidden="true" />
       <span className={cn("max-w-full truncate text-[11px] leading-none transition-colors", tab.active ? LABEL_ACTIVE : LABEL_IDLE)}>
@@ -95,7 +95,7 @@ export function MobileTabBar({ tabs, fab, onMore, moreActive }: MobileTabBarProp
           <TabButton key={tab.href} tab={tab} />
         ))}
 
-        <button type="button" onClick={onMore} aria-haspopup="dialog" aria-label="More menu" className={cn(CELL, "active:bg-[var(--color-background)]")}>
+        <button type="button" onClick={onMore} aria-haspopup="dialog" aria-label="More menu" className={CELL}>
           {moreActive ? <ActiveBar /> : null}
           <MoreHorizontal className={cn("h-5 w-5 shrink-0 transition-colors", moreActive ? ICON_ACTIVE : ICON_IDLE)} aria-hidden="true" />
           <span className={cn("text-[11px] leading-none transition-colors", moreActive ? LABEL_ACTIVE : LABEL_IDLE)}>More</span>

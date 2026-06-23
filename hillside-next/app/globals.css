@@ -54,9 +54,9 @@ html {
      keeps the vertical scroller, preserving the sticky header. Wide tables
      keep their own `overflow-x-auto` wrappers, so their data stays scrollable. */
   overflow-x: hidden;
-  /* Brand-tinted tap flash on touch devices so every button/link gives
-     immediate press feedback on mobile (iOS Safari / Chrome Android). */
-  -webkit-tap-highlight-color: color-mix(in srgb, var(--color-primary) 18%, transparent);
+  /* No tap-highlight rectangle on touch — it reads as an unwanted box behind
+     buttons and bottom-nav cells. Press feedback comes from :active styles. */
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -89,13 +89,16 @@ button {
   cursor: pointer;
 }
 
-/* Keyboard-only focus ring. Use a crisp outline (not a box-shadow) so it can
-   never read as a drop shadow on the button, and is drawn only for keyboard
-   navigation (:focus-visible), never after a mouse/touch press. */
-button:focus-visible,
-a:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--color-secondary) 60%, white);
-  outline-offset: 2px;
+/* Keyboard focus ring — only on devices with a real pointer + keyboard
+   (desktop). Touch devices get no ring at all, so tapping a button or a
+   bottom-nav item never leaves a lingering outline/halo box. Uses a crisp
+   outline (not a box-shadow) so it never reads as a drop shadow. */
+@media (hover: hover) and (pointer: fine) {
+  button:focus-visible,
+  a:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--color-secondary) 60%, white);
+    outline-offset: 2px;
+  }
 }
 
 /* Belt-and-suspenders: strip any focus ring when focus came from a pointer
