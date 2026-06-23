@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
-import { Clock, Eye, EyeOff, ImageOff, Loader2, Moon, Sun, Trash2 } from "lucide-react";
+import { Clock, Eye, EyeOff, ImageOff, Moon, Settings2, Sun, Trash2 } from "lucide-react";
 import type { ServiceItem } from "../../../packages/shared/src/types";
 import { serviceItemSchema, serviceListResponseSchema } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
@@ -11,6 +11,7 @@ import { formatPhpPeso } from "../../lib/formatCurrency";
 import { tourSchedule } from "../../lib/catalog";
 import { deleteManagedUnitImageUrls, normalizeUnitImageUrls, normalizeUnitThumbUrls } from "../../lib/unitMedia";
 import { EmptyState } from "../shared/EmptyState";
+import { Modal } from "../shared/Modal";
 import { Skeleton } from "../shared/Skeleton";
 import { useToast } from "../shared/ToastProvider";
 import { UnitPhotoUploader } from "../shared/UnitPhotoUploader";
@@ -30,21 +31,20 @@ export function AdminToursClient({ accessToken }: Props) {
   const [tours, setTours] = useState<ServiceItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [savingId, setSavingId] = useState<string | null>(null);
-  // Per-tour rate inputs (kept as strings so the fields can be cleared/typed).
-  const [rateInputs, setRateInputs] = useState<Record<string, { adult: string; kid: string }>>({});
-  const [savingDetailsId, setSavingDetailsId] = useState<string | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
-  const seedRateInputs = useCallback((items: ServiceItem[]) => {
-    setRateInputs(
-      Object.fromEntries(
-        items.map((t) => [
-          t.service_id,
-          { adult: String(t.adult_rate ?? ""), kid: String(t.kid_rate ?? "") },
-        ]),
-      ),
-    );
-  }, []);
+  // Editor (Manage modal) — changes are staged here and only committed on Save.
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editAdult, setEditAdult] = useState("");
+  const [editKid, setEditKid] = useState("");
+  const [editImages, setEditImages] = useState<string[]>([]);
+  const [editThumbs, setEditThumbs] = useState<string[]>([]);
+  const [originImages, setOriginImages] = useState<string[]>([]);
+  const [originThumbs, setOriginThumbs] = useState<string[]>([]);
+  const [editorBusy, setEditorBusy] = useState(false);
+  const [uploadQueueCount, setUploadQueueCount] = useState(0);
+
+  const editingTour = tours.find((t) => t.service_id === editingId) ?? null;
 
   const loadTours = useCallback(async () => {
     if (!accessToken) return;
@@ -58,147 +58,133 @@ export function AdminToursClient({ accessToken }: Props) {
         serviceListResponseSchema,
       );
       setTours(data.items ?? []);
-      seedRateInputs(data.items ?? []);
     } catch (unknownError) {
       setTours([]);
       setError(getApiErrorMessage(unknownError, "Failed to load tours."));
     } finally {
       setLoading(false);
     }
-  }, [accessToken, seedRateInputs]);
+  }, [accessToken]);
 
   useEffect(() => {
     void loadTours();
   }, [loadTours]);
 
-  // Persist the gallery for one tour and reconcile state with the server row.
-  const persistImages = useCallback(
-    async (serviceId: string, imageUrls: string[], thumbUrls: string[]) => {
+  const openEditor = useCallback((tour: ServiceItem) => {
+    const images = normalizeUnitImageUrls(tour.image_urls);
+    const thumbs = normalizeUnitThumbUrls(images, tour.image_thumb_urls);
+    setEditAdult(String(tour.adult_rate ?? ""));
+    setEditKid(String(tour.kid_rate ?? ""));
+    setEditImages(images);
+    setEditThumbs(thumbs);
+    setOriginImages(images);
+    setOriginThumbs(thumbs);
+    setUploadQueueCount(0);
+    setEditingId(tour.service_id);
+  }, []);
+
+  const closeEditor = useCallback(() => {
+    setEditingId(null);
+    setEditImages([]);
+    setEditThumbs([]);
+    setOriginImages([]);
+    setOriginThumbs([]);
+    setUploadQueueCount(0);
+  }, []);
+
+  // Uploaded files land in storage immediately, but are only STAGED here — the
+  // tour record isn't updated until Save changes (matching the unit editor).
+  const handleUploadedMedia = useCallback((uploads: { mediumUrl: string; thumbUrl: string }[]) => {
+    if (!uploads.length) return;
+    setEditImages((prev) => [...prev, ...uploads.map((u) => u.mediumUrl)]);
+    setEditThumbs((prev) => [...prev, ...uploads.map((u) => u.thumbUrl)]);
+  }, []);
+
+  const removeEditImage = useCallback((index: number) => {
+    setEditImages((prev) => prev.filter((_, i) => i !== index));
+    setEditThumbs((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const saveEditor = useCallback(async () => {
+    if (!editingId || !accessToken) return;
+    const adult = Number(editAdult);
+    const kid = Number(editKid);
+    if (!Number.isFinite(adult) || adult < 0 || !Number.isFinite(kid) || kid < 0) {
+      showToast({ type: "error", title: "Invalid price", message: "Enter valid adult and kid rates." });
+      return;
+    }
+    setEditorBusy(true);
+    try {
+      const images = editImages.filter(Boolean);
+      const thumbs = normalizeUnitThumbUrls(images, editThumbs);
+      const id = editingId;
+      await apiFetch(
+        `/v2/admin/services/catalog/${encodeURIComponent(id)}`,
+        { method: "PATCH", body: JSON.stringify({ adult_rate: adult, kid_rate: kid }) },
+        accessToken,
+        serviceItemSchema,
+      );
+      const row = await apiFetch(
+        `/v2/admin/services/catalog/${encodeURIComponent(id)}/images`,
+        { method: "PATCH", body: JSON.stringify({ image_urls: images, image_thumb_urls: thumbs }) },
+        accessToken,
+        serviceItemSchema,
+      );
+      setTours((prev) => prev.map((t) => (t.service_id === id ? row : t)));
+
+      // Best-effort cleanup of photos removed during this edit.
+      const removed = [
+        ...originImages.filter((u) => !images.includes(u)),
+        ...originThumbs.filter((u) => !thumbs.includes(u)),
+      ];
+      if (removed.length) {
+        void deleteManagedUnitImageUrls(accessToken, removed).catch(() => undefined);
+      }
+
+      showToast({ type: "success", title: "Tour updated", message: "Your changes are saved." });
+      closeEditor();
+    } catch (unknownError) {
+      showToast({
+        type: "error",
+        title: "Save failed",
+        message: getApiErrorMessage(unknownError, "Could not save tour changes."),
+      });
+    } finally {
+      setEditorBusy(false);
+    }
+  }, [accessToken, closeEditor, editAdult, editImages, editKid, editThumbs, editingId, originImages, originThumbs, showToast]);
+
+  const toggleVisibility = useCallback(
+    async (tour: ServiceItem) => {
       if (!accessToken) return;
-      setSavingId(serviceId);
+      const isActive = (tour.status ?? "active") !== "inactive";
+      setTogglingId(tour.service_id);
       try {
         const row = await apiFetch(
-          `/v2/admin/services/catalog/${encodeURIComponent(serviceId)}/images`,
-          {
-            method: "PATCH",
-            body: JSON.stringify({ image_urls: imageUrls, image_thumb_urls: thumbUrls }),
-          },
+          `/v2/admin/services/catalog/${encodeURIComponent(tour.service_id)}`,
+          { method: "PATCH", body: JSON.stringify({ status: isActive ? "inactive" : "active" }) },
           accessToken,
           serviceItemSchema,
         );
-        setTours((prev) => prev.map((tour) => (tour.service_id === serviceId ? row : tour)));
+        setTours((prev) => prev.map((t) => (t.service_id === tour.service_id ? row : t)));
       } catch (unknownError) {
         showToast({
           type: "error",
-          title: "Save failed",
-          message: getApiErrorMessage(unknownError, "Could not save tour photos."),
-        });
-        // Re-sync from the server so the UI never shows un-saved state.
-        void loadTours();
-      } finally {
-        setSavingId(null);
-      }
-    },
-    [accessToken, loadTours, showToast],
-  );
-
-  const handleUploaded = useCallback(
-    (tour: ServiceItem, uploaded: { mediumUrl: string; thumbUrl: string }[]) => {
-      const currentImages = normalizeUnitImageUrls(tour.image_urls);
-      const currentThumbs = normalizeUnitThumbUrls(currentImages, tour.image_thumb_urls);
-      const nextImages = [...currentImages, ...uploaded.map((u) => u.mediumUrl)];
-      const nextThumbs = [...currentThumbs, ...uploaded.map((u) => u.thumbUrl)];
-      // Optimistic update so the new photos appear immediately.
-      setTours((prev) =>
-        prev.map((row) =>
-          row.service_id === tour.service_id
-            ? { ...row, image_urls: nextImages, image_thumb_urls: nextThumbs }
-            : row,
-        ),
-      );
-      void persistImages(tour.service_id, nextImages, nextThumbs);
-    },
-    [persistImages],
-  );
-
-  const handleRemove = useCallback(
-    async (tour: ServiceItem, index: number) => {
-      const currentImages = normalizeUnitImageUrls(tour.image_urls);
-      const currentThumbs = normalizeUnitThumbUrls(currentImages, tour.image_thumb_urls);
-      const removedImage = currentImages[index];
-      const removedThumb = currentThumbs[index];
-      const nextImages = currentImages.filter((_, i) => i !== index);
-      const nextThumbs = currentThumbs.filter((_, i) => i !== index);
-
-      setTours((prev) =>
-        prev.map((row) =>
-          row.service_id === tour.service_id
-            ? { ...row, image_urls: nextImages, image_thumb_urls: nextThumbs }
-            : row,
-        ),
-      );
-      await persistImages(tour.service_id, nextImages, nextThumbs);
-      // Best-effort storage cleanup (the row is already saved without these URLs).
-      if (accessToken) {
-        void deleteManagedUnitImageUrls(
-          accessToken,
-          [removedImage, removedThumb].filter(Boolean) as string[],
-        ).catch(() => undefined);
-      }
-    },
-    [accessToken, persistImages],
-  );
-
-  // Save editable tour fields (rates / visibility) and reconcile with the server.
-  const persistDetails = useCallback(
-    async (serviceId: string, body: { adult_rate?: number; kid_rate?: number; status?: "active" | "inactive" }) => {
-      if (!accessToken) return;
-      setSavingDetailsId(serviceId);
-      try {
-        const row = await apiFetch(
-          `/v2/admin/services/catalog/${encodeURIComponent(serviceId)}`,
-          { method: "PATCH", body: JSON.stringify(body) },
-          accessToken,
-          serviceItemSchema,
-        );
-        setTours((prev) => prev.map((tour) => (tour.service_id === serviceId ? row : tour)));
-        setRateInputs((prev) => ({
-          ...prev,
-          [serviceId]: { adult: String(row.adult_rate ?? ""), kid: String(row.kid_rate ?? "") },
-        }));
-        showToast({ type: "success", title: "Tour updated", message: "Your changes are saved." });
-      } catch (unknownError) {
-        showToast({
-          type: "error",
-          title: "Save failed",
-          message: getApiErrorMessage(unknownError, "Could not save tour changes."),
+          title: "Update failed",
+          message: getApiErrorMessage(unknownError, "Could not update visibility."),
         });
       } finally {
-        setSavingDetailsId(null);
+        setTogglingId(null);
       }
     },
     [accessToken, showToast],
   );
 
-  const handleSaveRates = useCallback(
-    (tour: ServiceItem) => {
-      const input = rateInputs[tour.service_id] ?? { adult: "", kid: "" };
-      const adult = Number(input.adult);
-      const kid = Number(input.kid);
-      if (!Number.isFinite(adult) || adult < 0 || !Number.isFinite(kid) || kid < 0) {
-        showToast({ type: "error", title: "Invalid price", message: "Enter valid adult and kid rates." });
-        return;
-      }
-      void persistDetails(tour.service_id, { adult_rate: adult, kid_rate: kid });
-    },
-    [persistDetails, rateInputs, showToast],
-  );
-
   if (loading) {
     return (
       <div className="space-y-4">
-        <Skeleton className="h-48 w-full" />
-        <Skeleton className="h-48 w-full" />
+        <Skeleton className="h-28 w-full" />
+        <Skeleton className="h-28 w-full" />
       </div>
     );
   }
@@ -228,167 +214,192 @@ export function AdminToursClient({ accessToken }: Props) {
   }
 
   return (
-    <div className="space-y-4">
-      {tours.map((tour) => {
-        const images = normalizeUnitImageUrls(tour.image_urls);
-        const thumbs = normalizeUnitThumbUrls(images, tour.image_thumb_urls);
-        const isNight = tour.service_type === "night_tour";
-        const TypeIcon = isNight ? Moon : Sun;
-        const adultRate = Number(tour.adult_rate || 0);
-        const rate = rateInputs[tour.service_id] ?? {
-          adult: String(tour.adult_rate ?? ""),
-          kid: String(tour.kid_rate ?? ""),
-        };
-        const isActive = (tour.status ?? "active") !== "inactive";
-        const detailsBusy = savingDetailsId === tour.service_id;
+    <>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {tours.map((tour) => {
+          const images = normalizeUnitImageUrls(tour.image_urls);
+          const thumbs = normalizeUnitThumbUrls(images, tour.image_thumb_urls);
+          const isNight = tour.service_type === "night_tour";
+          const TypeIcon = isNight ? Moon : Sun;
+          const isActive = (tour.status ?? "active") !== "inactive";
+          const adultRate = Number(tour.adult_rate || 0);
+          const cover = thumbs[0] || images[0];
 
-        return (
-          <section key={tour.service_id} className="surface space-y-4 p-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="flex min-w-0 items-start gap-3">
-                <span
-                  className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${
-                    isNight ? "bg-indigo-50 text-indigo-600" : "bg-amber-50 text-amber-600"
-                  }`}
-                >
-                  <TypeIcon className="h-5 w-5" />
-                </span>
-                <div className="min-w-0">
+          return (
+            <section key={tour.service_id} className="surface flex gap-3 p-4">
+              <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-xl bg-[var(--color-background)]">
+                {cover ? (
+                  <Image src={cover} alt={tour.service_name} fill sizes="112px" className="object-cover" />
+                ) : (
+                  <span className={`flex h-full w-full items-center justify-center ${isNight ? "text-indigo-400" : "text-amber-400"}`}>
+                    <TypeIcon className="h-6 w-6" />
+                  </span>
+                )}
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
                   <h2 className="truncate text-base font-semibold text-[var(--color-text)]">{tour.service_name}</h2>
-                  <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-[var(--color-muted)]">
-                    <span>{tourTypeLabel(tour.service_type)}</span>
-                    <span aria-hidden>·</span>
-                    <span className="inline-flex items-center gap-1">
-                      <Clock className="h-3.5 w-3.5" />
-                      {tourSchedule(tour)}
-                    </span>
-                    {adultRate > 0 ? (
-                      <>
-                        <span aria-hidden>·</span>
-                        <span>{formatPhpPeso(adultRate)} / adult</span>
-                      </>
-                    ) : null}
-                  </p>
+                  <span className={`shrink-0 text-xs font-semibold ${isActive ? "text-emerald-700" : "text-amber-700"}`}>
+                    {isActive ? "Active" : "Hidden"}
+                  </span>
+                </div>
+                <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs font-medium text-[var(--color-muted)]">
+                  <span>{tourTypeLabel(tour.service_type)}</span>
+                  <span aria-hidden>•</span>
+                  <span className="inline-flex items-center gap-1">
+                    <Clock className="h-3.5 w-3.5" />
+                    {tourSchedule(tour)}
+                  </span>
+                  {adultRate > 0 ? (
+                    <>
+                      <span aria-hidden>•</span>
+                      <span>{formatPhpPeso(adultRate)} / adult</span>
+                    </>
+                  ) : null}
+                </p>
+                <p className="mt-1 text-xs text-[var(--color-muted)]">
+                  {images.length} photo{images.length === 1 ? "" : "s"}
+                </p>
+
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => openEditor(tour)}
+                    className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-[var(--color-primary)] bg-[var(--color-primary)] px-4 text-sm font-semibold text-white transition hover:brightness-110"
+                  >
+                    <Settings2 className="h-4 w-4" />
+                    Manage
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void toggleVisibility(tour)}
+                    disabled={togglingId === tour.service_id}
+                    className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] disabled:opacity-50"
+                  >
+                    {isActive ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {isActive ? "Hide" : "Show"}
+                  </button>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                {!isActive ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-800">
-                    <EyeOff className="h-3.5 w-3.5" />
-                    Hidden
-                  </span>
-                ) : null}
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-white px-3 py-1 text-xs font-semibold text-[var(--color-muted)]">
-                  {images.length} photo{images.length === 1 ? "" : "s"}
-                  {savingId === tour.service_id ? " · saving…" : ""}
-                </span>
-              </div>
-            </div>
+            </section>
+          );
+        })}
+      </div>
 
-            {/* Pricing & visibility */}
-            <div className="grid gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-3 sm:grid-cols-[auto_auto_1fr] sm:items-end">
-              <label className="flex flex-col gap-1 text-xs font-semibold text-[var(--color-muted)]">
+      <Modal
+        open={Boolean(editingId)}
+        onClose={closeEditor}
+        title={editingTour ? `${editingTour.service_name} details` : "Tour details"}
+        size="md"
+        footer={
+          editingTour ? (
+            <>
+              <button
+                type="button"
+                onClick={closeEditor}
+                disabled={editorBusy}
+                className="inline-flex h-11 items-center justify-center rounded-xl border border-[var(--color-border)] bg-white px-4 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void saveEditor()}
+                disabled={editorBusy || uploadQueueCount > 0}
+                className="inline-flex h-11 items-center justify-center rounded-xl bg-[var(--color-primary)] px-5 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 disabled:opacity-50"
+              >
+                {editorBusy ? "Saving..." : "Save changes"}
+              </button>
+            </>
+          ) : null
+        }
+      >
+        {editingTour ? (
+          <div className="space-y-4">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="grid gap-1 text-xs text-[var(--color-muted)]">
                 Adult rate (₱)
                 <input
                   type="text"
                   inputMode="decimal"
-                  value={rate.adult}
-                  onChange={(e) =>
-                    setRateInputs((prev) => ({
-                      ...prev,
-                      [tour.service_id]: { ...rate, adult: e.target.value.replace(/[^0-9.]/g, "") },
-                    }))
-                  }
-                  className="h-10 w-full rounded-lg border border-[var(--color-border)] bg-white px-3 text-sm font-medium text-[var(--color-text)] outline-none focus:border-[var(--color-primary)] sm:w-28"
+                  value={editAdult}
+                  onChange={(e) => setEditAdult(e.target.value.replace(/[^0-9.]/g, ""))}
+                  className="h-11 rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
                 />
               </label>
-              <label className="flex flex-col gap-1 text-xs font-semibold text-[var(--color-muted)]">
+              <label className="grid gap-1 text-xs text-[var(--color-muted)]">
                 Kid rate (₱)
                 <input
                   type="text"
                   inputMode="decimal"
-                  value={rate.kid}
-                  onChange={(e) =>
-                    setRateInputs((prev) => ({
-                      ...prev,
-                      [tour.service_id]: { ...rate, kid: e.target.value.replace(/[^0-9.]/g, "") },
-                    }))
-                  }
-                  className="h-10 w-full rounded-lg border border-[var(--color-border)] bg-white px-3 text-sm font-medium text-[var(--color-text)] outline-none focus:border-[var(--color-primary)] sm:w-28"
+                  value={editKid}
+                  onChange={(e) => setEditKid(e.target.value.replace(/[^0-9.]/g, ""))}
+                  className="h-11 rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
                 />
               </label>
-              <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                <button
-                  type="button"
-                  onClick={() => handleSaveRates(tour)}
-                  disabled={detailsBusy}
-                  className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-lg bg-[var(--color-primary)] px-4 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-50 sm:flex-none"
-                >
-                  {detailsBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  Save prices
-                </button>
-                <button
-                  type="button"
-                  onClick={() => persistDetails(tour.service_id, { status: isActive ? "inactive" : "active" })}
-                  disabled={detailsBusy}
-                  className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-[var(--color-border)] bg-white px-3 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] disabled:opacity-50 sm:flex-none"
-                >
-                  {isActive ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  {isActive ? "Hide" : "Show"}
-                </button>
-              </div>
             </div>
 
-            {images.length ? (
-              <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                {images.map((src, index) => (
-                  <li key={`${src}-${index}`} className="group relative aspect-[4/3] overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-background)]">
-                    <Image
-                      src={thumbs[index] || src}
-                      alt={`${tour.service_name} photo ${index + 1}`}
-                      fill
-                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                      className="object-cover"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => void handleRemove(tour, index)}
-                      disabled={savingId === tour.service_id}
-                      aria-label={`Remove photo ${index + 1}`}
-                      className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/55 text-white opacity-0 transition group-hover:opacity-100 focus-visible:opacity-100 disabled:opacity-40"
+            <div>
+              <p className="text-sm font-semibold text-[var(--color-text)]">Photos</p>
+              {editImages.length ? (
+                <ul className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {editImages.map((src, index) => (
+                    <li
+                      key={`${src}-${index}`}
+                      className="group relative aspect-[4/3] overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-background)]"
                     >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                    {index === 0 ? (
-                      <span className="absolute bottom-2 left-2 rounded-full bg-white/90 px-2 py-0.5 text-[11px] font-semibold text-[var(--color-text)] shadow-sm">
-                        Cover
-                      </span>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <div className="flex items-center gap-2 rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-background)] px-3 py-4 text-sm text-[var(--color-muted)]">
-                <ImageOff className="h-4 w-4" />
-                No photos yet — guests see a stock image until you upload one.
-              </div>
-            )}
+                      <Image
+                        src={editThumbs[index] || src}
+                        alt={`${editingTour.service_name} photo ${index + 1}`}
+                        fill
+                        sizes="(max-width: 640px) 50vw, 200px"
+                        className="object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeEditImage(index)}
+                        aria-label={`Remove photo ${index + 1}`}
+                        className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/55 text-white opacity-0 transition group-hover:opacity-100 focus-visible:opacity-100"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                      {index === 0 ? (
+                        <span className="absolute bottom-2 left-2 rounded-full bg-white/90 px-2 py-0.5 text-[11px] font-semibold text-[var(--color-text)] shadow-sm">
+                          Cover
+                        </span>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="mt-2 flex items-center gap-2 rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-background)] px-3 py-4 text-sm text-[var(--color-muted)]">
+                  <ImageOff className="h-4 w-4" />
+                  No photos yet — guests see a stock image until you add one.
+                </div>
+              )}
+            </div>
 
             {accessToken ? (
               <UnitPhotoUploader
                 token={accessToken}
-                unitId={tour.service_id}
+                unitId={editingTour.service_id}
                 folder="tours"
-                currentCount={images.length}
-                onUploaded={(uploaded) => handleUploaded(tour, uploaded)}
+                currentCount={editImages.length}
+                onUploaded={handleUploadedMedia}
                 onUploadFailed={(fileName, reason) =>
                   showToast({ type: "error", title: "Upload failed", message: `${fileName}: ${reason}` })
                 }
+                onQueueChange={setUploadQueueCount}
               />
             ) : null}
-          </section>
-        );
-      })}
-    </div>
+
+            <p className="text-xs text-[var(--color-muted)]">
+              Photos and prices are saved when you choose <span className="font-semibold">Save changes</span>.
+            </p>
+          </div>
+        ) : null}
+      </Modal>
+    </>
   );
 }
