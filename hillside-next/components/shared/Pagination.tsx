@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { useId, useState, type FormEvent, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 /**
@@ -75,6 +76,11 @@ export function Pagination(props: PaginationProps) {
     className = "",
   } = props;
 
+  // Hooks must run unconditionally (before any early return).
+  const router = useRouter();
+  const jumpId = useId();
+  const [jumpValue, setJumpValue] = useState("");
+
   const canPrev = (hasPrev ?? page > 1) && !disabled;
   const canNext = (hasNext ?? (totalPages ? page < totalPages : false)) && !disabled;
 
@@ -109,6 +115,20 @@ export function Pagination(props: PaginationProps) {
   const isLink = "hrefForPage" in props && typeof props.hrefForPage === "function";
   const goTo = (target: number) => {
     if ("onPageChange" in props && props.onPageChange) props.onPageChange(target);
+  };
+
+  // "Jump to page" — only worth showing once the numeric strip can't list every
+  // page. Lets a user reach e.g. page 20 in one step instead of clicking Next.
+  const showJump = !disabled && !!totalPages && totalPages > 7;
+  const submitJump = (event: FormEvent) => {
+    event.preventDefault();
+    const parsed = Number(jumpValue);
+    if (!totalPages || !Number.isFinite(parsed)) return;
+    const target = Math.min(Math.max(1, Math.round(parsed)), totalPages);
+    setJumpValue("");
+    if (target === page) return;
+    if (isLink) router.push((props as LinkProps).hrefForPage(target));
+    else goTo(target);
   };
 
   const renderControl = (target: number, enabled: boolean, label: string, content: ReactNode, extra = "") => {
@@ -164,7 +184,31 @@ export function Pagination(props: PaginationProps) {
         <span className="hidden sm:block" />
       )}
 
-      <div className="flex w-full items-center gap-1.5 sm:w-auto">
+      <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-3">
+        {showJump ? (
+          <form onSubmit={submitJump} className="flex items-center justify-center gap-1.5 sm:justify-start">
+            <label htmlFor={jumpId} className="text-xs text-[var(--color-muted)] sm:text-sm">
+              Go to
+            </label>
+            <input
+              id={jumpId}
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={totalPages}
+              value={jumpValue}
+              onChange={(event) => setJumpValue(event.target.value)}
+              placeholder={String(page)}
+              aria-label={`Go to page, 1 to ${totalPages}`}
+              className="h-10 w-16 rounded-full border border-[var(--color-border)] bg-white px-2 text-center text-sm text-[var(--color-text)] outline-none transition focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)] sm:h-9"
+            />
+            <button type="submit" className={`${PILL_BASE} ${PILL_ENABLED}`}>
+              Go
+            </button>
+          </form>
+        ) : null}
+
+        <div className="flex w-full items-center gap-1.5 sm:w-auto">
         {renderControl(
           page - 1,
           canPrev,
@@ -200,6 +244,7 @@ export function Pagination(props: PaginationProps) {
           </>,
           "flex-1 sm:flex-none",
         )}
+        </div>
       </div>
     </nav>
   );
