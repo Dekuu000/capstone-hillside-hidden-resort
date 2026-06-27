@@ -49,6 +49,8 @@ import { ImageLightbox } from "../shared/ImageLightbox";
 import { GcashPaymentGuide } from "../shared/GcashPaymentGuide";
 import { ModalDialog } from "../shared/ModalDialog";
 import { SyncAlertBanner } from "../shared/SyncAlertBanner";
+import { DepositPolicyDialog } from "../booking/DepositPolicyDialog";
+import { redirectToGcashOrPay } from "../../lib/booking/gcashCheckout";
 import { UnitImageGallery } from "../shared/UnitImageGallery";
 import { normalizeUnitImageUrls, normalizeUnitThumbUrls } from "../../lib/unitMedia";
 
@@ -271,6 +273,27 @@ export function MyBookingsClient({
   const [cancelFor, setCancelFor] = useState<Booking | null>(null);
   const [cancelBusy, setCancelBusy] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
+
+  // Automated GCash checkout (PayMongo) for a pending booking. The deposit-policy
+  // dialog gates it, then we redirect to the hosted checkout — falling back to the
+  // manual pay page if the gateway is unavailable so the guest is never dead-ended.
+  const [gcashFor, setGcashFor] = useState<Booking | null>(null);
+  const [gcashBusy, setGcashBusy] = useState(false);
+  const startGcashCheckout = useCallback(async () => {
+    if (!gcashFor) return;
+    const reservationId = gcashFor.reservation_id;
+    const goToPayPage = (rid: string) => router.push(`/reserve/${encodeURIComponent(rid)}/pay`);
+    setGcashBusy(true);
+    if (!token) {
+      goToPayPage(reservationId);
+      return;
+    }
+    await redirectToGcashOrPay(reservationId, token, goToPayPage);
+    // On success the browser is already navigating to GCash; on fallback we've
+    // pushed the pay page. Reset so the dialog isn't stuck if we stayed put.
+    setGcashBusy(false);
+    setGcashFor(null);
+  }, [gcashFor, token, router]);
 
   const [qrFor, setQrFor] = useState<Booking | null>(null);
   const [qrToken, setQrToken] = useState<QrToken | null>(null);
@@ -1176,7 +1199,7 @@ export function MyBookingsClient({
 
                 {isPaymentTab ? (
                   <p className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium leading-relaxed text-amber-800">
-                    Pay at least the minimum deposit and submit proof to hold this booking. The deposit is non-refundable if you cancel.
+                    Pay the deposit to hold this booking — instant with GCash, or submit proof if you paid another way. The deposit is non-refundable if you cancel.
                   </p>
                 ) : flowHint ? (
                   <p className="mt-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-xs font-medium leading-relaxed text-[var(--color-text)]">
@@ -1209,13 +1232,22 @@ export function MyBookingsClient({
                 {booking.status === "pending_payment" || showSecondaryActions ? (
                   <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
                     {booking.status === "pending_payment" ? (
-                      <button
-                        type="button"
-                        className="guest-primary-cta min-h-11 px-4 text-sm"
-                        onClick={() => openPaymentSubmissionForBooking(booking)}
-                      >
-                        Submit payment proof
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          className="guest-primary-cta min-h-11 px-4 text-sm"
+                          onClick={() => setGcashFor(booking)}
+                        >
+                          Pay {formatPeso(minimumPayNow)} with GCash
+                        </button>
+                        <button
+                          type="button"
+                          className="guest-secondary-cta min-h-11 px-4 text-sm"
+                          onClick={() => openPaymentSubmissionForBooking(booking)}
+                        >
+                          Paid another way?
+                        </button>
+                      </>
                     ) : null}
                     {canCancel ? (
                       <button
@@ -1399,6 +1431,27 @@ export function MyBookingsClient({
             ) : null}
         </ModalDialog>
       )}
+
+      {gcashFor
+        ? (() => {
+            const gTotal = Number(gcashFor.total_amount ?? 0);
+            const gPaid = Number(gcashFor.amount_paid_verified ?? 0);
+            const gRemaining = Math.max(0, gTotal - gPaid);
+            const gExpected = Number(gcashFor.expected_pay_now ?? 0);
+            const gPayNow = gExpected > 0 ? gExpected : gRemaining;
+            const gBalanceDue = Math.max(0, gRemaining - gPayNow);
+            return (
+              <DepositPolicyDialog
+                open
+                payNow={gPayNow}
+                balanceDue={gBalanceDue}
+                busy={gcashBusy}
+                onConfirm={() => void startGcashCheckout()}
+                onClose={() => setGcashFor(null)}
+              />
+            );
+          })()
+        : null}
 
       {submitFor ? (
         <ModalDialog
