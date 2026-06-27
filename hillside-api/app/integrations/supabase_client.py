@@ -2256,6 +2256,25 @@ def attach_paymongo_checkout(
         raise _runtime_error_from_exception(exc) from exc
 
 
+def get_payment_by_id(*, payment_id: str) -> dict[str, Any] | None:
+    value = str(payment_id or "").strip()
+    if not value:
+        return None
+    try:
+        client = get_supabase_client()
+        response = (
+            client.table("payments")
+            .select("payment_id,reservation_id,status,amount")
+            .eq("payment_id", value)
+            .limit(1)
+            .execute()
+        )
+        rows = response.data or []
+        return rows[0] if rows else None
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
 def set_paymongo_payment_id(*, payment_id: str, provider_payment_id: str) -> None:
     """Store the PayMongo payment id (pay_...) on our payment row for audit."""
     try:

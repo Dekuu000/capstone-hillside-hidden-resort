@@ -19,6 +19,7 @@ from app.core.config import settings
 from app.integrations.supabase_client import (
     attach_paymongo_checkout,
     create_gateway_payment,
+    get_payment_by_id,
     set_paymongo_payment_id,
     expire_pending_payment_hold_for_reservation,
     get_payment_by_reference_no,
@@ -680,10 +681,25 @@ async def process_payment_webhook(
             payment_id = str(payment_by_ref.get("payment_id") or "").strip()
             reservation_id = reservation_id or str(payment_by_ref.get("reservation_id") or "").strip()
 
+    # Current payment status — providers (PayMongo) send multiple events + retry,
+    # so we must treat an already-resolved payment as a no-op (return 200), not error.
+    current_status = ""
+    if payment_id:
+        try:
+            current = get_payment_by_id(payment_id=payment_id)
+            current_status = str((current or {}).get("status") or "").lower()
+        except RuntimeError:
+            current_status = ""
+
     try:
         if event_type in {"payment.succeeded", "payment.verified"} and payment_id:
-            verify_payment_service_role(payment_id, approved=True)
-            processed = "payment_verified"
+            if current_status == "verified":
+                processed = "already_verified"
+            elif current_status == "rejected":
+                processed = "ignored_rejected"
+            else:
+                verify_payment_service_role(payment_id, approved=True)
+                processed = "payment_verified"
             # Record the PayMongo payment id for audit/reconciliation.
             if normalized.provider_payment_id:
                 try:
@@ -694,8 +710,8 @@ async def process_payment_webhook(
                 except RuntimeError:
                     logger.warning("Could not store PayMongo payment id for %s", payment_id)
             # Deposit is paid → lock escrow now (shadow-write, or on-chain when
-            # FEATURE_ESCROW_ONCHAIN_LOCK is enabled). Non-blocking.
-            if reservation_id:
+            # FEATURE_ESCROW_ONCHAIN_LOCK is enabled). Idempotent + non-blocking.
+            if reservation_id and processed in {"payment_verified", "already_verified"}:
                 try:
                     from app.api.v2.routes.reservations import _maybe_apply_escrow_shadow_write
 
@@ -707,8 +723,11 @@ async def process_payment_webhook(
                         exc_info=True,
                     )
         elif event_type in {"payment.failed", "payment.rejected"} and payment_id:
-            reject_payment_service_role(payment_id, reason=reason)
-            processed = "payment_rejected"
+            if current_status in {"verified", "rejected"}:
+                processed = "ignored_terminal"
+            else:
+                reject_payment_service_role(payment_id, reason=reason)
+                processed = "payment_rejected"
         elif event_type in {"refund.succeeded", "refund.completed"} and reservation_id:
             reservation_row = get_reservation_by_id(reservation_id) or {}
             update_reservation_policy_metadata(
