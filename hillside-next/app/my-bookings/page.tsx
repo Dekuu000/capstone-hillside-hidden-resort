@@ -17,8 +17,11 @@ function normalizeTab(value?: string): MyBookingsTab {
 }
 
 function getQrStatusLabel(status: string) {
-  if (["pending_payment", "for_verification", "confirmed", "checked_in"].includes(status)) {
+  if (["confirmed", "checked_in"].includes(status)) {
     return "QR ready";
+  }
+  if (["pending_payment", "for_verification"].includes(status)) {
+    return "After payment";
   }
   return "No QR yet";
 }

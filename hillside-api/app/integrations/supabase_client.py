@@ -238,6 +238,7 @@ MY_BOOKING_LIST_SELECT = """
     amount_paid_verified,
     deposit_required,
     expected_pay_now,
+    escrow_state,
     guest_count,
     units:reservation_units(
         reservation_unit_id,

@@ -134,8 +134,14 @@ function getPaymentStateMeta(totalAmount: number, amountPaid: number) {
   };
 }
 
-function canShowQrForBooking(status: string) {
-  return ["pending_payment", "for_verification", "confirmed", "checked_in"].includes(status);
+function canShowQrForBooking(booking: { status: string; escrow_state?: string | null }) {
+  // The check-in pass only appears once the deposit is paid (status reaches
+  // confirmed/checked_in) and the escrow is healthy. "none" = non-escrow booking
+  // (walk-in/manual), "pending_lock"/"locked" = secured; all stay visible.
+  // A terminal/broken escrow (released after cancel, refunded, failed lock) hides it.
+  if (!["confirmed", "checked_in"].includes(booking.status)) return false;
+  const escrow = String(booking.escrow_state ?? "none").toLowerCase();
+  return !["released", "refunded", "failed"].includes(escrow);
 }
 
 /** "Check-in opens in 1d 3h" for a confirmed upcoming booking (8am local), else null. */
@@ -1113,7 +1119,7 @@ export function MyBookingsClient({
           const visitDate = booking.service_bookings?.[0]?.visit_date ?? booking.check_in_date;
           const checkInDate = new Date(`${booking.check_in_date}T00:00:00`);
           const canCancel = ["pending_payment", "for_verification", "confirmed"].includes(booking.status) && checkInDate > now;
-          const canShowQr = canShowQrForBooking(booking.status);
+          const canShowQr = canShowQrForBooking(booking);
           const reservationStatusLabel = toTitleCase(booking.status.replace(/_/g, " "));
           const flowHint = bookingFlowHint(booking.status);
           const showSecondaryActions = booking.status !== "pending_payment" && canCancel;

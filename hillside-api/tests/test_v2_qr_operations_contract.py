@@ -173,6 +173,44 @@ def test_checkin_applies_escrow_release_when_locked(monkeypatch) -> None:
     assert called["escrow_event_index"] == 8
 
 
+def test_qr_issue_blocked_until_deposit_paid_and_secured(monkeypatch) -> None:
+    """A guest cannot mint a check-in pass until the booking is paid + escrow-secured."""
+    monkeypatch.setattr("app.core.auth.verify_access_token", _guest_auth)
+    monkeypatch.setattr("app.api.v2.routes.qr.settings.feature_dynamic_qr", True)
+    monkeypatch.setattr("app.api.v2.routes.qr.settings.qr_signing_secret", "test-secret")
+
+    issued = {"count": 0}
+    monkeypatch.setattr(
+        "app.api.v2.routes.qr.create_qr_token_record",
+        lambda **_: issued.__setitem__("count", issued["count"] + 1),
+    )
+
+    def _set_booking(row: dict) -> None:
+        monkeypatch.setattr("app.api.v2.routes.qr.get_my_booking_details", lambda **_: row)
+
+    base = {
+        "reservation_id": "22222222-2222-2222-2222-222222222222",
+        "reservation_code": "HR-GATE",
+    }
+    body = {"reservation_id": "22222222-2222-2222-2222-222222222222"}
+
+    # Unpaid (pending_payment) -> blocked, and no token is ever persisted.
+    _set_booking({**base, "status": "pending_payment", "escrow_state": "none"})
+    blocked = client.post("/v2/qr/issue", json=body, headers=_header("guest-token"))
+    assert blocked.status_code == 409
+    assert issued["count"] == 0
+
+    # Paid but escrow released (e.g. after a cancellation/refund) -> still blocked.
+    _set_booking({**base, "status": "confirmed", "escrow_state": "released"})
+    assert client.post("/v2/qr/issue", json=body, headers=_header("guest-token")).status_code == 409
+
+    # Paid + shadow-secured (escrow_state="pending_lock") -> allowed.
+    _set_booking({**base, "status": "confirmed", "escrow_state": "pending_lock"})
+    ok = client.post("/v2/qr/issue", json=body, headers=_header("guest-token"))
+    assert ok.status_code == 200
+    assert ok.json()["reservation_code"] == "HR-GATE"
+
+
 def test_dynamic_qr_issue_and_verify_blocks_replay(monkeypatch) -> None:
     def _mixed_auth(token: str) -> AuthContext:
         if token == "guest-token":
@@ -193,6 +231,8 @@ def test_dynamic_qr_issue_and_verify_blocks_replay(monkeypatch) -> None:
         lambda **_: {
             "reservation_id": "11111111-1111-1111-1111-111111111111",
             "reservation_code": "HR-TEST-DYNAMIC",
+            "status": "confirmed",
+            "escrow_state": "pending_lock",
         },
     )
     monkeypatch.setattr("app.api.v2.routes.qr.create_qr_token_record", lambda **_: None)
