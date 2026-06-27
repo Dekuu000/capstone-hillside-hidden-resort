@@ -4,7 +4,7 @@ import { FormEvent, useCallback, useEffect, useId, useMemo, useRef, useState } f
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
-import { Calendar, CircleCheck, CircleX, CreditCard, Eye, Loader2, QrCode, Star, Upload } from "lucide-react";
+import { Calendar, CircleCheck, CircleX, Clock, CreditCard, Eye, Loader2, QrCode, Star, Upload } from "lucide-react";
 import type {
   MyBookingsCursor as Cursor,
   MyBookingsResponse as BookingsResponse,
@@ -126,6 +126,20 @@ function getPaymentStateMeta(totalAmount: number, amountPaid: number) {
 
 function canShowQrForBooking(status: string) {
   return ["pending_payment", "for_verification", "confirmed", "checked_in"].includes(status);
+}
+
+/** "Check-in opens in 1d 3h" for a confirmed upcoming booking (8am local), else null. */
+function formatCheckInCountdown(targetDate: string, now: Date): string | null {
+  const target = new Date(`${targetDate}T08:00:00+08:00`).getTime();
+  const diff = target - now.getTime();
+  if (!Number.isFinite(diff)) return null;
+  if (diff <= 0) return "Check-in is open now";
+  const totalMinutes = Math.floor(diff / 60000);
+  const days = Math.floor(totalMinutes / 1440);
+  const hours = Math.floor((totalMinutes % 1440) / 60);
+  const minutes = totalMinutes % 60;
+  const span = days > 0 ? `${days}d ${hours}h` : hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+  return `Check-in opens in ${span}`;
 }
 
 function cancellationConsequenceText(booking: Booking | null) {
@@ -1072,6 +1086,17 @@ export function MyBookingsClient({
                         ? formatDateWithWeekday(visitDate)
                         : `${formatDateWithWeekday(booking.check_in_date)} – ${formatDateWithWeekday(booking.check_out_date)}`}
                     </p>
+                    {tab === "upcoming" && booking.status === "confirmed"
+                      ? (() => {
+                          const countdown = formatCheckInCountdown(visitDate, now);
+                          return countdown ? (
+                            <p className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-[color:color-mix(in_srgb,var(--color-secondary)_12%,white)] px-2.5 py-0.5 text-[11px] font-semibold text-[var(--color-secondary)]">
+                              <Clock className="h-3.5 w-3.5" />
+                              {countdown}
+                            </p>
+                          ) : null;
+                        })()
+                      : null}
                     <p className="mt-0.5 truncate text-xs text-[var(--color-muted)]">
                       {booking.reservation_code} · Booked {formatLocalDateTime(booking.created_at)}
                     </p>
