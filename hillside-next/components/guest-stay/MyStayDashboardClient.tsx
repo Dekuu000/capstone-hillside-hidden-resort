@@ -7,7 +7,10 @@ import { welcomeNotificationSchema } from "../../../packages/shared/src/schemas"
 import type { WelcomeNotification } from "../../../packages/shared/src/types";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
+import { formatDateOnly } from "../../lib/dateDisplay";
 import { formatPhpPeso } from "../../lib/formatCurrency";
+
+const LONG_DATE: Intl.DateTimeFormatOptions = { month: "long", day: "numeric", year: "numeric" };
 import { useNetworkOnline } from "../../lib/hooks/useNetworkOnline";
 import { ModalDialog } from "../shared/ModalDialog";
 import { SyncAlertBanner } from "../shared/SyncAlertBanner";
@@ -125,7 +128,10 @@ export function MyStayDashboardClient({
                 {formatReservationStatus(status)}
               </span>
             </div>
-            <p className="mt-1 text-sm text-[var(--color-muted)]">{checkInDate} to {checkOutDate}</p>
+            <p className="mt-1 text-sm text-[var(--color-muted)]">
+              {formatDateOnly(checkInDate, { formatOptions: LONG_DATE })} to{" "}
+              {formatDateOnly(checkOutDate, { formatOptions: LONG_DATE })}
+            </p>
             <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-[var(--color-muted)]">
               <Clock3 className="h-3.5 w-3.5 text-[var(--color-secondary)]" />
               {countdownLabel}
