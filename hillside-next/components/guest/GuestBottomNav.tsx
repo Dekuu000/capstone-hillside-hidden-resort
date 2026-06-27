@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BedDouble, CalendarDays, TreePalm, UserRound } from "lucide-react";
+import { BedDouble, CalendarDays, House, TreePalm, UserRound } from "lucide-react";
 import { cn } from "../../lib/cn";
 
 const TABS = [
+  { label: "My stay", href: "/guest/my-stay", icon: House },
   { label: "Stays", href: "/stays", icon: CalendarDays },
   { label: "Tours", href: "/tours", icon: TreePalm },
   { label: "Trips", href: "/my-bookings", icon: BedDouble },
