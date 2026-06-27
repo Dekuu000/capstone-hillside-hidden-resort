@@ -1135,6 +1135,29 @@ export const escrowReconciliationResponseSchema = z.object({
   last_reconciled_at: z.string().datetime().optional().nullable(),
 });
 
+export const escrowLedgerItemSchema = z.object({
+  ledger_id: z.string().min(1),
+  reservation_id: z.string().min(1),
+  reservation_code: z.string().optional().nullable(),
+  event: z.enum(["lock", "release", "refund", "forfeit"]),
+  escrow_state_from: z.string().optional().nullable(),
+  escrow_state_to: z.string().optional().nullable(),
+  policy_outcome: z.string().optional().nullable(),
+  amount: z.number().optional().nullable(),
+  reason: z.string().optional().nullable(),
+  actor_role: z.string().optional().nullable(),
+  chain_tx_hash: z.string().optional().nullable(),
+  created_at: z.string().optional().nullable(),
+});
+
+export const escrowLedgerResponseSchema = z.object({
+  items: z.array(escrowLedgerItemSchema),
+  count: z.number().int().nonnegative(),
+  limit: z.number().int().positive(),
+  offset: z.number().int().nonnegative(),
+  has_more: z.boolean(),
+});
+
 // ---------- In-app notifications ----------
 export const notificationSeveritySchema = z.enum(["info", "success", "warning", "critical"]);
 

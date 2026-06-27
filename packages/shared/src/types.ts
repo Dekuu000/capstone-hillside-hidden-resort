@@ -1199,6 +1199,31 @@ export type EscrowReconciliationResponse = {
   last_reconciled_at?: string | null;
 };
 
+export type EscrowLedgerEvent = "lock" | "release" | "refund" | "forfeit";
+
+export type EscrowLedgerItem = {
+  ledger_id: string;
+  reservation_id: string;
+  reservation_code?: string | null;
+  event: EscrowLedgerEvent;
+  escrow_state_from?: string | null;
+  escrow_state_to?: string | null;
+  policy_outcome?: string | null;
+  amount?: number | null;
+  reason?: string | null;
+  actor_role?: string | null;
+  chain_tx_hash?: string | null;
+  created_at?: string | null;
+};
+
+export type EscrowLedgerResponse = {
+  items: EscrowLedgerItem[];
+  count: number;
+  limit: number;
+  offset: number;
+  has_more: boolean;
+};
+
 // ---------- In-app notifications ----------
 export type NotificationSeverity = "info" | "success" | "warning" | "critical";
 
