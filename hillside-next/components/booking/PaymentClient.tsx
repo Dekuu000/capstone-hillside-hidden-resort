@@ -20,6 +20,7 @@ import { syncAwareMutation } from "../../lib/offlineSync/mutation";
 import { queuePaymentSubmissionWithFile } from "../../lib/offlineSync/paymentSubmission";
 import { getSupabaseBrowserClient } from "../../lib/supabase";
 import { GcashPaymentGuide } from "../shared/GcashPaymentGuide";
+import { DepositPolicyDialog } from "./DepositPolicyDialog";
 import { Input } from "../shared/Input";
 
 export function PaymentClient({ token, reservationId }: { token: string; reservationId: string }) {
@@ -38,6 +39,7 @@ export function PaymentClient({ token, reservationId }: { token: string; reserva
   const [error, setError] = useState<string | null>(null);
   const [redirecting, setRedirecting] = useState(false);
   const [onlineError, setOnlineError] = useState<string | null>(null);
+  const [policyOpen, setPolicyOpen] = useState(false);
 
   const totals = useMemo(() => {
     const total = Number(booking?.total_amount ?? 0);
@@ -195,9 +197,11 @@ export function PaymentClient({ token, reservationId }: { token: string; reserva
         return;
       }
       setOnlineError("Could not start the GCash payment. Please try again.");
+      setPolicyOpen(false);
       setRedirecting(false);
     } catch (unknownError) {
       setOnlineError(getApiErrorMessage(unknownError, "Online payment is unavailable right now."));
+      setPolicyOpen(false);
       setRedirecting(false);
     }
   }, [reservationId, token]);
@@ -252,14 +256,16 @@ export function PaymentClient({ token, reservationId }: { token: string; reserva
             ) : null}
             <button
               type="button"
-              onClick={() => void payOnline()}
+              onClick={() => setPolicyOpen(true)}
               disabled={redirecting}
               className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-cta)] text-base font-semibold text-white transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {redirecting ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
               {redirecting ? "Redirecting to GCash…" : `Pay ${formatPeso(totals.deposit)} with GCash`}
             </button>
-            <p className="mt-2 text-center text-xs muted-text">Secured by PayMongo.</p>
+            <p className="mt-2 text-center text-xs muted-text">
+              Secured by PayMongo. Deposit is non-refundable if you cancel.
+            </p>
           </section>
         </div>
 
@@ -367,6 +373,15 @@ export function PaymentClient({ token, reservationId }: { token: string; reserva
           </div>
         </aside>
       </div>
+
+      <DepositPolicyDialog
+        open={policyOpen}
+        payNow={totals.deposit}
+        balanceDue={Math.max(0, totals.total - totals.deposit)}
+        busy={redirecting}
+        onConfirm={() => void payOnline()}
+        onClose={() => setPolicyOpen(false)}
+      />
     </div>
   );
 }

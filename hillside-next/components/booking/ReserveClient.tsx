@@ -17,6 +17,7 @@ import { fetchPublicUnitById, unitImageUrl, unitTypeLabel, type PublicUnit } fro
 import { formatPhpPeso } from "../../lib/formatCurrency";
 import { getUnitNightlyRate } from "../../lib/booking/pricing";
 import { PriceBreakdown } from "./PriceBreakdown";
+import { DepositPolicyDialog } from "./DepositPolicyDialog";
 import { Input } from "../shared/Input";
 
 function nightsBetween(checkIn: string, checkOut: string): number {
@@ -46,6 +47,7 @@ export function ReserveClient({ token, email }: { token: string; email: string |
   const [promo, setPromo] = useState<PromoValidationResult | null>(null);
   const [promoBusy, setPromoBusy] = useState(false);
   const [promoError, setPromoError] = useState<string | null>(null);
+  const [policyOpen, setPolicyOpen] = useState(false);
 
   useEffect(() => {
     const current = readBookingDraft();
@@ -99,7 +101,9 @@ export function ReserveClient({ token, email }: { token: string; email: string |
   const nightlyRate = unit && draft ? getUnitNightlyRate(unit, draft.guestCount) : 0;
   const grossTotal = nightlyRate * Math.max(0, nights);
   const discount = promo?.valid ? promo.discount_amount : 0;
-  const payNow = computeStayDepositPreview(Math.max(0, grossTotal - discount));
+  const netTotal = Math.max(0, grossTotal - discount);
+  const payNow = computeStayDepositPreview(netTotal);
+  const balanceDue = Math.max(0, netTotal - payNow);
 
   const applyPromo = useCallback(async () => {
     const code = promoInput.trim();
@@ -201,6 +205,8 @@ export function ReserveClient({ token, email }: { token: string; email: string |
       } else {
         setError(message);
       }
+      // Drop back to the page so the card-level error is visible behind the modal.
+      setPolicyOpen(false);
       setBusy(false);
     }
   }, [draft, unit, name, phone, token, router, promo]);
@@ -345,7 +351,7 @@ export function ReserveClient({ token, email }: { token: string; email: string |
 
               <button
                 type="button"
-                onClick={confirm}
+                onClick={() => setPolicyOpen(true)}
                 disabled={busy}
                 className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-cta)] text-base font-semibold text-white transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
               >
@@ -353,12 +359,21 @@ export function ReserveClient({ token, email }: { token: string; email: string |
                 {busy ? "Redirecting to GCash…" : `Pay ${formatPhpPeso(payNow)} with GCash`}
               </button>
               <p className="mt-2 text-center text-xs muted-text">
-                Secured by PayMongo · GCash. Your spot is held until payment is confirmed.
+                Secured by PayMongo · GCash. Deposit is non-refundable if you cancel.
               </p>
             </div>
           </div>
         </aside>
       </div>
+
+      <DepositPolicyDialog
+        open={policyOpen}
+        payNow={payNow}
+        balanceDue={balanceDue}
+        busy={busy}
+        onConfirm={confirm}
+        onClose={() => setPolicyOpen(false)}
+      />
     </div>
   );
 }
