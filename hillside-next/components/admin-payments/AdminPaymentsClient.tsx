@@ -47,7 +47,7 @@ const PAGE_SIZE = 10;
 const TAB_LABELS: Array<{ id: AdminPaymentsTab; label: string }> = [
   { id: "to_review", label: "To Review" },
   { id: "verified", label: "Verified" },
-  { id: "rejected", label: "Rejected" },
+  { id: "rejected", label: "Declined" },
   { id: "all", label: "All" },
 ];
 type TabCounts = Record<AdminPaymentsTab, number>;
@@ -60,7 +60,7 @@ const WORKFLOW_FILTERS: Array<{ id: PaymentWorkflowFilter; label: string }> = [
   { id: "to_review", label: "To Review" },
   { id: "paid", label: "Paid" },
   { id: "partial", label: "Partial" },
-  { id: "rejected", label: "Rejected" },
+  { id: "rejected", label: "Declined" },
 ];
 
 function workflowToApiTab(filter: PaymentWorkflowFilter): AdminPaymentsTab {
@@ -1196,7 +1196,7 @@ export function AdminPaymentsClient({
                   <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em]">Reference</th>
                   <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em]">Proof</th>
                   {showVerifiedCols ? <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em]">Verified</th> : null}
-                  {showRejectedCols ? <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em]">Rejected</th> : null}
+                  {showRejectedCols ? <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em]">Declined</th> : null}
                   {isToReview ? <th className="px-3 py-2.5 text-right text-[11px] font-semibold uppercase tracking-[0.12em]">Actions</th> : null}
                 </tr>
               </thead>
