@@ -1,7 +1,9 @@
 import logging
 from datetime import datetime, timedelta, timezone
+from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from pydantic import BaseModel
 
 from app.api.v2.routes._http_errors import raise_http_from_runtime_error
 
@@ -14,6 +16,8 @@ from app.core.auth import (
 )
 from app.core.config import settings
 from app.integrations.supabase_client import (
+    attach_paymongo_checkout,
+    create_gateway_payment,
     expire_pending_payment_hold_for_reservation,
     get_payment_by_reference_no,
     get_reservation_by_id,
@@ -46,6 +50,7 @@ from app.services.idempotency import (
     load_cached_response_payload,
     store_operation_receipt_safely,
 )
+from app.services import paymongo
 from app.services.payment_policy import payment_satisfies_minimum
 from app.services.payment_webhooks import (
     parse_payment_webhook_payload,
@@ -53,6 +58,11 @@ from app.services.payment_webhooks import (
 )
 
 router = APIRouter()
+
+
+class PaymongoCheckoutRequest(BaseModel):
+    reservation_id: str
+    payment_type: str = "deposit"
 logger = logging.getLogger(__name__)
 WEBHOOK_ROUTE_KEY = "payments.webhooks.provider"
 WEBHOOK_SYSTEM_USER_ID = "system-webhook"
@@ -337,6 +347,114 @@ def update_payment_intent(
         raise_http_from_runtime_error(exc, default_status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
     return {"ok": True}
+
+
+@router.post("/paymongo/checkout")
+def create_paymongo_checkout(
+    payload: PaymongoCheckoutRequest,
+    auth: AuthContext = Depends(require_authenticated),
+):
+    """Create a PayMongo Hosted Checkout (GCash) session for a reservation's
+    deposit and return the redirect URL. The amount is recomputed server-side;
+    the booking is only marked paid later by the verified webhook."""
+    if str(settings.payment_mode or "").strip().lower() != "gateway":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Online payment is currently unavailable.",
+        )
+    if not paymongo.is_configured():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Online payment is not configured.",
+        )
+
+    try:
+        reservation = get_reservation_by_id(payload.reservation_id)
+    except RuntimeError as exc:
+        raise_http_from_runtime_error(exc, default_status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+    if not reservation:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation not found")
+    ensure_reservation_access(auth, reservation)
+    _enforce_payment_window_or_raise(reservation=reservation, reservation_id=payload.reservation_id)
+
+    reservation_status = str(reservation.get("status") or "").lower()
+    if reservation_status not in {"pending_payment", "for_verification"}:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This reservation is not awaiting payment.",
+        )
+
+    # Never trust a client amount — recompute the amount due now from the booking.
+    expected = reservation.get("expected_pay_now")
+    deposit = reservation.get("deposit_required")
+    amount_php = float(expected if expected not in (None, "") else (deposit or 0))
+    if amount_php <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No payment is currently due for this reservation.",
+        )
+    amount_centavos = paymongo.php_to_centavos(amount_php)
+    reservation_code = str(reservation.get("reservation_code") or "")
+    reference_no = f"PM-{payload.reservation_id[:8]}-{uuid4().hex[:8]}"
+
+    try:
+        payment = create_gateway_payment(
+            reservation_id=payload.reservation_id,
+            amount=amount_php,
+            reference_no=reference_no,
+            method="gcash",
+            payment_type="deposit",
+            provider="paymongo",
+        )
+    except RuntimeError as exc:
+        raise_http_from_runtime_error(exc, default_status=status.HTTP_503_SERVICE_UNAVAILABLE)
+    payment_id = str(payment.get("payment_id") or "")
+
+    base = str(settings.app_public_base_url or "http://localhost:3000").rstrip("/")
+    success_url = f"{base}/reserve/{payload.reservation_id}/pay/success"
+    cancel_url = f"{base}/reserve/{payload.reservation_id}/pay/cancelled"
+
+    try:
+        session = paymongo.create_gcash_checkout_session(
+            amount_centavos=amount_centavos,
+            description=f"Hillside reservation {reservation_code} deposit",
+            line_item_name=f"Reservation {reservation_code} deposit",
+            reference_number=reference_no,
+            success_url=success_url,
+            cancel_url=cancel_url,
+            metadata={
+                "reservation_id": payload.reservation_id,
+                "reservation_code": reservation_code,
+                "payment_id": payment_id,
+                "reference_no": reference_no,
+                "amount_centavos": amount_centavos,
+                "guest_user_id": str(reservation.get("guest_user_id") or ""),
+            },
+        )
+    except paymongo.PayMongoError as exc:
+        logger.warning("PayMongo checkout creation failed: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Could not start the GCash payment. Please try again.",
+        ) from exc
+
+    try:
+        attach_paymongo_checkout(
+            payment_id=payment_id,
+            checkout_session_id=session["checkout_session_id"],
+            checkout_url=session["checkout_url"],
+            payment_intent_id=session.get("payment_intent_id"),
+        )
+    except RuntimeError as exc:
+        logger.warning("Failed to persist PayMongo checkout refs: %s", exc)
+
+    return {
+        "ok": True,
+        "checkout_url": session["checkout_url"],
+        "checkout_session_id": session["checkout_session_id"],
+        "payment_id": payment_id,
+    }
 
 
 @router.post("/on-site", response_model=OnSitePaymentResponse)

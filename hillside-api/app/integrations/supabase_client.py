@@ -2198,6 +2198,84 @@ def get_payment_by_reference_no(*, reference_no: str) -> dict[str, Any] | None:
         raise _runtime_error_from_exception(exc) from exc
 
 
+def create_gateway_payment(
+    *,
+    reservation_id: str,
+    amount: float,
+    reference_no: str,
+    method: str = "gcash",
+    payment_type: str = "deposit",
+    provider: str = "paymongo",
+) -> dict[str, Any]:
+    """Insert a pending gateway payment row (service role) and return it.
+
+    Used when a hosted-checkout session is created; the row is reconciled to
+    'verified' by the provider webhook once the guest pays.
+    """
+    try:
+        client = get_supabase_client()
+        response = (
+            client.table("payments")
+            .insert(
+                {
+                    "reservation_id": reservation_id,
+                    "amount": amount,
+                    "method": method,
+                    "payment_type": payment_type,
+                    "reference_no": reference_no,
+                    "status": "pending",
+                    "provider": provider,
+                }
+            )
+            .execute()
+        )
+        rows = response.data or []
+        return rows[0] if rows else {}
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def attach_paymongo_checkout(
+    *,
+    payment_id: str,
+    checkout_session_id: str,
+    checkout_url: str,
+    payment_intent_id: str | None = None,
+) -> None:
+    """Persist the PayMongo checkout-session refs onto a payment row."""
+    try:
+        client = get_supabase_client()
+        client.table("payments").update(
+            {
+                "paymongo_checkout_session_id": checkout_session_id,
+                "paymongo_checkout_url": checkout_url,
+                "paymongo_payment_intent_id": payment_intent_id,
+            }
+        ).eq("payment_id", payment_id).execute()
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def get_payment_by_paymongo_session(*, session_id: str) -> dict[str, Any] | None:
+    value = str(session_id or "").strip()
+    if not value:
+        return None
+    try:
+        client = get_supabase_client()
+        response = (
+            client.table("payments")
+            .select("payment_id,reservation_id,reference_no,status,amount")
+            .eq("paymongo_checkout_session_id", value)
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        rows = response.data or []
+        return rows[0] if rows else None
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
 def verify_payment_service_role(payment_id: str, *, approved: bool = True) -> None:
     try:
         client = get_supabase_client()
