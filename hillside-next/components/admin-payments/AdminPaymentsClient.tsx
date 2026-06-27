@@ -1172,7 +1172,7 @@ export function AdminPaymentsClient({
                         disabled={isCancelledReservation || !hasEvidence}
                         className="flex-1 rounded-lg border border-red-600 bg-red-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-40"
                       >
-                        Reject
+                        Decline
                       </button>
                     </div>
                   ) : null}
@@ -1316,7 +1316,7 @@ export function AdminPaymentsClient({
                               disabled={isCancelledReservation || !hasEvidence}
                               className="rounded-lg border border-red-600 bg-red-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-200 disabled:cursor-not-allowed disabled:opacity-40"
                             >
-                              Reject
+                              Decline
                             </button>
                           </div>
                         </td>
@@ -1350,7 +1350,7 @@ export function AdminPaymentsClient({
             setRejectReason("");
             setRejectError(null);
           }}
-          title="Reject payment submission"
+          title="Decline payment submission"
           description="This notifies the guest that the submitted proof/reference could not be verified. They can resubmit payment proof."
           size="md"
           footer={
@@ -1374,7 +1374,7 @@ export function AdminPaymentsClient({
                 disabled={rejectBusy || rejectReason.trim().length < 5}
                 className="inline-flex h-11 items-center justify-center rounded-xl bg-red-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700 disabled:opacity-50"
               >
-                {rejectBusy ? "Rejecting..." : "Confirm Reject"}
+                {rejectBusy ? "Declining..." : "Confirm Decline"}
               </button>
             </>
           }
