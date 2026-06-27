@@ -18,6 +18,8 @@ class NormalizedPaymentWebhook:
     reservation_id: str | None = None
     reference_no: str | None = None
     reason: str | None = None
+    provider_payment_id: str | None = None
+    amount_centavos: int | None = None
     raw_payload: dict[str, Any] | None = None
 
 
@@ -27,7 +29,12 @@ def _normalize_event_type(event_type: str) -> str:
         return "payment.succeeded"
     if event in {"invoice.expired", "invoice_failed", "failed", "expired"}:
         return "payment.failed"
-    if event in {"payment.succeeded", "payment.verified", "payment.failed", "payment.rejected"}:
+    # PayMongo hosted-checkout / payment events.
+    if event in {"checkout_session.payment.paid", "payment.paid"}:
+        return "payment.succeeded"
+    if event in {"checkout_session.payment.failed", "payment.failed"}:
+        return "payment.failed"
+    if event in {"payment.succeeded", "payment.verified", "payment.rejected"}:
         return event
     if event in {"refund.succeeded", "refund.completed"}:
         return event
@@ -108,7 +115,69 @@ def _parse_generic_payload(payload: dict[str, Any]) -> NormalizedPaymentWebhook:
     )
 
 
+def _parse_paymongo_payload(payload: dict[str, Any]) -> NormalizedPaymentWebhook:
+    # PayMongo: { data: { id: evt_..., attributes: { type, data: { id, attributes: {...} } } } }
+    envelope = payload.get("data") if isinstance(payload.get("data"), dict) else {}
+    env_attrs = envelope.get("attributes") if isinstance(envelope.get("attributes"), dict) else {}
+    event_id = str(envelope.get("id") or "").strip()
+    event_name = str(env_attrs.get("type") or "").strip()
+
+    resource = env_attrs.get("data") if isinstance(env_attrs.get("data"), dict) else {}
+    res_attrs = resource.get("attributes") if isinstance(resource.get("attributes"), dict) else {}
+    resource_type = str(resource.get("type") or "").strip().lower()
+
+    metadata = res_attrs.get("metadata") if isinstance(res_attrs.get("metadata"), dict) else {}
+
+    # The actual PayMongo payment id + amount: for a checkout_session resource it
+    # lives under attributes.payments[0]; for a payment resource it's the resource.
+    provider_payment_id = ""
+    amount_centavos: int | None = None
+    payments = res_attrs.get("payments")
+    if isinstance(payments, list) and payments:
+        first = payments[0] if isinstance(payments[0], dict) else {}
+        provider_payment_id = str(first.get("id") or "").strip()
+        pay_attrs = first.get("attributes") if isinstance(first.get("attributes"), dict) else {}
+        if isinstance(pay_attrs.get("amount"), (int, float)):
+            amount_centavos = int(pay_attrs["amount"])
+    elif resource_type == "payment":
+        provider_payment_id = str(resource.get("id") or "").strip()
+        if isinstance(res_attrs.get("amount"), (int, float)):
+            amount_centavos = int(res_attrs["amount"])
+
+    reference_no = str(
+        metadata.get("reference_no")
+        or res_attrs.get("reference_number")
+        or ""
+    ).strip()
+    reason = str(env_attrs.get("last_payment_error") or res_attrs.get("failed_message") or "Payment failed").strip()
+
+    return NormalizedPaymentWebhook(
+        provider="paymongo",
+        event_id=event_id,
+        event_type=_normalize_event_type(event_name),
+        payment_id=str(metadata.get("payment_id") or "").strip() or None,
+        reservation_id=str(metadata.get("reservation_id") or "").strip() or None,
+        reference_no=reference_no or None,
+        reason=reason,
+        provider_payment_id=provider_payment_id or None,
+        amount_centavos=amount_centavos,
+        raw_payload=payload,
+    )
+
+
+def _looks_like_paymongo(payload: dict[str, Any], *, request: Request) -> bool:
+    if str(request.headers.get("paymongo-signature") or "").strip():
+        return True
+    data = payload.get("data") if isinstance(payload.get("data"), dict) else {}
+    attrs = data.get("attributes") if isinstance(data.get("attributes"), dict) else {}
+    event_type = str(attrs.get("type") or "")
+    return event_type.startswith("checkout_session.") or event_type.startswith("payment.")
+
+
 def parse_payment_webhook_payload(payload: dict[str, Any], *, request: Request) -> NormalizedPaymentWebhook:
+    if _looks_like_paymongo(payload, request=request):
+        return _parse_paymongo_payload(payload)
+
     xendit_header = str(request.headers.get("x-callback-token") or "").strip()
     provider_hint = str(payload.get("provider") or "").strip().lower()
 

@@ -1,3 +1,4 @@
+import json
 import logging
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
@@ -18,6 +19,7 @@ from app.core.config import settings
 from app.integrations.supabase_client import (
     attach_paymongo_checkout,
     create_gateway_payment,
+    set_paymongo_payment_id,
     expire_pending_payment_hold_for_reservation,
     get_payment_by_reference_no,
     get_reservation_by_id,
@@ -608,15 +610,27 @@ async def process_payment_webhook(
             status_code=status.HTTP_409_CONFLICT,
             detail="Payment gateway webhooks are disabled in proof-only mode.",
         )
+    # Read the RAW body first — PayMongo's HMAC signature is computed over it.
+    raw_body = await request.body()
     try:
-        payload = await request.json()
+        payload = json.loads(raw_body or b"{}")
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid webhook payload.") from exc
     if not isinstance(payload, dict):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Webhook payload must be an object.")
 
     normalized = parse_payment_webhook_payload(payload, request=request)
-    verify_webhook_signature(request=request, provider=normalized.provider)
+    if normalized.provider == "paymongo":
+        if not paymongo.verify_webhook_signature(
+            raw_body=raw_body,
+            signature_header=str(request.headers.get("paymongo-signature") or ""),
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid PayMongo webhook signature.",
+            )
+    else:
+        verify_webhook_signature(request=request, provider=normalized.provider)
 
     provider = normalized.provider
     event_id = normalized.event_id
@@ -670,6 +684,28 @@ async def process_payment_webhook(
         if event_type in {"payment.succeeded", "payment.verified"} and payment_id:
             verify_payment_service_role(payment_id, approved=True)
             processed = "payment_verified"
+            # Record the PayMongo payment id for audit/reconciliation.
+            if normalized.provider_payment_id:
+                try:
+                    set_paymongo_payment_id(
+                        payment_id=payment_id,
+                        provider_payment_id=normalized.provider_payment_id,
+                    )
+                except RuntimeError:
+                    logger.warning("Could not store PayMongo payment id for %s", payment_id)
+            # Deposit is paid → lock escrow now (shadow-write, or on-chain when
+            # FEATURE_ESCROW_ONCHAIN_LOCK is enabled). Non-blocking.
+            if reservation_id:
+                try:
+                    from app.api.v2.routes.reservations import _maybe_apply_escrow_shadow_write
+
+                    _maybe_apply_escrow_shadow_write(reservation_id)
+                except Exception:  # noqa: BLE001
+                    logger.warning(
+                        "Escrow lock after payment failed (reservation_id=%s)",
+                        reservation_id,
+                        exc_info=True,
+                    )
         elif event_type in {"payment.failed", "payment.rejected"} and payment_id:
             reject_payment_service_role(payment_id, reason=reason)
             processed = "payment_rejected"
