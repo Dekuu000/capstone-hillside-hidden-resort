@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Clock3, RefreshCcw, Wifi, WifiOff } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import type { QrToken } from "../../../packages/shared/src/types";
 import { qrTokenSchema } from "../../../packages/shared/src/schemas";
@@ -10,8 +9,6 @@ import { getApiErrorMessage } from "../../lib/apiError";
 import { loadLastIssuedQrToken, saveLastIssuedQrToken } from "../../lib/guestQrTokenCache";
 import { useNetworkOnline } from "../../lib/hooks/useNetworkOnline";
 import { compactQrTokenPayload } from "../../lib/qrPayload";
-import { StatusPill } from "../shared/StatusPill";
-import { useToast } from "../shared/ToastProvider";
 
 type Props = {
   accessToken: string | null;
@@ -20,7 +17,6 @@ type Props = {
 };
 
 export function GuestOfflineQrCard({ accessToken, reservationId, reservationCode }: Props) {
-  const { showToast } = useToast();
   const online = useNetworkOnline();
   const [loading, setLoading] = useState(false);
   const [token, setToken] = useState<QrToken | null>(null);
@@ -49,7 +45,7 @@ export function GuestOfflineQrCard({ accessToken, reservationId, reservationCode
         cached_at: new Date().toISOString(),
       });
     } catch (unknownError) {
-      setError(getApiErrorMessage(unknownError, "Failed to issue check-in token."));
+      setError(getApiErrorMessage(unknownError, "Failed to prepare your check-in pass."));
     } finally {
       setLoading(false);
     }
@@ -84,71 +80,60 @@ export function GuestOfflineQrCard({ accessToken, reservationId, reservationCode
     return () => window.clearInterval(interval);
   }, [token?.expires_at]);
 
-  const copyPayload = useCallback(async () => {
-    if (!token) return;
-    try {
-      await navigator.clipboard.writeText(JSON.stringify(compactQrTokenPayload(token), null, 2));
-      showToast({ type: "success", title: "Copied", message: "Token payload copied." });
-    } catch {
-      showToast({ type: "warning", title: "Copy failed", message: "Clipboard access is not available." });
-    }
-  }, [showToast, token]);
-
   return (
-    <article className="surface p-5 md:col-span-2">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold text-[var(--color-text)]">Check-in QR (Offline-ready)</h2>
-        <StatusPill
-          label={online ? "Online" : "Offline"}
-          tone={online ? "success" : "warn"}
-          icon={online ? <Wifi className="h-3.5 w-3.5" aria-hidden="true" /> : <WifiOff className="h-3.5 w-3.5" aria-hidden="true" />}
-        />
-      </div>
-      <p className="mt-2 text-sm text-[var(--color-muted)]">
-        Last issued token is cached for offline display. New token issuance still requires internet.
-      </p>
-      {fromCache ? (
-        <p className="mt-2 text-xs text-amber-700">Offline display: showing last cached token.</p>
+    <div className="text-center">
+      <p className="text-sm text-[var(--color-muted)]">Show this code at the front desk to check in.</p>
+      <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-[var(--color-background)] px-3 py-1 text-xs font-semibold text-[var(--color-text)]">
+        Booking {reservationCode}
+      </span>
+
+      {!online ? (
+        <p className="mx-auto mt-3 max-w-sm rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-xs font-semibold text-amber-800">
+          You&rsquo;re offline — showing your last saved pass. Reconnect to refresh it.
+        </p>
       ) : null}
-      {error ? <p className="mt-2 text-xs text-[var(--color-error)]">{error}</p> : null}
-      {!token ? (
-        <div className="mt-3 rounded-xl border border-dashed border-[var(--color-border)] bg-slate-50 p-4 text-sm text-[var(--color-muted)]">
-          No cached token yet. Connect online and tap <span className="font-semibold text-[var(--color-text)]">Refresh token</span> once.
-        </div>
-      ) : (
-        <div className="guest-surface-soft mt-3 p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-sm font-semibold text-[var(--color-text)]">Reservation {reservationCode}</p>
-            <p className="inline-flex items-center gap-1 text-xs text-[var(--color-muted)]">
-              <Clock3 className="h-3.5 w-3.5" aria-hidden="true" />
-              {secondsLeft != null ? `Expires in ${secondsLeft}s` : "Expiry unavailable"}
-            </p>
+
+      {error ? (
+        <p className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">
+          {error}
+        </p>
+      ) : null}
+      {loading && !token ? (
+        <p className="mt-3 text-sm text-[var(--color-muted)]" role="status">
+          Preparing your pass…
+        </p>
+      ) : null}
+
+      {token ? (
+        <>
+          <div className="mt-4 flex justify-center">
+            <div className="rounded-3xl border border-[var(--color-border)] bg-white p-4 shadow-sm">
+              <QRCodeSVG value={JSON.stringify(compactQrTokenPayload(token))} size={256} level="M" includeMargin />
+            </div>
           </div>
-          <div className="mt-3 flex justify-center rounded-xl border border-[var(--color-border)] bg-white p-3">
-            <QRCodeSVG value={JSON.stringify(compactQrTokenPayload(token))} size={300} level="M" includeMargin />
-          </div>
-        </div>
-      )}
-      <div className="mt-3 flex flex-wrap gap-2">
+          <p className="mt-3 inline-flex items-center gap-2 text-xs text-[var(--color-muted)]">
+            <span className="relative flex h-2 w-2" aria-hidden="true">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            </span>
+            Auto-refreshes to stay valid{secondsLeft != null ? ` · ${secondsLeft}s` : ""}
+          </p>
+          {fromCache ? (
+            <p className="mt-1.5 text-xs font-semibold text-amber-700">Saved pass shown for offline use.</p>
+          ) : null}
+        </>
+      ) : null}
+
+      <div className="mt-5 flex justify-center">
         <button
           type="button"
           onClick={() => void issueToken()}
-          disabled={!online || loading || !accessToken}
-          className="guest-secondary-cta min-h-10 px-3 text-sm"
+          className="guest-secondary-cta min-h-10 px-4 text-sm"
+          disabled={loading || !online}
         >
-          <RefreshCcw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} aria-hidden="true" />
-          {loading ? "Refreshing..." : online ? "Refresh token" : "Reconnect to refresh"}
-        </button>
-        <button
-          type="button"
-          onClick={() => void copyPayload()}
-          disabled={!token}
-          className="guest-primary-cta min-h-10 px-3 text-sm"
-        >
-          Copy payload
+          {online ? "Refresh now" : "Reconnect to refresh"}
         </button>
       </div>
-    </article>
+    </div>
   );
 }
-

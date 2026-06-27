@@ -199,9 +199,9 @@ export function MyStayDashboardClient({
       {showQr ? (
         <ModalDialog
           titleId="my-stay-qr-title"
-          title="Check-in QR"
+          title="Your check-in pass"
           onClose={() => setShowQr(false)}
-          maxWidthClass="md:max-w-3xl"
+          maxWidthClass="md:max-w-2xl"
           overlayClassName="bg-slate-900/55"
           panelClassName="border-[var(--color-border)] bg-white"
           closeLabel="Close check-in QR dialog"
