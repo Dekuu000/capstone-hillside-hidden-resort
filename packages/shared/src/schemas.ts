@@ -566,6 +566,8 @@ export const reportSummarySchema = z.object({
   unit_booked_value: z.number(),
   tour_booked_value: z.number(),
   promo_discounts: z.number().optional().default(0),
+  refunded_deposits: z.number().optional().default(0),
+  forfeited_deposits: z.number().optional().default(0),
 });
 
 export const reportDailyItemSchema = z.object({
@@ -577,6 +579,8 @@ export const reportDailyItemSchema = z.object({
   unit_booked_value: z.number(),
   tour_booked_value: z.number(),
   promo_discounts: z.number().optional().default(0),
+  refunded_deposits: z.number().optional().default(0),
+  forfeited_deposits: z.number().optional().default(0),
 });
 
 export const reportMonthlyItemSchema = z.object({
@@ -588,6 +592,8 @@ export const reportMonthlyItemSchema = z.object({
   unit_booked_value: z.number(),
   tour_booked_value: z.number(),
   promo_discounts: z.number().optional().default(0),
+  refunded_deposits: z.number().optional().default(0),
+  forfeited_deposits: z.number().optional().default(0),
 });
 
 export const reportsOverviewResponseSchema = z.object({

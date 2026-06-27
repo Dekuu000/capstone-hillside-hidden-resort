@@ -82,6 +82,8 @@ export function ReportsExportButtons({ daily, monthly, fromDate, toDate, fullWid
           "unit_booked_value_php",
           "tour_booked_value_php",
           "promo_discounts_php",
+          "refunded_deposits_php",
+          "forfeited_deposits_php",
           "net_booked_value_php",
         ],
         rows: daily.map((row) => [
@@ -93,6 +95,8 @@ export function ReportsExportButtons({ daily, monthly, fromDate, toDate, fullWid
           row.unit_booked_value,
           row.tour_booked_value,
           row.promo_discounts,
+          row.refunded_deposits,
+          row.forfeited_deposits,
           row.unit_booked_value + row.tour_booked_value - row.promo_discounts,
         ]),
         totals: [
@@ -104,6 +108,8 @@ export function ReportsExportButtons({ daily, monthly, fromDate, toDate, fullWid
           sum(daily, (r) => r.unit_booked_value),
           sum(daily, (r) => r.tour_booked_value),
           sum(daily, (r) => r.promo_discounts),
+          sum(daily, (r) => r.refunded_deposits),
+          sum(daily, (r) => r.forfeited_deposits),
           sum(daily, (r) => r.unit_booked_value + r.tour_booked_value - r.promo_discounts),
         ],
       }),
@@ -127,6 +133,8 @@ export function ReportsExportButtons({ daily, monthly, fromDate, toDate, fullWid
           "unit_booked_value_php",
           "tour_booked_value_php",
           "promo_discounts_php",
+          "refunded_deposits_php",
+          "forfeited_deposits_php",
           "net_booked_value_php",
         ],
         rows: monthly.map((row) => [
@@ -138,6 +146,8 @@ export function ReportsExportButtons({ daily, monthly, fromDate, toDate, fullWid
           row.unit_booked_value,
           row.tour_booked_value,
           row.promo_discounts,
+          row.refunded_deposits,
+          row.forfeited_deposits,
           row.unit_booked_value + row.tour_booked_value - row.promo_discounts,
         ]),
         totals: [
@@ -149,6 +159,8 @@ export function ReportsExportButtons({ daily, monthly, fromDate, toDate, fullWid
           sum(monthly, (r) => r.unit_booked_value),
           sum(monthly, (r) => r.tour_booked_value),
           sum(monthly, (r) => r.promo_discounts),
+          sum(monthly, (r) => r.refunded_deposits),
+          sum(monthly, (r) => r.forfeited_deposits),
           sum(monthly, (r) => r.unit_booked_value + r.tour_booked_value - r.promo_discounts),
         ],
       }),

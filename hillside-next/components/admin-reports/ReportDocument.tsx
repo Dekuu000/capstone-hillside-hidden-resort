@@ -95,6 +95,10 @@ export function ReportDocument({
             <LeaderLine label="Promo discounts" value={`${summary.promo_discounts > 0 ? "−" : ""}${formatPeso(summary.promo_discounts)}`} />
             <LeaderLine label="Net booked value" value={formatPeso(netBooked)} strong />
           </div>
+          <div className="mt-1 border-t border-gray-300 pt-1">
+            <LeaderLine label="Forfeited deposits (retained)" value={formatPeso(summary.forfeited_deposits)} />
+            <LeaderLine label="Refunded deposits (returned)" value={`${summary.refunded_deposits > 0 ? "−" : ""}${formatPeso(summary.refunded_deposits)}`} />
+          </div>
           <div className="mt-1 border-t-2 border-double border-black pt-1">
             <LeaderLine label="TOTAL CASH COLLECTED" value={formatPeso(summary.cash_collected)} strong />
           </div>

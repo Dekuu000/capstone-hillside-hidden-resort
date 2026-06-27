@@ -623,6 +623,8 @@ export type ReportSummary = {
   unit_booked_value: number;
   tour_booked_value: number;
   promo_discounts: number;
+  refunded_deposits: number;
+  forfeited_deposits: number;
 };
 
 export type ReportDailyItem = {
@@ -634,6 +636,8 @@ export type ReportDailyItem = {
   unit_booked_value: number;
   tour_booked_value: number;
   promo_discounts: number;
+  refunded_deposits: number;
+  forfeited_deposits: number;
 };
 
 export type ReportMonthlyItem = {
@@ -645,6 +649,8 @@ export type ReportMonthlyItem = {
   unit_booked_value: number;
   tour_booked_value: number;
   promo_discounts: number;
+  refunded_deposits: number;
+  forfeited_deposits: number;
 };
 
 export type ReportsOverviewResponse = {

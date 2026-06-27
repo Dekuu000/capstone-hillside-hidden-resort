@@ -374,6 +374,8 @@ class ReportDailyItem(BaseModel):
     unit_booked_value: float = 0
     tour_booked_value: float = 0
     promo_discounts: float = 0
+    refunded_deposits: float = 0
+    forfeited_deposits: float = 0
 
 
 class ReportMonthlyItem(BaseModel):
@@ -385,6 +387,8 @@ class ReportMonthlyItem(BaseModel):
     unit_booked_value: float = 0
     tour_booked_value: float = 0
     promo_discounts: float = 0
+    refunded_deposits: float = 0
+    forfeited_deposits: float = 0
 
 
 class ReportSummary(BaseModel):
@@ -395,6 +399,8 @@ class ReportSummary(BaseModel):
     unit_booked_value: float = 0
     tour_booked_value: float = 0
     promo_discounts: float = 0
+    refunded_deposits: float = 0
+    forfeited_deposits: float = 0
 
 
 class ReportsOverviewResponse(BaseModel):
