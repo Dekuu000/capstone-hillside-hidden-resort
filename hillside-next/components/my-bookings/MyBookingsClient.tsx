@@ -1199,7 +1199,7 @@ export function MyBookingsClient({
 
                 {isPaymentTab ? (
                   <p className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium leading-relaxed text-amber-800">
-                    Pay the deposit to hold this booking — instant with GCash, or submit proof if you paid another way. The deposit is non-refundable if you cancel.
+                    Pay the deposit with GCash to hold this booking. The deposit is non-refundable if you cancel.
                   </p>
                 ) : flowHint ? (
                   <p className="mt-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-xs font-medium leading-relaxed text-[var(--color-text)]">
@@ -1232,22 +1232,13 @@ export function MyBookingsClient({
                 {booking.status === "pending_payment" || showSecondaryActions ? (
                   <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
                     {booking.status === "pending_payment" ? (
-                      <>
-                        <button
-                          type="button"
-                          className="guest-primary-cta min-h-11 px-4 text-sm"
-                          onClick={() => setGcashFor(booking)}
-                        >
-                          Pay {formatPeso(minimumPayNow)} with GCash
-                        </button>
-                        <button
-                          type="button"
-                          className="guest-secondary-cta min-h-11 px-4 text-sm"
-                          onClick={() => openPaymentSubmissionForBooking(booking)}
-                        >
-                          Paid another way?
-                        </button>
-                      </>
+                      <button
+                        type="button"
+                        className="guest-primary-cta min-h-11 px-4 text-sm"
+                        onClick={() => setGcashFor(booking)}
+                      >
+                        Pay {formatPeso(minimumPayNow)} with GCash
+                      </button>
                     ) : null}
                     {canCancel ? (
                       <button
