@@ -36,6 +36,8 @@ export function PaymentClient({ token, reservationId }: { token: string; reserva
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [redirecting, setRedirecting] = useState(false);
+  const [onlineError, setOnlineError] = useState<string | null>(null);
 
   const totals = useMemo(() => {
     const total = Number(booking?.total_amount ?? 0);
@@ -178,6 +180,28 @@ export function PaymentClient({ token, reservationId }: { token: string; reserva
     [amount, proofFile, proofMode, proofUrl, referenceNo, reservationId, router, token, totals, uploadProofIfNeeded],
   );
 
+  const payOnline = useCallback(async () => {
+    setRedirecting(true);
+    setOnlineError(null);
+    try {
+      const res = await apiFetch<{ checkout_url?: string }>(
+        "/v2/payments/paymongo/checkout",
+        { method: "POST", body: JSON.stringify({ reservation_id: reservationId }) },
+        token,
+      );
+      if (res?.checkout_url) {
+        // Full-page redirect to PayMongo's hosted GCash checkout.
+        window.location.assign(res.checkout_url);
+        return;
+      }
+      setOnlineError("Could not start the GCash payment. Please try again.");
+      setRedirecting(false);
+    } catch (unknownError) {
+      setOnlineError(getApiErrorMessage(unknownError, "Online payment is unavailable right now."));
+      setRedirecting(false);
+    }
+  }, [reservationId, token]);
+
   if (loading) {
     return (
       <div className="mx-auto flex min-h-[50vh] w-full max-w-[1080px] items-center justify-center px-4">
@@ -213,19 +237,42 @@ export function PaymentClient({ token, reservationId }: { token: string; reserva
       </p>
 
       <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_380px]">
-        <form onSubmit={submit} className="space-y-6">
+        <div className="space-y-6 lg:col-start-1 lg:row-start-1">
           <section className="rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
             <h2 className="text-lg font-semibold">Pay with GCash</h2>
             <p className="mt-1 text-sm muted-text">
-              Send your deposit to the account below, then submit your reference number and proof.
+              You&apos;ll be redirected to GCash&apos;s secure checkout to pay your{" "}
+              <span className="font-semibold text-[var(--color-text)]">{formatPeso(totals.deposit)}</span> deposit. Your
+              reservation is confirmed automatically once GCash confirms the payment — no proof upload needed.
             </p>
-            <div className="mt-3">
+            {onlineError ? (
+              <p className="mt-3 rounded-xl bg-[color:color-mix(in_srgb,var(--color-error)_10%,white)] px-3 py-2 text-sm text-[var(--color-error)]">
+                {onlineError}
+              </p>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => void payOnline()}
+              disabled={redirecting}
+              className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-cta)] text-base font-semibold text-white transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {redirecting ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
+              {redirecting ? "Redirecting to GCash…" : `Pay ${formatPeso(totals.deposit)} with GCash`}
+            </button>
+            <p className="mt-2 text-center text-xs muted-text">Secured by PayMongo.</p>
+          </section>
+        </div>
+
+        <form onSubmit={submit} className="space-y-6 lg:col-start-1 lg:row-start-2">
+          <section className="space-y-4 rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+            <h2 className="text-lg font-semibold">Or submit a GCash proof manually</h2>
+            <p className="-mt-1 text-sm muted-text">
+              Paid via the manual GCash account instead? Enter your reference and upload the receipt for admin
+              verification.
+            </p>
+            <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-3">
               <GcashPaymentGuide />
             </div>
-          </section>
-
-          <section className="space-y-4 rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-            <h2 className="text-lg font-semibold">Submit your payment</h2>
             <Input
               label="Amount paid (PHP)"
               type="number"
@@ -300,7 +347,7 @@ export function PaymentClient({ token, reservationId }: { token: string; reserva
           </section>
         </form>
 
-        <aside>
+        <aside className="lg:col-start-2 lg:row-start-1">
           <div className="lg:sticky lg:top-24 rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-md)]">
             <h2 className="text-base font-semibold">Price details</h2>
             <dl className="mt-3 space-y-2 text-sm">
