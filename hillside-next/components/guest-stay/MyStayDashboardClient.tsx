@@ -1,14 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BedDouble, Clock3, QrCode, Sparkles } from "lucide-react";
+import { ArrowRight, Clock3, QrCode, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { welcomeNotificationSchema } from "../../../packages/shared/src/schemas";
 import type { WelcomeNotification } from "../../../packages/shared/src/types";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
+import { formatPhpPeso } from "../../lib/formatCurrency";
 import { useNetworkOnline } from "../../lib/hooks/useNetworkOnline";
-import { InsetPanel } from "../shared/InsetPanel";
 import { ModalDialog } from "../shared/ModalDialog";
 import { SyncAlertBanner } from "../shared/SyncAlertBanner";
 import { useToast } from "../shared/ToastProvider";
@@ -20,10 +20,19 @@ type Props = {
   reservationCode: string;
   checkInDate: string;
   checkOutDate: string;
-  roomDisplay: string;
   status: string;
+  amountPaid: number;
+  balanceDue: number;
   welcomeNotification: WelcomeNotification | null;
 };
+
+function statusToneClass(status: string) {
+  const s = status.toLowerCase();
+  if (["confirmed", "checked_in", "checked_out", "completed"].includes(s)) return "bg-emerald-100 text-emerald-800";
+  if (["pending_payment", "for_verification"].includes(s)) return "bg-amber-100 text-amber-800";
+  if (["cancelled", "no_show"].includes(s)) return "bg-rose-100 text-rose-800";
+  return "bg-[var(--color-background)] text-[var(--color-text)]";
+}
 
 function formatDuration(totalSeconds: number) {
   const safe = Math.max(0, totalSeconds);
@@ -49,8 +58,9 @@ export function MyStayDashboardClient({
   reservationCode,
   checkInDate,
   checkOutDate,
-  roomDisplay,
   status,
+  amountPaid,
+  balanceDue,
   welcomeNotification,
 }: Props) {
   const { showToast } = useToast();
@@ -107,44 +117,47 @@ export function MyStayDashboardClient({
   return (
     <>
       <section className="surface p-5">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0 flex-1">
-            <div className="mt-1 flex items-center justify-between gap-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
               <h2 className="truncate text-xl font-semibold text-[var(--color-text)]">{reservationCode}</h2>
-              <button
-                type="button"
-                onClick={() => setShowQr(true)}
-                aria-label="Open Check-in QR"
-                title="Open Check-in QR"
-                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-orange-200 bg-orange-50 text-[var(--color-cta)] transition hover:bg-orange-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-cta)]/35"
-              >
-                <QrCode className="h-4 w-4 stroke-[2.2]" />
-              </button>
+              <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${statusToneClass(status)}`}>
+                {formatReservationStatus(status)}
+              </span>
             </div>
             <p className="mt-1 text-sm text-[var(--color-muted)]">{checkInDate} to {checkOutDate}</p>
-            <p className="mt-1 text-xs text-[var(--color-muted)]">Check-in starts at 8:00 AM local time.</p>
-          </div>
-        </div>
-
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          <InsetPanel>
-            <p className="text-xs text-[var(--color-muted)]">Countdown</p>
-            <p className="mt-1 inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-text)]">
-              <Clock3 className="h-4 w-4 text-[var(--color-secondary)]" />
+            <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-[var(--color-muted)]">
+              <Clock3 className="h-3.5 w-3.5 text-[var(--color-secondary)]" />
               {countdownLabel}
             </p>
-          </InsetPanel>
-          <InsetPanel>
-            <p className="text-xs text-[var(--color-muted)]">Room</p>
-            <p className="mt-1 inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-text)]">
-              <BedDouble className="h-4 w-4 text-[var(--color-secondary)]" />
-              {roomDisplay}
-            </p>
-          </InsetPanel>
-          <InsetPanel>
-            <p className="text-xs text-[var(--color-muted)]">Reservation status</p>
-            <p className="mt-1 text-sm font-semibold capitalize text-[var(--color-text)]">{formatReservationStatus(status)}</p>
-          </InsetPanel>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowQr(true)}
+            aria-label="Open Check-in QR"
+            title="Open Check-in QR"
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-orange-200 bg-orange-50 text-[var(--color-cta)] transition hover:bg-orange-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-cta)]/35"
+          >
+            <QrCode className="h-4 w-4 stroke-[2.2]" />
+          </button>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[var(--color-background)] px-3 py-2.5">
+          <p className="text-sm text-[var(--color-muted)]">
+            Paid <span className="font-semibold text-[var(--color-text)]">{formatPhpPeso(amountPaid)}</span>
+            {balanceDue > 0 ? (
+              <>
+                {" · "}Balance <span className="font-semibold text-[var(--color-text)]">{formatPhpPeso(balanceDue)}</span>
+              </>
+            ) : null}
+          </p>
+          <Link
+            href="/my-bookings"
+            className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--color-secondary)] hover:underline"
+          >
+            Manage in My Trips
+            <ArrowRight className="h-4 w-4" />
+          </Link>
         </div>
         {!networkOnline ? (
           <SyncAlertBanner

@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { Bell, CalendarCheck, MapPin, ShieldCheck, TreePalm } from "lucide-react";
+import { Bell, CalendarCheck, MapPin, TreePalm } from "lucide-react";
 import { redirect } from "next/navigation";
 import { stayDashboardResponseSchema } from "../../../../packages/shared/src/schemas";
-import type { ReservationListItem, StayDashboardResponse } from "../../../../packages/shared/src/types";
+import type { StayDashboardResponse } from "../../../../packages/shared/src/types";
 import { MyStayDashboardClient } from "../../../components/guest-stay/MyStayDashboardClient";
 import { GuestShell } from "../../../components/layout/GuestShell";
 import { GuestPageIntro } from "../../../components/guest/GuestPageIntro";
@@ -42,19 +42,6 @@ function QuickActions() {
       </div>
     </section>
   );
-}
-
-function roomFallbackDisplay(stay: ReservationListItem) {
-  const units = stay.units ?? [];
-  if (!units.length) return "To be assigned";
-  const names = units.map((entry) => {
-    const unit = entry.unit;
-    if (unit?.room_number && unit?.unit_code) return `Room ${unit.room_number} (${unit.unit_code})`;
-    if (unit?.unit_code) return unit.unit_code;
-    return unit?.name || "Assigned unit";
-  });
-  if (names.length === 1) return names[0];
-  return `${names[0]} +${names.length - 1} more`;
 }
 
 function getQrStatusLabel(status: string) {
@@ -113,45 +100,17 @@ export default async function GuestMyStayPage() {
           message="Your check-in dashboard appears once a reservation becomes active. Book a stay or a tour above to get started."
         />
       ) : (
-        <div className="space-y-3">
-          <MyStayDashboardClient
-            accessToken={accessToken}
-            reservationId={stay.reservation_id}
-            reservationCode={stay.reservation_code}
-            checkInDate={stay.check_in_date}
-            checkOutDate={stay.check_out_date}
-            roomDisplay={roomFallbackDisplay(stay)}
-            status={stay.status}
-            welcomeNotification={welcomeNotification}
-          />
-
-          <section className="rounded-3xl border border-[var(--color-border)] bg-white p-5 shadow-sm">
-            <h2 className="inline-flex items-center gap-2 text-base font-semibold text-[var(--color-text)]">
-              <ShieldCheck className="h-4 w-4 text-[var(--color-secondary)]" />
-              Payment Summary
-            </h2>
-            <div className="mt-3 space-y-1 text-sm text-[var(--color-muted)]">
-              <p>
-                Paid:{" "}
-                <span className="font-semibold text-[var(--color-text)]">
-                  {toPeso(Number(stay.amount_paid_verified || 0))}
-                </span>
-              </p>
-              <p>
-                Remaining:{" "}
-                <span className="font-semibold text-[var(--color-text)]">
-                  {toPeso(Number(stay.balance_due || 0))}
-                </span>
-              </p>
-              <p className="pt-1 capitalize">
-                Status:{" "}
-                <span className="font-semibold text-[var(--color-text)]">
-                  {stay.status.replaceAll("_", " ")}
-                </span>
-              </p>
-            </div>
-          </section>
-        </div>
+        <MyStayDashboardClient
+          accessToken={accessToken}
+          reservationId={stay.reservation_id}
+          reservationCode={stay.reservation_code}
+          checkInDate={stay.check_in_date}
+          checkOutDate={stay.check_out_date}
+          status={stay.status}
+          amountPaid={Number(stay.amount_paid_verified || 0)}
+          balanceDue={Number(stay.balance_due || 0)}
+          welcomeNotification={welcomeNotification}
+        />
       )}
     </GuestShell>
   );
