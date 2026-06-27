@@ -8,6 +8,7 @@ import { CalendarDays, Loader2, Pencil, Users } from "lucide-react";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
+import { redirectToGcashOrPay } from "../../lib/booking/gcashCheckout";
 import { promoValidationResultSchema, reservationCreateResponseSchema } from "../../../packages/shared/src/schemas";
 import type { PromoValidationResult, ReservationCreateResponse, ServiceItem } from "../../../packages/shared/src/types";
 import { clearTourDraft, readTourDraft, type TourDraft } from "../../lib/booking/tourDraft";
@@ -171,7 +172,11 @@ export function TourReserveClient({ token, email }: { token: string; email: stri
 
       clearTourDraft();
       if (outcome.mode === "online") {
-        router.replace(`/reserve/${encodeURIComponent(outcome.data.reservation_id)}/pay`);
+        // One tap: go straight to GCash; fall back to the pay page if the
+        // gateway is unavailable. (Stays on busy — the page is leaving.)
+        await redirectToGcashOrPay(outcome.data.reservation_id, token, (rid) =>
+          router.replace(`/reserve/${encodeURIComponent(rid)}/pay`),
+        );
       } else {
         router.replace("/my-bookings?tab=pending_payment");
       }
@@ -336,11 +341,9 @@ export function TourReserveClient({ token, email }: { token: string; email: stri
                 className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-cta)] text-base font-semibold text-white transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
-                {busy ? "Reserving…" : "Confirm — continue to payment"}
+                {busy ? "Redirecting to GCash…" : `Pay ${formatPhpPeso(minPay)} with GCash`}
               </button>
-              <p className="mt-2 text-center text-xs muted-text">
-                Your spot is held as pending until your deposit is verified.
-              </p>
+              <p className="mt-2 text-center text-xs muted-text">Secured by PayMongo · GCash.</p>
             </div>
           </div>
         </aside>

@@ -8,10 +8,13 @@ import { CalendarDays, Loader2, Pencil, Users } from "lucide-react";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
+import { redirectToGcashOrPay } from "../../lib/booking/gcashCheckout";
 import { promoValidationResultSchema, reservationCreateResponseSchema } from "../../../packages/shared/src/schemas";
+import { computeStayDepositPreview } from "../../../packages/shared/src/types";
 import type { PromoValidationResult, ReservationCreateResponse } from "../../../packages/shared/src/types";
 import { clearBookingDraft, readBookingDraft, type BookingDraft } from "../../lib/booking/draft";
 import { fetchPublicUnitById, unitImageUrl, unitTypeLabel, type PublicUnit } from "../../lib/catalog";
+import { formatPhpPeso } from "../../lib/formatCurrency";
 import { getUnitNightlyRate } from "../../lib/booking/pricing";
 import { PriceBreakdown } from "./PriceBreakdown";
 import { Input } from "../shared/Input";
@@ -96,6 +99,7 @@ export function ReserveClient({ token, email }: { token: string; email: string |
   const nightlyRate = unit && draft ? getUnitNightlyRate(unit, draft.guestCount) : 0;
   const grossTotal = nightlyRate * Math.max(0, nights);
   const discount = promo?.valid ? promo.discount_amount : 0;
+  const payNow = computeStayDepositPreview(Math.max(0, grossTotal - discount));
 
   const applyPromo = useCallback(async () => {
     const code = promoInput.trim();
@@ -183,7 +187,10 @@ export function ReserveClient({ token, email }: { token: string; email: string |
 
       clearBookingDraft();
       if (outcome.mode === "online") {
-        router.replace(`/reserve/${encodeURIComponent(outcome.data.reservation_id)}/pay`);
+        // One tap: straight to GCash; fall back to the pay page if unavailable.
+        await redirectToGcashOrPay(outcome.data.reservation_id, token, (rid) =>
+          router.replace(`/reserve/${encodeURIComponent(rid)}/pay`),
+        );
       } else {
         router.replace("/my-bookings?tab=pending_payment");
       }
@@ -343,10 +350,10 @@ export function ReserveClient({ token, email }: { token: string; email: string |
                 className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-cta)] text-base font-semibold text-white transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
-                {busy ? "Reserving…" : "Confirm — continue to payment"}
+                {busy ? "Redirecting to GCash…" : `Pay ${formatPhpPeso(payNow)} with GCash`}
               </button>
               <p className="mt-2 text-center text-xs muted-text">
-                Your spot is held as pending until your deposit is verified.
+                Secured by PayMongo · GCash. Your spot is held until payment is confirmed.
               </p>
             </div>
           </div>
