@@ -28,6 +28,7 @@ from app.integrations.supabase_client import (
     list_payments_by_reservation,
     notify_guest_payment_decision,
     notify_ops_payment_proof,
+    notify_ops_payment_received,
     record_on_site_payment as record_on_site_payment_rpc,
     reject_payment as reject_payment_rpc,
     reject_payment_service_role,
@@ -719,6 +720,22 @@ async def process_payment_webhook(
                 except Exception:  # noqa: BLE001
                     logger.warning(
                         "Escrow lock after payment failed (reservation_id=%s)",
+                        reservation_id,
+                        exc_info=True,
+                    )
+            # Managers: a guest paid online — the booking is now confirmed. Fire
+            # only on the FIRST verification (skip PayMongo's duplicate webhooks).
+            if reservation_id and processed == "payment_verified":
+                try:
+                    paid_reservation = get_reservation_by_id(reservation_id)
+                    if paid_reservation:
+                        notify_ops_payment_received(
+                            reservation=paid_reservation,
+                            amount=float(paid_reservation.get("amount_paid_verified") or 0),
+                        )
+                except Exception:  # noqa: BLE001 - notification is best-effort
+                    logger.warning(
+                        "ops payment-received notify failed (reservation_id=%s)",
                         reservation_id,
                         exc_info=True,
                     )

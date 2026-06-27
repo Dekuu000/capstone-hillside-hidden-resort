@@ -3848,6 +3848,69 @@ def notify_ops_new_service_request(row: dict[str, Any] | None) -> None:
         return
 
 
+def notify_ops_payment_received(*, reservation: dict[str, Any] | None, amount: float | None = None) -> None:
+    """Tell managers a guest paid online (deposit received → booking confirmed).
+    Managers + System Admin only; Front Desk doesn't handle payments."""
+    try:
+        if not isinstance(reservation, dict):
+            return
+        code = reservation.get("reservation_code") or "A reservation"
+        reservation_id = str(reservation.get("reservation_id") or "")
+        amount_str = f" (₱{amount:,.0f})" if amount and amount > 0 else ""
+        emit_notification_to_roles(
+            min_role="admin",
+            category="payment",
+            event_type="ops.payment_received",
+            title="Payment received",
+            body=f"{code} paid the deposit online{amount_str} — the booking is now confirmed.",
+            severity="success",
+            entity_type="reservation",
+            entity_id=reservation_id,
+            link="/admin/payments",
+            dedupe_prefix=f"ops.payment_received:{reservation_id}",
+        )
+    except Exception:  # noqa: BLE001 - best-effort
+        return
+
+
+def notify_ops_paid_cancellation(
+    *, reservation: dict[str, Any] | None, outcome: str, amount: float | None = None
+) -> None:
+    """Tell managers a PAID booking was cancelled — a refund may be due (admin
+    cancel) or the deposit was forfeited (guest cancel). Managers + System Admin
+    only. Never fired for unpaid bookings."""
+    try:
+        if not isinstance(reservation, dict):
+            return
+        code = reservation.get("reservation_code") or "A reservation"
+        reservation_id = str(reservation.get("reservation_id") or "")
+        amount_str = f"₱{amount:,.0f}" if amount and amount > 0 else "the deposit"
+        if str(outcome).lower() == "refunded":
+            title = "Refund may be due"
+            body = f"{code} was cancelled after paying {amount_str}. Review whether a refund is owed in Payments."
+            severity = "warning"
+            link = "/admin/payments"
+        else:
+            title = "Paid booking cancelled"
+            body = f"{code} was cancelled by the guest; {amount_str} is forfeited per policy. The unit/slot is now free."
+            severity = "info"
+            link = "/admin/reservations"
+        emit_notification_to_roles(
+            min_role="admin",
+            category="payment",
+            event_type="ops.paid_cancellation",
+            title=title,
+            body=body,
+            severity=severity,
+            entity_type="reservation",
+            entity_id=reservation_id,
+            link=link,
+            dedupe_prefix=f"ops.paid_cancellation:{reservation_id}",
+        )
+    except Exception:  # noqa: BLE001 - best-effort
+        return
+
+
 # --- Scheduled reminders ---
 def _friendly_when(check_in_iso: str, today: date) -> str:
     try:

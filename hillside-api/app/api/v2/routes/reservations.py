@@ -41,6 +41,7 @@ from app.integrations.supabase_client import (
     list_recent_reservations,
     release_expired_pending_payment_holds,
     record_escrow_transition,
+    notify_ops_paid_cancellation,
     update_reservation_policy_metadata,
     update_reservation_source as update_reservation_source_rpc,
 )
@@ -525,16 +526,25 @@ def _apply_cancellation_side_effects(
     )
     if decision.outcome == "refunded":
         _maybe_refund_escrow_on_cancel(reservation_row)
+    paid_amount = float(reservation_row.get("amount_paid_verified") or 0)
     record_escrow_transition(
         reservation_id=reservation_id,
         event="refund" if decision.outcome == "refunded" else "forfeit",
         reservation_code=str(reservation_row.get("reservation_code") or "") or None,
         escrow_state_from=str(reservation_row.get("escrow_state") or "none"),
         policy_outcome=decision.outcome,
-        amount=float(reservation_row.get("amount_paid_verified") or 0),
+        amount=paid_amount,
         reason=f"{decision.actor}_cancellation",
         actor_role=decision.actor,
     )
+    # Managers only: a PAID booking was cancelled (refund due, or deposit kept).
+    # Unpaid cancellations stay silent for the back office.
+    if paid_amount > 0:
+        notify_ops_paid_cancellation(
+            reservation=reservation_row,
+            outcome=decision.outcome,
+            amount=paid_amount,
+        )
     return decision
 
 
