@@ -4,7 +4,7 @@ import { FormEvent, useCallback, useEffect, useId, useMemo, useRef, useState } f
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
-import { Calendar, CircleCheck, CircleX, Clock, CreditCard, Eye, Loader2, QrCode, Star, Upload } from "lucide-react";
+import { Bell, Calendar, CircleCheck, CircleX, Clock, CreditCard, Eye, Loader2, MapPin, QrCode, Star, Upload } from "lucide-react";
 import type {
   MyBookingsCursor as Cursor,
   MyBookingsResponse as BookingsResponse,
@@ -43,6 +43,7 @@ import { compactQrTokenPayload } from "../../lib/qrPayload";
 import { BookingStatusTabs } from "../guest/BookingStatusTabs";
 import { GuestEmptyState } from "../guest/GuestEmptyState";
 import { GuestPageIntro } from "../guest/GuestPageIntro";
+import { StaySnapshotCard } from "../guest/StaySnapshotCard";
 import { GuestSearchBar } from "../guest/GuestSearchBar";
 import { ImageLightbox } from "../shared/ImageLightbox";
 import { GcashPaymentGuide } from "../shared/GcashPaymentGuide";
@@ -51,6 +52,12 @@ import { SyncAlertBanner } from "../shared/SyncAlertBanner";
 import { UnitImageGallery } from "../shared/UnitImageGallery";
 import { normalizeUnitImageUrls, normalizeUnitThumbUrls } from "../../lib/unitMedia";
 
+type StaySnapshot = {
+  nextStayDate: string;
+  outstandingBalance: string;
+  qrStatus: string;
+};
+
 type MyBookingsClientProps = {
   initialToken?: string | null;
   initialSessionEmail?: string | null;
@@ -58,6 +65,7 @@ type MyBookingsClientProps = {
   initialData?: BookingsResponse | null;
   initialFocusReservationId?: string | null;
   initialAutoOpenPay?: boolean;
+  staySnapshot?: StaySnapshot | null;
 };
 
 const TAB_LABELS: Record<TabKey, string> = {
@@ -225,6 +233,7 @@ export function MyBookingsClient({
   initialData = null,
   initialFocusReservationId = null,
   initialAutoOpenPay = false,
+  staySnapshot = null,
 }: MyBookingsClientProps) {
   const router = useRouter();
   const token = initialToken;
@@ -869,7 +878,55 @@ export function MyBookingsClient({
         testId="guest-hero"
         title="My trips"
         subtitle="Your bookings, payments, and check-in passes."
+        aside={
+          staySnapshot ? (
+            <StaySnapshotCard
+              nextStayDate={staySnapshot.nextStayDate}
+              outstandingBalance={staySnapshot.outstandingBalance}
+              qrStatus={staySnapshot.qrStatus}
+            />
+          ) : undefined
+        }
       />
+
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Link
+          href="/stays"
+          className="group flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 transition hover:shadow-[var(--shadow-md)]"
+        >
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[color:color-mix(in_srgb,var(--color-secondary)_14%,white)] text-[var(--color-secondary)]">
+            <Calendar className="h-4 w-4" />
+          </span>
+          <span className="text-sm font-semibold text-[var(--color-text)] group-hover:underline">Book a stay</span>
+        </Link>
+        <Link
+          href="/tours"
+          className="group flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 transition hover:shadow-[var(--shadow-md)]"
+        >
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[color:color-mix(in_srgb,var(--color-secondary)_14%,white)] text-[var(--color-secondary)]">
+            <Calendar className="h-4 w-4" />
+          </span>
+          <span className="text-sm font-semibold text-[var(--color-text)] group-hover:underline">Tours</span>
+        </Link>
+        <Link
+          href="/guest/map"
+          className="group flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 transition hover:shadow-[var(--shadow-md)]"
+        >
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[color:color-mix(in_srgb,var(--color-secondary)_14%,white)] text-[var(--color-secondary)]">
+            <MapPin className="h-4 w-4" />
+          </span>
+          <span className="text-sm font-semibold text-[var(--color-text)] group-hover:underline">Resort map</span>
+        </Link>
+        <Link
+          href="/guest/services"
+          className="group flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 transition hover:shadow-[var(--shadow-md)]"
+        >
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[color:color-mix(in_srgb,var(--color-secondary)_14%,white)] text-[var(--color-secondary)]">
+            <Bell className="h-4 w-4" />
+          </span>
+          <span className="text-sm font-semibold text-[var(--color-text)] group-hover:underline">Services</span>
+        </Link>
+      </div>
 
       <section className="rounded-[2rem] border border-[var(--color-border)] bg-white p-4 shadow-sm lg:p-5">
         <div className="lg:hidden" data-testid="guest-tabs">
