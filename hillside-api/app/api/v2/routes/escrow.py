@@ -18,6 +18,7 @@ from app.integrations.supabase_client import (
     clear_reservation_shadow_escrow_metadata,
     get_reservation_by_id,
     list_escrow_contract_status_rows,
+    list_escrow_ledger,
     list_reservations_for_escrow_reconciliation,
     list_reservations_for_shadow_cleanup,
 )
@@ -34,6 +35,8 @@ from app.schemas.common import (
     EscrowReconciliationItem,
     EscrowReconciliationResponse,
     EscrowReconciliationSummary,
+    EscrowLedgerItem,
+    EscrowLedgerResponse,
 )
 
 router = APIRouter()
@@ -426,4 +429,33 @@ def retry_escrow_release(
         ),
         tx_hash=str(retry_result.get("tx_hash") or "").strip() or None,
         message=str(retry_result.get("message") or "").strip() or None,
+    )
+
+
+@router.get("/ledger", response_model=EscrowLedgerResponse)
+def get_escrow_ledger(
+    reservation_id: str | None = Query(default=None),
+    event: Literal["lock", "release", "refund", "forfeit"] | None = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    _auth: AuthContext = Depends(require_technical),
+):
+    """Append-only audit trail of escrow money movements (release/refund/forfeit)."""
+    try:
+        rows, total = list_escrow_ledger(
+            reservation_id=reservation_id,
+            event=event,
+            limit=limit,
+            offset=offset,
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+
+    items = [EscrowLedgerItem.model_validate(row) for row in rows]
+    return EscrowLedgerResponse(
+        items=items,
+        count=total,
+        limit=limit,
+        offset=offset,
+        has_more=offset + len(items) < total,
     )

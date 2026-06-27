@@ -3392,6 +3392,92 @@ def write_reservation_escrow_shadow_metadata(
 
 
 # ============================================
+# Escrow ledger (append-only deposit audit trail)
+# ============================================
+ESCROW_LEDGER_SELECT = (
+    "ledger_id, reservation_id, reservation_code, event, escrow_state_from, "
+    "escrow_state_to, policy_outcome, amount, reason, actor_role, actor_user_id, "
+    "chain_tx_hash, metadata, created_at"
+)
+
+
+def record_escrow_transition(
+    *,
+    reservation_id: str,
+    event: str,
+    reservation_code: str | None = None,
+    escrow_state_from: str | None = None,
+    escrow_state_to: str | None = None,
+    policy_outcome: str | None = None,
+    amount: float | None = None,
+    reason: str | None = None,
+    actor_role: str | None = None,
+    actor_user_id: str | None = None,
+    chain_tx_hash: str | None = None,
+    metadata: dict[str, Any] | None = None,
+) -> None:
+    """Append one immutable escrow-ledger entry (service role).
+
+    BEST-EFFORT: a failed audit write must never break the money operation it is
+    recording (a refund, check-in release, or no-show forfeit), so all errors are
+    swallowed and logged rather than raised."""
+    if not reservation_id or not event:
+        return
+    try:
+        client = get_supabase_client()
+        payload: dict[str, Any] = {
+            "reservation_id": reservation_id,
+            "event": event,
+            "reservation_code": reservation_code,
+            "escrow_state_from": escrow_state_from,
+            "escrow_state_to": escrow_state_to,
+            "policy_outcome": policy_outcome,
+            "amount": float(amount) if amount is not None else None,
+            "reason": reason,
+            "actor_role": actor_role,
+            "actor_user_id": actor_user_id,
+            "chain_tx_hash": chain_tx_hash,
+            "metadata": metadata or {},
+        }
+        client.table("escrow_ledger").insert(payload).execute()
+    except Exception:  # noqa: BLE001 - audit write must not break the caller
+        import logging
+
+        logging.getLogger(__name__).exception(
+            "Failed to record escrow ledger entry (reservation_id=%s, event=%s)",
+            reservation_id,
+            event,
+        )
+
+
+def list_escrow_ledger(
+    *,
+    limit: int = 50,
+    offset: int = 0,
+    reservation_id: str | None = None,
+    event: str | None = None,
+    from_ts: str | None = None,
+) -> tuple[list[dict[str, Any]], int]:
+    """Return (rows, total) of escrow-ledger entries, newest first (service role)."""
+    try:
+        capped = max(1, min(int(limit), 200))
+        start = max(0, int(offset))
+        client = get_supabase_client()
+        query = client.table("escrow_ledger").select(ESCROW_LEDGER_SELECT, count="exact")
+        if reservation_id:
+            query = query.eq("reservation_id", reservation_id)
+        if event:
+            query = query.eq("event", event)
+        if from_ts:
+            query = query.gte("created_at", from_ts)
+        response = query.order("created_at", desc=True).range(start, start + capped - 1).execute()
+        rows = response.data or []
+        return rows, int(response.count or len(rows))
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+# ============================================
 # In-app notifications
 # ============================================
 NOTIFICATION_SELECT = (

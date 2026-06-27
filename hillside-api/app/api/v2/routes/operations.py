@@ -20,6 +20,7 @@ from app.integrations.supabase_client import (
     update_units_operational_status,
     update_reservation_policy_metadata,
     write_reservation_escrow_shadow_metadata,
+    record_escrow_transition,
 )
 from app.schemas.common import (
     CheckOperationRequest,
@@ -157,6 +158,18 @@ def _maybe_release_escrow_on_checkin(reservation_row: dict) -> EscrowReleaseOutc
             reservation_id,
             chain.key,
             settlement.tx_hash,
+        )
+        record_escrow_transition(
+            reservation_id=reservation_id,
+            event="release",
+            reservation_code=str(reservation_row.get("reservation_code") or "") or None,
+            escrow_state_from="locked",
+            escrow_state_to="released",
+            policy_outcome="released",
+            amount=float(reservation_row.get("amount_paid_verified") or 0),
+            reason="check_in",
+            actor_role="staff",
+            chain_tx_hash=settlement.tx_hash,
         )
         return EscrowReleaseOutcome(
             state="released",

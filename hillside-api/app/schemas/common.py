@@ -917,6 +917,29 @@ class EscrowReconciliationResponse(BaseModel):
     last_reconciled_at: datetime | None = None
 
 
+class EscrowLedgerItem(BaseModel):
+    ledger_id: str
+    reservation_id: str
+    reservation_code: str | None = None
+    event: Literal["lock", "release", "refund", "forfeit"]
+    escrow_state_from: str | None = None
+    escrow_state_to: str | None = None
+    policy_outcome: str | None = None
+    amount: float | None = None
+    reason: str | None = None
+    actor_role: str | None = None
+    chain_tx_hash: str | None = None
+    created_at: datetime | None = None
+
+
+class EscrowLedgerResponse(BaseModel):
+    items: list[EscrowLedgerItem]
+    count: int
+    limit: int
+    offset: int
+    has_more: bool
+
+
 class ContractStatusGasSnapshot(BaseModel):
     base_fee_gwei: float | None = None
     priority_fee_gwei: float | None = None

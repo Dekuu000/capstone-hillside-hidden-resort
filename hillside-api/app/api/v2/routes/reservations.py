@@ -40,6 +40,7 @@ from app.integrations.supabase_client import (
     get_reservation_quick_stats,
     list_recent_reservations,
     release_expired_pending_payment_holds,
+    record_escrow_transition,
     update_reservation_policy_metadata,
     update_reservation_source as update_reservation_source_rpc,
 )
@@ -524,6 +525,16 @@ def _apply_cancellation_side_effects(
     )
     if decision.outcome == "refunded":
         _maybe_refund_escrow_on_cancel(reservation_row)
+    record_escrow_transition(
+        reservation_id=reservation_id,
+        event="refund" if decision.outcome == "refunded" else "forfeit",
+        reservation_code=str(reservation_row.get("reservation_code") or "") or None,
+        escrow_state_from=str(reservation_row.get("escrow_state") or "none"),
+        policy_outcome=decision.outcome,
+        amount=float(reservation_row.get("amount_paid_verified") or 0),
+        reason=f"{decision.actor}_cancellation",
+        actor_role=decision.actor,
+    )
     return decision
 
 
@@ -535,6 +546,16 @@ def _apply_no_show_side_effects(*, reservation_id: str, reservation_row: dict) -
         actor="admin",
         outcome="forfeited",
         rule_applied=_resolve_reservation_policy_rule(reservation_row),
+    )
+    record_escrow_transition(
+        reservation_id=reservation_id,
+        event="forfeit",
+        reservation_code=str(reservation_row.get("reservation_code") or "") or None,
+        escrow_state_from=str(reservation_row.get("escrow_state") or "none"),
+        policy_outcome="forfeited",
+        amount=float(reservation_row.get("amount_paid_verified") or 0),
+        reason="no_show",
+        actor_role="admin",
     )
     cascade_service_bookings_no_show(reservation_id=reservation_id)
 
