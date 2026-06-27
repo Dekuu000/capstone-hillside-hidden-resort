@@ -1,9 +1,10 @@
 "use client";
 
-import Link from "next/link";
+import { useState } from "react";
 import { Loader2, ShieldCheck } from "lucide-react";
 import { formatPhpPeso } from "../../lib/formatCurrency";
 import { ModalDialog } from "../shared/ModalDialog";
+import { TermsModal } from "../legal/TermsModal";
 
 type DepositPolicyDialogProps = {
   open: boolean;
@@ -34,9 +35,12 @@ export function DepositPolicyDialog({
   onConfirm,
   onClose,
 }: DepositPolicyDialogProps) {
+  const [policyOpen, setPolicyOpen] = useState(false);
+
   if (!open) return null;
 
   return (
+    <>
     <ModalDialog
       titleId="deposit-policy-title"
       title="Review before you pay"
@@ -64,14 +68,13 @@ export function DepositPolicyDialog({
             This deposit holds your reservation. <strong>It&apos;s non-refundable if you cancel.</strong>
             {balanceDue > 0 ? " The balance is paid at check-in." : ""} If the resort cancels, you get a full
             refund.{" "}
-            <Link
-              href="/terms"
-              target="_blank"
-              rel="noreferrer"
+            <button
+              type="button"
+              onClick={() => setPolicyOpen(true)}
               className="font-semibold text-[var(--color-secondary)] hover:underline"
             >
               See full policy
-            </Link>
+            </button>
           </p>
         </div>
 
@@ -96,5 +99,8 @@ export function DepositPolicyDialog({
         </div>
       </div>
     </ModalDialog>
+
+    <TermsModal open={policyOpen} initialTab="cancellation" onClose={() => setPolicyOpen(false)} />
+    </>
   );
 }

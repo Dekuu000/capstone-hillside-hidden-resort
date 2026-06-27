@@ -1,15 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check, ScrollText, X } from "lucide-react";
 import { CancellationContent, PrivacyContent, TermsContent } from "./legalContent";
-
-type TermsModalProps = {
-  open: boolean;
-  onClose: () => void;
-  /** When provided, shows the confirm + "Accept & Continue" flow that calls this then closes. */
-  onAgree?: () => void;
-};
 
 const TABS = [
   { key: "terms", label: "Terms of Service" },
@@ -19,17 +12,30 @@ const TABS = [
 
 type TabKey = (typeof TABS)[number]["key"];
 
-export function TermsModal({ open, onClose, onAgree }: TermsModalProps) {
-  const [tab, setTab] = useState<TabKey>("terms");
+type TermsModalProps = {
+  open: boolean;
+  onClose: () => void;
+  /** When provided, shows the confirm + "Accept & Continue" flow that calls this then closes. */
+  onAgree?: () => void;
+  /** Tab to open on (default "terms"). Use "cancellation" when launched from a payment flow. */
+  initialTab?: TabKey;
+};
+
+export function TermsModal({ open, onClose, onAgree, initialTab = "terms" }: TermsModalProps) {
+  const [tab, setTab] = useState<TabKey>(initialTab);
   const [confirmed, setConfirmed] = useState(false);
-  const [visited, setVisited] = useState<Set<TabKey>>(() => new Set<TabKey>(["terms"]));
+  const [visited, setVisited] = useState<Set<TabKey>>(() => new Set<TabKey>([initialTab]));
+  const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
     // Reset to a clean state each time the modal opens.
-    setTab("terms");
+    setTab(initialTab);
     setConfirmed(false);
-    setVisited(new Set<TabKey>(["terms"]));
+    setVisited(new Set<TabKey>([initialTab]));
+    // Pull focus into this panel so that — when opened on top of another modal —
+    // Escape closes only this one, not the dialog underneath.
+    panelRef.current?.focus();
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
     };
@@ -40,7 +46,7 @@ export function TermsModal({ open, onClose, onAgree }: TermsModalProps) {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = previousOverflow;
     };
-  }, [open, onClose]);
+  }, [open, onClose, initialTab]);
 
   if (!open) return null;
 
@@ -54,7 +60,11 @@ export function TermsModal({ open, onClose, onAgree }: TermsModalProps) {
       aria-labelledby="terms-modal-title"
     >
       <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden />
-      <div className="relative flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl bg-[var(--color-surface)] shadow-[var(--shadow-lg)] sm:max-h-[88vh] sm:rounded-3xl">
+      <div
+        ref={panelRef}
+        tabIndex={-1}
+        className="relative flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl bg-[var(--color-surface)] shadow-[var(--shadow-lg)] outline-none sm:max-h-[88vh] sm:rounded-3xl"
+      >
         {/* Header */}
         <div className="flex items-start justify-between gap-3 border-b border-[var(--color-border)] px-5 py-4">
           <div className="flex items-center gap-3">
