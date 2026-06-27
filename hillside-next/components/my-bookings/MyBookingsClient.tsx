@@ -1354,6 +1354,47 @@ export function MyBookingsClient({
                     ))}
                   </section>
                 ) : null}
+
+                {(() => {
+                  const discount = Number(details.discount_amount ?? 0);
+                  const total = Number(details.total_amount ?? 0);
+                  const subtotal = total + discount;
+                  const paid = Number(details.amount_paid_verified ?? 0);
+                  const balance = Math.max(0, total - paid);
+                  return (
+                    <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-4">
+                      <h4 className="mb-2 text-sm font-semibold text-[var(--color-text)]">Payment</h4>
+                      <dl className="space-y-1.5 text-sm">
+                        {discount > 0 ? (
+                          <>
+                            <div className="flex justify-between">
+                              <dt className="text-[var(--color-muted)]">Subtotal</dt>
+                              <dd className="text-[var(--color-text)]">{formatPeso(subtotal)}</dd>
+                            </div>
+                            <div className="flex justify-between text-[var(--color-secondary)]">
+                              <dt>{details.promo_code ? `Promo · ${details.promo_code}` : "Promo"}</dt>
+                              <dd>−{formatPeso(discount)}</dd>
+                            </div>
+                          </>
+                        ) : null}
+                        <div className="flex justify-between border-t border-[var(--color-border)] pt-1.5 font-semibold text-[var(--color-text)]">
+                          <dt>Total</dt>
+                          <dd>{formatPeso(total)}</dd>
+                        </div>
+                        <div className="flex justify-between">
+                          <dt className="text-[var(--color-muted)]">Paid</dt>
+                          <dd className="font-semibold text-[var(--color-text)]">{formatPeso(paid)}</dd>
+                        </div>
+                        {balance > 0 ? (
+                          <div className="flex justify-between">
+                            <dt className="text-[var(--color-muted)]">Balance due</dt>
+                            <dd className="font-semibold text-[var(--color-text)]">{formatPeso(balance)}</dd>
+                          </div>
+                        ) : null}
+                      </dl>
+                    </section>
+                  );
+                })()}
               </div>
             ) : null}
         </ModalDialog>
