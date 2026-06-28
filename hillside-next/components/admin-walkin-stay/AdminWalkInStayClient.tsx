@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { AlertCircle, CheckCircle2, Loader2, Phone, Tag, User, Users, Wallet } from "lucide-react";
-import type { AvailableUnitsResponse, PromoValidationResult, ReservationCreateResponse, ReservationListItem } from "../../../packages/shared/src/types";
-import { availableUnitsResponseSchema, promoValidationResultSchema, reservationCreateResponseSchema, reservationListItemSchema } from "../../../packages/shared/src/schemas";
+import { AlertCircle, CalendarCheck, CheckCircle2, Loader2, Phone, Tag, User, Users, Wallet } from "lucide-react";
+import type { AvailableUnitsResponse, PromoValidationResult, ReservationCreateResponse } from "../../../packages/shared/src/types";
+import { availableUnitsResponseSchema, promoValidationResultSchema, reservationCreateResponseSchema } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
 import { todayPlusLocalIsoDate } from "../../lib/dateIso";
@@ -12,7 +12,9 @@ import { formatPhpPeso as toPeso } from "../../lib/formatCurrency";
 import { getUnitNightlyRate } from "../../lib/booking/pricing";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
 import { getUnitLabel } from "../../lib/unitLabel";
+import { formatDateWithYear } from "../../lib/dateDisplay";
 import { FancyDatePicker } from "../shared/FancyDatePicker";
+import { WalkInPaymentPanel, type WalkInPaymentResult } from "../admin-walkin/WalkInPaymentPanel";
 import { useToast } from "../shared/ToastProvider";
 
 type AdminWalkInStayClientProps = {
@@ -24,7 +26,9 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
   const { showToast } = useToast();
   const token = initialToken;
 
-  const [checkInDate, setCheckInDate] = useState(todayPlusLocalIsoDate(0));
+  // Walk-ins are same-day by definition — check-in is locked to today (guests use
+  // the online flow for advance stays), so it never changes; only check-out is picked.
+  const [checkInDate] = useState(todayPlusLocalIsoDate(0));
   const [checkOutDate, setCheckOutDate] = useState(todayPlusLocalIsoDate(1));
   // Party size — drives pax-based pricing for event spaces (Evergreen/Pinecrest)
   // exactly like the online guest flow. Held as a string so the field is clearable.
@@ -47,9 +51,9 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [queuedOperationId, setQueuedOperationId] = useState<string | null>(null);
   const [created, setCreated] = useState<ReservationCreateResponse | null>(null);
-  const [createdReservation, setCreatedReservation] = useState<ReservationListItem | null>(null);
-  const [createdReservationLoading, setCreatedReservationLoading] = useState(false);
-  const [createdReservationError, setCreatedReservationError] = useState<string | null>(null);
+  // Live payment progress for the just-created booking, seeded from the create
+  // response's totals (no second fetch) and updated by the inline Take-payment panel.
+  const [payState, setPayState] = useState<{ balance: number; paid: number; status: string } | null>(null);
   const [createdSummary, setCreatedSummary] = useState<{
     checkInDate: string;
     checkOutDate: string;
@@ -249,8 +253,7 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
         setCreated(null);
         setQueuedOperationId(response.operationId);
         setCreatedSummary(summarySnapshot);
-        setCreatedReservation(null);
-        setCreatedReservationError(null);
+        setPayState(null);
         setGuestName("");
         setGuestPhone("");
         setNotes("");
@@ -266,8 +269,13 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
 
       setCreated(response.data);
       setCreatedSummary(summarySnapshot);
-      setCreatedReservation(null);
-      setCreatedReservationError(null);
+      // Seed live payment progress straight from the authoritative create response
+      // (no second fetch) so the inline Take-payment panel prefills instantly.
+      setPayState({
+        balance: Math.max(0, Number(response.data.balance_due ?? response.data.total_amount ?? summarySnapshot.estimatedTotal ?? 0)),
+        paid: 0,
+        status: String(response.data.status || "pending_payment"),
+      });
       setGuestName("");
       setGuestPhone("");
       setNotes("");
@@ -276,7 +284,7 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
       showToast({
         type: "success",
         title: `Walk-in stay ${response.data.reservation_code} created`,
-        message: "Choose the next front-desk action below.",
+        message: "Take payment below, then check the guest in.",
       });
     } catch (unknownError) {
       setSubmitError(getApiErrorMessage(unknownError, "Failed to create walk-in stay."));
@@ -285,52 +293,36 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
     }
   }
 
-  useEffect(() => {
-    if (!token || !created?.reservation_id) return;
-    let cancelled = false;
-    const loadCreatedReservation = async () => {
-      setCreatedReservationLoading(true);
-      setCreatedReservationError(null);
-      try {
-        const reservation = await apiFetch<ReservationListItem>(
-          `/v2/reservations/${encodeURIComponent(created.reservation_id)}`,
-          { method: "GET" },
-          token,
-          reservationListItemSchema,
-        );
-        if (!cancelled) {
-          setCreatedReservation(reservation);
-        }
-      } catch (unknownError) {
-        if (!cancelled) {
-          setCreatedReservationError(getApiErrorMessage(unknownError, "Failed to load latest reservation status."));
-        }
-      } finally {
-        if (!cancelled) setCreatedReservationLoading(false);
-      }
-    };
-    void loadCreatedReservation();
-    return () => {
-      cancelled = true;
-    };
-  }, [created?.reservation_id, token]);
+  const handlePaymentRecorded = (result: WalkInPaymentResult) => {
+    setPayState((prev) => {
+      const base = prev ?? { balance: 0, paid: 0, status: String(created?.status || "pending_payment") };
+      return {
+        balance: Math.max(0, base.balance - result.amount),
+        paid: base.paid + result.amount,
+        status: result.reservationStatus || base.status,
+      };
+    });
+    showToast({
+      type: "success",
+      title: "Payment recorded",
+      message: `${toPeso(result.amount)} recorded for ${created?.reservation_code ?? "this booking"}.`,
+    });
+  };
 
-  const createdBalance = Number(
-    createdReservation?.balance_due
-    ?? Math.max(0, (createdReservation?.total_amount ?? createdSummary?.estimatedTotal ?? 0) - Number(createdReservation?.amount_paid_verified ?? 0)),
-  );
-  const createdTotal = Number(createdReservation?.total_amount ?? createdSummary?.estimatedTotal ?? 0);
-  const createdPaid = Number(createdReservation?.amount_paid_verified ?? Math.max(0, createdTotal - createdBalance));
+  const createdTotal = Number(created?.total_amount ?? createdSummary?.estimatedTotal ?? 0);
+  const createdBalance = Math.max(0, Number(payState?.balance ?? createdTotal));
+  const createdPaid = Number(payState?.paid ?? 0);
   const createdPaymentState: "unpaid" | "partial" | "paid" = createdBalance <= 0 && createdTotal > 0
     ? "paid"
     : createdPaid > 0
       ? "partial"
       : "unpaid";
-  const createdCheckInDate = createdSummary?.checkInDate ?? createdReservation?.check_in_date ?? "";
+  const createdCheckInDate = createdSummary?.checkInDate ?? todayPlusLocalIsoDate(0);
   const isSameDayStay = Boolean(createdSummary?.sameDay || (createdCheckInDate && createdCheckInDate === todayPlusLocalIsoDate(0)));
+  const liveStatus = String(payState?.status || created?.status || "");
   const canCheckInNow = createdPaymentState === "paid"
     && createdCheckInDate === todayPlusLocalIsoDate(0)
-    && !["checked_in", "checked_out", "cancelled", "no_show"].includes(String(createdReservation?.status || ""));
+    && !["checked_in", "checked_out", "cancelled", "no_show"].includes(liveStatus);
 
   if (!token) {
     return (
@@ -422,45 +414,42 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
             </div>
           </div>
 
-          {Number(createdReservation?.discount_amount ?? 0) > 0 ? (
-            <p className="mt-2 text-xs font-semibold text-emerald-800">
-              Promo {createdReservation?.promo_code ? `${createdReservation.promo_code} ` : ""}applied — {toPeso(Number(createdReservation?.discount_amount ?? 0))} off
-              {createdReservation?.original_total ? ` (subtotal was ${toPeso(Number(createdReservation.original_total))})` : ""}.
+          {createdBalance > 0 ? (
+            <WalkInPaymentPanel
+              key={createdPaid}
+              token={token}
+              reservationId={created.reservation_id}
+              reservationCode={created.reservation_code}
+              balanceDue={createdBalance}
+              walkInType="stay"
+              onRecorded={handlePaymentRecorded}
+            />
+          ) : (
+            <p className="mt-3 flex items-center gap-2 rounded-xl border border-emerald-200 bg-white px-3 py-2 text-xs font-semibold text-emerald-800">
+              <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+              Paid in full — ready to check in.
             </p>
-          ) : null}
-
-          {createdReservationLoading ? (
-            <p className="mt-2 text-xs text-emerald-800">Refreshing reservation totals...</p>
-          ) : null}
-          {createdReservationError ? (
-            <p className="mt-2 text-xs text-amber-700">{createdReservationError}</p>
-          ) : null}
+          )}
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            {canCheckInNow ? (
-              <Link
-                href={`/admin/check-in?mode=code&reservation_code=${encodeURIComponent(created.reservation_code)}`}
-                className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--color-primary)] bg-[var(--color-primary)] px-3 text-xs font-semibold text-white transition hover:brightness-110"
-              >
-                Check In Now
-              </Link>
-            ) : (
-              <Link
-                href={`/admin/payments?source=walkin&walkin_type=stay&reservation_id=${encodeURIComponent(created.reservation_id)}&amount=${encodeURIComponent(
-                  String(Math.max(1, Math.round(createdBalance || createdTotal || createdSummary?.estimatedTotal || 0))),
-                )}&method=cash`}
-                className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--color-primary)] bg-[var(--color-primary)] px-3 text-xs font-semibold text-white transition hover:brightness-110"
-              >
-                Record Payment
-              </Link>
-            )}
+            <Link
+              href={`/admin/check-in?mode=code&reservation_code=${encodeURIComponent(created.reservation_code)}`}
+              aria-disabled={!canCheckInNow}
+              tabIndex={canCheckInNow ? undefined : -1}
+              className={
+                canCheckInNow
+                  ? "inline-flex h-9 items-center justify-center rounded-lg border border-[var(--color-primary)] bg-[var(--color-primary)] px-3 text-xs font-semibold text-white transition hover:brightness-110"
+                  : "inline-flex h-9 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 text-xs font-semibold text-[var(--color-muted)]"
+              }
+            >
+              Check In Now
+            </Link>
 
             <button
               type="button"
               onClick={() => {
                 setCreated(null);
-                setCreatedReservation(null);
-                setCreatedReservationError(null);
+                setPayState(null);
                 setCreatedSummary(null);
               }}
               className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--color-border)] bg-white px-3 text-xs font-semibold text-[var(--color-text)]"
@@ -473,21 +462,12 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
             >
               View in Reservations
             </Link>
-
-            {!canCheckInNow ? (
-              <Link
-                href={`/admin/check-in?mode=code&reservation_code=${encodeURIComponent(created.reservation_code)}`}
-                className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 text-xs font-semibold text-[var(--color-muted)]"
-                aria-disabled
-                tabIndex={-1}
-              >
-                Check In Now
-              </Link>
-            ) : null}
           </div>
           {!canCheckInNow ? (
             <p className="mt-2 text-xs text-[var(--color-muted)]">
-              Check-in becomes primary after payment is fully settled and arrival date is today.
+              {createdBalance > 0
+                ? "Take the payment above — Check-in unlocks once the balance is settled (same-day arrival)."
+                : "Check-in becomes primary after payment is fully settled and arrival date is today."}
             </p>
           ) : null}
         </div>
@@ -499,12 +479,21 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)] text-xs font-bold text-white">1</span>
             <div>
               <h2 className="text-lg font-semibold text-[var(--color-text)]">Dates &amp; room</h2>
-              <p className="text-xs text-[var(--color-muted)]">Pick the stay dates, then choose an available room.</p>
+              <p className="text-xs text-[var(--color-muted)]">Check-in is today — pick the check-out date, then choose a room.</p>
             </div>
           </div>
 
           <div className="mb-4 grid gap-3 sm:grid-cols-2">
-            <FancyDatePicker label="Check-in" value={checkInDate} onChange={setCheckInDate} min={todayPlusLocalIsoDate(0)} />
+            <div className="grid gap-1 text-sm text-[var(--color-text)]">
+              <span>Check-in</span>
+              <div className="flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2">
+                <CalendarCheck className="h-4 w-4 shrink-0 text-[var(--color-secondary)]" aria-hidden="true" />
+                <span className="font-semibold">Today · {formatDateWithYear(checkInDate)}</span>
+                <span className="ml-auto rounded-full bg-[color:color-mix(in_srgb,var(--color-secondary)_12%,white)] px-2 py-0.5 text-[11px] font-semibold text-[var(--color-secondary)]">
+                  Same-day walk-in
+                </span>
+              </div>
+            </div>
             <FancyDatePicker
               label="Check-out"
               value={checkOutDate}
@@ -530,18 +519,6 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
             </div>
             <span className="text-xs text-[var(--color-muted)]">Prices event spaces (Evergreen, Pinecrest) by headcount — same as online booking.</span>
           </label>
-          <div className="mb-4 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setCheckInDate(todayPlusLocalIsoDate(0));
-                setCheckOutDate(todayPlusLocalIsoDate(1));
-              }}
-              className="inline-flex h-8 items-center rounded-full border border-[var(--color-border)] bg-white px-3 text-xs font-semibold text-[var(--color-text)]"
-            >
-              Same-day stay
-            </button>
-          </div>
 
           {unitsLoading ? (
             <div className="flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-4 text-sm text-[var(--color-muted)]">

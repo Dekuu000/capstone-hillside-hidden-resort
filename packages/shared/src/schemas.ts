@@ -544,6 +544,10 @@ export const reservationCreateResponseSchema = z.object({
   reservation_id: z.string().min(1),
   reservation_code: z.string().min(1),
   status: bookingStatusSchema,
+  // Authoritative totals echoed back so the desk can show the balance and prefill
+  // the inline "Take payment" panel without a second round-trip to fetch them.
+  total_amount: z.number().optional().nullable(),
+  balance_due: z.number().optional().nullable(),
   ...reservationPaymentPolicyMetadataShape,
   escrow_ref: escrowRefSchema.optional().nullable(),
   ai_recommendation: pricingRecommendationSchema.optional().nullable(),
@@ -655,6 +659,14 @@ export const resortSnapshotResponseSchema = z.object({
   ai_demand_7d: resortSnapshotAiDemandSchema,
 });
 
+export const operationsRoomItemSchema = z.object({
+  unit_id: z.string().min(1),
+  name: z.string().nullable().optional(),
+  room_number: z.string().nullable().optional(),
+  type: z.string().nullable().optional(),
+  operational_status: z.enum(UNIT_OPERATIONAL_STATUSES),
+});
+
 export const operationsSnapshotResponseSchema = z.object({
   as_of: z.string().min(1),
   rooms: z.object({
@@ -664,6 +676,7 @@ export const operationsSnapshotResponseSchema = z.object({
     dirty: z.number().int().nonnegative(),
     total: z.number().int().nonnegative(),
   }),
+  room_board: z.array(operationsRoomItemSchema).default([]),
   today_arrivals: z.number().int().nonnegative(),
   ready_for_check_in: z.number().int().nonnegative(),
   pending_payment: z.number().int().nonnegative(),

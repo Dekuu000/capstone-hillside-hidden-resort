@@ -59,6 +59,14 @@ function mapStatusMessage(
   }
 }
 
+/** HTTP status carried by a thrown API error (from the "HTTP <status>: ..." shape),
+ * or null if the error isn't an HTTP error. Lets callers branch on 401/403 to tell a
+ * stale-session problem apart from a genuine permission denial. */
+export function getHttpErrorStatus(error: unknown): number | null {
+  const parsed = parseHttpError(asString(error));
+  return parsed ? parsed.status : null;
+}
+
 export function getApiErrorMessage(
   error: unknown,
   fallback: string,

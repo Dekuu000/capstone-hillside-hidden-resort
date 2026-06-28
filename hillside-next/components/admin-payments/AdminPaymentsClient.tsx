@@ -38,6 +38,9 @@ type AdminPaymentsClientProps = {
   initialTab?: AdminPaymentsTab;
   initialSearch?: string;
   initialPage?: number;
+  // Manager+ see the full console (verification inbox, history, filters). Front
+  // Desk (staff) gets a focused on-site recording form only — no admin-gated fetches.
+  canManage?: boolean;
 };
 
 const PAGE_SIZE = 10;
@@ -103,6 +106,7 @@ export function AdminPaymentsClient({
   initialData = null,
   initialSearch = "",
   initialPage = 1,
+  canManage = true,
 }: AdminPaymentsClientProps) {
   const token = initialToken;
   const searchParams = useSearchParams();
@@ -338,7 +342,7 @@ export function AdminPaymentsClient({
   }, [token]);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token || !canManage) return;
     const isInitialState =
       initialData &&
       page === Math.max(1, initialPage) &&
@@ -346,12 +350,12 @@ export function AdminPaymentsClient({
       searchValue === initialSearch;
     if (isInitialState) return;
     void fetchList();
-  }, [fetchList, initialData, initialPage, initialSearch, page, searchValue, tab, token]);
+  }, [canManage, fetchList, initialData, initialPage, initialSearch, page, searchValue, tab, token]);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token || !canManage) return;
     void fetchTabCounts();
-  }, [fetchTabCounts, token]);
+  }, [canManage, fetchTabCounts, token]);
 
   const openProof = useCallback(async (payment: AdminPaymentItem) => {
     if (!payment.proof_url) return;
@@ -482,7 +486,9 @@ export function AdminPaymentsClient({
               message: "On-site payment queued and will sync when internet is available.",
             },
       );
-      if (outcome.mode === "online") {
+      if (outcome.mode === "online" && canManage) {
+        // Front Desk can't read the admin payment list — skip the refresh so a
+        // successful recording doesn't bounce back with an "access" error.
         await fetchList();
         await fetchTabCounts();
       }
@@ -499,7 +505,7 @@ export function AdminPaymentsClient({
     } finally {
       setOnSiteBusy(false);
     }
-  }, [fetchList, fetchTabCounts, onSiteAmount, onSiteMethod, onSiteReferenceNo, onSiteReservationId, reservationContext, showToast, token]);
+  }, [canManage, fetchList, fetchTabCounts, onSiteAmount, onSiteMethod, onSiteReferenceNo, onSiteReservationId, reservationContext, showToast, token]);
 
   const totalPages = useMemo(() => Math.max(1, Math.ceil(count / PAGE_SIZE)), [count]);
   const reservationBalance = Number(reservationContext?.balance_due ?? 0);
@@ -538,18 +544,25 @@ export function AdminPaymentsClient({
   return (
     <section className="mx-auto w-full max-w-[1600px] space-y-5">
       <AdminPageHeader
-        eyebrow="Management"
-        title="Payments Console"
-        subtitle="Verification inbox, on-site payments, and payment history."
-        cornerSlot={<DataFreshnessBadge variant="plain" />}
+        eyebrow={canManage ? "Management" : "Operations"}
+        title={canManage ? "Payments Console" : "Record Payment"}
+        subtitle={
+          canManage
+            ? "Verification inbox, on-site payments, and payment history."
+            : "Take an on-site payment for a walk-in or returning guest, then check them in."
+        }
+        cornerSlot={canManage ? <DataFreshnessBadge variant="plain" /> : undefined}
         action={
-          <div className="rounded-2xl border border-[var(--color-border)] bg-white px-4 py-3 text-xs text-[var(--color-muted)]">
-            <p className="font-semibold text-[var(--color-text)]">Queue snapshot</p>
-            <p className="mt-1">{count} total records</p>
-          </div>
+          canManage ? (
+            <div className="rounded-2xl border border-[var(--color-border)] bg-white px-4 py-3 text-xs text-[var(--color-muted)]">
+              <p className="font-semibold text-[var(--color-text)]">Queue snapshot</p>
+              <p className="mt-1">{count} total records</p>
+            </div>
+          ) : undefined
         }
       />
 
+      {canManage ? (
       <div className="mb-5 rounded-2xl border border-[var(--color-border)] bg-white p-3 shadow-[var(--shadow-card)]">
         <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
           <div className="w-full shrink-0 lg:w-[200px]">
@@ -685,6 +698,7 @@ export function AdminPaymentsClient({
           </div>
         </div>
       </div>
+      ) : null}
 
       {isWalkInContextNotice ? (
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-emerald-200/80 bg-emerald-50/70 px-3 py-1.5 text-sm text-emerald-800">
@@ -964,7 +978,7 @@ export function AdminPaymentsClient({
       ) : null}
       {loading ? <p className="mb-3 text-sm text-[var(--color-muted)]">Loading payments...</p> : null}
 
-      {!loading && count === 0 ? (
+      {canManage && !loading && count === 0 ? (
         <div className="rounded-2xl border border-[var(--color-border)] bg-white p-8 text-center shadow-[var(--shadow-card)]">
           <h3 className="text-lg font-semibold text-[var(--color-text)]">
             {isToReview ? "No payment submissions to review" : "No payment history in this tab"}

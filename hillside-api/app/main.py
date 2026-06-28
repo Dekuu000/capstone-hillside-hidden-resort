@@ -14,6 +14,7 @@ from app.core.chains import get_active_chain, get_chain_registry
 from app.core.config import settings
 from app.middleware.correlation import CorrelationIdMiddleware
 from app.middleware.performance import ApiPerformanceMiddleware
+from app.core.rate_limit import RateLimitMiddleware
 from app.observability.escrow_reconciliation_monitor import (
     escrow_reconciliation_scheduler_loop,
     get_escrow_reconciliation_monitor_snapshot,
@@ -151,6 +152,9 @@ async def lifespan(_: FastAPI):
 app = FastAPI(title=settings.app_name, version="0.1.0", lifespan=lifespan)
 app.add_middleware(CorrelationIdMiddleware)
 app.add_middleware(ApiPerformanceMiddleware)
+# Added before CORS so the CORS layer (added later = outer) still wraps a 429,
+# letting the browser read the rate-limit response instead of a CORS error.
+app.add_middleware(RateLimitMiddleware)
 
 cors_origins = [
     origin.strip()

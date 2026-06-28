@@ -545,6 +545,17 @@ def record_on_site_payment(
         refreshed = None
     next_status = str((refreshed or reservation).get("status") or reservation_status)
 
+    # Surface cash/desk collections in the managers' payment feed too — a walk-in
+    # payment or a guest settling their balance at the counter. Best-effort; mirrors
+    # the online webhook's notify so managers see ALL money coming in.
+    notify_ops_payment_received(
+        reservation=(refreshed or reservation),
+        amount=payload.amount,
+        channel="on_site",
+        method=payload.method,
+        payment_ref=payment_id,
+    )
+
     response = {
         "ok": True,
         "payment_id": payment_id,

@@ -234,6 +234,10 @@ class ReservationResponse(ReservationPaymentPolicyMetadata):
     reservation_id: str
     reservation_code: str
     status: BookingStatus
+    # Authoritative totals echoed back so the desk can show the balance and prefill
+    # the inline "Take payment" panel without a second round-trip to fetch them.
+    total_amount: float | None = None
+    balance_due: float | None = None
     escrow_ref: EscrowRef | None = None
     guest_pass_ref: GuestPassRef | None = None
     ai_recommendation: AiRecommendation | None = None
@@ -487,11 +491,22 @@ class OperationsRoomCounts(BaseModel):
     total: int = 0
 
 
+class OperationsRoomItem(BaseModel):
+    """One unit on the front-desk housekeeping board — operational fields only
+    (no pricing/revenue), so it's safe for the staff dashboard."""
+    unit_id: str
+    name: str | None = None
+    room_number: str | None = None
+    type: str | None = None
+    operational_status: UnitOperationalStatus = UnitOperationalStatus.CLEANED
+
+
 class OperationsSnapshotResponse(BaseModel):
     """Front-desk operations snapshot — no revenue, crypto, or AI internals.
     Safe for the staff (Front Desk) dashboard."""
     as_of: datetime
     rooms: OperationsRoomCounts
+    room_board: list[OperationsRoomItem] = Field(default_factory=list)
     today_arrivals: int = 0
     ready_for_check_in: int = 0
     pending_payment: int = 0

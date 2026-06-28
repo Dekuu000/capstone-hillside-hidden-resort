@@ -480,7 +480,12 @@ def test_create_reservation_contract_without_shadow(monkeypatch) -> None:
     assert released["limit"] > 0
 
 
-def test_create_reservation_contract_with_shadow(monkeypatch) -> None:
+def test_create_reservation_does_not_lock_escrow_at_create(monkeypatch) -> None:
+    """Escrow is locked only when an online deposit is *verified* (the PayMongo
+    webhook) — never at create. A fresh reservation is an unpaid hold with no
+    deposit to escrow, and cash/on-site bookings never touch the chain at all.
+    The create path must not call the escrow writer or the on-chain lock even when
+    both escrow feature flags are enabled."""
     monkeypatch.setattr("app.core.auth.verify_access_token", _mock_guest_auth)
     monkeypatch.setattr(
         "app.api.v2.routes.reservations.get_available_units_rpc",
@@ -500,20 +505,23 @@ def test_create_reservation_contract_with_shadow(monkeypatch) -> None:
         chain_id = 11155111
         rpc_url = "https://example-rpc"
         escrow_contract_address = "0xabc"
+        signer_private_key = "0x123"
         enabled = True
 
-    called: dict = {}
+    shadow_calls: list = []
+    lock_calls: list = []
 
-    def _fake_shadow_write(**kwargs):
-        called.update(kwargs)
-        return kwargs
-
+    # Both escrow flags ON — the create path must STILL not touch escrow.
     monkeypatch.setattr("app.api.v2.routes.reservations.settings.feature_escrow_shadow_write", True)
-    monkeypatch.setattr("app.api.v2.routes.reservations.settings.feature_escrow_onchain_lock", False)
+    monkeypatch.setattr("app.api.v2.routes.reservations.settings.feature_escrow_onchain_lock", True)
     monkeypatch.setattr("app.api.v2.routes.reservations.get_active_chain", lambda: _FakeChain())
     monkeypatch.setattr(
+        "app.api.v2.routes.reservations.lock_reservation_escrow_onchain",
+        lambda **kwargs: lock_calls.append(kwargs),
+    )
+    monkeypatch.setattr(
         "app.api.v2.routes.reservations.write_reservation_escrow_shadow_metadata",
-        _fake_shadow_write,
+        lambda **kwargs: shadow_calls.append(kwargs),
     )
 
     response = client.post(
@@ -530,79 +538,11 @@ def test_create_reservation_contract_with_shadow(monkeypatch) -> None:
     assert response.status_code == 200
     payload = response.json()
     assert payload["reservation_id"] == "res-shadow-1"
-    assert payload["escrow_ref"] is not None
-    assert payload["escrow_ref"]["chain_key"] == "sepolia"
-    assert payload["escrow_ref"]["chain_id"] == 11155111
+    assert payload["escrow_ref"] is None
+    assert shadow_calls == []  # no shadow escrow record written at create
+    assert lock_calls == []    # no on-chain escrow lock at create
     assert payload["deposit_policy_version"] == "v1_2026_04"
     assert payload["deposit_rule_applied"] == "room_cottage_20pct_clamp_500_1000"
-    assert called["reservation_id"] == "res-shadow-1"
-    assert called["escrow_state"] == "pending_lock"
-
-
-def test_create_reservation_contract_with_onchain_lock(monkeypatch) -> None:
-    monkeypatch.setattr("app.core.auth.verify_access_token", _mock_guest_auth)
-    monkeypatch.setattr(
-        "app.api.v2.routes.reservations.get_available_units_rpc",
-        lambda **_: [{"unit_id": "unit-1", "base_price": 1500}],
-    )
-    monkeypatch.setattr(
-        "app.api.v2.routes.reservations.create_reservation_atomic_rpc",
-        lambda **_: {
-            "reservation_id": "res-chain-1",
-            "reservation_code": "HR-RES-CHAIN-001",
-            "status": "pending_payment",
-        },
-    )
-
-    class _FakeChain:
-        key = "sepolia"
-        chain_id = 11155111
-        rpc_url = "https://example-rpc"
-        escrow_contract_address = "0xabc"
-        signer_private_key = "0x123"
-        enabled = True
-
-    called: dict = {}
-
-    class _FakeLock:
-        tx_hash = "0xlockhash"
-        onchain_booking_id = "0xbookingid"
-        event_index = 7
-
-    def _fake_shadow_write(**kwargs):
-        called.update(kwargs)
-        return kwargs
-
-    monkeypatch.setattr("app.api.v2.routes.reservations.settings.feature_escrow_shadow_write", True)
-    monkeypatch.setattr("app.api.v2.routes.reservations.settings.feature_escrow_onchain_lock", True)
-    monkeypatch.setattr("app.api.v2.routes.reservations.get_active_chain", lambda: _FakeChain())
-    monkeypatch.setattr("app.api.v2.routes.reservations.lock_reservation_escrow_onchain", lambda **_: _FakeLock())
-    monkeypatch.setattr(
-        "app.api.v2.routes.reservations.write_reservation_escrow_shadow_metadata",
-        _fake_shadow_write,
-    )
-
-    response = client.post(
-        "/v2/reservations",
-        headers={"Authorization": "Bearer guest-token"},
-        json={
-            "check_in_date": "2026-02-21",
-            "check_out_date": "2026-02-22",
-            "unit_ids": ["unit-1"],
-            "idempotency_key": "idem-3",
-        },
-    )
-
-    assert response.status_code == 200
-    payload = response.json()
-    assert payload["reservation_id"] == "res-chain-1"
-    assert payload["escrow_ref"] is not None
-    assert payload["escrow_ref"]["state"] == "locked"
-    assert payload["escrow_ref"]["tx_hash"] == "0xlockhash"
-    assert payload["deposit_policy_version"] == "v1_2026_04"
-    assert payload["deposit_rule_applied"] == "room_cottage_20pct_clamp_500_1000"
-    assert called["escrow_state"] == "locked"
-    assert called["escrow_event_index"] == 7
 
 
 def test_create_reservation_does_not_fail_when_ai_recommendation_errors(monkeypatch) -> None:

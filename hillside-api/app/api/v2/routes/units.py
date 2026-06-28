@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.core.auth import AuthContext, require_admin
+from app.core.auth import AuthContext, require_admin, require_operations, role_at_least
 from app.core.cache import TTLCache
 from app.core.config import settings
 from app.integrations.supabase_client import (
@@ -180,8 +180,16 @@ def patch_unit_status(
 def patch_unit_operational_status(
     unit_id: str,
     payload: UnitOperationalStatusUpdateRequest,
-    _auth: AuthContext = Depends(require_admin),
+    auth: AuthContext = Depends(require_operations),
 ):
+    # Housekeeping status (cleaned/dirty/occupied) is an operations task — Front
+    # Desk and up. Taking a unit OUT of service (maintenance) is a bigger call,
+    # so keep that one Manager+.
+    if payload.operational_status == UnitOperationalStatus.MAINTENANCE and not role_at_least(auth.role, "admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only a Manager can move a unit to maintenance.",
+        )
     try:
         unit = update_unit(
             unit_id=unit_id,

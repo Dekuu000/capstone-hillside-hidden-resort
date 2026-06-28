@@ -225,9 +225,21 @@ export function tourGalleryImages(service?: Pick<ServiceItem, "image_urls">): st
   return TOUR_IMAGES.map((base) => `${base}?auto=format&fit=crop&w=1200&q=80`);
 }
 
-/** "08:00 – 17:00" from "HH:MM:SS" times, or a friendly fallback. */
+/** "15:00:00" -> "3:00 PM". Returns "" for missing/invalid times. */
+export function formatTime12(value?: string | null): string {
+  if (!value) return "";
+  const [hourRaw, minuteRaw] = value.split(":");
+  const hour = Number.parseInt(hourRaw ?? "", 10);
+  if (Number.isNaN(hour)) return "";
+  const minutes = (minuteRaw ?? "00").padStart(2, "0").slice(0, 2);
+  const period = hour >= 12 ? "PM" : "AM";
+  const hour12 = hour % 12 === 0 ? 12 : hour % 12;
+  return `${hour12}:${minutes} ${period}`;
+}
+
+/** "8:00 AM – 5:00 PM" from "HH:MM:SS" times, or a friendly fallback. */
 export function tourSchedule(service: Pick<ServiceItem, "start_time" | "end_time">): string {
-  const start = service.start_time ? service.start_time.slice(0, 5) : "";
-  const end = service.end_time ? service.end_time.slice(0, 5) : "";
+  const start = formatTime12(service.start_time);
+  const end = formatTime12(service.end_time);
   return start && end ? `${start} – ${end}` : "Flexible schedule";
 }

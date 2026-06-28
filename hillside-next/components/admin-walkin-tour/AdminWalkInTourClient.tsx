@@ -2,10 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { AlertCircle, Loader2, Phone, Tag, User } from "lucide-react";
+import { AlertCircle, CalendarCheck, CheckCircle2, Loader2, Phone, Tag, User } from "lucide-react";
 import type {
-  PricingRecommendation,
   PromoValidationResult,
   ReservationCreateResponse,
   ServiceItem,
@@ -22,7 +20,9 @@ import { todayPlusLocalIsoDate } from "../../lib/dateIso";
 import { formatPhpPeso as toPeso } from "../../lib/formatCurrency";
 import { tourMinPayNow, tourTotal } from "../../lib/booking/pricing";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
-import { FancyDatePicker } from "../shared/FancyDatePicker";
+import { formatTime12 } from "../../lib/catalog";
+import { formatDateWithYear } from "../../lib/dateDisplay";
+import { WalkInPaymentPanel, type WalkInPaymentResult } from "../admin-walkin/WalkInPaymentPanel";
 import { Select } from "../shared/Select";
 import { useToast } from "../shared/ToastProvider";
 
@@ -32,19 +32,12 @@ type AdminWalkInTourClientProps = {
   embedded?: boolean;
 };
 
-function getAiSource(recommendation: PricingRecommendation | null) {
-  if (!recommendation) return null;
-  const explains = recommendation.explanations.map((item) => item.toLowerCase());
-  return explains.some((item) => item.includes("fallback")) ? "fallback" : "live";
-}
-
 export function AdminWalkInTourClient({
   initialToken = null,
   initialServicesData = null,
   embedded = false,
 }: AdminWalkInTourClientProps) {
   const { showToast } = useToast();
-  const router = useRouter();
   const token = initialToken;
 
   const [services, setServices] = useState<ServiceItem[]>(initialServicesData?.items ?? []);
@@ -52,7 +45,9 @@ export function AdminWalkInTourClient({
   const [servicesError, setServicesError] = useState<string | null>(null);
 
   const [serviceId, setServiceId] = useState("");
-  const [visitDate, setVisitDate] = useState(todayPlusLocalIsoDate(0));
+  // Walk-ins are same-day by definition — the visit date is locked to today
+  // (guests use the online flow for advance tours), so it never changes.
+  const [visitDate] = useState(todayPlusLocalIsoDate(0));
   // Held as strings so the fields can be cleared (empty) on delete and so a
   // typed digit replaces the value instead of appending to a stuck "0".
   const [adultQty, setAdultQty] = useState("1");
@@ -70,7 +65,16 @@ export function AdminWalkInTourClient({
   const [submitBusy, setSubmitBusy] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [queuedOperationId, setQueuedOperationId] = useState<string | null>(null);
-  const [latestAiRecommendation, setLatestAiRecommendation] = useState<PricingRecommendation | null>(null);
+  const [created, setCreated] = useState<ReservationCreateResponse | null>(null);
+  // Live payment progress for the just-created tour, seeded from the create
+  // response's totals (no second fetch) and updated by the inline payment panel.
+  const [payState, setPayState] = useState<{ balance: number; paid: number; status: string } | null>(null);
+  const [createdSummary, setCreatedSummary] = useState<{
+    tourName: string;
+    visitDate: string;
+    partySize: number;
+    estimatedTotal: number;
+  } | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -203,7 +207,7 @@ export function AdminWalkInTourClient({
     setSubmitBusy(true);
     setSubmitError(null);
     setQueuedOperationId(null);
-    setLatestAiRecommendation(null);
+    setCreated(null);
 
     try {
       const payload = {
@@ -226,34 +230,76 @@ export function AdminWalkInTourClient({
       });
       if (created.mode === "queued") {
         setQueuedOperationId(created.operationId);
+        setCreated(null);
+        setPayState(null);
         setGuestName("");
         setGuestPhone("");
         setNotes("");
         showToast({
           type: "info",
           title: "Walk-in tour saved offline",
-          message: "Queued in Sync Center and will redirect to Payments after sync.",
+          message: "Queued in Sync Center and will sync when connection is back.",
         });
         return;
       }
       const createdData = created.data;
-      setLatestAiRecommendation(createdData.ai_recommendation ?? null);
+      setCreated(createdData);
+      setCreatedSummary({
+        tourName: selectedService?.service_name ?? "Tour",
+        visitDate,
+        partySize: adults + kids,
+        estimatedTotal: totalAmount,
+      });
+      // Seed live payment progress straight from the authoritative create response
+      // (no second fetch) so the inline Take-payment panel prefills instantly.
+      setPayState({
+        balance: Math.max(0, Number(createdData.balance_due ?? createdData.total_amount ?? totalAmount)),
+        paid: 0,
+        status: String(createdData.status || "pending_payment"),
+      });
+      setGuestName("");
+      setGuestPhone("");
+      setNotes("");
+      setPromoCode("");
       showToast({
         type: "success",
         title: `Walk-in tour ${createdData.reservation_code} created`,
-        message: "Redirecting to Payments for settlement.",
+        message: "Take payment below, then check the guest in.",
       });
-      router.push(
-        `/admin/payments?source=walkin&walkin_type=tour&reservation_id=${encodeURIComponent(createdData.reservation_id)}&amount=${encodeURIComponent(
-          String(Math.max(1, Math.round(totalAmount))),
-        )}&method=cash`,
-      );
     } catch (unknownError) {
       setSubmitError(getApiErrorMessage(unknownError, "Failed to create walk-in tour."));
     } finally {
       setSubmitBusy(false);
     }
   }
+
+  const handlePaymentRecorded = (result: WalkInPaymentResult) => {
+    setPayState((prev) => {
+      const base = prev ?? { balance: 0, paid: 0, status: String(created?.status || "pending_payment") };
+      return {
+        balance: Math.max(0, base.balance - result.amount),
+        paid: base.paid + result.amount,
+        status: result.reservationStatus || base.status,
+      };
+    });
+    showToast({
+      type: "success",
+      title: "Payment recorded",
+      message: `${toPeso(result.amount)} recorded for ${created?.reservation_code ?? "this booking"}.`,
+    });
+  };
+
+  const createdTotal = Number(created?.total_amount ?? createdSummary?.estimatedTotal ?? 0);
+  const createdBalance = Math.max(0, Number(payState?.balance ?? createdTotal));
+  const createdPaid = Number(payState?.paid ?? 0);
+  const createdPaymentState: "unpaid" | "partial" | "paid" = createdBalance <= 0 && createdTotal > 0
+    ? "paid"
+    : createdPaid > 0
+      ? "partial"
+      : "unpaid";
+  const liveStatus = String(payState?.status || created?.status || "");
+  const canCheckInNow = createdPaymentState === "paid"
+    && !["checked_in", "checked_out", "cancelled", "no_show"].includes(liveStatus);
 
   if (!token) {
     return (
@@ -272,7 +318,7 @@ export function AdminWalkInTourClient({
         <header className="mb-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-sm)]">
           <h1 className="text-3xl font-bold text-[var(--color-text)]">Walk-in Tour</h1>
           <p className="mt-1 text-sm text-[var(--color-muted)]">
-            Create on-site tour reservations, then continue to Payments to record settlement.
+            Create a same-day tour reservation, take payment, then check the guest in.
           </p>
         </header>
       ) : null}
@@ -291,19 +337,94 @@ export function AdminWalkInTourClient({
           </p>
         </div>
       ) : null}
-      {latestAiRecommendation ? (
-        <div className="mb-4 rounded-lg border border-indigo-200 bg-indigo-50 p-3 text-sm text-indigo-900">
-          <p className="font-semibold">
-            AI pricing signal: {toPeso(latestAiRecommendation.pricing_adjustment)} ({getAiSource(latestAiRecommendation)})
-          </p>
-          <p className="text-xs text-indigo-700">Confidence: {(latestAiRecommendation.confidence * 100).toFixed(0)}%</p>
-          {latestAiRecommendation.explanations.length ? (
-            <ul className="mt-1 list-disc pl-5 text-xs text-indigo-800">
-              {latestAiRecommendation.explanations.map((explanation) => (
-                <li key={explanation}>{explanation}</li>
-              ))}
-            </ul>
-          ) : null}
+      {created ? (
+        <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+          <div className="flex items-start gap-2 text-emerald-800">
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+            <div className="w-full">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-sm font-semibold">Walk-in tour created: {created.reservation_code}</p>
+                <span className="inline-flex rounded-full border border-emerald-300 bg-white px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+                  Same-day
+                </span>
+              </div>
+              <p className="text-xs text-emerald-700">Take payment below, then check the guest in.</p>
+            </div>
+          </div>
+
+          <div className="mt-3 grid gap-2 rounded-lg border border-emerald-200/80 bg-white p-3 text-xs text-[var(--color-text)] sm:grid-cols-2 lg:grid-cols-5">
+            <div>
+              <p className="font-semibold text-[var(--color-muted)]">Reservation code</p>
+              <p className="mt-0.5 text-sm font-semibold text-[var(--color-text)]">{created.reservation_code}</p>
+            </div>
+            <div>
+              <p className="font-semibold text-[var(--color-muted)]">Tour</p>
+              <p className="mt-0.5 text-sm font-semibold text-[var(--color-text)]">{createdSummary?.tourName || "-"}</p>
+            </div>
+            <div>
+              <p className="font-semibold text-[var(--color-muted)]">Visit date</p>
+              <p className="mt-0.5 text-sm font-semibold text-[var(--color-text)]">
+                {createdSummary?.visitDate ? formatDateWithYear(createdSummary.visitDate) : "-"}
+              </p>
+            </div>
+            <div>
+              <p className="font-semibold text-[var(--color-muted)]">Payment status</p>
+              <p className="mt-0.5 text-sm font-semibold text-[var(--color-text)] capitalize">{createdPaymentState}</p>
+            </div>
+            <div>
+              <p className="font-semibold text-[var(--color-muted)]">Amount due</p>
+              <p className="mt-0.5 text-sm font-semibold text-[var(--color-text)]">{toPeso(Math.max(0, createdBalance))}</p>
+            </div>
+          </div>
+
+          {createdBalance > 0 ? (
+            <WalkInPaymentPanel
+              key={createdPaid}
+              token={token}
+              reservationId={created.reservation_id}
+              reservationCode={created.reservation_code}
+              balanceDue={createdBalance}
+              walkInType="tour"
+              onRecorded={handlePaymentRecorded}
+            />
+          ) : (
+            <p className="mt-3 flex items-center gap-2 rounded-xl border border-emerald-200 bg-white px-3 py-2 text-xs font-semibold text-emerald-800">
+              <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+              Paid in full — ready to check in.
+            </p>
+          )}
+
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <Link
+              href={`/admin/check-in?mode=code&reservation_code=${encodeURIComponent(created.reservation_code)}`}
+              aria-disabled={!canCheckInNow}
+              tabIndex={canCheckInNow ? undefined : -1}
+              className={
+                canCheckInNow
+                  ? "inline-flex h-9 items-center justify-center rounded-lg border border-[var(--color-primary)] bg-[var(--color-primary)] px-3 text-xs font-semibold text-white transition hover:brightness-110"
+                  : "inline-flex h-9 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 text-xs font-semibold text-[var(--color-muted)]"
+              }
+            >
+              Check In Now
+            </Link>
+            <button
+              type="button"
+              onClick={() => {
+                setCreated(null);
+                setPayState(null);
+                setCreatedSummary(null);
+              }}
+              className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--color-border)] bg-white px-3 text-xs font-semibold text-[var(--color-text)]"
+            >
+              Create Another Walk-in
+            </button>
+            <Link
+              href={`/admin/reservations?reservation_id=${encodeURIComponent(created.reservation_id)}`}
+              className="inline-flex h-9 items-center justify-center rounded-lg border border-[var(--color-border)] bg-white px-3 text-xs font-semibold text-[var(--color-text)]"
+            >
+              View in Reservations
+            </Link>
+          </div>
         </div>
       ) : null}
 
@@ -328,15 +449,22 @@ export function AdminWalkInTourClient({
                 placeholder="Select a service"
                 options={services.map((service) => ({
                   value: service.service_id,
-                  label: `${service.service_name} (${service.start_time || "--"}-${service.end_time || "--"})`,
+                  label: `${service.service_name} (${formatTime12(service.start_time) || "--"} – ${formatTime12(service.end_time) || "--"})`,
                 }))}
               />
               {servicesLoading ? <span className="inline-flex items-center gap-1 text-xs text-[var(--color-muted)]"><Loader2 className="h-3 w-3 animate-spin" /> Loading active tours...</span> : null}
               {servicesError ? <span className="text-xs text-red-600">{servicesError}</span> : null}
             </label>
 
-            <div className="sm:col-span-2">
-              <FancyDatePicker label="Visit date" value={visitDate} onChange={setVisitDate} min={todayPlusLocalIsoDate(0)} />
+            <div className="grid gap-1 text-sm text-[var(--color-text)] sm:col-span-2">
+              <span>Visit date</span>
+              <div className="flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2">
+                <CalendarCheck className="h-4 w-4 shrink-0 text-[var(--color-secondary)]" aria-hidden="true" />
+                <span className="font-semibold">Today · {formatDateWithYear(visitDate)}</span>
+                <span className="ml-auto rounded-full bg-[color:color-mix(in_srgb,var(--color-secondary)_12%,white)] px-2 py-0.5 text-[11px] font-semibold text-[var(--color-secondary)]">
+                  Same-day walk-in
+                </span>
+              </div>
             </div>
 
             <label className="grid gap-1 text-sm text-[var(--color-text)]">
@@ -366,16 +494,6 @@ export function AdminWalkInTourClient({
                 className="rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 outline-none ring-[var(--color-secondary)]/20 transition focus:ring-2"
               />
             </label>
-          </div>
-
-          <div className="mt-3 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => setVisitDate(todayPlusLocalIsoDate(0))}
-              className="inline-flex h-8 items-center rounded-full border border-[var(--color-border)] bg-white px-3 text-xs font-semibold text-[var(--color-text)]"
-            >
-              Same-day tour
-            </button>
           </div>
         </div>
 
@@ -488,7 +606,7 @@ export function AdminWalkInTourClient({
 
           <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs text-[var(--color-muted)]">
-              After create, proceed to <Link href="/admin/payments" className="font-semibold text-[var(--color-secondary)] underline">Payments</Link> for cashier recording.
+              After create, take payment right here — or open <Link href="/admin/payments" className="font-semibold text-[var(--color-secondary)] underline">Payments</Link> for split or corrected settlements.
             </p>
             <button
               type="button"

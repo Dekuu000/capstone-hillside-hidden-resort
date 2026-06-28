@@ -1,6 +1,7 @@
-import { BedDouble, CalendarCheck, ScanLine, UserPlus } from "lucide-react";
+import { CalendarCheck, ScanLine, UserPlus } from "lucide-react";
 import type { OperationsSnapshotResponse } from "../../../packages/shared/src/types";
 import { AdminPageHeader } from "../layout/AdminPageHeader";
+import { RoomStatusBoard } from "./RoomStatusBoard";
 
 /**
  * Front Desk (staff) home: an operations cockpit for the shift. Deliberately
@@ -11,23 +12,16 @@ import { AdminPageHeader } from "../layout/AdminPageHeader";
 export function StaffOperationsDashboard({
   snapshot,
   error,
+  token = null,
 }: {
   snapshot: OperationsSnapshotResponse | null;
   error?: string | null;
+  token?: string | null;
 }) {
-  const rooms = snapshot?.rooms;
-
   const kpis = [
     { label: "Arrivals today", value: snapshot?.today_arrivals, icon: CalendarCheck },
     { label: "Ready to check in", value: snapshot?.ready_for_check_in, icon: ScanLine },
     { label: "Walk-ins today", value: snapshot?.walk_ins_today, icon: UserPlus },
-  ];
-
-  const roomStats = [
-    { label: "Cleaned", value: rooms?.cleaned, tone: "text-emerald-600" },
-    { label: "Occupied", value: rooms?.occupied, tone: "text-[var(--color-primary)]" },
-    { label: "Dirty", value: rooms?.dirty, tone: "text-amber-600" },
-    { label: "Maintenance", value: rooms?.maintenance, tone: "text-red-600" },
   ];
 
   return (
@@ -59,22 +53,7 @@ export function StaffOperationsDashboard({
         })}
       </div>
 
-      <section className="surface p-5 sm:p-6">
-        <div className="flex items-center gap-2">
-          <BedDouble className="h-4 w-4 text-[var(--color-secondary)]" />
-          <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">
-            Room status{rooms ? ` · ${rooms.total} active` : ""}
-          </h2>
-        </div>
-        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {roomStats.map((stat) => (
-            <div key={stat.label} className="rounded-2xl border border-[var(--color-border)] bg-white p-3 text-center">
-              <p className={`text-2xl font-bold ${stat.tone}`}>{stat.value ?? "--"}</p>
-              <p className="mt-1 text-xs font-semibold uppercase tracking-[0.1em] text-[var(--color-muted)]">{stat.label}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+      <RoomStatusBoard board={snapshot?.room_board ?? []} token={token} />
     </section>
   );
 }

@@ -602,6 +602,8 @@ export type ReservationCreateResponse = ReservationPaymentPolicyMetadata & {
   reservation_id: string;
   reservation_code: string;
   status: ReservationStatus;
+  total_amount?: number | null;
+  balance_due?: number | null;
   escrow_ref?: EscrowRef | null;
   ai_recommendation?: PricingRecommendation | null;
 };
@@ -712,6 +714,14 @@ export type ResortSnapshotResponse = {
   ai_demand_7d: ResortSnapshotAiDemand;
 };
 
+export type OperationsRoomItem = {
+  unit_id: string;
+  name?: string | null;
+  room_number?: string | null;
+  type?: string | null;
+  operational_status: UnitOperationalStatus;
+};
+
 export type OperationsSnapshotResponse = {
   as_of: string;
   rooms: {
@@ -721,6 +731,7 @@ export type OperationsSnapshotResponse = {
     dirty: number;
     total: number;
   };
+  room_board: OperationsRoomItem[];
   today_arrivals: number;
   ready_for_check_in: number;
   pending_payment: number;

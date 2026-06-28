@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
 import { AdminPaymentsClient } from "../../../components/admin-payments/AdminPaymentsClient";
-import { getServerAccessToken } from "../../../lib/serverAuth";
+import { getServerAccessToken, getServerAuthContext } from "../../../lib/serverAuth";
 import { fetchServerApiData } from "../../../lib/serverApi";
 import { adminPaymentsResponseSchema } from "../../../../packages/shared/src/schemas";
-import type { AdminPaymentsResponse, AdminPaymentsTab } from "../../../../packages/shared/src/types";
+import { roleAtLeast, type AdminPaymentsResponse, type AdminPaymentsTab } from "../../../../packages/shared/src/types";
 
 function normalizeTab(raw: string | undefined): AdminPaymentsTab {
   if (raw === "verified" || raw === "rejected" || raw === "all") return raw;
@@ -48,6 +48,13 @@ export default async function AdminPaymentsPage({
     redirect("/login?next=/admin/payments");
   }
 
+  // The verification inbox + payment history are a Management (Manager+) tool.
+  // Front Desk (staff) only needs to record on-site payments, so we skip the
+  // admin-gated list fetch for them and render a focused recording form — calling
+  // the list endpoint as staff would 403 and surface a misleading "access" error.
+  const auth = await getServerAuthContext(accessToken);
+  const canManage = roleAtLeast(auth?.role, "admin");
+
   const resolvedSearchParams = (await searchParams) ?? {};
   const tab = normalizeTab(
     Array.isArray(resolvedSearchParams.tab) ? resolvedSearchParams.tab[0] : resolvedSearchParams.tab,
@@ -59,7 +66,7 @@ export default async function AdminPaymentsPage({
     Array.isArray(resolvedSearchParams.page) ? resolvedSearchParams.page[0] : resolvedSearchParams.page,
   );
 
-  const initialData = await fetchInitialPayments(accessToken, tab, search, page);
+  const initialData = canManage ? await fetchInitialPayments(accessToken, tab, search, page) : null;
   return (
     <AdminPaymentsClient
       initialToken={accessToken}
@@ -67,6 +74,7 @@ export default async function AdminPaymentsPage({
       initialTab={tab}
       initialSearch={search}
       initialPage={page}
+      canManage={canManage}
     />
   );
 }

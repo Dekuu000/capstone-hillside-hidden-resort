@@ -21,11 +21,15 @@ export default async function AdminCheckInPage({
     : resolvedSearchParams.reservation_code;
   const initialMode = normalizeMode(modeParam);
   const tabletView = viewParam === "tablet";
+  // Only the mobile "Scan QR" FAB links with an explicit ?mode=scan; a plain
+  // Check-in visit (desktop sidebar) has no param, so it won't auto-start the camera.
+  const autoStartScan = modeParam === "scan";
   return (
     <AdminCheckinClient
       initialToken={accessToken}
       initialMode={initialMode}
       tabletView={tabletView}
+      autoStartScan={autoStartScan}
       initialReservationCode={typeof reservationCodeParam === "string" ? reservationCodeParam : undefined}
       role={auth?.role ?? null}
     />

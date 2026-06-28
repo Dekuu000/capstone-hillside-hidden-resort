@@ -390,6 +390,22 @@ def get_reservation_by_id(reservation_id: str) -> dict[str, Any] | None:
     return _normalize_reservation_row(rows[0]) if rows else None
 
 
+def get_reservation_amounts(reservation_id: str) -> dict[str, Any] | None:
+    """Lightweight amounts-only read (no joins) for echoing totals on the create
+    response. Far cheaper than get_reservation_by_id's nested select — used right
+    after the create RPC, which returns deposit fields but not the final total."""
+    client = get_supabase_client()
+    response = (
+        client.table("reservations")
+        .select("total_amount,amount_paid_verified,balance_due")
+        .eq("reservation_id", reservation_id)
+        .limit(1)
+        .execute()
+    )
+    rows = response.data or []
+    return rows[0] if rows else None
+
+
 def get_reservation_by_code(reservation_code: str) -> dict[str, Any] | None:
     client = get_supabase_client()
     response = (
@@ -800,10 +816,14 @@ def get_reservation_quick_stats(*, today: str) -> dict[str, int]:
     row to the browser to be counted client-side. The four counts mirror the
     derivations in the frontend (lib/reservationView + AdminReservationsClient):
 
-    - today_arrivals     : every reservation arriving today (any status)
-    - pending_payment    : active reservations still needing a payment action
+    - today_arrivals     : reservations arriving today that are still live
+                           (excludes cancelled / no_show / checked_out — those
+                           aren't real arrivals)
+    - pending_payment    : active reservations still owing money (status
+                           pending_payment/for_verification OR any balance_due);
+                           surfaced in the UI as the "Awaiting payment" tile
     - walk_ins_today     : walk-in source arriving today OR created today
-    - ready_for_check_in : today's arrivals that are confirmed-ish and settled
+    - ready_for_check_in : today's confirmed arrivals (deposit paid) yet to check in
     """
     client = get_supabase_client()
 
@@ -813,7 +833,6 @@ def get_reservation_quick_stats(*, today: str) -> dict[str, int]:
         raise _runtime_error_from_exception(exc) from exc
 
     excluded_statuses = ["cancelled", "checked_out", "no_show"]
-    ready_statuses = ["confirmed", "for_verification", "pending_payment"]
 
     def _count(label: str, build) -> int:
         response = _timed_execute(label, lambda: build().limit(1).execute())
@@ -824,7 +843,8 @@ def get_reservation_quick_stats(*, today: str) -> dict[str, int]:
             "db.reservations.stats.today_arrivals",
             lambda: client.table("reservations")
             .select("reservation_id", count="exact")
-            .eq("check_in_date", today),
+            .eq("check_in_date", today)
+            .not_.in_("status", excluded_statuses),
         )
         pending_payment = _count(
             "db.reservations.stats.pending_payment",
@@ -842,11 +862,14 @@ def get_reservation_quick_stats(*, today: str) -> dict[str, int]:
         )
         ready_for_check_in = _count(
             "db.reservations.stats.ready_for_check_in",
+            # "confirmed" means the deposit was verified; the balance is collected
+            # at the desk during check-in, so a remaining balance_due must NOT
+            # exclude a guest here. This is the live count of today's arrivals
+            # still to be checked in (drops off as staff process each one).
             lambda: client.table("reservations")
             .select("reservation_id", count="exact")
             .eq("check_in_date", today)
-            .in_("status", ready_statuses)
-            .lte("balance_due", 0)
+            .eq("status", "confirmed")
             .gt("total_amount", 0),
         )
     except Exception as exc:  # noqa: BLE001
@@ -3848,26 +3871,49 @@ def notify_ops_new_service_request(row: dict[str, Any] | None) -> None:
         return
 
 
-def notify_ops_payment_received(*, reservation: dict[str, Any] | None, amount: float | None = None) -> None:
-    """Tell managers a guest paid online (deposit received → booking confirmed).
-    Managers + System Admin only; Front Desk doesn't handle payments."""
+def notify_ops_payment_received(
+    *,
+    reservation: dict[str, Any] | None,
+    amount: float | None = None,
+    channel: str = "online",
+    method: str | None = None,
+    payment_ref: str | None = None,
+) -> None:
+    """Tell managers a payment came in. Managers + System Admin only.
+    - channel="online": guest paid the deposit online (PayMongo webhook).
+    - channel="on_site": Front Desk recorded a cash/desk payment — a walk-in's
+      payment or a guest settling their balance at the counter. `method` is the
+      tender (cash/gcash/bank/card) and `payment_ref` keys the dedupe so a booking
+      that takes several on-site payments notifies for each one."""
     try:
         if not isinstance(reservation, dict):
             return
         code = reservation.get("reservation_code") or "A reservation"
         reservation_id = str(reservation.get("reservation_id") or "")
-        amount_str = f" (₱{amount:,.0f})" if amount and amount > 0 else ""
+        amount_paren = f" (₱{amount:,.0f})" if amount and amount > 0 else ""
+        status = str(reservation.get("status") or "").lower()
+        if channel == "on_site":
+            method_labels = {"cash": "cash", "gcash": "GCash", "bank": "bank transfer", "card": "card"}
+            method_str = method_labels.get(str(method or "").lower(), "on-site")
+            tail = "the booking is now confirmed." if status == "confirmed" else "balance updated."
+            body = f"{code} paid{amount_paren} on-site ({method_str}) — {tail}"
+            event_type = "ops.payment_received_onsite"
+            dedupe = f"ops.payment_received_onsite:{reservation_id}:{payment_ref or amount}"
+        else:
+            body = f"{code} paid the deposit online{amount_paren} — the booking is now confirmed."
+            event_type = "ops.payment_received"
+            dedupe = f"ops.payment_received:{reservation_id}"
         emit_notification_to_roles(
             min_role="admin",
             category="payment",
-            event_type="ops.payment_received",
+            event_type=event_type,
             title="Payment received",
-            body=f"{code} paid the deposit online{amount_str} — the booking is now confirmed.",
+            body=body,
             severity="success",
             entity_type="reservation",
             entity_id=reservation_id,
             link="/admin/payments",
-            dedupe_prefix=f"ops.payment_received:{reservation_id}",
+            dedupe_prefix=dedupe,
         )
     except Exception:  # noqa: BLE001 - best-effort
         return

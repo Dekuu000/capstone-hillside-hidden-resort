@@ -99,7 +99,13 @@ function matchesStatQuickFilter(
     && (reservation.check_in_date === today || createdDate === today);
 
   if (statFilter === "none") return true;
-  if (statFilter === "today_arrivals") return reservation.check_in_date === today;
+  if (statFilter === "today_arrivals") {
+    // Mirror the server tile: real arrivals only — drop cancelled/no-show/checked-out.
+    return (
+      reservation.check_in_date === today
+      && !["cancelled", "no_show", "checked_out"].includes(reservation.status)
+    );
+  }
   if (statFilter === "pending_payment") {
     return needsActivePaymentAction(reservation);
   }
@@ -498,7 +504,7 @@ export function AdminReservationsClient({
 
   const statQuickFilterLabel = useMemo(() => {
     if (statQuickFilter === "today_arrivals") return "Today arrivals";
-    if (statQuickFilter === "pending_payment") return "Pending payment";
+    if (statQuickFilter === "pending_payment") return "Awaiting payment";
     if (statQuickFilter === "walk_ins_today") return "Walk-ins today";
     if (statQuickFilter === "ready_for_checkin") return "Ready for check-in";
     return null;
@@ -534,7 +540,7 @@ export function AdminReservationsClient({
         <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
           {[
             { id: "today_arrivals" as StatQuickFilter, label: "Today arrivals", value: quickStats.todayArrivals, icon: CalendarCheck, tone: "teal" as const },
-            { id: "pending_payment" as StatQuickFilter, label: "Pending payment", value: quickStats.pendingPayment, icon: CreditCard, tone: "amber" as const },
+            { id: "pending_payment" as StatQuickFilter, label: "Awaiting payment", value: quickStats.pendingPayment, icon: CreditCard, tone: "amber" as const },
             { id: "walk_ins_today" as StatQuickFilter, label: "Walk-ins today", value: quickStats.walkInsToday, icon: UserPlus, tone: "primary" as const },
             { id: "ready_for_checkin" as StatQuickFilter, label: "Ready for check-in", value: quickStats.readyForCheckIn, icon: ScanLine, tone: "emerald" as const },
           ].map((card) => {

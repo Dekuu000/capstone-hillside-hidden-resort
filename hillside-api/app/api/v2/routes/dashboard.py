@@ -20,6 +20,7 @@ from app.observability.perf_metrics import perf_metrics
 from app.schemas.common import (
     DashboardSummaryResponse,
     OperationsRoomCounts,
+    OperationsRoomItem,
     OperationsSnapshotResponse,
     ResortSnapshotResponse,
 )
@@ -269,13 +270,25 @@ def get_operations_snapshot(
     review, and room housekeeping status."""
     today = datetime.now(timezone(timedelta(hours=8))).date().isoformat()
     try:
-        _, total = list_units_admin(limit=1, offset=0, is_active=True)
-        counts: dict[str, int] = {}
-        for room_status in ("cleaned", "occupied", "maintenance", "dirty"):
-            _, count = list_units_admin(
-                limit=1, offset=0, is_active=True, operational_status=room_status
+        # One query for all active units, then derive both the counts and the
+        # housekeeping board from the rows (cheaper than 5 separate counts).
+        units, total = list_units_admin(limit=200, offset=0, is_active=True)
+        counts: dict[str, int] = {s: 0 for s in ("cleaned", "occupied", "maintenance", "dirty")}
+        board: list[OperationsRoomItem] = []
+        for unit in units:
+            op_status = str(unit.get("operational_status") or "cleaned").lower()
+            if op_status not in counts:
+                op_status = "cleaned"
+            counts[op_status] += 1
+            board.append(
+                OperationsRoomItem(
+                    unit_id=str(unit.get("unit_id") or ""),
+                    name=unit.get("name"),
+                    room_number=unit.get("room_number"),
+                    type=unit.get("type"),
+                    operational_status=op_status,
+                )
             )
-            counts[room_status] = count
         stats = get_reservation_quick_stats(today=today)
     except RuntimeError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
@@ -283,6 +296,7 @@ def get_operations_snapshot(
     return OperationsSnapshotResponse(
         as_of=datetime.now(timezone.utc),
         rooms=OperationsRoomCounts(total=total, **counts),
+        room_board=board,
         today_arrivals=stats.get("today_arrivals", 0),
         ready_for_check_in=stats.get("ready_for_check_in", 0),
         pending_payment=stats.get("pending_payment", 0),
