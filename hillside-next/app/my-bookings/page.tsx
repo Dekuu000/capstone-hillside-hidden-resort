@@ -37,12 +37,11 @@ async function fetchStayDashboard(accessToken: string): Promise<StayDashboardRes
 export default async function MyBookingsPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ tab?: string; focus?: string; pay?: string }>;
+  searchParams?: Promise<{ tab?: string; focus?: string }>;
 }) {
   const resolvedSearchParams = (await searchParams) ?? {};
   const initialTab = normalizeTab(resolvedSearchParams.tab);
   const initialFocusReservationId = (resolvedSearchParams.focus || "").trim() || null;
-  const initialAutoOpenPay = resolvedSearchParams.pay === "1";
   const accessToken = await getServerAccessToken();
   if (!accessToken) {
     redirect("/login?next=/my-bookings");
@@ -81,7 +80,6 @@ export default async function MyBookingsPage({
         initialTab={initialTab}
         initialData={null}
         initialFocusReservationId={initialFocusReservationId}
-        initialAutoOpenPay={initialAutoOpenPay}
         staySnapshot={staySnapshot}
       />
     </GuestShell>

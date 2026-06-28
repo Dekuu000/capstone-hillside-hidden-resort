@@ -1,16 +1,15 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
-import { Bell, Calendar, CircleCheck, CircleX, Clock, CreditCard, Eye, Loader2, MapPin, QrCode, Star, Upload } from "lucide-react";
+import { Bell, Calendar, CircleCheck, CircleX, Clock, CreditCard, Eye, Loader2, MapPin, QrCode, Star } from "lucide-react";
 import type {
   MyBookingsCursor as Cursor,
   MyBookingsResponse as BookingsResponse,
   MyBookingsTab as TabKey,
   MyReviewsResponse,
-  PaymentSubmissionResponse,
   QrToken,
   ReservationListItem as Booking,
   ReservationCancelResponse,
@@ -18,7 +17,6 @@ import type {
 } from "../../../packages/shared/src/types";
 import { computeStayDepositPreview } from "../../../packages/shared/src/types";
 import {
-  paymentSubmissionResponseSchema,
   myBookingsResponseSchema,
   myReviewsResponseSchema,
   qrTokenSchema,
@@ -31,14 +29,10 @@ import { getApiErrorMessage } from "../../lib/apiError";
 import { formatCachedAt, formatDateWithWeekday, formatLocalDateTime } from "../../lib/dateDisplay";
 import { formatPhpPeso as formatPeso } from "../../lib/formatCurrency";
 import { getUnitLabel } from "../../lib/unitLabel";
-import { parseJwtSub } from "../../lib/jwt";
 import { loadLastIssuedQrToken, saveLastIssuedQrToken } from "../../lib/guestQrTokenCache";
 import { useNetworkOnline } from "../../lib/hooks/useNetworkOnline";
-import { syncAwareMutation } from "../../lib/offlineSync/mutation";
-import { queuePaymentSubmissionWithFile } from "../../lib/offlineSync/paymentSubmission";
 import { loadBookingsSnapshot, saveBookingsSnapshot } from "../../lib/offlineSync/store";
 import { getReservationStatusMeta } from "../../lib/reservationStatus";
-import { getSupabaseBrowserClient } from "../../lib/supabase";
 import { compactQrTokenPayload } from "../../lib/qrPayload";
 import { BookingStatusTabs } from "../guest/BookingStatusTabs";
 import { GuestEmptyState } from "../guest/GuestEmptyState";
@@ -46,7 +40,6 @@ import { GuestPageIntro } from "../guest/GuestPageIntro";
 import { StaySnapshotCard } from "../guest/StaySnapshotCard";
 import { GuestSearchBar } from "../guest/GuestSearchBar";
 import { ImageLightbox } from "../shared/ImageLightbox";
-import { GcashPaymentGuide } from "../shared/GcashPaymentGuide";
 import { ModalDialog } from "../shared/ModalDialog";
 import { SyncAlertBanner } from "../shared/SyncAlertBanner";
 import { DepositPolicyDialog } from "../booking/DepositPolicyDialog";
@@ -66,7 +59,6 @@ type MyBookingsClientProps = {
   initialTab?: TabKey;
   initialData?: BookingsResponse | null;
   initialFocusReservationId?: string | null;
-  initialAutoOpenPay?: boolean;
   staySnapshot?: StaySnapshot | null;
 };
 
@@ -240,7 +232,6 @@ export function MyBookingsClient({
   initialTab = "upcoming",
   initialData = null,
   initialFocusReservationId = null,
-  initialAutoOpenPay = false,
   staySnapshot = null,
 }: MyBookingsClientProps) {
   const router = useRouter();
@@ -265,16 +256,6 @@ export function MyBookingsClient({
   const [details, setDetails] = useState<Booking | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [detailsError, setDetailsError] = useState<string | null>(null);
-
-  const [submitFor, setSubmitFor] = useState<Booking | null>(null);
-  const [submitAmount, setSubmitAmount] = useState("");
-  const [submitReferenceNo, setSubmitReferenceNo] = useState("");
-  const [submitProofMode, setSubmitProofMode] = useState<"file" | "url">("file");
-  const [submitProofFile, setSubmitProofFile] = useState<File | null>(null);
-  const [submitProofUrl, setSubmitProofUrl] = useState("");
-  const [submitBusy, setSubmitBusy] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [submitProgress, setSubmitProgress] = useState<string | null>(null);
 
   const [cancelFor, setCancelFor] = useState<Booking | null>(null);
   const [cancelBusy, setCancelBusy] = useState(false);
@@ -326,28 +307,10 @@ export function MyBookingsClient({
   const [detailGalleryIndex, setDetailGalleryIndex] = useState(0);
   const [detailGalleryOpen, setDetailGalleryOpen] = useState(false);
   const [detailLightboxOpen, setDetailLightboxOpen] = useState(false);
-  const submitProofInputId = useId();
 
   const pushActionMessage = useCallback((message: string, withSyncCta = false) => {
     setActionMessage(message);
     setActionHasSyncCta(withSyncCta);
-  }, []);
-
-  const openPaymentSubmissionForBooking = useCallback((booking: Booking) => {
-    setSubmitFor(booking);
-    const bookingTotal = Number(booking.total_amount ?? 0);
-    const bookingPaid = Number(booking.amount_paid_verified ?? 0);
-    const remaining = Math.max(0, bookingTotal - bookingPaid);
-    const depositRequired = Number(booking.deposit_required ?? 0);
-    const expected = Number(booking.expected_pay_now ?? 0);
-    const suggestedAmount = depositRequired > 0 && expected > 0 ? expected : remaining;
-    setSubmitAmount(String(suggestedAmount));
-    setSubmitReferenceNo("");
-    setSubmitProofMode("file");
-    setSubmitProofFile(null);
-    setSubmitProofUrl("");
-    setSubmitError(null);
-    setSubmitProgress(null);
   }, []);
 
   useEffect(() => {
@@ -355,31 +318,20 @@ export function MyBookingsClient({
     return () => window.clearTimeout(timeout);
   }, [searchInput]);
 
-  useEffect(() => {
-    if (!submitFor) return;
-    router.prefetch("/my-bookings?tab=upcoming");
-  }, [router, submitFor]);
-
-
+  // Scroll a focused booking card into view (e.g. arriving from a deep link).
   useEffect(() => {
     if (autoOpenPayHandledRef.current) return;
-    if (!initialAutoOpenPay || !initialFocusReservationId) return;
-    if (tab !== "pending_payment") return;
-
+    if (!initialFocusReservationId) return;
     const targetBooking = items.find((booking) => booking.reservation_id === initialFocusReservationId);
     if (!targetBooking) return;
-
     autoOpenPayHandledRef.current = true;
-    if (targetBooking.status === "pending_payment") {
-      openPaymentSubmissionForBooking(targetBooking);
-    }
     const cardElement = document.getElementById(`booking-card-${targetBooking.reservation_id}`);
     if (cardElement) {
       window.setTimeout(() => {
         cardElement.scrollIntoView({ behavior: "smooth", block: "center" });
       }, 120);
     }
-  }, [initialAutoOpenPay, initialFocusReservationId, items, openPaymentSubmissionForBooking, tab]);
+  }, [initialFocusReservationId, items]);
 
   const fetchBookings = useCallback(
     async (cursor: Cursor | null, mode: "replace" | "append", opts: { silent?: boolean } = {}) => {
@@ -501,181 +453,6 @@ export function MyBookingsClient({
       }
     },
     [token],
-  );
-
-  const uploadProofIfNeeded = useCallback(
-    async (reservationId: string): Promise<string | null> => {
-      if (submitProofMode === "url") {
-        return submitProofUrl.trim() || null;
-      }
-
-      if (!submitProofFile) return null;
-
-      const userId = parseJwtSub(token);
-      if (!userId) {
-        throw new Error("Unable to identify current user for proof upload.");
-      }
-
-      const ext = submitProofFile.name.split(".").pop()?.toLowerCase() || "jpg";
-      const storagePath = `payments/${userId}/${reservationId}-${crypto.randomUUID()}.${ext}`;
-      const supabase = getSupabaseBrowserClient();
-
-      const { error } = await supabase.storage
-        .from("payment-proofs")
-        .upload(storagePath, submitProofFile, { upsert: false });
-      if (error) {
-        throw error;
-      }
-
-      return storagePath;
-    },
-    [submitProofFile, submitProofMode, submitProofUrl, token],
-  );
-
-  const submitPayment = useCallback(
-    async (event: FormEvent) => {
-      event.preventDefault();
-      if (!token || !submitFor) return;
-
-      const amount = Number(submitAmount);
-      if (!Number.isFinite(amount) || amount <= 0) {
-        setSubmitError("Amount must be greater than zero.");
-        return;
-      }
-      const totalAmount = Number(submitFor.total_amount ?? 0);
-      const amountPaid = Number(submitFor.amount_paid_verified ?? 0);
-      const remainingAmount = Math.max(0, totalAmount - amountPaid);
-      const depositRequired = Number(submitFor.deposit_required ?? 0);
-      const expectedPayNow = Number(submitFor.expected_pay_now ?? 0);
-      const requiresDepositFlow = depositRequired > 0;
-      const hasProofUrl = submitProofMode === "url" && Boolean(submitProofUrl.trim());
-      const hasProofFile = submitProofMode === "file" && Boolean(submitProofFile);
-
-      if (submitProofMode === "url" && !hasProofUrl) {
-        setSubmitError("Proof URL is required.");
-        return;
-      }
-      if (submitProofMode === "file" && !hasProofFile) {
-        setSubmitError("Payment proof file is required.");
-        return;
-      }
-      if (!requiresDepositFlow && remainingAmount > 0 && amount !== remainingAmount) {
-        setSubmitError(`This booking requires full payment. Please submit ${formatPeso(remainingAmount)}.`);
-        return;
-      }
-
-      setSubmitBusy(true);
-      setSubmitError(null);
-      setSubmitProgress("Preparing payment submission...");
-
-      try {
-        const paymentType = requiresDepositFlow
-          ? (amount >= totalAmount ? "full" : "deposit")
-          : "full";
-        if (submitProofMode === "file" && submitProofFile && typeof navigator !== "undefined" && !navigator.onLine) {
-          setSubmitProgress("Saving proof for offline sync...");
-          const userId = parseJwtSub(token);
-          if (!userId) {
-            throw new Error("Unable to identify current user for offline proof queue.");
-          }
-          await queuePaymentSubmissionWithFile({
-            userId,
-            reservationId: submitFor.reservation_id,
-            amount,
-            paymentType,
-            method: "gcash",
-            referenceNo: submitReferenceNo,
-            file: submitProofFile,
-          });
-          pushActionMessage("Payment proof saved offline and queued for sync.", true);
-          setSubmitFor(null);
-          setSubmitAmount("");
-          setSubmitReferenceNo("");
-          setSubmitProofMode("file");
-          setSubmitProofFile(null);
-          setSubmitProofUrl("");
-          setSubmitProgress("Opening your updated booking...");
-          setTab("upcoming");
-          router.replace("/my-bookings?tab=upcoming");
-          return;
-        }
-
-        setSubmitProgress("Preparing payment record...");
-        await apiFetch(
-          "/v2/payments/intent",
-          {
-            method: "POST",
-            body: JSON.stringify({
-              reservation_id: submitFor.reservation_id,
-              amount,
-            }),
-          },
-          token,
-        );
-
-        setSubmitProgress(submitProofMode === "file" ? "Uploading payment proof..." : "Checking proof link...");
-        const proofPath = await uploadProofIfNeeded(submitFor.reservation_id);
-        setSubmitProgress("Sending proof to admin...");
-        const payload = {
-          reservation_id: submitFor.reservation_id,
-          amount,
-          payment_type: paymentType,
-          method: "gcash",
-          reference_no: submitReferenceNo.trim() || null,
-          proof_url: proofPath,
-          idempotency_key: crypto.randomUUID(),
-        };
-        const outcome = await syncAwareMutation<typeof payload, PaymentSubmissionResponse>({
-          path: "/v2/payments/submissions",
-          method: "POST",
-          payload,
-          parser: paymentSubmissionResponseSchema,
-          accessToken: token,
-          entityType: "payment_submission",
-          action: "payments.submissions.create",
-        });
-
-        pushActionMessage(
-          outcome.mode === "queued"
-            ? "Payment saved offline and queued for verification sync."
-            : "Payment submitted for verification.",
-          outcome.mode === "queued",
-        );
-        setSubmitFor(null);
-        setSubmitAmount("");
-        setSubmitReferenceNo("");
-        setSubmitProofMode("file");
-        setSubmitProofFile(null);
-        setSubmitProofUrl("");
-        setSubmitProgress("Opening your updated booking...");
-        setTab("upcoming");
-        router.replace("/my-bookings?tab=upcoming");
-      } catch (unknownError) {
-        const message = getApiErrorMessage(unknownError, "Failed to submit payment.");
-        if (message.toLowerCase().includes("deposit is not required")) {
-          setSubmitError(
-            `This booking requires full payment. Update amount to ${formatPeso(Math.max(0, Number(submitFor.total_amount ?? 0) - Number(submitFor.amount_paid_verified ?? 0)))} and submit again.`,
-          );
-        } else {
-          setSubmitError(message);
-        }
-      } finally {
-        setSubmitBusy(false);
-        setSubmitProgress(null);
-      }
-    },
-    [
-      router,
-      submitAmount,
-      submitFor,
-      submitProofFile,
-      submitProofMode,
-      submitProofUrl,
-      submitReferenceNo,
-      token,
-      uploadProofIfNeeded,
-      pushActionMessage,
-    ],
   );
 
   const confirmCancel = useCallback(async () => {
@@ -845,17 +622,6 @@ export function MyBookingsClient({
     const timer = window.setInterval(update, 1000);
     return () => window.clearInterval(timer);
   }, [qrToken?.expires_at]);
-
-  const closeSubmitModal = useCallback(() => {
-    setSubmitFor(null);
-    setSubmitAmount("");
-    setSubmitReferenceNo("");
-    setSubmitProofMode("file");
-    setSubmitProofFile(null);
-    setSubmitProofUrl("");
-    setSubmitError(null);
-    setSubmitProgress(null);
-  }, []);
 
   const canLoadMore = Boolean(nextCursor) && !loadingMore;
   const detailUnits = details?.units ?? [];
@@ -1449,196 +1215,6 @@ export function MyBookingsClient({
             );
           })()
         : null}
-
-      {submitFor ? (
-        <ModalDialog
-          titleId="payment-proof-title"
-          title="Submit payment proof"
-          zIndexClass="z-[70]"
-          maxWidthClass="md:max-w-xl"
-          panelClassName="max-h-[calc(100dvh-0.75rem)] border-[var(--color-border)] bg-white pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
-          onClose={() => {
-            if (!submitBusy) closeSubmitModal();
-          }}
-        >
-            <p className="mb-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] p-3 text-xs text-[var(--color-muted)]">
-              Next step after submit: payment status changes to <strong>For verification</strong> while admin reviews your proof. You will be returned to the <strong>Upcoming</strong> tab.
-            </p>
-            <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-medium leading-relaxed text-amber-800">
-              Minimum deposit is required first. Guest-initiated cancellation forfeits this minimum deposit.
-            </p>
-            <div className="mb-3 rounded-xl border border-[var(--color-border)] bg-white p-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">Payment summary</p>
-              <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
-                <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2">
-                  <p className="text-xs text-[var(--color-muted)]">Total amount</p>
-                  <p className="font-semibold text-[var(--color-text)]">{formatPeso(Number(submitFor.total_amount ?? 0))}</p>
-                </div>
-                <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2">
-                  <p className="text-xs text-[var(--color-muted)]">Amount paid</p>
-                  <p className="font-semibold text-emerald-700">{formatPeso(Number(submitFor.amount_paid_verified ?? 0))}</p>
-                </div>
-                <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2">
-                  <p className="text-xs text-[var(--color-muted)]">Remaining balance</p>
-                  <p className="font-semibold text-orange-700">
-                    {formatPeso(Math.max(0, Number(submitFor.total_amount ?? 0) - Number(submitFor.amount_paid_verified ?? 0)))}
-                  </p>
-                </div>
-                <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2">
-                  <p className="text-xs text-[var(--color-muted)]">Minimum due now</p>
-                  <p className="font-semibold text-[var(--color-text)]">
-                    {formatPeso(Number(submitFor.expected_pay_now ?? submitFor.deposit_required ?? 0))}
-                  </p>
-                </div>
-              </div>
-            </div>
-            <form className="grid gap-3" onSubmit={submitPayment}>
-              <label className="guest-form-label">
-                Amount
-                <input
-                  type="number"
-                  min={1}
-                  value={submitAmount ?? ""}
-                  onChange={(event) => setSubmitAmount(event.target.value)}
-                  required
-                  className="guest-field-control"
-                />
-              </label>
-              <p className="guest-surface-soft px-3 py-2 text-xs text-[var(--color-muted)]">
-                Minimum payment now:{" "}
-                <strong className="text-[var(--color-text)]">
-                  {formatPeso(
-                    Number(submitFor.expected_pay_now ?? submitFor.deposit_required ?? 0),
-                  )}
-                </strong>
-                {submitFor.deposit_rule_applied ? (
-                  <span className="ml-1 text-[var(--color-muted)]">({submitFor.deposit_rule_applied})</span>
-                ) : null}
-              </p>
-              <label className="guest-form-label">
-                Reference number
-                <input
-                  type="text"
-                  value={submitReferenceNo ?? ""}
-                  onChange={(event) => setSubmitReferenceNo(event.target.value)}
-                  placeholder="Reference number (optional)"
-                  className="guest-field-control"
-                />
-              </label>
-
-              <GcashPaymentGuide compact onCopyMessage={(message) => pushActionMessage(message)} />
-
-              <div className="grid gap-2">
-                <p className="text-sm text-[var(--color-text)]">Payment proof</p>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setSubmitProofMode("file")}
-                    className="guest-toggle-pill"
-                    data-active={submitProofMode === "file"}
-                  >
-                    Upload file
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSubmitProofMode("url")}
-                    className="guest-toggle-pill"
-                    data-active={submitProofMode === "url"}
-                  >
-                    Proof URL
-                  </button>
-                </div>
-
-                {submitProofMode === "file" ? (
-                  <div className="grid gap-2">
-                    <label
-                      htmlFor={submitProofInputId}
-                      className="group inline-flex min-h-14 w-full cursor-pointer items-center justify-between gap-3 rounded-2xl border border-[var(--color-border)] bg-white px-4 py-3 transition hover:border-[var(--color-secondary)] hover:bg-[color:color-mix(in_srgb,var(--color-secondary)_12%,white)]/20"
-                    >
-                      <span className="min-w-0 text-sm font-semibold text-[var(--color-text)] transition group-hover:text-[var(--color-secondary)]">
-                        <span className="block truncate">{submitProofFile ? "Change payment proof" : "Upload payment proof"}</span>
-                        <span className="block text-xs font-medium text-[var(--color-muted)] transition group-hover:text-[var(--color-muted)]">
-                          JPG, PNG, or PDF
-                        </span>
-                      </span>
-                      <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-muted)] transition group-hover:border-[var(--color-secondary)] group-hover:bg-[color:color-mix(in_srgb,var(--color-secondary)_12%,white)] group-hover:text-[var(--color-secondary)]">
-                        <Upload className="h-4 w-4" />
-                      </span>
-                    </label>
-                    <input
-                      id={submitProofInputId}
-                      type="file"
-                      accept="image/*,.pdf"
-                      onChange={(event) => setSubmitProofFile(event.target.files?.[0] ?? null)}
-                      className="sr-only"
-                    />
-                    {submitProofFile ? (
-                      <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
-                        <span className="inline-flex min-w-0 items-center gap-2">
-                          <CircleCheck className="h-4 w-4 shrink-0" />
-                          <span className="truncate font-medium">{submitProofFile.name}</span>
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSubmitProofFile(null);
-                            const input = document.getElementById(submitProofInputId) as HTMLInputElement | null;
-                            if (input) input.value = "";
-                          }}
-                          className="inline-flex items-center gap-1 rounded-lg px-2 py-1 font-semibold text-emerald-800 transition hover:bg-emerald-100"
-                        >
-                          <CircleX className="h-3.5 w-3.5" />
-                          Remove
-                        </button>
-                      </div>
-                    ) : (
-                      <p className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-xs text-[var(--color-muted)]">
-                        No file chosen
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <input
-                    type="url"
-                    value={submitProofUrl ?? ""}
-                    onChange={(event) => setSubmitProofUrl(event.target.value)}
-                    placeholder="https://..."
-                    required={submitProofMode === "url"}
-                    className="guest-field-control"
-                  />
-                )}
-              </div>
-              {submitBusy ? (
-                <div
-                  className="flex items-center gap-3 rounded-2xl border border-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)] bg-[color:color-mix(in_srgb,var(--color-secondary)_12%,white)] px-4 py-3 text-sm font-semibold text-[var(--color-secondary)]"
-                  role="status"
-                  aria-live="polite"
-                >
-                  <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden="true" />
-                  <span>{submitProgress ?? "Submitting payment proof..."}</span>
-                </div>
-              ) : null}
-              {submitError ? <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">{submitError}</p> : null}
-              <div className="sticky bottom-0 mt-1 flex justify-end gap-2 border-t border-[var(--color-border)] bg-white/95 pt-3 backdrop-blur">
-                <button
-                  type="button"
-                  onClick={closeSubmitModal}
-                  className="guest-secondary-cta min-h-10 px-3 text-sm"
-                  disabled={submitBusy}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="guest-primary-cta min-h-10 px-3 text-sm"
-                  disabled={submitBusy}
-                >
-                  {submitBusy ? "Submitting..." : "Submit"}
-                </button>
-              </div>
-            </form>
-        </ModalDialog>
-      ) : null}
 
       {qrFor ? (
         <ModalDialog
