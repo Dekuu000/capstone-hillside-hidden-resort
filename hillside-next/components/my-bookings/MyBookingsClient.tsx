@@ -742,37 +742,22 @@ export function MyBookingsClient({
               nextStayDate={staySnapshot.nextStayDate}
               outstandingBalance={staySnapshot.outstandingBalance}
               qrStatus={staySnapshot.qrStatus}
+              stayChargesTotal={
+                activeFolio && activeFolio.addons.length > 0 ? formatPeso(activeFolio.grand_total_due) : null
+              }
+              stayChargeLines={
+                activeFolio
+                  ? activeFolio.addons.map((line) => ({
+                      id: line.request_id,
+                      label: line.quantity > 1 ? `${line.service_name} ×${line.quantity}` : line.service_name,
+                      amount: formatPeso(line.line_total),
+                    }))
+                  : []
+              }
             />
           ) : undefined
         }
       />
-
-      {activeFolio && activeFolio.addons.length > 0 ? (
-        <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4" aria-label="Stay charges">
-          <div className="flex items-center justify-between gap-2">
-            <h2 className="text-sm font-semibold text-[var(--color-text)]">Your stay charges</h2>
-            <span className="rounded-full bg-[color:color-mix(in_srgb,var(--color-secondary)_14%,white)] px-2.5 py-0.5 text-[11px] font-semibold text-[var(--color-secondary)]">In progress</span>
-          </div>
-          <p className="mt-0.5 text-xs text-[var(--color-muted)]">
-            Services you requested during your stay. These are added to your bill and settled at check-out.
-          </p>
-          <ul className="mt-3 space-y-1.5 text-sm">
-            {activeFolio.addons.map((line) => (
-              <li key={line.request_id} className="flex items-center justify-between gap-2">
-                <span className="min-w-0 truncate text-[var(--color-text)]">
-                  {line.service_name}
-                  {line.quantity > 1 ? <span className="text-[var(--color-muted)]"> ×{line.quantity}</span> : null}
-                </span>
-                <span className="shrink-0 font-medium text-[var(--color-text)]">{formatPeso(line.line_total)}</span>
-              </li>
-            ))}
-          </ul>
-          <div className="mt-2 flex items-center justify-between border-t border-[var(--color-border)] pt-2">
-            <span className="text-[13px] font-semibold text-[var(--color-text)]">Total to settle at check-out</span>
-            <span className="text-lg font-bold text-[var(--color-primary)]">{formatPeso(activeFolio.grand_total_due)}</span>
-          </div>
-        </section>
-      ) : null}
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Link
