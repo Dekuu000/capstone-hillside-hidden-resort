@@ -61,6 +61,8 @@ type Props = {
   tabletView?: boolean;
   initialReservationCode?: string;
   role?: string | null;
+  /** Opened via the mobile "Scan QR" FAB (?mode=scan) — auto-start the camera. */
+  autoStartScan?: boolean;
 };
 type Mode = ScanMode;
 type Outcome = "ready" | "scanning" | "valid" | "invalid" | "queued";
@@ -349,6 +351,7 @@ export function AdminCheckinClient({
   tabletView = false,
   initialReservationCode = "",
   role = null,
+  autoStartScan = false,
 }: Props) {
   const token = initialToken;
   // The offline Queue is a technical/sync surface — System Admin only. Staff and
@@ -361,6 +364,7 @@ export function AdminCheckinClient({
   const resultCardRef = useRef<HTMLElement | null>(null);
   const primaryActionRef = useRef<HTMLButtonElement | null>(null);
   const preloadBusyRef = useRef(false);
+  const autoStartHandledRef = useRef(false);
 
   const [mode, setMode] = useState<Mode>(initialMode === "queue" && !canSeeQueue ? "scan" : initialMode);
   const [outcome, setOutcome] = useState<Outcome>("ready");
@@ -876,6 +880,17 @@ export function AdminCheckinClient({
     if (scanActive) await stopCamera();
     else if (!scanLoading) await startCamera();
   }, [scanActive, scanLoading, startCamera, stopCamera]);
+
+  // Opened via the mobile "Scan QR" FAB (?mode=scan) -> jump straight into a live
+  // scan instead of making staff tap "Start camera". Runs once on mount; a manual
+  // Stop stays stopped, and a blocked/denied camera falls back to the error UI.
+  useEffect(() => {
+    if (!autoStartScan || autoStartHandledRef.current) return;
+    if (mode !== "scan" || scanActive || scanLoading) return;
+    autoStartHandledRef.current = true;
+    void startCamera();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoStartScan]);
 
   const switchCamera = useCallback(async () => {
     if (cameras.length < 2 || !scanActive) return;
