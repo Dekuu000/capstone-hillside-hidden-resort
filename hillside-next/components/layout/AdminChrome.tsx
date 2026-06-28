@@ -141,7 +141,20 @@ export function AdminChrome({ children, initialName = null, initialEmail = null,
     [mobileConfig, role, pathname],
   );
   const mobileFab = useMemo(
-    () => (mobileConfig.fab ? { ...mobileConfig.fab, active: pathname.startsWith("/admin/check-in") } : null),
+    () =>
+      mobileConfig.fab
+        ? {
+            ...mobileConfig.fab,
+            active: pathname.startsWith("/admin/check-in"),
+            // Every fab here is the Scan QR / Check-in action. Fire a scan-now
+            // signal on tap so re-tapping while already on the page (a same-URL
+            // link = no remount) still starts the camera. The check-in screen
+            // listens for it; elsewhere it's a harmless no-op.
+            onActivate: () => {
+              if (typeof window !== "undefined") window.dispatchEvent(new Event("hh:scan-now"));
+            },
+          }
+        : null,
     [mobileConfig, pathname],
   );
   const moreItems = useMemo(

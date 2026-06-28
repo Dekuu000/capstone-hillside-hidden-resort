@@ -16,6 +16,9 @@ export type MobileFab = {
   label: string;
   icon: LucideIcon;
   active: boolean;
+  /** Fired on every tap (even when the href is the current URL, which Next treats
+   *  as a no-op) — used to re-trigger the scanner from the Scan QR FAB. */
+  onActivate?: () => void;
 };
 
 type MobileTabBarProps = {
@@ -77,6 +80,7 @@ export function MobileTabBar({ tabs, fab, onMore, moreActive }: MobileTabBarProp
             href={fab.href}
             aria-label={fab.label}
             aria-current={fab.active ? "page" : undefined}
+            onClick={() => fab.onActivate?.()}
             className="flex min-h-[44px] flex-1 flex-col items-center justify-between pt-2.5 pb-1.5"
           >
             <span

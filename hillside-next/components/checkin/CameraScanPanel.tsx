@@ -152,12 +152,12 @@ export function CameraScanPanel({
         ) : null}
       </div>
 
-      <div className="mt-4">
+      <div className="mt-4 sm:flex sm:justify-center">
         <button
           type="button"
           onClick={onToggleCamera}
           disabled={scanLoading}
-          className={`inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl px-5 text-sm font-semibold transition disabled:opacity-60 ${
+          className={`inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl px-5 text-sm font-semibold transition disabled:opacity-60 sm:w-auto sm:min-w-[260px] ${
             scanActive
               ? "border border-[var(--color-border)] bg-white text-[var(--color-text)] hover:bg-[var(--color-background)]"
               : "bg-[var(--color-primary)] text-white hover:brightness-110"

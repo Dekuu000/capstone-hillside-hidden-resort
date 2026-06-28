@@ -357,6 +357,9 @@ export function AdminCheckinClient({
   // The offline Queue is a technical/sync surface — System Admin only. Staff and
   // managers keep Scan + Code (manual code lookup is their fallback when a QR won't scan).
   const canSeeQueue = roleAtLeast(role, "super_admin");
+  // Sync/technical surfaces (offline pack, raw-token paste) are System-Admin only;
+  // Front Desk + Manager get a clean code-entry fallback without the plumbing.
+  const canSeeSync = roleAtLeast(role, "super_admin");
   const { showToast } = useToast();
   const qrScannerRef = useRef<Html5Qrcode | null>(null);
   const scanHandledRef = useRef(false);
@@ -365,6 +368,7 @@ export function AdminCheckinClient({
   const primaryActionRef = useRef<HTMLButtonElement | null>(null);
   const preloadBusyRef = useRef(false);
   const autoStartHandledRef = useRef(false);
+  const scanNowPendingRef = useRef(false);
 
   const [mode, setMode] = useState<Mode>(initialMode === "queue" && !canSeeQueue ? "scan" : initialMode);
   const [outcome, setOutcome] = useState<Outcome>("ready");
@@ -895,6 +899,30 @@ export function AdminCheckinClient({
     void startCamera();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoStartScan]);
+
+  // Tapping the mobile Scan QR FAB while already on this page fires "hh:scan-now"
+  // (a same-URL link click doesn't remount, so the mount auto-start can't re-fire).
+  // Start scanning here instead — switch to Scan mode first if needed, then start
+  // once the scan panel is in the DOM (handled by the effect below).
+  useEffect(() => {
+    const onScanNow = () => {
+      if (mode === "scan") {
+        void startCamera();
+      } else {
+        scanNowPendingRef.current = true;
+        setMode("scan");
+      }
+    };
+    window.addEventListener("hh:scan-now", onScanNow);
+    return () => window.removeEventListener("hh:scan-now", onScanNow);
+  }, [mode, startCamera]);
+
+  useEffect(() => {
+    if (mode === "scan" && scanNowPendingRef.current) {
+      scanNowPendingRef.current = false;
+      void startCamera();
+    }
+  }, [mode, startCamera]);
 
   const switchCamera = useCallback(async () => {
     if (cameras.length < 2 || !scanActive) return;
@@ -1520,6 +1548,7 @@ export function AdminCheckinClient({
             </span>
           </div>
           <ScanSegmentedControl value={mode} onChange={(value) => setMode(value as Mode)} queueCount={pendingQueueCount} showQueue={canSeeQueue} />
+          {canSeeSync ? (
           <details className="group mt-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)]">
             <summary className="flex cursor-pointer list-none items-center justify-between gap-2 p-3 [&::-webkit-details-marker]:hidden">
               <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">Offline check-in pack</span>
@@ -1576,6 +1605,7 @@ export function AdminCheckinClient({
               ) : null}
             </div>
           </details>
+          ) : null}
           <div className="mt-3 space-y-3">
             {mode === "scan" ? (
               <div className="space-y-2">
@@ -1619,7 +1649,7 @@ export function AdminCheckinClient({
                   placeholder="HR-20260302-XXXX"
                   className="h-11 w-full rounded-xl border border-[var(--color-border)] px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-secondary)]/30"
                 />
-                {(showTokenFallback || outcome === "invalid") ? (
+                {canSeeSync && (showTokenFallback || outcome === "invalid") ? (
                   <div className="space-y-2">
                     <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">Paste token instead</p>
                     <textarea
@@ -1629,7 +1659,7 @@ export function AdminCheckinClient({
                       className="min-h-[100px] w-full rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 font-mono text-xs outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-secondary)]/30"
                     />
                   </div>
-                ) : (
+                ) : canSeeSync ? (
                   <button
                     type="button"
                     onClick={() => setShowTokenFallback(true)}
@@ -1637,7 +1667,7 @@ export function AdminCheckinClient({
                   >
                     Paste token instead
                   </button>
-                )}
+                ) : null}
                 {!networkOnline ? (
                   <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
                     <p className="text-sm font-semibold text-amber-900">Code validation needs internet unless preloaded.</p>

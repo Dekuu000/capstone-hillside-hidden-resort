@@ -17,7 +17,7 @@ export function ScanSegmentedControl({
 }) {
   const items: Array<{ id: ScanMode; label: string }> = [
     { id: "scan", label: "Scan" },
-    { id: "code", label: "Code" },
+    { id: "code", label: "Enter code" },
     ...(showQueue ? [{ id: "queue" as ScanMode, label: queueCount > 0 ? `Queue (${queueCount})` : "Queue" }] : []),
   ];
 
