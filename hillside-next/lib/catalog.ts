@@ -51,10 +51,11 @@ export async function fetchPublicUnits(params?: {
   search.set("limit", String(params?.limit ?? 60));
   try {
     const res = await fetch(`${apiBase}/v2/catalog/units?${search.toString()}`, {
-      // No cache so newly uploaded unit photos (and edits) show on the landing /
-      // stays pages on the next load — the catalog is small + public, so the
-      // freshness is worth more than the cache here.
-      next: { revalidate: 0 },
+      // Short ISR window: serve cached catalog for 60s, then revalidate in the
+      // background. This keeps the landing/stays pages fast even when the (free-tier)
+      // API is cold-starting — visitors get the cached page instead of blocking on a
+      // ~50s wake-up — while photo/price edits still appear within ~1 minute.
+      next: { revalidate: 60 },
     });
     if (!res.ok) return [];
     const parsed = publicUnitsResponseSchema.safeParse(await res.json());
@@ -78,8 +79,9 @@ export async function fetchAvailableUnits(params: {
   if (params.unitType) search.set("unit_type", params.unitType);
   try {
     const res = await fetch(`${apiBase}/v2/catalog/units/available?${search.toString()}`, {
-      // No cache so photo/price/availability edits reflect immediately in search.
-      next: { revalidate: 0 },
+      // Short ISR window (see fetchPublicUnits) — keeps search fast against the
+      // cold-startable free-tier API; availability edits reflect within ~1 minute.
+      next: { revalidate: 60 },
     });
     if (!res.ok) return null;
     const parsed = availableUnitsResponseSchema.safeParse(await res.json());
@@ -184,8 +186,9 @@ export function unitGalleryImages(unit: PublicUnit): string[] {
 export async function fetchPublicServices(): Promise<ServiceItem[]> {
   if (!apiBase) return [];
   try {
-    // No cache so newly uploaded tour photos (and edits) show right away.
-    const res = await fetch(`${apiBase}/v2/catalog/services`, { next: { revalidate: 0 } });
+    // Short ISR window (see fetchPublicUnits) — fast loads against the cold-startable
+    // free-tier API; newly uploaded tour photos/edits appear within ~1 minute.
+    const res = await fetch(`${apiBase}/v2/catalog/services`, { next: { revalidate: 60 } });
     if (!res.ok) return [];
     const parsed = serviceListResponseSchema.safeParse(await res.json());
     return parsed.success ? parsed.data.items : [];

@@ -1,0 +1,43 @@
+name: Keep API warm
+
+# Render's free web tier spins the API down after ~15 min of inactivity, and the
+# next request then pays a ~50s cold start. Our SSR pages fetch the API on render,
+# so that cold start becomes a ~50s page load. This job pings /health on a schedule
+# to keep the instance awake.
+#
+# IMPORTANT: GitHub only runs `schedule` triggers on the default branch, so this
+# takes effect once it's merged to the default branch (e.g. master). GitHub may
+# also delay scheduled runs under load — if you need a hard guarantee, point an
+# external pinger (UptimeRobot / cron-job.org, every 5 min) at the same /health URL.
+#
+# Set the repo variable API_BASE_URL (Settings -> Secrets and variables -> Actions
+# -> Variables) to your API origin if it differs from the default below.
+
+on:
+  schedule:
+    - cron: "*/10 * * * *" # every 10 minutes (Render sleeps at ~15 min idle)
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: keep-api-warm
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping API health
+        run: |
+          URL="${{ vars.API_BASE_URL || 'https://hillside-api.onrender.com' }}"
+          echo "Pinging ${URL}/health"
+          # Generous timeout so a cold start still counts as a successful wake-up.
+          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 90 "${URL}/health" || echo "000")
+          echo "HTTP ${code}"
+          if [ "${code}" = "200" ]; then
+            echo "API is awake."
+          else
+            echo "::warning::Health ping returned ${code} (API may have been cold-starting)."
+          fi

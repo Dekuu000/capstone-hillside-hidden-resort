@@ -298,7 +298,7 @@ export default function LoginPage() {
       sideTitle="Welcome Back!"
       sideSubtitle=""
       sideDescription="Sign in to manage your bookings and enjoy your stay."
-      sideImageUrl="/branding/hero-hillside-mobile.png"
+      sideImageUrl="/branding/hero-hillside-mobile.webp"
       sideImagePosition="center top"
       mobileBrandLine="Welcome back"
       formIntro="Sign in"
