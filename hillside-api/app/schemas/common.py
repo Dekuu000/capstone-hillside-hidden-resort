@@ -374,6 +374,8 @@ class ReportDailyItem(BaseModel):
     unit_booked_value: float = 0
     tour_booked_value: float = 0
     promo_discounts: float = 0
+    refunded_deposits: float = 0
+    forfeited_deposits: float = 0
 
 
 class ReportMonthlyItem(BaseModel):
@@ -385,6 +387,8 @@ class ReportMonthlyItem(BaseModel):
     unit_booked_value: float = 0
     tour_booked_value: float = 0
     promo_discounts: float = 0
+    refunded_deposits: float = 0
+    forfeited_deposits: float = 0
 
 
 class ReportSummary(BaseModel):
@@ -395,6 +399,8 @@ class ReportSummary(BaseModel):
     unit_booked_value: float = 0
     tour_booked_value: float = 0
     promo_discounts: float = 0
+    refunded_deposits: float = 0
+    forfeited_deposits: float = 0
 
 
 class ReportsOverviewResponse(BaseModel):
@@ -547,9 +553,27 @@ class ReservationListItem(ReservationPaymentPolicyMetadata):
     guest_count: int | None = None
     notes: str | None = None
     reservation_source: Literal["online", "walk_in"] = "online"
+    # Escrow lifecycle status (none/pending_lock/locked/released/refunded/failed).
+    # A plain status string — not a wallet/tx value — so it is safe for guests, who
+    # need it for the check-in QR gate. The sensitive on-chain references live on the
+    # System-Admin-only ReservationAdminDetailItem below.
+    escrow_state: str | None = None
     guest: ReservationGuestSummary | None = None
     units: list[ReservationUnitSummary] = Field(default_factory=list)
     service_bookings: list[ReservationServiceBookingSummary] = Field(default_factory=list)
+
+
+class ReservationAdminDetailItem(ReservationListItem):
+    """Reservation detail with the on-chain escrow + NFT guest-pass ledger fields
+    shown in the back-office drawer's "Blockchain / Ledger" panel. These are crypto
+    internals (chain refs, tx hashes, token ids) and are System-Admin-only — the
+    detail route nulls them out for any caller below super_admin."""
+    chain_key: str | None = None
+    chain_tx_hash: str | None = None
+    onchain_booking_id: str | None = None
+    guest_pass_token_id: int | str | None = None
+    guest_pass_tx_hash: str | None = None
+    guest_pass_reservation_hash: str | None = None
 
 
 class ReservationListResponse(BaseModel):
@@ -915,6 +939,29 @@ class EscrowReconciliationResponse(BaseModel):
     cached: bool = True
     in_progress: bool = False
     last_reconciled_at: datetime | None = None
+
+
+class EscrowLedgerItem(BaseModel):
+    ledger_id: str
+    reservation_id: str
+    reservation_code: str | None = None
+    event: Literal["lock", "release", "refund", "forfeit"]
+    escrow_state_from: str | None = None
+    escrow_state_to: str | None = None
+    policy_outcome: str | None = None
+    amount: float | None = None
+    reason: str | None = None
+    actor_role: str | None = None
+    chain_tx_hash: str | None = None
+    created_at: datetime | None = None
+
+
+class EscrowLedgerResponse(BaseModel):
+    items: list[EscrowLedgerItem]
+    count: int
+    limit: int
+    offset: int
+    has_more: bool
 
 
 class ContractStatusGasSnapshot(BaseModel):

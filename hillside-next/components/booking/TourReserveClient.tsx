@@ -8,12 +8,14 @@ import { CalendarDays, Loader2, Pencil, Users } from "lucide-react";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
+import { redirectToGcashOrPay } from "../../lib/booking/gcashCheckout";
 import { promoValidationResultSchema, reservationCreateResponseSchema } from "../../../packages/shared/src/schemas";
 import type { PromoValidationResult, ReservationCreateResponse, ServiceItem } from "../../../packages/shared/src/types";
 import { clearTourDraft, readTourDraft, type TourDraft } from "../../lib/booking/tourDraft";
 import { fetchPublicServiceById, tourImageUrl, tourSchedule } from "../../lib/catalog";
 import { tourMinPayNow, tourTotal } from "../../lib/booking/pricing";
 import { formatPhpPeso } from "../../lib/formatCurrency";
+import { DepositPolicyDialog } from "./DepositPolicyDialog";
 import { Input } from "../shared/Input";
 
 function formatDate(iso: string): string {
@@ -38,6 +40,7 @@ export function TourReserveClient({ token, email }: { token: string; email: stri
   const [promo, setPromo] = useState<PromoValidationResult | null>(null);
   const [promoBusy, setPromoBusy] = useState(false);
   const [promoError, setPromoError] = useState<string | null>(null);
+  const [policyOpen, setPolicyOpen] = useState(false);
 
   useEffect(() => {
     const current = readTourDraft();
@@ -90,6 +93,7 @@ export function TourReserveClient({ token, email }: { token: string; email: stri
   const discount = promo?.valid ? promo.discount_amount : 0;
   const total = Math.max(0, grossTotal - discount);
   const minPay = tourMinPayNow(total);
+  const balanceDue = Math.max(0, total - minPay);
 
   const applyPromo = useCallback(async () => {
     const code = promoInput.trim();
@@ -129,16 +133,17 @@ export function TourReserveClient({ token, email }: { token: string; email: stri
     setBusy(true);
     setError(null);
     try {
+      // Persist contact details in the background — best-effort, and must not sit on
+      // the critical path before payment. Fire it concurrently with the booking
+      // create so it never adds a round-trip to the GCash redirect.
       if (name.trim() || phone.trim()) {
-        try {
-          await apiFetch(
-            "/v2/me/profile",
-            { method: "PATCH", body: JSON.stringify({ name: name.trim() || null, phone: phone.trim() || null }) },
-            token,
-          );
-        } catch {
+        void apiFetch(
+          "/v2/me/profile",
+          { method: "PATCH", body: JSON.stringify({ name: name.trim() || null, phone: phone.trim() || null }) },
+          token,
+        ).catch(() => {
           /* contact update is best-effort */
-        }
+        });
       }
 
       const payload = {
@@ -171,12 +176,18 @@ export function TourReserveClient({ token, email }: { token: string; email: stri
 
       clearTourDraft();
       if (outcome.mode === "online") {
-        router.replace(`/reserve/${encodeURIComponent(outcome.data.reservation_id)}/pay`);
+        // One tap: go straight to GCash; fall back to the pay page if the
+        // gateway is unavailable. (Stays on busy — the page is leaving.)
+        await redirectToGcashOrPay(outcome.data.reservation_id, token, (rid) =>
+          router.replace(`/reserve/${encodeURIComponent(rid)}/pay`),
+        );
       } else {
         router.replace("/my-bookings?tab=pending_payment");
       }
     } catch (unknownError) {
       setError(getApiErrorMessage(unknownError, "Failed to reserve this tour."));
+      // Drop back to the page so the card-level error is visible behind the modal.
+      setPolicyOpen(false);
       setBusy(false);
     }
   }, [draft, service, name, phone, minPay, token, router, promo]);
@@ -331,20 +342,29 @@ export function TourReserveClient({ token, email }: { token: string; email: stri
 
               <button
                 type="button"
-                onClick={confirm}
+                onClick={() => setPolicyOpen(true)}
                 disabled={busy}
                 className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-cta)] text-base font-semibold text-white transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
-                {busy ? "Reserving…" : "Confirm — continue to payment"}
+                {busy ? "Redirecting to GCash…" : `Pay ${formatPhpPeso(minPay)} with GCash`}
               </button>
               <p className="mt-2 text-center text-xs muted-text">
-                Your spot is held as pending until your deposit is verified.
+                Secured by PayMongo · GCash. Deposit is non-refundable if you cancel.
               </p>
             </div>
           </div>
         </aside>
       </div>
+
+      <DepositPolicyDialog
+        open={policyOpen}
+        payNow={minPay}
+        balanceDue={balanceDue}
+        busy={busy}
+        onConfirm={confirm}
+        onClose={() => setPolicyOpen(false)}
+      />
     </div>
   );
 }

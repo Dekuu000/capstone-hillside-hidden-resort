@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Bell, BedDouble, ChevronRight, MapPin, Settings, type LucideIcon } from "lucide-react";
+import { Bell, ChevronRight, MapPin, Settings, type LucideIcon } from "lucide-react";
 import { GuestShell } from "../../../components/layout/GuestShell";
 import { GuestPageIntro } from "../../../components/guest/GuestPageIntro";
 import { SignOutButton } from "../../../components/guest/SignOutButton";
@@ -8,7 +8,6 @@ import { getServerAccessToken, getServerAuthContext, getServerEmailHint } from "
 import { isBackOffice } from "../../../../packages/shared/src/types";
 
 const ACCOUNT_LINKS: { href: string; label: string; desc: string; icon: LucideIcon }[] = [
-  { href: "/guest/my-stay", label: "My stay", desc: "Active stay, balance & check-in pass", icon: BedDouble },
   { href: "/guest/map", label: "Resort map", desc: "Trails & facilities, works offline", icon: MapPin },
   { href: "/guest/services", label: "Services", desc: "Room service & spa requests", icon: Bell },
   { href: "/guest/profile", label: "Account settings", desc: "Name, email & password", icon: Settings },

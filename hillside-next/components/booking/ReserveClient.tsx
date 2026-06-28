@@ -8,12 +8,16 @@ import { CalendarDays, Loader2, Pencil, Users } from "lucide-react";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
+import { redirectToGcashOrPay } from "../../lib/booking/gcashCheckout";
 import { promoValidationResultSchema, reservationCreateResponseSchema } from "../../../packages/shared/src/schemas";
+import { computeStayDepositPreview } from "../../../packages/shared/src/types";
 import type { PromoValidationResult, ReservationCreateResponse } from "../../../packages/shared/src/types";
 import { clearBookingDraft, readBookingDraft, type BookingDraft } from "../../lib/booking/draft";
 import { fetchPublicUnitById, unitImageUrl, unitTypeLabel, type PublicUnit } from "../../lib/catalog";
+import { formatPhpPeso } from "../../lib/formatCurrency";
 import { getUnitNightlyRate } from "../../lib/booking/pricing";
 import { PriceBreakdown } from "./PriceBreakdown";
+import { DepositPolicyDialog } from "./DepositPolicyDialog";
 import { Input } from "../shared/Input";
 
 function nightsBetween(checkIn: string, checkOut: string): number {
@@ -43,6 +47,7 @@ export function ReserveClient({ token, email }: { token: string; email: string |
   const [promo, setPromo] = useState<PromoValidationResult | null>(null);
   const [promoBusy, setPromoBusy] = useState(false);
   const [promoError, setPromoError] = useState<string | null>(null);
+  const [policyOpen, setPolicyOpen] = useState(false);
 
   useEffect(() => {
     const current = readBookingDraft();
@@ -96,6 +101,9 @@ export function ReserveClient({ token, email }: { token: string; email: string |
   const nightlyRate = unit && draft ? getUnitNightlyRate(unit, draft.guestCount) : 0;
   const grossTotal = nightlyRate * Math.max(0, nights);
   const discount = promo?.valid ? promo.discount_amount : 0;
+  const netTotal = Math.max(0, grossTotal - discount);
+  const payNow = computeStayDepositPreview(netTotal);
+  const balanceDue = Math.max(0, netTotal - payNow);
 
   const applyPromo = useCallback(async () => {
     const code = promoInput.trim();
@@ -144,16 +152,17 @@ export function ReserveClient({ token, email }: { token: string; email: string |
     setBusy(true);
     setError(null);
     try {
+      // Persist contact details in the background — best-effort, and must not sit on
+      // the critical path before payment. Fire it concurrently with the booking
+      // create so it never adds a round-trip to the GCash redirect.
       if (name.trim() || phone.trim()) {
-        try {
-          await apiFetch(
-            "/v2/me/profile",
-            { method: "PATCH", body: JSON.stringify({ name: name.trim() || null, phone: phone.trim() || null }) },
-            token,
-          );
-        } catch {
+        void apiFetch(
+          "/v2/me/profile",
+          { method: "PATCH", body: JSON.stringify({ name: name.trim() || null, phone: phone.trim() || null }) },
+          token,
+        ).catch(() => {
           /* contact update is best-effort; don't block the booking */
-        }
+        });
       }
 
       const payload = {
@@ -183,7 +192,10 @@ export function ReserveClient({ token, email }: { token: string; email: string |
 
       clearBookingDraft();
       if (outcome.mode === "online") {
-        router.replace(`/reserve/${encodeURIComponent(outcome.data.reservation_id)}/pay`);
+        // One tap: straight to GCash; fall back to the pay page if unavailable.
+        await redirectToGcashOrPay(outcome.data.reservation_id, token, (rid) =>
+          router.replace(`/reserve/${encodeURIComponent(rid)}/pay`),
+        );
       } else {
         router.replace("/my-bookings?tab=pending_payment");
       }
@@ -194,6 +206,8 @@ export function ReserveClient({ token, email }: { token: string; email: string |
       } else {
         setError(message);
       }
+      // Drop back to the page so the card-level error is visible behind the modal.
+      setPolicyOpen(false);
       setBusy(false);
     }
   }, [draft, unit, name, phone, token, router, promo]);
@@ -338,20 +352,29 @@ export function ReserveClient({ token, email }: { token: string; email: string |
 
               <button
                 type="button"
-                onClick={confirm}
+                onClick={() => setPolicyOpen(true)}
                 disabled={busy}
                 className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-cta)] text-base font-semibold text-white transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
-                {busy ? "Reserving…" : "Confirm — continue to payment"}
+                {busy ? "Redirecting to GCash…" : `Pay ${formatPhpPeso(payNow)} with GCash`}
               </button>
               <p className="mt-2 text-center text-xs muted-text">
-                Your spot is held as pending until your deposit is verified.
+                Secured by PayMongo · GCash. Deposit is non-refundable if you cancel.
               </p>
             </div>
           </div>
         </aside>
       </div>
+
+      <DepositPolicyDialog
+        open={policyOpen}
+        payNow={payNow}
+        balanceDue={balanceDue}
+        busy={busy}
+        onConfirm={confirm}
+        onClose={() => setPolicyOpen(false)}
+      />
     </div>
   );
 }

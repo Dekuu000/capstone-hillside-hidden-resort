@@ -8,9 +8,10 @@ import { TourCard } from "../components/booking/TourCard";
 import { SiteFooter } from "../components/booking/SiteFooter";
 
 // Real photos of the Hillside Hidden Resort entrance (served from public/).
-// Wide shot for desktop; a portrait crop for the tall mobile hero.
-const HERO_IMAGE = "/branding/hero-hillside.png";
-const HERO_IMAGE_MOBILE = "/branding/hero-hillside-mobile.png";
+// Wide shot for desktop; a portrait crop for the tall mobile hero. WebP keeps
+// these full-bleed heroes ~150 KB instead of ~2 MB for a fast first paint.
+const HERO_IMAGE = "/branding/hero-hillside.webp";
+const HERO_IMAGE_MOBILE = "/branding/hero-hillside-mobile.webp";
 
 const HOW_IT_WORKS = [
   {

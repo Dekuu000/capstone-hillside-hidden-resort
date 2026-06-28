@@ -108,7 +108,7 @@ export default function LoginPage() {
     const backOffice = isBackOffice(role);
     // All back-office roles land on the dashboard (Front Desk sees the operations
     // cockpit, Manager/System Admin the full view); guests on their trips.
-    const home = backOffice ? "/admin" : "/guest/my-stay";
+    const home = backOffice ? "/admin" : "/my-bookings";
     if (!safePath) return home;
     if (!safePath.startsWith("/admin")) return safePath;
     return backOffice ? safePath : "/my-bookings";
@@ -298,6 +298,8 @@ export default function LoginPage() {
       sideTitle="Welcome Back!"
       sideSubtitle=""
       sideDescription="Sign in to manage your bookings and enjoy your stay."
+      sideImageUrl="/branding/hero-hillside-mobile.webp"
+      sideImagePosition="center top"
       mobileBrandLine="Welcome back"
       formIntro="Sign in"
       formTitle="Sign In"

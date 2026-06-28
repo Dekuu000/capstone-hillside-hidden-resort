@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.core.auth import AuthContext, require_authenticated, require_operations, role_at_least
 from app.core.config import settings
+from app.core.status import canonical_booking_status
 from app.core.qr_security import (
     build_qr_signature,
     get_qr_public_key_base64url,
@@ -106,6 +107,27 @@ def issue_token(
     )
     if not reservation_row:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation not found.")
+
+    # Gate the check-in pass for guests: it only unlocks once the deposit is paid
+    # (status confirmed/checked_in — set only after payment is verified) AND the
+    # deposit escrow is in a healthy state. This works in both shadow mode
+    # (escrow_state="pending_lock") and real on-chain mode (escrow_state="locked"),
+    # and doesn't block non-escrow bookings (escrow_state="none", e.g. walk-ins).
+    # Staff/admin keep the operational ability to issue a pass at the desk.
+    # (Defense-in-depth: check-in itself is independently gated server-side.)
+    if not role_at_least(auth.role, "staff"):
+        booking_status = canonical_booking_status(reservation_row.get("status"))
+        escrow_state = str(reservation_row.get("escrow_state") or "none").strip().lower()
+        deposit_secured = booking_status in {"confirmed", "checked_in"} and escrow_state not in {
+            "released",
+            "refunded",
+            "failed",
+        }
+        if not deposit_secured:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Your check-in pass unlocks once your deposit is paid and secured.",
+            )
 
     now = datetime.now(timezone.utc)
     rotation_seconds = _effective_rotation_seconds()

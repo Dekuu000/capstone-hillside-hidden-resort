@@ -7,7 +7,7 @@ import type { AdminPaymentsResponse, AdminPaymentsTab } from "../../../../packag
 
 function normalizeTab(raw: string | undefined): AdminPaymentsTab {
   if (raw === "verified" || raw === "rejected" || raw === "all") return raw;
-  return "to_review";
+  return "all";
 }
 
 function normalizePage(raw: string | undefined): number {

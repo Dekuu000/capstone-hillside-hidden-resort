@@ -83,7 +83,11 @@ export function ReportDocument({
 
         {/* Receipt-style summary */}
         <section className="mt-4">
-          <h2 className="mb-1 text-[11px] font-bold uppercase tracking-[0.18em] text-gray-600">Summary</h2>
+          <h2 className="mb-0.5 text-[11px] font-bold uppercase tracking-[0.18em] text-gray-600">Summary</h2>
+          <p className="mb-1 text-[10px] italic leading-snug text-gray-500">
+            Bookings, occupancy &amp; booked value are by stay date (check-in); cash collected is by payment
+            date — so prepayments for upcoming stays can appear without a matching booking in the period.
+          </p>
           <div className="border-t border-black pt-1">
             <LeaderLine label="Bookings" value={String(summary.bookings)} />
             <LeaderLine label="Cancellations" value={String(summary.cancellations)} />
@@ -94,6 +98,10 @@ export function ReportDocument({
             <LeaderLine label="Gross booked value" value={formatPeso(grossBooked)} />
             <LeaderLine label="Promo discounts" value={`${summary.promo_discounts > 0 ? "−" : ""}${formatPeso(summary.promo_discounts)}`} />
             <LeaderLine label="Net booked value" value={formatPeso(netBooked)} strong />
+          </div>
+          <div className="mt-1 border-t border-gray-300 pt-1">
+            <LeaderLine label="Forfeited deposits (retained)" value={formatPeso(summary.forfeited_deposits)} />
+            <LeaderLine label="Refunded deposits (returned)" value={`${summary.refunded_deposits > 0 ? "−" : ""}${formatPeso(summary.refunded_deposits)}`} />
           </div>
           <div className="mt-1 border-t-2 border-double border-black pt-1">
             <LeaderLine label="TOTAL CASH COLLECTED" value={formatPeso(summary.cash_collected)} strong />

@@ -40,6 +40,8 @@ from app.integrations.supabase_client import (
     get_reservation_quick_stats,
     list_recent_reservations,
     release_expired_pending_payment_holds,
+    record_escrow_transition,
+    notify_ops_paid_cancellation,
     update_reservation_policy_metadata,
     update_reservation_source as update_reservation_source_rpc,
 )
@@ -57,6 +59,7 @@ from app.schemas.common import (
     CancelReservationResponse,
     ReservationStatusUpdateRequest,
     ReservationStatusUpdateResponse,
+    ReservationAdminDetailItem,
     ReservationListItem,
     ReservationListResponse,
     ReservationQuickStatsResponse,
@@ -200,8 +203,12 @@ def _maybe_get_ai_recommendation(
 
 
 def _maybe_apply_escrow_shadow_write(reservation_id: str) -> EscrowRef | None:
-    if not settings.feature_escrow_shadow_write:
-        logger.info("Escrow shadow-write skipped: feature disabled (reservation_id=%s)", reservation_id)
+    # This applies escrow on payment: a real on-chain lock when
+    # FEATURE_ESCROW_ONCHAIN_LOCK is on, otherwise a shadow-write audit record
+    # when FEATURE_ESCROW_SHADOW_WRITE is on. Only skip when BOTH are off — the
+    # on-chain lock must not be gated behind shadow-write.
+    if not settings.feature_escrow_shadow_write and not settings.feature_escrow_onchain_lock:
+        logger.info("Escrow apply skipped: shadow-write and on-chain lock both disabled (reservation_id=%s)", reservation_id)
         return None
 
     active_chain = get_active_chain()
@@ -524,6 +531,25 @@ def _apply_cancellation_side_effects(
     )
     if decision.outcome == "refunded":
         _maybe_refund_escrow_on_cancel(reservation_row)
+    paid_amount = float(reservation_row.get("amount_paid_verified") or 0)
+    record_escrow_transition(
+        reservation_id=reservation_id,
+        event="refund" if decision.outcome == "refunded" else "forfeit",
+        reservation_code=str(reservation_row.get("reservation_code") or "") or None,
+        escrow_state_from=str(reservation_row.get("escrow_state") or "none"),
+        policy_outcome=decision.outcome,
+        amount=paid_amount,
+        reason=f"{decision.actor}_cancellation",
+        actor_role=decision.actor,
+    )
+    # Managers only: a PAID booking was cancelled (refund due, or deposit kept).
+    # Unpaid cancellations stay silent for the back office.
+    if paid_amount > 0:
+        notify_ops_paid_cancellation(
+            reservation=reservation_row,
+            outcome=decision.outcome,
+            amount=paid_amount,
+        )
     return decision
 
 
@@ -535,6 +561,16 @@ def _apply_no_show_side_effects(*, reservation_id: str, reservation_row: dict) -
         actor="admin",
         outcome="forfeited",
         rule_applied=_resolve_reservation_policy_rule(reservation_row),
+    )
+    record_escrow_transition(
+        reservation_id=reservation_id,
+        event="forfeit",
+        reservation_code=str(reservation_row.get("reservation_code") or "") or None,
+        escrow_state_from=str(reservation_row.get("escrow_state") or "none"),
+        policy_outcome="forfeited",
+        amount=float(reservation_row.get("amount_paid_verified") or 0),
+        reason="no_show",
+        actor_role="admin",
     )
     cascade_service_bookings_no_show(reservation_id=reservation_id)
 
@@ -1139,13 +1175,28 @@ def get_reservation_by_reservation_code(
     return row
 
 
-@router.get("/{reservation_id}", response_model=ReservationListItem)
+@router.get("/{reservation_id}", response_model=ReservationAdminDetailItem)
 def get_reservation(
     reservation_id: str,
     auth: AuthContext = Depends(require_authenticated),
 ):
     row = _get_reservation_or_404(reservation_id)
     ensure_reservation_access(auth, row)
+    # The on-chain escrow + NFT guest-pass references are crypto internals shown only
+    # in the System-Admin "Blockchain / Ledger" panel. A guest may legitimately reach
+    # this route for their own booking, so strip those fields for anyone below
+    # super_admin (escrow_state stays — it is a plain status the QR gate needs).
+    if not role_at_least(auth.role, "super_admin"):
+        row = dict(row)
+        for field in (
+            "chain_key",
+            "chain_tx_hash",
+            "onchain_booking_id",
+            "guest_pass_token_id",
+            "guest_pass_tx_hash",
+            "guest_pass_reservation_hash",
+        ):
+            row[field] = None
     return row
 
 

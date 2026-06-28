@@ -106,5 +106,14 @@ class Settings(BaseSettings):
     xendit_callback_token: str = ""
     payment_mode: str = "proof_only"
 
+    # PayMongo (GCash) hosted checkout. Secrets are server-only and never sent to
+    # the client. Leave blank to keep the gateway disabled.
+    paymongo_secret_key: str = ""
+    paymongo_public_key: str = ""
+    paymongo_webhook_secret: str = ""
+    paymongo_base_url: str = "https://api.paymongo.com"
+    # Public URL of the guest web app, used to build PayMongo success/cancel URLs.
+    app_public_base_url: str = "http://localhost:3000"
+
 
 settings = Settings()

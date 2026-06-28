@@ -247,3 +247,56 @@ def test_escrow_reconciliation_monitor_read_and_run(monkeypatch) -> None:
     assert run_payload["enabled"] is True
     assert run_payload["runs_total"] == 1
     assert run_payload["last_summary"]["match"] == 2
+
+
+def test_escrow_ledger_is_admin_only(monkeypatch) -> None:
+    monkeypatch.setattr("app.core.auth.verify_access_token", _mock_guest_auth)
+    response = client.get("/v2/escrow/ledger", headers=_token_header("guest-token"))
+    assert response.status_code == 403
+    assert response.json()["detail"] == "System Admin access required."
+
+
+def test_escrow_ledger_returns_entries(monkeypatch) -> None:
+    monkeypatch.setattr("app.core.auth.verify_access_token", _mock_admin_auth)
+    captured: dict = {}
+
+    def _fake_list(**kwargs):
+        captured.update(kwargs)
+        return (
+            [
+                {
+                    "ledger_id": "11111111-1111-1111-1111-111111111111",
+                    "reservation_id": "res-1",
+                    "reservation_code": "HR-LEDGER",
+                    "event": "forfeit",
+                    "escrow_state_from": "pending_lock",
+                    "escrow_state_to": "pending_lock",
+                    "policy_outcome": "forfeited",
+                    "amount": 180.0,
+                    "reason": "no_show",
+                    "actor_role": "admin",
+                    "chain_tx_hash": None,
+                    "created_at": "2026-06-28T00:00:00+00:00",
+                }
+            ],
+            1,
+        )
+
+    monkeypatch.setattr("app.api.v2.routes.escrow.list_escrow_ledger", _fake_list)
+
+    response = client.get(
+        "/v2/escrow/ledger",
+        params={"event": "forfeit", "limit": 25},
+        headers=_token_header("admin-token"),
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["count"] == 1
+    assert payload["has_more"] is False
+    item = payload["items"][0]
+    assert item["event"] == "forfeit"
+    assert item["policy_outcome"] == "forfeited"
+    assert item["amount"] == 180.0
+    # The route forwarded the filters to the data layer.
+    assert captured["event"] == "forfeit"
+    assert captured["limit"] == 25

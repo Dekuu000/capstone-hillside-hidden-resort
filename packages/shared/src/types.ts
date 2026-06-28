@@ -623,6 +623,8 @@ export type ReportSummary = {
   unit_booked_value: number;
   tour_booked_value: number;
   promo_discounts: number;
+  refunded_deposits: number;
+  forfeited_deposits: number;
 };
 
 export type ReportDailyItem = {
@@ -634,6 +636,8 @@ export type ReportDailyItem = {
   unit_booked_value: number;
   tour_booked_value: number;
   promo_discounts: number;
+  refunded_deposits: number;
+  forfeited_deposits: number;
 };
 
 export type ReportMonthlyItem = {
@@ -645,6 +649,8 @@ export type ReportMonthlyItem = {
   unit_booked_value: number;
   tour_booked_value: number;
   promo_discounts: number;
+  refunded_deposits: number;
+  forfeited_deposits: number;
 };
 
 export type ReportsOverviewResponse = {
@@ -1191,6 +1197,31 @@ export type EscrowReconciliationResponse = {
   cached?: boolean;
   in_progress?: boolean;
   last_reconciled_at?: string | null;
+};
+
+export type EscrowLedgerEvent = "lock" | "release" | "refund" | "forfeit";
+
+export type EscrowLedgerItem = {
+  ledger_id: string;
+  reservation_id: string;
+  reservation_code?: string | null;
+  event: EscrowLedgerEvent;
+  escrow_state_from?: string | null;
+  escrow_state_to?: string | null;
+  policy_outcome?: string | null;
+  amount?: number | null;
+  reason?: string | null;
+  actor_role?: string | null;
+  chain_tx_hash?: string | null;
+  created_at?: string | null;
+};
+
+export type EscrowLedgerResponse = {
+  items: EscrowLedgerItem[];
+  count: number;
+  limit: number;
+  offset: number;
+  has_more: boolean;
 };
 
 // ---------- In-app notifications ----------

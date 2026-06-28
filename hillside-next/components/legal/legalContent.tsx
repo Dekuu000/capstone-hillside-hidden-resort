@@ -31,8 +31,13 @@ export function TermsContent() {
       </Section>
       <Section title="Booking and payment">
         <p>
-          To hold a booking, pay the required deposit through GCash and upload a clear photo of your
-          payment proof. Your booking is <strong>confirmed only after our staff verifies your payment</strong>.
+          To hold a booking, pay the required deposit through GCash. Paying in the app{" "}
+          <strong>confirms your booking automatically</strong> once GCash completes the payment. If you
+          instead pay our GCash number directly, upload a clear photo of your receipt and our staff will
+          confirm it after a quick review.
+        </p>
+        <p>
+          Online, the amount due now is the deposit — the remaining balance is settled at check-in.
         </p>
       </Section>
       <Section title="Check-in">
@@ -62,7 +67,8 @@ export function CancellationContent() {
     <div className="space-y-3 text-sm leading-relaxed text-[var(--color-muted)]">
       <p>
         <strong>If you cancel a confirmed booking,</strong> the deposit you paid (20% of your total, between
-        ₱500 and ₱5,000) is non-refundable. Any amount you paid above the deposit is refunded.
+        ₱500 and ₱5,000) is non-refundable. The remaining balance isn&apos;t charged online — it&apos;s
+        settled at check-in — so cancelling only forfeits the deposit.
       </p>
       <p>
         <strong>If the resort cancels your booking,</strong> you receive a full refund of everything you
@@ -85,7 +91,11 @@ export function PrivacyContent() {
         Privacy Act. Here&apos;s what that means in plain terms.
       </p>
       <Section title="What we collect">
-        <p>Your name, email, phone number, booking details, and the payment proof you upload.</p>
+        <p>
+          Your name, email, phone number, booking details, and any payment receipt you upload. GCash
+          payments are processed by our payment provider — we never see or store your GCash login or card
+          details.
+        </p>
       </Section>
       <Section title="How we use it">
         <p>

@@ -238,6 +238,7 @@ MY_BOOKING_LIST_SELECT = """
     amount_paid_verified,
     deposit_required,
     expected_pay_now,
+    escrow_state,
     guest_count,
     units:reservation_units(
         reservation_unit_id,
@@ -2198,6 +2199,114 @@ def get_payment_by_reference_no(*, reference_no: str) -> dict[str, Any] | None:
         raise _runtime_error_from_exception(exc) from exc
 
 
+def create_gateway_payment(
+    *,
+    reservation_id: str,
+    amount: float,
+    reference_no: str,
+    method: str = "gcash",
+    payment_type: str = "deposit",
+    provider: str = "paymongo",
+) -> dict[str, Any]:
+    """Insert a pending gateway payment row (service role) and return it.
+
+    Used when a hosted-checkout session is created; the row is reconciled to
+    'verified' by the provider webhook once the guest pays.
+    """
+    try:
+        client = get_supabase_client()
+        response = (
+            client.table("payments")
+            .insert(
+                {
+                    "reservation_id": reservation_id,
+                    "amount": amount,
+                    "method": method,
+                    "payment_type": payment_type,
+                    "reference_no": reference_no,
+                    "status": "pending",
+                    "provider": provider,
+                }
+            )
+            .execute()
+        )
+        rows = response.data or []
+        return rows[0] if rows else {}
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def attach_paymongo_checkout(
+    *,
+    payment_id: str,
+    checkout_session_id: str,
+    checkout_url: str,
+    payment_intent_id: str | None = None,
+) -> None:
+    """Persist the PayMongo checkout-session refs onto a payment row."""
+    try:
+        client = get_supabase_client()
+        client.table("payments").update(
+            {
+                "paymongo_checkout_session_id": checkout_session_id,
+                "paymongo_checkout_url": checkout_url,
+                "paymongo_payment_intent_id": payment_intent_id,
+            }
+        ).eq("payment_id", payment_id).execute()
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def get_payment_by_id(*, payment_id: str) -> dict[str, Any] | None:
+    value = str(payment_id or "").strip()
+    if not value:
+        return None
+    try:
+        client = get_supabase_client()
+        response = (
+            client.table("payments")
+            .select("payment_id,reservation_id,status,amount")
+            .eq("payment_id", value)
+            .limit(1)
+            .execute()
+        )
+        rows = response.data or []
+        return rows[0] if rows else None
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def set_paymongo_payment_id(*, payment_id: str, provider_payment_id: str) -> None:
+    """Store the PayMongo payment id (pay_...) on our payment row for audit."""
+    try:
+        client = get_supabase_client()
+        client.table("payments").update(
+            {"paymongo_payment_id": provider_payment_id}
+        ).eq("payment_id", payment_id).execute()
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+def get_payment_by_paymongo_session(*, session_id: str) -> dict[str, Any] | None:
+    value = str(session_id or "").strip()
+    if not value:
+        return None
+    try:
+        client = get_supabase_client()
+        response = (
+            client.table("payments")
+            .select("payment_id,reservation_id,reference_no,status,amount")
+            .eq("paymongo_checkout_session_id", value)
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        rows = response.data or []
+        return rows[0] if rows else None
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
 def verify_payment_service_role(payment_id: str, *, approved: bool = True) -> None:
     try:
         client = get_supabase_client()
@@ -3283,6 +3392,92 @@ def write_reservation_escrow_shadow_metadata(
 
 
 # ============================================
+# Escrow ledger (append-only deposit audit trail)
+# ============================================
+ESCROW_LEDGER_SELECT = (
+    "ledger_id, reservation_id, reservation_code, event, escrow_state_from, "
+    "escrow_state_to, policy_outcome, amount, reason, actor_role, actor_user_id, "
+    "chain_tx_hash, metadata, created_at"
+)
+
+
+def record_escrow_transition(
+    *,
+    reservation_id: str,
+    event: str,
+    reservation_code: str | None = None,
+    escrow_state_from: str | None = None,
+    escrow_state_to: str | None = None,
+    policy_outcome: str | None = None,
+    amount: float | None = None,
+    reason: str | None = None,
+    actor_role: str | None = None,
+    actor_user_id: str | None = None,
+    chain_tx_hash: str | None = None,
+    metadata: dict[str, Any] | None = None,
+) -> None:
+    """Append one immutable escrow-ledger entry (service role).
+
+    BEST-EFFORT: a failed audit write must never break the money operation it is
+    recording (a refund, check-in release, or no-show forfeit), so all errors are
+    swallowed and logged rather than raised."""
+    if not reservation_id or not event:
+        return
+    try:
+        client = get_supabase_client()
+        payload: dict[str, Any] = {
+            "reservation_id": reservation_id,
+            "event": event,
+            "reservation_code": reservation_code,
+            "escrow_state_from": escrow_state_from,
+            "escrow_state_to": escrow_state_to,
+            "policy_outcome": policy_outcome,
+            "amount": float(amount) if amount is not None else None,
+            "reason": reason,
+            "actor_role": actor_role,
+            "actor_user_id": actor_user_id,
+            "chain_tx_hash": chain_tx_hash,
+            "metadata": metadata or {},
+        }
+        client.table("escrow_ledger").insert(payload).execute()
+    except Exception:  # noqa: BLE001 - audit write must not break the caller
+        import logging
+
+        logging.getLogger(__name__).exception(
+            "Failed to record escrow ledger entry (reservation_id=%s, event=%s)",
+            reservation_id,
+            event,
+        )
+
+
+def list_escrow_ledger(
+    *,
+    limit: int = 50,
+    offset: int = 0,
+    reservation_id: str | None = None,
+    event: str | None = None,
+    from_ts: str | None = None,
+) -> tuple[list[dict[str, Any]], int]:
+    """Return (rows, total) of escrow-ledger entries, newest first (service role)."""
+    try:
+        capped = max(1, min(int(limit), 200))
+        start = max(0, int(offset))
+        client = get_supabase_client()
+        query = client.table("escrow_ledger").select(ESCROW_LEDGER_SELECT, count="exact")
+        if reservation_id:
+            query = query.eq("reservation_id", reservation_id)
+        if event:
+            query = query.eq("event", event)
+        if from_ts:
+            query = query.gte("created_at", from_ts)
+        response = query.order("created_at", desc=True).range(start, start + capped - 1).execute()
+        rows = response.data or []
+        return rows, int(response.count or len(rows))
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
+# ============================================
 # In-app notifications
 # ============================================
 NOTIFICATION_SELECT = (
@@ -3648,6 +3843,69 @@ def notify_ops_new_service_request(row: dict[str, Any] | None) -> None:
             entity_id=request_id,
             link="/admin/services",
             dedupe_prefix=f"ops.service_request:{request_id}",
+        )
+    except Exception:  # noqa: BLE001 - best-effort
+        return
+
+
+def notify_ops_payment_received(*, reservation: dict[str, Any] | None, amount: float | None = None) -> None:
+    """Tell managers a guest paid online (deposit received → booking confirmed).
+    Managers + System Admin only; Front Desk doesn't handle payments."""
+    try:
+        if not isinstance(reservation, dict):
+            return
+        code = reservation.get("reservation_code") or "A reservation"
+        reservation_id = str(reservation.get("reservation_id") or "")
+        amount_str = f" (₱{amount:,.0f})" if amount and amount > 0 else ""
+        emit_notification_to_roles(
+            min_role="admin",
+            category="payment",
+            event_type="ops.payment_received",
+            title="Payment received",
+            body=f"{code} paid the deposit online{amount_str} — the booking is now confirmed.",
+            severity="success",
+            entity_type="reservation",
+            entity_id=reservation_id,
+            link="/admin/payments",
+            dedupe_prefix=f"ops.payment_received:{reservation_id}",
+        )
+    except Exception:  # noqa: BLE001 - best-effort
+        return
+
+
+def notify_ops_paid_cancellation(
+    *, reservation: dict[str, Any] | None, outcome: str, amount: float | None = None
+) -> None:
+    """Tell managers a PAID booking was cancelled — a refund may be due (admin
+    cancel) or the deposit was forfeited (guest cancel). Managers + System Admin
+    only. Never fired for unpaid bookings."""
+    try:
+        if not isinstance(reservation, dict):
+            return
+        code = reservation.get("reservation_code") or "A reservation"
+        reservation_id = str(reservation.get("reservation_id") or "")
+        amount_str = f"₱{amount:,.0f}" if amount and amount > 0 else "the deposit"
+        if str(outcome).lower() == "refunded":
+            title = "Refund may be due"
+            body = f"{code} was cancelled after paying {amount_str}. Review whether a refund is owed in Payments."
+            severity = "warning"
+            link = "/admin/payments"
+        else:
+            title = "Paid booking cancelled"
+            body = f"{code} was cancelled by the guest; {amount_str} is forfeited per policy. The unit/slot is now free."
+            severity = "info"
+            link = "/admin/reservations"
+        emit_notification_to_roles(
+            min_role="admin",
+            category="payment",
+            event_type="ops.paid_cancellation",
+            title=title,
+            body=body,
+            severity=severity,
+            entity_type="reservation",
+            entity_id=reservation_id,
+            link=link,
+            dedupe_prefix=f"ops.paid_cancellation:{reservation_id}",
         )
     except Exception:  # noqa: BLE001 - best-effort
         return

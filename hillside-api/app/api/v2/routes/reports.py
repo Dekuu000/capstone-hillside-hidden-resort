@@ -88,6 +88,8 @@ def get_reports_overview(
             "unit_booked_value": _to_float(summary_row.get("unit_booked_value")),
             "tour_booked_value": _to_float(summary_row.get("tour_booked_value")),
             "promo_discounts": _to_float(summary_row.get("promo_discounts")),
+            "refunded_deposits": _to_float(summary_row.get("refunded_deposits")),
+            "forfeited_deposits": _to_float(summary_row.get("forfeited_deposits")),
         },
         "daily": [
             {
@@ -99,6 +101,8 @@ def get_reports_overview(
                 "unit_booked_value": _to_float(row.get("unit_booked_value")),
                 "tour_booked_value": _to_float(row.get("tour_booked_value")),
                 "promo_discounts": _to_float(row.get("promo_discounts")),
+                "refunded_deposits": _to_float(row.get("refunded_deposits")),
+                "forfeited_deposits": _to_float(row.get("forfeited_deposits")),
             }
             for row in (daily_rows or [])
         ],
@@ -112,6 +116,8 @@ def get_reports_overview(
                 "unit_booked_value": _to_float(row.get("unit_booked_value")),
                 "tour_booked_value": _to_float(row.get("tour_booked_value")),
                 "promo_discounts": _to_float(row.get("promo_discounts")),
+                "refunded_deposits": _to_float(row.get("refunded_deposits")),
+                "forfeited_deposits": _to_float(row.get("forfeited_deposits")),
             }
             for row in (monthly_rows or [])
         ],

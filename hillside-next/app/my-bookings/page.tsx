@@ -1,6 +1,11 @@
 import { redirect } from "next/navigation";
 import { MyBookingsClient } from "../../components/my-bookings/MyBookingsClient";
 import { GuestShell } from "../../components/layout/GuestShell";
+import { stayDashboardResponseSchema } from "../../../packages/shared/src/schemas";
+import type { StayDashboardResponse } from "../../../packages/shared/src/types";
+import { formatDateWithWeekday } from "../../lib/dateDisplay";
+import { formatPhpPeso as toPeso } from "../../lib/formatCurrency";
+import { fetchServerApiData } from "../../lib/serverApi";
 import { getServerAccessToken, getServerAuthContext, getServerEmailHint } from "../../lib/serverAuth";
 import { isBackOffice, type MyBookingsTab } from "../../../packages/shared/src/types";
 
@@ -11,15 +16,32 @@ function normalizeTab(value?: string): MyBookingsTab {
   return "upcoming";
 }
 
+function getQrStatusLabel(status: string) {
+  if (["confirmed", "checked_in"].includes(status)) {
+    return "QR ready";
+  }
+  if (["pending_payment", "for_verification"].includes(status)) {
+    return "After payment";
+  }
+  return "No QR yet";
+}
+
+async function fetchStayDashboard(accessToken: string): Promise<StayDashboardResponse | null> {
+  return fetchServerApiData({
+    accessToken,
+    path: "/v2/me/stay-dashboard",
+    schema: stayDashboardResponseSchema,
+  });
+}
+
 export default async function MyBookingsPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ tab?: string; focus?: string; pay?: string }>;
+  searchParams?: Promise<{ tab?: string; focus?: string }>;
 }) {
   const resolvedSearchParams = (await searchParams) ?? {};
   const initialTab = normalizeTab(resolvedSearchParams.tab);
   const initialFocusReservationId = (resolvedSearchParams.focus || "").trim() || null;
-  const initialAutoOpenPay = resolvedSearchParams.pay === "1";
   const accessToken = await getServerAccessToken();
   if (!accessToken) {
     redirect("/login?next=/my-bookings");
@@ -36,7 +58,19 @@ export default async function MyBookingsPage({
     redirect("/admin");
   }
 
-  const emailHint = auth.email || (await getServerEmailHint());
+  const [emailHint, stayDashboard] = await Promise.all([
+    auth.email ? Promise.resolve(auth.email) : getServerEmailHint(),
+    fetchStayDashboard(accessToken),
+  ]);
+
+  const stay = stayDashboard?.reservation ?? null;
+  const staySnapshot = stay
+    ? {
+        nextStayDate: formatDateWithWeekday(stay.check_in_date || null),
+        outstandingBalance: toPeso(Number(stay.balance_due ?? 0)),
+        qrStatus: getQrStatusLabel(stay.status),
+      }
+    : null;
 
   return (
     <GuestShell initialEmail={emailHint}>
@@ -46,7 +80,7 @@ export default async function MyBookingsPage({
         initialTab={initialTab}
         initialData={null}
         initialFocusReservationId={initialFocusReservationId}
-        initialAutoOpenPay={initialAutoOpenPay}
+        staySnapshot={staySnapshot}
       />
     </GuestShell>
   );

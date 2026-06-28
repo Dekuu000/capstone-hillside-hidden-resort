@@ -1,12 +1,14 @@
-﻿import { Pagination } from "../../../components/shared/Pagination";
+﻿import { LinkPagination } from "../../../components/shared/LinkPagination";
 import {
+  escrowLedgerResponseSchema,
   escrowReconciliationResponseSchema,
 } from "../../../../packages/shared/src/schemas";
-import type { EscrowReconciliationResponse } from "../../../../packages/shared/src/types";
+import type { EscrowLedgerResponse, EscrowReconciliationResponse } from "../../../../packages/shared/src/types";
 import { getServerAccessToken, requireRoleAtLeastServer } from "../../../lib/serverAuth";
 import { fetchServerApiData } from "../../../lib/serverApi";
 import { formatDateTime } from "../../../lib/dateDisplay";
 import { AdminEscrowTableClient } from "../../../components/admin-escrow/AdminEscrowTableClient";
+import { EscrowLedgerPanel } from "../../../components/admin-escrow/EscrowLedgerPanel";
 import { AdminPageHeader } from "../../../components/layout/AdminPageHeader";
 
 const PAGE_SIZE = 10;
@@ -15,12 +17,6 @@ function parsePage(raw: string | undefined): number {
   const parsed = Number(raw || "1");
   if (!Number.isFinite(parsed)) return 1;
   return Math.max(1, Math.floor(parsed));
-}
-
-function buildPageQuery(page: number) {
-  const qs = new URLSearchParams();
-  qs.set("page", String(page));
-  return `?${qs.toString()}`;
 }
 
 async function fetchEscrowReconciliation(
@@ -32,6 +28,14 @@ async function fetchEscrowReconciliation(
     accessToken,
     path: `/v2/escrow/reconciliation?limit=${PAGE_SIZE}&offset=${offset}`,
     schema: escrowReconciliationResponseSchema,
+  });
+}
+
+async function fetchEscrowLedger(accessToken: string): Promise<EscrowLedgerResponse | null> {
+  return fetchServerApiData({
+    accessToken,
+    path: `/v2/escrow/ledger?limit=20`,
+    schema: escrowLedgerResponseSchema,
   });
 }
 
@@ -55,7 +59,10 @@ export default async function AdminEscrowPage({
 
   const resolved = (await searchParams) ?? {};
   const page = parsePage(Array.isArray(resolved.page) ? resolved.page[0] : resolved.page);
-  const data = await fetchEscrowReconciliation(accessToken, page);
+  const [data, ledger] = await Promise.all([
+    fetchEscrowReconciliation(accessToken, page),
+    fetchEscrowLedger(accessToken),
+  ]);
   const totalCount = data?.count || 0;
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
@@ -106,18 +113,21 @@ export default async function AdminEscrowPage({
             <div className="space-y-4">
               <AdminEscrowTableClient items={data.items} lastReconciledAt={data.last_reconciled_at} />
               <div className="border-t border-[var(--color-border)] px-4 py-3">
-                <Pagination
+                <LinkPagination
                   page={page}
                   totalPages={totalPages}
                   totalCount={totalCount}
                   pageSize={PAGE_SIZE}
-                  hrefForPage={(n) => buildPageQuery(n)}
                 />
               </div>
             </div>
           )}
         </>
       )}
+
+      <div className="mt-6">
+        <EscrowLedgerPanel items={ledger?.items ?? []} />
+      </div>
     </section>
   );
 }
