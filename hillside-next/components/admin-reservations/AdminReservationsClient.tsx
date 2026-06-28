@@ -112,10 +112,14 @@ function matchesStatQuickFilter(
   if (statFilter === "walk_ins_today") {
     return isWalkInToday;
   }
+  // ready_for_checkin — mirror the server tile: today's CONFIRMED arrivals (deposit
+  // verified) with a real total. A confirmed booking is ready to check in even with
+  // a balance due — the balance is collected at the desk — so do NOT require it to be
+  // fully settled (that was the old definition and undercounted vs the tile).
   return (
     reservation.check_in_date === today
-    && ["confirmed", "for_verification", "pending_payment"].includes(reservation.status)
-    && getReservationPaymentState(reservation) === "settled"
+    && reservation.status === "confirmed"
+    && Number(reservation.total_amount ?? 0) > 0
   );
 }
 
