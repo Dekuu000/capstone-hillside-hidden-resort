@@ -769,19 +769,22 @@ def _schedule_walk_in_side_effects(
     reservation_id: str,
     source_value: str,
 ) -> None:
-    """Push the non-critical post-create writes off the walk-in request path.
+    """Push the non-critical source tag off the walk-in request path.
 
-    The source tag and the escrow shadow record are both audit-only metadata that
-    the desk's success card never reads, yet each is a separate DB round-trip that
-    was stalling the cashier's "create" click. Defer them to background tasks (same
-    pattern as the guest-pass mint) so the response returns as soon as the
-    reservation row exists; the metadata lands a moment later and self-corrects."""
+    The source tag is audit-only metadata the desk's success card never reads, yet
+    it's a separate DB round-trip that was stalling the cashier's "create" click.
+    Defer it to a background task (same pattern as the guest-pass mint) so the
+    response returns as soon as the reservation row exists.
+
+    NOTE: escrow is intentionally NOT applied at create. A reservation is an unpaid
+    hold — there is no deposit to escrow yet. The on-chain escrow lock happens only
+    when an *online* deposit is verified (the PayMongo webhook). Cash/on-site
+    bookings never touch the chain."""
     background_tasks.add_task(
         _persist_reservation_source,
         reservation_id=reservation_id,
         source_value=source_value,
     )
-    background_tasks.add_task(_maybe_apply_escrow_shadow_write, reservation_id)
 
 
 def _reservation_amount_fields(reservation_id: str) -> dict[str, float | None]:
@@ -960,7 +963,9 @@ def create_reservation(
         reservation_code=str(created.get("reservation_code") or ""),
         status=status_enum,
         **_reservation_policy_fields(created, is_tour=False),
-        escrow_ref=_maybe_apply_escrow_shadow_write(reservation_id),
+        # Escrow is locked when the online deposit is *verified* (PayMongo webhook),
+        # not at create — a reservation here is an unpaid hold with nothing to escrow.
+        escrow_ref=None,
         guest_pass_ref=_schedule_guest_pass_mint(background_tasks, reservation_id),
         ai_recommendation=ai_recommendation,
     )
@@ -1028,13 +1033,12 @@ def create_tour_reservation(
     source_value = _resolve_tour_reservation_source(auth_role=auth.role, is_advance=payload.is_advance)
     # Walk-in tours are same-day desk bookings — skip the AI demand recommendation
     # and the 45-day pricing-signals query (a remote AI call + a DB aggregate) so the
-    # create returns fast, and defer the source tag + escrow shadow record to
-    # background tasks (audit-only, not read by the success card). Online/advance
-    # tours keep those inline so the guest flow is unchanged.
+    # create returns fast, and defer the source tag to a background task (audit-only,
+    # not read by the success card). Online/advance tours keep those inline so the
+    # guest flow is unchanged.
     if source_value == "walk_in":
         ai_recommendation = None
         _schedule_walk_in_side_effects(background_tasks, reservation_id=reservation_id, source_value=source_value)
-        escrow_ref = None
     else:
         _persist_reservation_source(reservation_id=reservation_id, source_value=source_value)
         pricing_signals = _load_pricing_signals(target_date=payload.visit_date)
@@ -1051,14 +1055,14 @@ def create_tour_reservation(
                 "occupancy_context": pricing_signals,
             },
         )
-        escrow_ref = _maybe_apply_escrow_shadow_write(reservation_id)
     response = ReservationResponse(
         reservation_id=reservation_id,
         reservation_code=str(created.get("reservation_code") or ""),
         status=status_enum,
         **_reservation_policy_fields(created, is_tour=True),
         **_reservation_amount_fields(reservation_id),
-        escrow_ref=escrow_ref,
+        # Escrow is locked at online-payment verification (webhook), not at create.
+        escrow_ref=None,
         guest_pass_ref=_schedule_guest_pass_mint(background_tasks, reservation_id),
         ai_recommendation=ai_recommendation,
     )
@@ -1133,10 +1137,10 @@ def create_walk_in_stay_reservation(
     reservation_id = str(created.get("reservation_id") or "")
     # Walk-in stays are same-day desk bookings — skip the AI demand recommendation
     # and the 45-day pricing-signals query so the create returns fast. (The walk-in
-    # stay screen doesn't surface the demand insight anyway.) The source tag and the
-    # escrow shadow record are deferred to background tasks (they're audit-only and
-    # not read by the success card), and the totals are echoed back so the desk can
-    # take payment inline without a second round-trip.
+    # stay screen doesn't surface the demand insight anyway.) The source tag is
+    # deferred to a background task (audit-only, not read by the success card), and
+    # the totals are echoed back so the desk can take payment inline without a second
+    # round-trip. Escrow is not applied at create (it locks at online-payment time).
     _schedule_walk_in_side_effects(background_tasks, reservation_id=reservation_id, source_value="walk_in")
     response = ReservationResponse(
         reservation_id=reservation_id,
