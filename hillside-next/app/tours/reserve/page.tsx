@@ -13,7 +13,7 @@ export default async function TourReservePage() {
   if (isBackOffice(auth.role)) redirect("/admin");
 
   return (
-    <main className="flex min-h-screen flex-col bg-[var(--color-background)] pb-24 md:pb-0">
+    <main className="flex min-h-screen flex-col bg-[var(--color-background)] pb-[calc(104px_+_env(safe-area-inset-bottom))] md:pb-0">
       <TourReserveClient token={token} email={auth.email ?? null} />
       <SiteFooter />
     </main>

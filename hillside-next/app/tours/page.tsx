@@ -10,7 +10,7 @@ export default async function ToursPage() {
   const services = await fetchPublicServices();
 
   return (
-    <main className={`flex min-h-screen flex-col bg-[var(--color-background)]${auth ? " pb-24 md:pb-0" : ""}`}>
+    <main className={`flex min-h-screen flex-col bg-[var(--color-background)]${auth ? " pb-[calc(104px_+_env(safe-area-inset-bottom))] md:pb-0" : ""}`}>
 
       <section className="border-b border-[var(--color-border)] bg-[var(--color-surface)]">
         <div className="mx-auto w-full max-w-[1280px] px-4 py-8 md:px-6 lg:px-8">
