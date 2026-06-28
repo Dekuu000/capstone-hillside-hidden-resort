@@ -303,6 +303,7 @@ export const reservationListItemSchema = z.object({
   promo_code: z.string().optional().nullable(),
   amount_paid_verified: z.number().optional().nullable(),
   balance_due: z.number().optional().nullable(),
+  open_charges_total: z.number().optional().nullable(),
   ...reservationPaymentPolicyMetadataShape,
   guest_count: z.number().int().positive().optional().nullable(),
   notes: z.string().optional().nullable(),
@@ -571,6 +572,7 @@ export const reservationFolioResponseSchema = z.object({
   addons: z.array(folioAddonLineSchema),
   addons_subtotal: z.number(),
   grand_total_due: z.number(),
+  pending_request_count: z.number().optional(),
 });
 
 export const tourReservationCreateRequestSchema = z.object({

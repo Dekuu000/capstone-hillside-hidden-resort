@@ -441,6 +441,17 @@ def get_reservation_folio(reservation_id: str) -> dict[str, Any] | None:
             .order("requested_at", desc=False)
             .execute()
         ).data or []
+
+        # Requests the guest raised that staff haven't fulfilled yet — not billable,
+        # surfaced as a check-out warning so the desk can deliver/cancel first.
+        pending_resp = (
+            client.table("resort_service_requests")
+            .select("request_id", count="exact")
+            .eq("reservation_id", reservation_id)
+            .in_("status", ["new", "in_progress"])
+            .execute()
+        )
+        pending_request_count = int(pending_resp.count or 0)
     except Exception as exc:  # noqa: BLE001
         raise _runtime_error_from_exception(exc) from exc
     addons = [
@@ -464,6 +475,7 @@ def get_reservation_folio(reservation_id: str) -> dict[str, Any] | None:
         "addons": addons,
         "addons_subtotal": addons_subtotal,
         "grand_total_due": round(room_balance + addons_subtotal, 2),
+        "pending_request_count": pending_request_count,
     }
 
 
@@ -889,6 +901,39 @@ def _attach_latest_webhook_audit(payments: list[dict[str, Any]]) -> list[dict[st
     return enriched
 
 
+def _attach_open_charges_totals(rows: list[dict[str, Any]]) -> None:
+    """Stamp each reservation row with ``open_charges_total`` — the sum of its
+    fulfilled (status='done'), unsettled, un-waived add-on charges. One batched
+    query for the whole page so the list stays cheap. Best-effort: on any error
+    every row simply keeps a 0 total."""
+    ids = [str(r.get("reservation_id")) for r in rows if r.get("reservation_id")]
+    for row in rows:
+        row.setdefault("open_charges_total", 0.0)
+    if not ids:
+        return
+    try:
+        client = get_supabase_client()
+        resp = (
+            client.table("resort_service_requests")
+            .select("reservation_id,line_total")
+            .in_("reservation_id", ids)
+            .eq("status", "done")
+            .eq("waived", False)
+            .is_("settled_at", "null")
+            .gt("line_total", 0)
+            .execute()
+        )
+        totals: dict[str, float] = {}
+        for charge in resp.data or []:
+            rid = str(charge.get("reservation_id") or "")
+            totals[rid] = totals.get(rid, 0.0) + float(charge.get("line_total") or 0)
+        for row in rows:
+            rid = str(row.get("reservation_id") or "")
+            row["open_charges_total"] = round(totals.get(rid, 0.0), 2)
+    except Exception:  # noqa: BLE001 - best-effort enrichment, never break the list
+        logger.debug("Failed to attach open-charge totals to reservation list", exc_info=True)
+
+
 def list_recent_reservations(
     *,
     limit: int = 10,
@@ -917,6 +962,7 @@ def list_recent_reservations(
             lambda: base_query.range(offset, offset + limit - 1).execute(),
         )
         rows = [_normalize_reservation_row(row) for row in (response.data or [])]
+        _attach_open_charges_totals(rows)
         return rows, int(response.count or 0)
 
     full_response = _timed_execute(
@@ -925,7 +971,9 @@ def list_recent_reservations(
     )
     rows = full_response.data or []
     filtered_rows = [_normalize_reservation_row(row) for row in rows if _matches_search(row, search_term)]
-    return filtered_rows[offset : offset + limit], len(filtered_rows)
+    page = filtered_rows[offset : offset + limit]
+    _attach_open_charges_totals(page)
+    return page, len(filtered_rows)
 
 
 def get_reservation_quick_stats(*, today: str) -> dict[str, int]:

@@ -734,6 +734,7 @@ export function AdminReservationsClient({
           {items.map((reservation) => {
             const source = getReservationSource(reservation);
             const statusMeta = getReservationStatusMeta(reservation.status);
+            const openCharges = Number(reservation.open_charges_total ?? 0);
             return (
               <button
                 key={reservation.reservation_id}
@@ -757,6 +758,11 @@ export function AdminReservationsClient({
                   <span className="truncate">{formatDateWithYear(reservation.check_in_date)} – {formatDateWithYear(reservation.check_out_date)}</span>
                   <span className="shrink-0 font-semibold text-[var(--color-text)]">{formatPeso(reservation.total_amount)}</span>
                 </div>
+                {openCharges > 0 ? (
+                  <span className="inline-flex w-fit items-center rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800">
+                    {formatPeso(openCharges)} add-ons due
+                  </span>
+                ) : null}
               </button>
             );
           })}
@@ -847,6 +853,11 @@ export function AdminReservationsClient({
                     <td className="px-3 py-2.5 align-top">
                       <p className="font-semibold text-[var(--color-text)]">{formatPeso(reservation.total_amount)}</p>
                       <p className="text-xs text-[var(--color-muted)]">Paid: {formatPeso(reservation.amount_paid_verified)}</p>
+                      {Number(reservation.open_charges_total ?? 0) > 0 ? (
+                        <span className="mt-1 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800">
+                          {formatPeso(Number(reservation.open_charges_total))} add-ons due
+                        </span>
+                      ) : null}
                     </td>
                 </tr>
               ))}

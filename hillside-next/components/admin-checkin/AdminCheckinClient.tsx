@@ -2093,6 +2093,16 @@ export function AdminCheckinClient({
                     )}
                   </div>
                 ) : null}
+                {canCheckout && folio && (folio.pending_request_count ?? 0) > 0 ? (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
+                    <p className="text-sm font-semibold text-amber-800">
+                      Guest has {folio.pending_request_count} request{folio.pending_request_count === 1 ? "" : "s"} not yet fulfilled.
+                    </p>
+                    <p className="mt-1 text-xs text-amber-700">
+                      Not billed yet — deliver and mark them done in Services to add the charge, or cancel them, before check-out.
+                    </p>
+                  </div>
+                ) : null}
                 <p className="inline-flex items-center gap-1 text-[11px] text-[var(--color-muted)] sm:text-xs"><Keyboard className="h-3.5 w-3.5" />Shortcuts: R = Rescan, Enter = Confirm</p>
               </div>
             )}

@@ -362,6 +362,8 @@ export type ReservationListItem = ReservationPaymentPolicyMetadata & {
   promo_code?: string | null;
   amount_paid_verified?: number | null;
   balance_due?: number | null;
+  /** Fulfilled, unsettled add-on charges due at check-out (0 when none). */
+  open_charges_total?: number | null;
   guest_count?: number | null;
   notes?: string | null;
   updated_at?: string | null;
@@ -626,6 +628,8 @@ export type ReservationFolio = {
   addons: FolioAddonLine[];
   addons_subtotal: number;
   grand_total_due: number;
+  /** Requests not yet fulfilled (new/in_progress) — not billable; a check-out warning. */
+  pending_request_count?: number;
 };
 
 export type TourReservationCreateRequest = {

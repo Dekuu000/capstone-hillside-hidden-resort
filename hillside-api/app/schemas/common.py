@@ -263,6 +263,10 @@ class ReservationFolioResponse(BaseModel):
     addons: list[FolioAddonLine] = []
     addons_subtotal: float
     grand_total_due: float
+    # Requests the guest raised that staff haven't fulfilled yet (status new /
+    # in_progress). NOT billable — surfaced as a check-out warning so the desk can
+    # deliver-and-bill or cancel before clearing the guest.
+    pending_request_count: int = 0
 
 
 class FolioSettleRequest(BaseModel):
@@ -593,6 +597,10 @@ class ReservationListItem(ReservationPaymentPolicyMetadata):
     promo_code: str | None = None
     amount_paid_verified: float | None = None
     balance_due: float | None = None
+    # Fulfilled (delivered) add-on charges that are not yet settled or waived — the
+    # "open charges" the desk collects at check-out. Lets the list flag who needs
+    # settling before staff drill into the reservation. 0 when there are none.
+    open_charges_total: float = 0
     guest_count: int | None = None
     notes: str | None = None
     reservation_source: Literal["online", "walk_in"] = "online"
