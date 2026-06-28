@@ -799,22 +799,16 @@ export function MyBookingsClient({
 
   return (
     <section className="mx-auto flex w-full max-w-[1240px] flex-col gap-5 overflow-x-hidden lg:gap-5">
-      {stayCard ? (
-        // Desktop: title + quick actions fill the left column beside the stay card
-        // (so the tall card no longer leaves a dead band). Mobile: title, card, tiles.
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-x-6 lg:gap-y-4">
-          <div className="min-w-0 lg:col-start-1 lg:row-start-1">{guestIntro}</div>
-          <div className="w-full lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:w-[360px] lg:justify-self-end">
-            {stayCard}
-          </div>
-          <div className="min-w-0 lg:col-start-1 lg:row-start-2">{quickActions}</div>
-        </div>
-      ) : (
-        <div className="space-y-5">
-          {guestIntro}
+      {guestIntro}
+      {/* Desktop: the "Your stay" card is a right rail that spans the quick actions
+          and the tabs/search block; the title sits full-width above. Mobile: title,
+          card, quick actions, tabs (DOM order keeps the card right under the title). */}
+      <div className={stayCard ? "lg:grid lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start lg:gap-6" : undefined}>
+        {stayCard ? (
+          <div className="mb-5 w-full lg:col-start-2 lg:row-start-1 lg:mb-0 lg:w-[380px]">{stayCard}</div>
+        ) : null}
+        <div className="flex min-w-0 flex-col gap-5 lg:col-start-1 lg:row-start-1">
           {quickActions}
-        </div>
-      )}
 
       <section className="rounded-[2rem] border border-[var(--color-border)] bg-white p-4 shadow-sm lg:p-5">
         <div className="lg:hidden" data-testid="guest-tabs">
@@ -910,6 +904,8 @@ export function MyBookingsClient({
           <p className="truncate text-sm text-[var(--color-muted)]">{TAB_HINTS[tab]}</p>
         </div>
       </section>
+        </div>
+      </div>
 
       {error || actionMessage || cachedViewMeta ? (
         <div className="mb-1">
