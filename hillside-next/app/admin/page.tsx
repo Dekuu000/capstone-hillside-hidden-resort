@@ -26,6 +26,7 @@ export default async function AdminShellPage() {
     return (
       <StaffOperationsDashboard
         snapshot={ops}
+        token={token}
         error={ops ? null : "Unable to load today's operations. Please refresh or check API connectivity."}
       />
     );

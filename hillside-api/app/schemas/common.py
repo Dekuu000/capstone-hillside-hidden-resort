@@ -487,11 +487,22 @@ class OperationsRoomCounts(BaseModel):
     total: int = 0
 
 
+class OperationsRoomItem(BaseModel):
+    """One unit on the front-desk housekeeping board — operational fields only
+    (no pricing/revenue), so it's safe for the staff dashboard."""
+    unit_id: str
+    name: str | None = None
+    room_number: str | None = None
+    type: str | None = None
+    operational_status: UnitOperationalStatus = UnitOperationalStatus.CLEANED
+
+
 class OperationsSnapshotResponse(BaseModel):
     """Front-desk operations snapshot — no revenue, crypto, or AI internals.
     Safe for the staff (Front Desk) dashboard."""
     as_of: datetime
     rooms: OperationsRoomCounts
+    room_board: list[OperationsRoomItem] = Field(default_factory=list)
     today_arrivals: int = 0
     ready_for_check_in: int = 0
     pending_payment: int = 0

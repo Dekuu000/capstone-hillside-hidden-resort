@@ -655,6 +655,14 @@ export const resortSnapshotResponseSchema = z.object({
   ai_demand_7d: resortSnapshotAiDemandSchema,
 });
 
+export const operationsRoomItemSchema = z.object({
+  unit_id: z.string().min(1),
+  name: z.string().nullable().optional(),
+  room_number: z.string().nullable().optional(),
+  type: z.string().nullable().optional(),
+  operational_status: z.enum(UNIT_OPERATIONAL_STATUSES),
+});
+
 export const operationsSnapshotResponseSchema = z.object({
   as_of: z.string().min(1),
   rooms: z.object({
@@ -664,6 +672,7 @@ export const operationsSnapshotResponseSchema = z.object({
     dirty: z.number().int().nonnegative(),
     total: z.number().int().nonnegative(),
   }),
+  room_board: z.array(operationsRoomItemSchema).default([]),
   today_arrivals: z.number().int().nonnegative(),
   ready_for_check_in: z.number().int().nonnegative(),
   pending_payment: z.number().int().nonnegative(),
