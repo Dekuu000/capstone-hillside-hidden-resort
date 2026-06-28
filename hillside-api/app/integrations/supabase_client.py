@@ -803,7 +803,7 @@ def get_reservation_quick_stats(*, today: str) -> dict[str, int]:
     - today_arrivals     : every reservation arriving today (any status)
     - pending_payment    : active reservations still needing a payment action
     - walk_ins_today     : walk-in source arriving today OR created today
-    - ready_for_check_in : today's arrivals that are confirmed-ish and settled
+    - ready_for_check_in : today's confirmed arrivals (deposit paid) yet to check in
     """
     client = get_supabase_client()
 
@@ -813,7 +813,6 @@ def get_reservation_quick_stats(*, today: str) -> dict[str, int]:
         raise _runtime_error_from_exception(exc) from exc
 
     excluded_statuses = ["cancelled", "checked_out", "no_show"]
-    ready_statuses = ["confirmed", "for_verification", "pending_payment"]
 
     def _count(label: str, build) -> int:
         response = _timed_execute(label, lambda: build().limit(1).execute())
@@ -842,11 +841,14 @@ def get_reservation_quick_stats(*, today: str) -> dict[str, int]:
         )
         ready_for_check_in = _count(
             "db.reservations.stats.ready_for_check_in",
+            # "confirmed" means the deposit was verified; the balance is collected
+            # at the desk during check-in, so a remaining balance_due must NOT
+            # exclude a guest here. This is the live count of today's arrivals
+            # still to be checked in (drops off as staff process each one).
             lambda: client.table("reservations")
             .select("reservation_id", count="exact")
             .eq("check_in_date", today)
-            .in_("status", ready_statuses)
-            .lte("balance_due", 0)
+            .eq("status", "confirmed")
             .gt("total_amount", 0),
         )
     except Exception as exc:  # noqa: BLE001
