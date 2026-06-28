@@ -244,7 +244,7 @@ MY_BOOKING_LIST_SELECT = """
         reservation_unit_id,
         quantity_or_nights,
         rate_snapshot,
-        unit:units(name,unit_code,room_number,type)
+        unit:units(name,unit_code,room_number,type,image_url,image_urls,image_thumb_urls)
     ),
     service_bookings:service_bookings(
         service_booking_id,
@@ -252,7 +252,7 @@ MY_BOOKING_LIST_SELECT = """
         total_amount,
         adult_qty,
         kid_qty,
-        service:services(service_name)
+        service:services(service_name,image_urls,image_thumb_urls)
     )
 """
 

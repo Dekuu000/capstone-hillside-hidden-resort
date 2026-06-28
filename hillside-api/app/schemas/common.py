@@ -526,6 +526,8 @@ class ReservationUnitSummary(BaseModel):
 
 class ReservationServiceInfo(BaseModel):
     service_name: str | None = None
+    image_urls: list[str] | None = None
+    image_thumb_urls: list[str] | None = None
 
 
 class ReservationServiceBookingSummary(BaseModel):
