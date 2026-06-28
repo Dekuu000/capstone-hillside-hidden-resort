@@ -14,7 +14,7 @@ export function MapPlaceholder({ className }: { className?: string }) {
       aria-label="Map of Hillside Hidden Resort"
     >
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-center">
-        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-primary)] text-white shadow-[var(--shadow-md)]">
+        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-cta)] text-white shadow-[var(--shadow-md)]">
           <MapPin className="h-6 w-6" />
         </span>
         <p className="text-sm font-semibold text-[var(--color-text)]">Hillside Hidden Resort</p>
