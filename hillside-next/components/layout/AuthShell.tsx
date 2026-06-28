@@ -11,6 +11,9 @@ type AuthShellProps = {
   sideDescription: string;
   sideProof?: string;
   sideImageUrl?: string;
+  /** CSS background-position for the side photo (default "center"). Use e.g.
+   *  "center top" when the focal point sits near the top of a tall portrait shot. */
+  sideImagePosition?: string;
   sideQuote?: string;
   sideCaption?: string;
   mobileBrandLine?: string;
@@ -32,6 +35,7 @@ export function AuthShell({
   sideDescription,
   sideProof,
   sideImageUrl,
+  sideImagePosition = "center",
   sideQuote,
   sideCaption,
   mobileBrandLine,
@@ -99,7 +103,10 @@ export function AuthShell({
 
         {showSidePanel ? (
           <aside className="relative hidden lg:flex lg:flex-col">
-            <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url('${imageSrc}')` }} />
+            <div
+              className="absolute inset-0 bg-cover"
+              style={{ backgroundImage: `url('${imageSrc}')`, backgroundPosition: sideImagePosition }}
+            />
             <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(9,22,43,0.52),rgba(7,20,38,0.84))]" />
             <div className="relative flex h-full flex-col p-10 text-white">
               <Link
