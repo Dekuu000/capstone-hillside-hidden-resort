@@ -816,8 +816,12 @@ def get_reservation_quick_stats(*, today: str) -> dict[str, int]:
     row to the browser to be counted client-side. The four counts mirror the
     derivations in the frontend (lib/reservationView + AdminReservationsClient):
 
-    - today_arrivals     : every reservation arriving today (any status)
-    - pending_payment    : active reservations still needing a payment action
+    - today_arrivals     : reservations arriving today that are still live
+                           (excludes cancelled / no_show / checked_out — those
+                           aren't real arrivals)
+    - pending_payment    : active reservations still owing money (status
+                           pending_payment/for_verification OR any balance_due);
+                           surfaced in the UI as the "Awaiting payment" tile
     - walk_ins_today     : walk-in source arriving today OR created today
     - ready_for_check_in : today's confirmed arrivals (deposit paid) yet to check in
     """
@@ -839,7 +843,8 @@ def get_reservation_quick_stats(*, today: str) -> dict[str, int]:
             "db.reservations.stats.today_arrivals",
             lambda: client.table("reservations")
             .select("reservation_id", count="exact")
-            .eq("check_in_date", today),
+            .eq("check_in_date", today)
+            .not_.in_("status", excluded_statuses),
         )
         pending_payment = _count(
             "db.reservations.stats.pending_payment",
