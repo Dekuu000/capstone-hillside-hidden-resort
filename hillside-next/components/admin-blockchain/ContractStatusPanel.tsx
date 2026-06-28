@@ -265,11 +265,11 @@ export function ContractStatusPanel({
             <div className="border-t border-[var(--color-border)] px-3 py-3">
               <Pagination
                 page={Math.floor(pageOffset / pageLimit) + 1}
+                totalPages={Math.max(1, Math.ceil(totalCount / Math.max(1, pageLimit)))}
                 totalCount={totalCount}
                 pageSize={pageLimit}
                 hasPrev={canGoPrevious}
                 hasNext={canGoNext}
-                showNumbers={false}
                 disabled={loading}
                 onPageChange={(target) => onPageChange(Math.max(0, (target - 1) * pageLimit))}
               />

@@ -202,8 +202,12 @@ def _maybe_get_ai_recommendation(
 
 
 def _maybe_apply_escrow_shadow_write(reservation_id: str) -> EscrowRef | None:
-    if not settings.feature_escrow_shadow_write:
-        logger.info("Escrow shadow-write skipped: feature disabled (reservation_id=%s)", reservation_id)
+    # This applies escrow on payment: a real on-chain lock when
+    # FEATURE_ESCROW_ONCHAIN_LOCK is on, otherwise a shadow-write audit record
+    # when FEATURE_ESCROW_SHADOW_WRITE is on. Only skip when BOTH are off — the
+    # on-chain lock must not be gated behind shadow-write.
+    if not settings.feature_escrow_shadow_write and not settings.feature_escrow_onchain_lock:
+        logger.info("Escrow apply skipped: shadow-write and on-chain lock both disabled (reservation_id=%s)", reservation_id)
         return None
 
     active_chain = get_active_chain()
