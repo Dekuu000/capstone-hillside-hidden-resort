@@ -38,7 +38,7 @@ export function StaySnapshotCard({
     <article
       data-testid={testId}
       className={cn(
-        "w-full rounded-[1.5rem] border shadow-sm",
+        "w-full rounded-[1.5rem] border shadow-sm lg:flex lg:h-full lg:flex-col",
         dark
           ? "border-white/15 bg-white/8 p-4 text-white backdrop-blur"
           : "rounded-3xl border-[var(--color-border)] bg-white/95 p-5 text-[var(--color-text)] backdrop-blur lg:ml-auto lg:max-w-[380px]",
@@ -51,7 +51,7 @@ export function StaySnapshotCard({
         <h2 className={cn("font-bold", dark ? "text-lg text-white" : "text-lg text-[var(--color-primary)]")}>Your stay</h2>
       </div>
 
-      <div className={cn("mt-4 divide-y text-sm", dark ? "divide-white/12 text-white/75" : "divide-[var(--color-border)] text-[var(--color-muted)]")}>
+      <div className={cn("mt-4 divide-y text-sm lg:flex lg:flex-1 lg:flex-col lg:justify-between", dark ? "divide-white/12 text-white/75" : "divide-[var(--color-border)] text-[var(--color-muted)]")}>
         <div className="flex items-center justify-between py-2.5 lg:py-2">
           <div className="flex items-center gap-3">
             <CalendarDays className="h-4 w-4" />

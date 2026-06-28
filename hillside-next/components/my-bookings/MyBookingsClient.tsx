@@ -803,14 +803,14 @@ export function MyBookingsClient({
       {/* Desktop: the "Your stay" card is a right rail that spans the quick actions
           and the tabs/search block; the title sits full-width above. Mobile: title,
           card, quick actions, tabs (DOM order keeps the card right under the title). */}
-      <div className={stayCard ? "lg:grid lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start lg:gap-6" : undefined}>
+      <div className={stayCard ? "lg:grid lg:grid-cols-[minmax(0,1fr)_380px] lg:items-stretch lg:gap-6" : undefined}>
         {stayCard ? (
-          <div className="mb-5 w-full lg:col-start-2 lg:row-start-1 lg:mb-0 lg:w-[380px]">{stayCard}</div>
+          <div className="mb-5 w-full lg:col-start-2 lg:row-start-1 lg:mb-0 lg:flex lg:w-[380px]">{stayCard}</div>
         ) : null}
         <div className="flex min-w-0 flex-col gap-5 lg:col-start-1 lg:row-start-1">
           {quickActions}
 
-      <section className="rounded-[2rem] border border-[var(--color-border)] bg-white p-4 shadow-sm lg:p-5">
+      <section className="rounded-[2rem] border border-[var(--color-border)] bg-white p-4 shadow-sm lg:flex lg:flex-1 lg:flex-col">
         <div className="lg:hidden" data-testid="guest-tabs">
           <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <button
@@ -900,7 +900,7 @@ export function MyBookingsClient({
             className="w-full"
           />
         </div>
-        <div className="mt-3 lg:mt-4">
+        <div className="mt-3 lg:mt-auto lg:pt-4">
           <p className="truncate text-sm text-[var(--color-muted)]">{TAB_HINTS[tab]}</p>
         </div>
       </section>
