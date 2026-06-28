@@ -27,11 +27,6 @@ const FALLBACK_AMENITIES: GuestMapAmenityPin[] = guestMapLocations;
 const WALK_MINUTES_SCALE = 0.08;
 const WALK_MINUTES_MAX = 9;
 
-type RouteDifficulty = {
-  label: "Easy" | "Moderate" | "Long";
-  tone: "success" | "warn" | "error";
-};
-
 async function loadAmenityPack(): Promise<GuestMapAmenityPin[]> {
   const fallback = FALLBACK_AMENITIES;
   if (!("caches" in window)) return fallback;
@@ -147,12 +142,6 @@ function routeDistance(path: string[], pinById: Map<string, GuestMapAmenityPin>)
   return total;
 }
 
-function resolveRouteDifficulty(minutes: number): RouteDifficulty {
-  if (minutes <= 4) return { label: "Easy", tone: "success" };
-  if (minutes <= 8) return { label: "Moderate", tone: "warn" };
-  return { label: "Long", tone: "error" };
-}
-
 function routeSteps(path: string[], pinById: Map<string, GuestMapAmenityPin>) {
   if (path.length <= 1) return ["You are already at your selected destination."];
   const steps: string[] = [];
@@ -260,10 +249,6 @@ export function GuestMapClient() {
       Math.max(1, Math.round(totalDistance * WALK_MINUTES_SCALE)),
     );
   }, [pathPinIds, pinById]);
-  const routeDifficulty = useMemo(
-    () => (etaMinutes > 0 ? resolveRouteDifficulty(etaMinutes) : null),
-    [etaMinutes],
-  );
   const swapRoutePoints = () => {
     if (!originAmenityId || !activeAmenityId) return;
     setOriginAmenityId(activeAmenityId);
@@ -287,10 +272,10 @@ export function GuestMapClient() {
           <div>
             <h2 className="text-xl font-semibold text-[var(--color-text)]">Getting around the resort</h2>
             <p className="mt-1 text-sm text-[var(--color-muted)]">
-              Pick a start and destination for walking directions between trails and facilities. Works offline — no GPS needed.
+              Walking directions between trails and facilities.
             </p>
           </div>
-          <div className="flex w-full flex-wrap items-center gap-2 md:w-auto">
+          <div className="flex flex-wrap items-center gap-2">
             <NetworkStatusBadge />
             {etaMinutes > 0 ? (
               <StatusPill
@@ -299,22 +284,6 @@ export function GuestMapClient() {
                 icon={<Route className="h-3.5 w-3.5" aria-hidden="true" />}
               />
             ) : null}
-            {routeDifficulty ? (
-              <StatusPill label={routeDifficulty.label} tone={routeDifficulty.tone} />
-            ) : null}
-            <div className="flex w-full items-center justify-between sm:ml-auto sm:w-auto sm:justify-start sm:gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  const target = document.getElementById("route-controls");
-                  target?.scrollIntoView({ behavior: "smooth", block: "start" });
-                }}
-                className="inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)]"
-              >
-                <Route className="h-3.5 w-3.5" aria-hidden="true" />
-                Select route
-              </button>
-            </div>
           </div>
         </div>
 
