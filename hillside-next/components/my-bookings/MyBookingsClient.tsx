@@ -730,73 +730,91 @@ export function MyBookingsClient({
     );
   }
 
+  const guestIntro = (
+    <GuestPageIntro
+      testId="guest-hero"
+      title="My trips"
+      subtitle="Your bookings, payments, and check-in passes."
+    />
+  );
+  const quickActions = (
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <Link
+        href="/stays"
+        className="group flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 transition hover:shadow-[var(--shadow-md)]"
+      >
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[color:color-mix(in_srgb,var(--color-secondary)_14%,white)] text-[var(--color-secondary)]">
+          <Calendar className="h-4 w-4" />
+        </span>
+        <span className="text-sm font-semibold text-[var(--color-text)] group-hover:underline">Book a stay</span>
+      </Link>
+      <Link
+        href="/tours"
+        className="group flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 transition hover:shadow-[var(--shadow-md)]"
+      >
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[color:color-mix(in_srgb,var(--color-secondary)_14%,white)] text-[var(--color-secondary)]">
+          <Calendar className="h-4 w-4" />
+        </span>
+        <span className="text-sm font-semibold text-[var(--color-text)] group-hover:underline">Tours</span>
+      </Link>
+      <Link
+        href="/guest/map"
+        className="group flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 transition hover:shadow-[var(--shadow-md)]"
+      >
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[color:color-mix(in_srgb,var(--color-secondary)_14%,white)] text-[var(--color-secondary)]">
+          <MapPin className="h-4 w-4" />
+        </span>
+        <span className="text-sm font-semibold text-[var(--color-text)] group-hover:underline">Resort map</span>
+      </Link>
+      <Link
+        href="/guest/services"
+        className="group flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 transition hover:shadow-[var(--shadow-md)]"
+      >
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[color:color-mix(in_srgb,var(--color-secondary)_14%,white)] text-[var(--color-secondary)]">
+          <Bell className="h-4 w-4" />
+        </span>
+        <span className="text-sm font-semibold text-[var(--color-text)] group-hover:underline">Services</span>
+      </Link>
+    </div>
+  );
+  const stayCard = staySnapshot ? (
+    <StaySnapshotCard
+      nextStayDate={staySnapshot.nextStayDate}
+      outstandingBalance={staySnapshot.outstandingBalance}
+      qrStatus={staySnapshot.qrStatus}
+      stayChargesTotal={
+        activeFolio && activeFolio.addons.length > 0 ? formatPeso(activeFolio.grand_total_due) : null
+      }
+      stayChargeLines={
+        activeFolio
+          ? activeFolio.addons.map((line) => ({
+              id: line.request_id,
+              label: line.quantity > 1 ? `${line.service_name} ×${line.quantity}` : line.service_name,
+              amount: formatPeso(line.line_total),
+            }))
+          : []
+      }
+    />
+  ) : null;
+
   return (
     <section className="mx-auto flex w-full max-w-[1240px] flex-col gap-5 overflow-x-hidden lg:gap-5">
-      <GuestPageIntro
-        testId="guest-hero"
-        title="My trips"
-        subtitle="Your bookings, payments, and check-in passes."
-        aside={
-          staySnapshot ? (
-            <StaySnapshotCard
-              nextStayDate={staySnapshot.nextStayDate}
-              outstandingBalance={staySnapshot.outstandingBalance}
-              qrStatus={staySnapshot.qrStatus}
-              stayChargesTotal={
-                activeFolio && activeFolio.addons.length > 0 ? formatPeso(activeFolio.grand_total_due) : null
-              }
-              stayChargeLines={
-                activeFolio
-                  ? activeFolio.addons.map((line) => ({
-                      id: line.request_id,
-                      label: line.quantity > 1 ? `${line.service_name} ×${line.quantity}` : line.service_name,
-                      amount: formatPeso(line.line_total),
-                    }))
-                  : []
-              }
-            />
-          ) : undefined
-        }
-      />
-
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Link
-          href="/stays"
-          className="group flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 transition hover:shadow-[var(--shadow-md)]"
-        >
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[color:color-mix(in_srgb,var(--color-secondary)_14%,white)] text-[var(--color-secondary)]">
-            <Calendar className="h-4 w-4" />
-          </span>
-          <span className="text-sm font-semibold text-[var(--color-text)] group-hover:underline">Book a stay</span>
-        </Link>
-        <Link
-          href="/tours"
-          className="group flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 transition hover:shadow-[var(--shadow-md)]"
-        >
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[color:color-mix(in_srgb,var(--color-secondary)_14%,white)] text-[var(--color-secondary)]">
-            <Calendar className="h-4 w-4" />
-          </span>
-          <span className="text-sm font-semibold text-[var(--color-text)] group-hover:underline">Tours</span>
-        </Link>
-        <Link
-          href="/guest/map"
-          className="group flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 transition hover:shadow-[var(--shadow-md)]"
-        >
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[color:color-mix(in_srgb,var(--color-secondary)_14%,white)] text-[var(--color-secondary)]">
-            <MapPin className="h-4 w-4" />
-          </span>
-          <span className="text-sm font-semibold text-[var(--color-text)] group-hover:underline">Resort map</span>
-        </Link>
-        <Link
-          href="/guest/services"
-          className="group flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 transition hover:shadow-[var(--shadow-md)]"
-        >
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[color:color-mix(in_srgb,var(--color-secondary)_14%,white)] text-[var(--color-secondary)]">
-            <Bell className="h-4 w-4" />
-          </span>
-          <span className="text-sm font-semibold text-[var(--color-text)] group-hover:underline">Services</span>
-        </Link>
-      </div>
+      {stayCard ? (
+        // Desktop: title + quick actions fill the left column beside the stay card
+        // (so the tall card no longer leaves a dead band). Mobile: title, card, tiles.
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-x-6 lg:gap-y-4">
+          <div className="min-w-0 lg:col-start-1 lg:row-start-1">{guestIntro}</div>
+          <div className="w-full lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:w-[360px] lg:justify-self-end">
+            {stayCard}
+          </div>
+          <div className="min-w-0 lg:col-start-1 lg:row-start-2">{quickActions}</div>
+        </div>
+      ) : (
+        <div className="space-y-5">
+          {guestIntro}
+          {quickActions}
+        </div>
+      )}
 
       <section className="rounded-[2rem] border border-[var(--color-border)] bg-white p-4 shadow-sm lg:p-5">
         <div className="lg:hidden" data-testid="guest-tabs">

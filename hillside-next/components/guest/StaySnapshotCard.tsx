@@ -41,7 +41,7 @@ export function StaySnapshotCard({
         "w-full rounded-[1.5rem] border shadow-sm",
         dark
           ? "border-white/15 bg-white/8 p-4 text-white backdrop-blur"
-          : "ml-auto max-w-[380px] rounded-3xl border-[var(--color-border)] bg-white/95 p-5 text-[var(--color-text)] backdrop-blur",
+          : "rounded-3xl border-[var(--color-border)] bg-white/95 p-5 text-[var(--color-text)] backdrop-blur lg:ml-auto lg:max-w-[380px]",
       )}
     >
       <div className="flex items-center gap-3">
