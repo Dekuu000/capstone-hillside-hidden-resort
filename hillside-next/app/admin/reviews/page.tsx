@@ -14,7 +14,7 @@ export default async function AdminReviewsPage() {
         subtitle="Read reviews from verified stays and hide any that break the rules."
         action={
           <span className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--color-muted)]">
-            <Star className="h-3.5 w-3.5 fill-[var(--color-cta)] text-[var(--color-cta)]" />
+            <Star className="h-3.5 w-3.5 fill-[var(--color-star)] text-[var(--color-star)]" />
             Verified-stay reviews
           </span>
         }

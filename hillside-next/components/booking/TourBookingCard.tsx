@@ -85,7 +85,7 @@ export function TourBookingCard({ service, isAuthed, initialVisitDate }: TourBoo
       <button
         type="button"
         onClick={reserve}
-        className="mt-4 flex h-12 w-full items-center justify-center rounded-2xl bg-[var(--color-cta)] text-base font-semibold text-white transition hover:brightness-95 focus-visible:ring-4 focus-visible:ring-[color:color-mix(in_srgb,var(--color-cta)_30%,white)]"
+        className="mt-4 flex h-12 w-full items-center justify-center rounded-2xl bg-[var(--color-primary)] text-base font-semibold text-white transition hover:brightness-110 focus-visible:ring-4 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_40%,white)]"
       >
         Reserve
       </button>

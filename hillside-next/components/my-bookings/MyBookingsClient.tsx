@@ -1117,7 +1117,7 @@ export function MyBookingsClient({
                   <div className="mt-4 flex flex-col gap-2 border-t border-[var(--color-border)] pt-3 sm:flex-row sm:items-center sm:justify-between">
                     {reviewedByReservation.has(booking.reservation_id) ? (
                       <span className="inline-flex items-center gap-1.5 text-sm text-[var(--color-muted)]">
-                        <Star className="h-4 w-4 fill-[var(--color-cta)] text-[var(--color-cta)]" aria-hidden="true" />
+                        <Star className="h-4 w-4 fill-[var(--color-star)] text-[var(--color-star)]" aria-hidden="true" />
                         You rated this stay {reviewedByReservation.get(booking.reservation_id)}/5
                       </span>
                     ) : (
@@ -1424,7 +1424,7 @@ export function MyBookingsClient({
                 className="rounded-full p-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
               >
                 <Star
-                  className={`h-9 w-9 ${value <= reviewRating ? "fill-[var(--color-cta)] text-[var(--color-cta)]" : "fill-transparent text-[var(--color-border)]"}`}
+                  className={`h-9 w-9 ${value <= reviewRating ? "fill-[var(--color-star)] text-[var(--color-star)]" : "fill-transparent text-[var(--color-border)]"}`}
                   aria-hidden="true"
                 />
               </button>

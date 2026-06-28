@@ -57,7 +57,7 @@ export default async function ListingDetailPage({
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm muted-text">
           {hasReviews ? (
             <span className="inline-flex items-center gap-1 text-[var(--color-text)]">
-              <Star className="h-4 w-4 fill-[var(--color-cta)] text-[var(--color-cta)]" />
+              <Star className="h-4 w-4 fill-[var(--color-star)] text-[var(--color-star)]" />
               {reviews.summary.average_rating.toFixed(1)}
               <span className="muted-text">({reviews.summary.review_count})</span>
             </span>
@@ -116,7 +116,7 @@ export default async function ListingDetailPage({
               {hasReviews ? (
                 <>
                   <p className="mt-1 inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--color-text)]">
-                    <Star className="h-4 w-4 fill-[var(--color-cta)] text-[var(--color-cta)]" />
+                    <Star className="h-4 w-4 fill-[var(--color-star)] text-[var(--color-star)]" />
                     {reviews.summary.average_rating.toFixed(1)} · {reviews.summary.review_count} review
                     {reviews.summary.review_count === 1 ? "" : "s"} from verified stays
                   </p>
@@ -128,7 +128,7 @@ export default async function ListingDetailPage({
                             {[1, 2, 3, 4, 5].map((n) => (
                               <Star
                                 key={n}
-                                className={`h-3.5 w-3.5 ${n <= review.rating ? "fill-[var(--color-cta)] text-[var(--color-cta)]" : "fill-transparent text-[var(--color-border)]"}`}
+                                className={`h-3.5 w-3.5 ${n <= review.rating ? "fill-[var(--color-star)] text-[var(--color-star)]" : "fill-transparent text-[var(--color-border)]"}`}
                                 aria-hidden="true"
                               />
                             ))}

@@ -76,7 +76,7 @@ export function SearchWidget({
           <button
             type="button"
             onClick={submit}
-            className="flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-[var(--color-cta)] px-5 text-sm font-semibold text-white transition hover:brightness-95 focus-visible:ring-4 focus-visible:ring-[color:color-mix(in_srgb,var(--color-cta)_30%,white)] md:flex-none"
+            className="flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-[var(--color-primary)] px-5 text-sm font-semibold text-white transition hover:brightness-110 focus-visible:ring-4 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_40%,white)] md:flex-none"
           >
             <Search className="h-4 w-4" />
             <span className="md:hidden lg:inline">Search</span>

@@ -6,6 +6,8 @@
   --color-primary: #13304c;
   --color-secondary: #0f8a7e;
   --color-cta: #d56a24;
+  /* Gold rating star (review stars), kept distinct from the orange action color */
+  --color-star: #fbbf24;
   --color-background: #f5f7f8;
   --color-surface: #ffffff;
   --color-text: #15222e;

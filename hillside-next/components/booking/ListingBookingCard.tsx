@@ -100,7 +100,7 @@ export function ListingBookingCard({
         <button
           type="button"
           onClick={reserve}
-          className="flex h-12 flex-1 items-center justify-center rounded-2xl bg-[var(--color-cta)] text-base font-semibold text-white transition hover:brightness-95 focus-visible:ring-4 focus-visible:ring-[color:color-mix(in_srgb,var(--color-cta)_30%,white)]"
+          className="flex h-12 flex-1 items-center justify-center rounded-2xl bg-[var(--color-primary)] text-base font-semibold text-white transition hover:brightness-110 focus-visible:ring-4 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_40%,white)]"
         >
           Reserve
         </button>
