@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { AlertCircle, Check, ChevronDown, Copy, ExternalLink, ShieldCheck, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import type { AdminPaymentItem, ReservationListItem } from "../../../packages/shared/src/types";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { AdminPaymentItem, ReservationFolio, ReservationListItem } from "../../../packages/shared/src/types";
 import { ROLE_LABELS, roleAtLeast, type Role } from "../../../packages/shared/src/types";
+import { reservationFolioResponseSchema } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
 import { buildTxExplorerUrl } from "../../lib/chainExplorer";
@@ -145,6 +146,90 @@ export function ReservationDetailDrawer({
       setNoShowBusy(false);
     }
   };
+  // Guest folio: room balance + any add-ons requested during the stay, collected at
+  // check-out. Room stays only (tours have no in-stay add-ons). Staff (operations+)
+  // can settle the whole folio in one tender or waive an individual charge.
+  const canSettleFolio = roleAtLeast(role, "staff");
+  const reservationId = reservation?.reservation_id ?? null;
+  const isTourBooking = (reservation?.service_bookings?.length ?? 0) > 0;
+  const [folio, setFolio] = useState<ReservationFolio | null>(null);
+  const [folioLoading, setFolioLoading] = useState(false);
+  const [folioError, setFolioError] = useState<string | null>(null);
+  const [settleMethod, setSettleMethod] = useState<"cash" | "gcash" | "bank" | "card">("cash");
+  const [settleBusy, setSettleBusy] = useState(false);
+  const [waiveBusy, setWaiveBusy] = useState<Record<string, boolean>>({});
+
+  const loadFolio = useCallback(async () => {
+    if (!token || !reservationId) return;
+    setFolioLoading(true);
+    setFolioError(null);
+    try {
+      const data = await apiFetch(
+        `/v2/reservations/${encodeURIComponent(reservationId)}/folio`,
+        { method: "GET" },
+        token,
+        reservationFolioResponseSchema,
+      );
+      setFolio(data);
+    } catch (unknownError) {
+      setFolioError(getApiErrorMessage(unknownError, "Couldn't load the folio."));
+    } finally {
+      setFolioLoading(false);
+    }
+  }, [token, reservationId]);
+
+  useEffect(() => {
+    if (open && token && reservationId && !isTourBooking) {
+      void loadFolio();
+    } else {
+      setFolio(null);
+      setFolioError(null);
+    }
+  }, [open, token, reservationId, isTourBooking, loadFolio]);
+
+  const handleSettleFolio = async () => {
+    if (!token || !reservationId) return;
+    setSettleBusy(true);
+    setFolioError(null);
+    try {
+      const data = await apiFetch(
+        `/v2/reservations/${encodeURIComponent(reservationId)}/folio/settle`,
+        { method: "POST", body: JSON.stringify({ method: settleMethod }) },
+        token,
+        reservationFolioResponseSchema,
+      );
+      setFolio(data);
+      onRefreshPayments?.();
+      onStatusChanged?.();
+    } catch (unknownError) {
+      setFolioError(getApiErrorMessage(unknownError, "Couldn't settle the folio."));
+    } finally {
+      setSettleBusy(false);
+    }
+  };
+
+  const handleWaiveCharge = async (requestId: string) => {
+    if (!token) return;
+    setWaiveBusy((prev) => ({ ...prev, [requestId]: true }));
+    setFolioError(null);
+    try {
+      await apiFetch(
+        `/v2/admin/services/requests/${encodeURIComponent(requestId)}/waive`,
+        { method: "POST", body: JSON.stringify({}) },
+        token,
+      );
+      await loadFolio();
+    } catch (unknownError) {
+      setFolioError(getApiErrorMessage(unknownError, "Couldn't waive this charge."));
+    } finally {
+      setWaiveBusy((prev) => ({ ...prev, [requestId]: false }));
+    }
+  };
+
+  const showFolio = Boolean(
+    folio && !isTourBooking && (folio.addons.length > 0 || reservation?.status === "checked_in"),
+  );
+
   // Blockchain/ledger internals are a System Admin tool — hidden from Front Desk and Manager.
   const canSeeLedger = roleAtLeast(role, "super_admin");
   const [copiedField, setCopiedField] = useState<
@@ -596,6 +681,99 @@ export function ReservationDetailDrawer({
                     </div>
                   ) : null}
                 </section>
+
+                {showFolio && folio ? (
+                <section className="rounded-2xl border border-[var(--color-border)] p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <h4 className="text-sm font-semibold text-[var(--color-text)]">Folio — charges this stay</h4>
+                    {folio.grand_total_due > 0 ? (
+                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">Open</span>
+                    ) : (
+                      <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-800">Settled</span>
+                    )}
+                  </div>
+                  <p className="mt-0.5 text-xs text-[var(--color-muted)]">
+                    Room balance plus any add-ons requested during the stay, collected at check-out.
+                  </p>
+
+                  <div className="mt-3 space-y-1.5 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[var(--color-muted)]">Room balance</span>
+                      <span className="font-medium text-[var(--color-text)]">{formatPeso(folio.room_balance)}</span>
+                    </div>
+                    {folio.addons.length > 0 ? (
+                      <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-background)]/50 p-2">
+                        <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">Add-ons</p>
+                        <ul className="space-y-1">
+                          {folio.addons.map((line) => (
+                            <li key={line.request_id} className="flex items-center justify-between gap-2">
+                              <span className="min-w-0 truncate text-[var(--color-text)]">
+                                {line.service_name}
+                                {line.quantity > 1 ? <span className="text-[var(--color-muted)]"> ×{line.quantity}</span> : null}
+                              </span>
+                              <span className="flex shrink-0 items-center gap-2">
+                                <span className="font-medium text-[var(--color-text)]">{formatPeso(line.line_total)}</span>
+                                {canSettleFolio ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => void handleWaiveCharge(line.request_id)}
+                                    disabled={Boolean(waiveBusy[line.request_id])}
+                                    className="rounded-md px-1.5 py-0.5 text-[11px] font-semibold text-[var(--color-muted)] underline-offset-2 transition hover:bg-white hover:text-[var(--color-text)] hover:underline disabled:opacity-50"
+                                    title="Comp this charge (remove from folio)"
+                                  >
+                                    {waiveBusy[line.request_id] ? "…" : "Waive"}
+                                  </button>
+                                ) : null}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                        <div className="mt-1.5 flex items-center justify-between border-t border-[var(--color-border)] pt-1.5 text-xs">
+                          <span className="text-[var(--color-muted)]">Add-ons subtotal</span>
+                          <span className="font-semibold text-[var(--color-text)]">{formatPeso(folio.addons_subtotal)}</span>
+                        </div>
+                      </div>
+                    ) : null}
+                    <div className="flex items-center justify-between border-t border-[var(--color-border)] pt-2">
+                      <span className="text-[13px] font-semibold text-[var(--color-text)]">Total due at check-out</span>
+                      <span className={`text-xl font-bold ${folio.grand_total_due > 0 ? "text-amber-700" : "text-emerald-700"}`}>
+                        {formatPeso(folio.grand_total_due)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {folioError ? (
+                    <p className="mt-2 rounded-lg border border-red-200 bg-red-50 p-2 text-xs text-red-700">{folioError}</p>
+                  ) : null}
+
+                  {folio.grand_total_due > 0 && canSettleFolio ? (
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <label className="sr-only" htmlFor="folio-settle-method">Payment method</label>
+                      <select
+                        id="folio-settle-method"
+                        value={settleMethod}
+                        onChange={(event) => setSettleMethod(event.target.value as typeof settleMethod)}
+                        disabled={settleBusy}
+                        className="rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-2 text-xs font-semibold text-[var(--color-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)] disabled:opacity-60"
+                      >
+                        <option value="cash">Cash</option>
+                        <option value="gcash">GCash</option>
+                        <option value="bank">Bank</option>
+                        <option value="card">Card</option>
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => void handleSettleFolio()}
+                        disabled={settleBusy}
+                        className="rounded-lg border border-[var(--color-primary)] bg-[var(--color-primary)] px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_40%,white)] disabled:opacity-60"
+                      >
+                        {settleBusy ? "Settling…" : `Settle folio · ${formatPeso(folio.grand_total_due)}`}
+                      </button>
+                    </div>
+                  ) : null}
+                  {folioLoading ? <p className="mt-2 text-xs text-[var(--color-muted)]">Refreshing folio…</p> : null}
+                </section>
+                ) : null}
 
                 {canSeeLedger ? (
                 <section className="rounded-2xl border border-[var(--color-border)] p-3">

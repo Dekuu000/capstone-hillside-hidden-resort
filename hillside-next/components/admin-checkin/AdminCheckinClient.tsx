@@ -17,6 +17,7 @@ import type {
   QrPublicKeyResponse,
   QrToken,
   QrVerifyResponse,
+  ReservationFolio,
   ReservationListResponse,
   ReservationListItem as ReservationItem,
   SyncPushResult,
@@ -27,6 +28,7 @@ import {
   qrPublicKeyResponseSchema,
   qrTokenSchema,
   qrVerifyResponseSchema,
+  reservationFolioResponseSchema,
   reservationListResponseSchema,
   reservationListItemSchema,
   syncPushResultSchema,
@@ -401,6 +403,11 @@ export function AdminCheckinClient({
   const [result, setResult] = useState<QrVerifyResponse | null>(null);
   const [detail, setDetail] = useState<ReservationItem | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  // Folio at check-out: room balance + add-ons requested during the stay. Front desk
+  // collects the whole thing here before the guest departs.
+  const [folio, setFolio] = useState<ReservationFolio | null>(null);
+  const [folioSettleMethod, setFolioSettleMethod] = useState<"cash" | "gcash" | "bank" | "card">("cash");
+  const [folioSettleBusy, setFolioSettleBusy] = useState(false);
   const [queue, setQueue] = useState<QueuedAction[]>([]);
   const [syncReport, setSyncReport] = useState<SyncReportItem[]>([]);
   const [busy, setBusy] = useState(false);
@@ -1284,7 +1291,8 @@ export function AdminCheckinClient({
   const canCheckout = String(result?.status || "").toLowerCase() === "checked_in";
   const showOverrideFlow = hasOutstandingBalance && canOverride;
   const canDirectCheckin = canCheckin && !hasOutstandingBalance && !pendingQueuedCheckin && !queueWriteBusy;
-  const canDirectCheckout = canCheckout && !hasOutstandingBalance && !queueWriteBusy;
+  const folioAddonsDue = Number(folio?.addons_subtotal ?? 0);
+  const canDirectCheckout = canCheckout && !hasOutstandingBalance && folioAddonsDue <= 0 && !queueWriteBusy;
   const canSwitchCamera = cameras.length > 1;
   const expiredByReason = String(result?.reason || "").toLowerCase().includes("expired");
   const invalidDetail = friendlyInvalidReason(result?.reason);
@@ -1383,6 +1391,54 @@ export function AdminCheckinClient({
       })
       .finally(() => setDetailLoading(false));
   }, [networkOnline, result?.reservation_id, token]);
+
+  // Load the folio for a checked-in guest so the desk can settle room balance +
+  // add-ons in one tender before recording check-out.
+  const loadFolio = useCallback(async () => {
+    if (!token || !result?.reservation_id || !networkOnline) return;
+    try {
+      const data = await apiFetch<ReservationFolio>(
+        `/v2/reservations/${encodeURIComponent(result.reservation_id)}/folio`,
+        { method: "GET" },
+        token,
+        reservationFolioResponseSchema,
+      );
+      setFolio(data);
+    } catch {
+      setFolio(null);
+    }
+  }, [networkOnline, result?.reservation_id, token]);
+
+  useEffect(() => {
+    if (token && result?.reservation_id && networkOnline && String(result.status || "").toLowerCase() === "checked_in") {
+      void loadFolio();
+    } else {
+      setFolio(null);
+    }
+  }, [loadFolio, networkOnline, result?.reservation_id, result?.status, token]);
+
+  const settleFolio = useCallback(async () => {
+    if (!token || !result?.reservation_id) return;
+    setFolioSettleBusy(true);
+    try {
+      const data = await apiFetch<ReservationFolio>(
+        `/v2/reservations/${encodeURIComponent(result.reservation_id)}/folio/settle`,
+        { method: "POST", body: JSON.stringify({ method: folioSettleMethod }) },
+        token,
+        reservationFolioResponseSchema,
+      );
+      setFolio(data);
+      showToast({ type: "success", title: "Folio settled", message: "Room balance and add-ons collected." });
+      // Refresh the reservation so the room balance / outstanding gate clears.
+      void apiFetch<ReservationItem>(`/v2/reservations/${encodeURIComponent(result.reservation_id)}`, { method: "GET" }, token, reservationListItemSchema)
+        .then((row) => setDetail(row))
+        .catch(() => undefined);
+    } catch (e) {
+      showToast({ type: "error", title: "Couldn't settle folio", message: getApiErrorMessage(e, "Request failed.") });
+    } finally {
+      setFolioSettleBusy(false);
+    }
+  }, [folioSettleMethod, result?.reservation_id, showToast, token]);
 
   const performCheckin = useCallback(async () => {
     if (!token || !result) return;
@@ -1971,6 +2027,70 @@ export function AdminCheckinClient({
                     >
                       Go to Payments
                     </Link>
+                  </div>
+                ) : null}
+                {canCheckout && folio && (folio.addons.length > 0 || folio.grand_total_due > 0) ? (
+                  <div className="rounded-xl border border-[var(--color-border)] bg-white p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-semibold text-[var(--color-text)]">Folio — settle at check-out</p>
+                      {folio.grand_total_due > 0 ? (
+                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">Open</span>
+                      ) : (
+                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-800">Settled</span>
+                      )}
+                    </div>
+                    {folio.room_balance > 0 ? (
+                      <div className="mt-2 flex items-center justify-between text-sm">
+                        <span className="text-[var(--color-muted)]">Room balance</span>
+                        <span className="font-medium text-[var(--color-text)]">{formatPeso(folio.room_balance)}</span>
+                      </div>
+                    ) : null}
+                    {folio.addons.length > 0 ? (
+                      <ul className="mt-2 space-y-1 text-sm">
+                        {folio.addons.map((line) => (
+                          <li key={line.request_id} className="flex items-center justify-between gap-2">
+                            <span className="min-w-0 truncate text-[var(--color-text)]">
+                              {line.service_name}
+                              {line.quantity > 1 ? <span className="text-[var(--color-muted)]"> ×{line.quantity}</span> : null}
+                            </span>
+                            <span className="shrink-0 font-medium text-[var(--color-text)]">{formatPeso(line.line_total)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+                    <div className="mt-2 flex items-center justify-between border-t border-[var(--color-border)] pt-2">
+                      <span className="text-[13px] font-semibold text-[var(--color-text)]">Total due</span>
+                      <span className={`text-lg font-bold ${folio.grand_total_due > 0 ? "text-amber-700" : "text-emerald-700"}`}>
+                        {formatPeso(folio.grand_total_due)}
+                      </span>
+                    </div>
+                    {folio.grand_total_due > 0 ? (
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                        <label className="sr-only" htmlFor="checkin-folio-method">Payment method</label>
+                        <select
+                          id="checkin-folio-method"
+                          value={folioSettleMethod}
+                          onChange={(event) => setFolioSettleMethod(event.target.value as typeof folioSettleMethod)}
+                          disabled={folioSettleBusy}
+                          className="h-10 rounded-lg border border-[var(--color-border)] bg-white px-2.5 text-xs font-semibold text-[var(--color-text)] disabled:opacity-60"
+                        >
+                          <option value="cash">Cash</option>
+                          <option value="gcash">GCash</option>
+                          <option value="bank">Bank</option>
+                          <option value="card">Card</option>
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => void settleFolio()}
+                          disabled={folioSettleBusy}
+                          className="h-10 rounded-lg bg-[var(--color-primary)] px-3 text-xs font-semibold text-white shadow-sm transition hover:brightness-110 disabled:opacity-60"
+                        >
+                          {folioSettleBusy ? "Settling…" : `Settle ${formatPeso(folio.grand_total_due)}`}
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="mt-2 text-xs text-emerald-700">Folio settled — you can record check-out.</p>
+                    )}
                   </div>
                 ) : null}
                 <p className="inline-flex items-center gap-1 text-[11px] text-[var(--color-muted)] sm:text-xs"><Keyboard className="h-3.5 w-3.5" />Shortcuts: R = Rescan, Enter = Confirm</p>

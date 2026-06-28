@@ -483,6 +483,7 @@ export function GuestServicesClient({ accessToken }: Props) {
               </label>
               <p className="guest-surface-soft px-3 py-2 text-xs text-[var(--color-muted)]">
                 Estimated total: <strong className="text-[var(--color-text)]">{toPeso(estimatedTotal)}</strong>
+                {reservationId ? " — added to your room bill, settled at check-out." : " — pay at the front desk."}
               </p>
               <label className="guest-form-label">
                 Attach reservation (optional)

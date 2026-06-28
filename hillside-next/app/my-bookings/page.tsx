@@ -81,6 +81,8 @@ export default async function MyBookingsPage({
         initialData={null}
         initialFocusReservationId={initialFocusReservationId}
         staySnapshot={staySnapshot}
+        activeStayId={stay?.reservation_id ?? null}
+        activeStayStatus={stay?.status ?? null}
       />
     </GuestShell>
   );

@@ -13,6 +13,7 @@ import type {
   QrToken,
   ReservationListItem as Booking,
   ReservationCancelResponse,
+  ReservationFolio,
   ReservationPolicyOutcome,
 } from "../../../packages/shared/src/types";
 import { computeStayDepositPreview } from "../../../packages/shared/src/types";
@@ -21,6 +22,7 @@ import {
   myReviewsResponseSchema,
   qrTokenSchema,
   reservationCancelResponseSchema,
+  reservationFolioResponseSchema,
   reservationListItemSchema,
   reviewItemSchema,
 } from "../../../packages/shared/src/schemas";
@@ -60,6 +62,8 @@ type MyBookingsClientProps = {
   initialData?: BookingsResponse | null;
   initialFocusReservationId?: string | null;
   staySnapshot?: StaySnapshot | null;
+  activeStayId?: string | null;
+  activeStayStatus?: string | null;
 };
 
 const TAB_LABELS: Record<TabKey, string> = {
@@ -239,6 +243,8 @@ export function MyBookingsClient({
   initialData = null,
   initialFocusReservationId = null,
   staySnapshot = null,
+  activeStayId = null,
+  activeStayStatus = null,
 }: MyBookingsClientProps) {
   const router = useRouter();
   const token = initialToken;
@@ -262,6 +268,36 @@ export function MyBookingsClient({
   const [details, setDetails] = useState<Booking | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [detailsError, setDetailsError] = useState<string | null>(null);
+  // Running stay charges (add-ons requested during the stay + any room balance),
+  // collected at check-out. Room stays only.
+  const [folio, setFolio] = useState<ReservationFolio | null>(null);
+  const [folioLoading, setFolioLoading] = useState(false);
+  // Folio for the guest's in-progress (checked-in) stay, shown at the top of My
+  // Trips so they can watch add-ons accrue toward what they settle at check-out.
+  const [activeFolio, setActiveFolio] = useState<ReservationFolio | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!token || !activeStayId || activeStayStatus !== "checked_in") {
+      setActiveFolio(null);
+      return;
+    }
+    void apiFetch(
+      `/v2/reservations/${encodeURIComponent(activeStayId)}/folio`,
+      { method: "GET" },
+      token,
+      reservationFolioResponseSchema,
+    )
+      .then((data) => {
+        if (!cancelled) setActiveFolio(data);
+      })
+      .catch(() => {
+        if (!cancelled) setActiveFolio(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [token, activeStayId, activeStayStatus]);
 
   const [cancelFor, setCancelFor] = useState<Booking | null>(null);
   const [cancelBusy, setCancelBusy] = useState(false);
@@ -452,6 +488,27 @@ export function MyBookingsClient({
           reservationListItemSchema,
         );
         setDetails(data);
+        // Pull the running stay charges for an in-progress/just-finished room stay so the
+        // guest can see add-ons accruing toward what they settle at check-out.
+        const isTour = (data.service_bookings?.length ?? 0) > 0;
+        if (!isTour && ["confirmed", "checked_in", "checked_out"].includes(data.status)) {
+          setFolioLoading(true);
+          try {
+            const stayFolio = await apiFetch(
+              `/v2/reservations/${encodeURIComponent(reservationId)}/folio`,
+              { method: "GET" },
+              token,
+              reservationFolioResponseSchema,
+            );
+            setFolio(stayFolio);
+          } catch {
+            setFolio(null);
+          } finally {
+            setFolioLoading(false);
+          }
+        } else {
+          setFolio(null);
+        }
       } catch (unknownError) {
         setDetailsError(getApiErrorMessage(unknownError, "Failed to load booking details."));
       } finally {
@@ -689,6 +746,33 @@ export function MyBookingsClient({
           ) : undefined
         }
       />
+
+      {activeFolio && activeFolio.addons.length > 0 ? (
+        <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4" aria-label="Stay charges">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-sm font-semibold text-[var(--color-text)]">Your stay charges</h2>
+            <span className="rounded-full bg-[color:color-mix(in_srgb,var(--color-secondary)_14%,white)] px-2.5 py-0.5 text-[11px] font-semibold text-[var(--color-secondary)]">In progress</span>
+          </div>
+          <p className="mt-0.5 text-xs text-[var(--color-muted)]">
+            Services you requested during your stay. These are added to your bill and settled at check-out.
+          </p>
+          <ul className="mt-3 space-y-1.5 text-sm">
+            {activeFolio.addons.map((line) => (
+              <li key={line.request_id} className="flex items-center justify-between gap-2">
+                <span className="min-w-0 truncate text-[var(--color-text)]">
+                  {line.service_name}
+                  {line.quantity > 1 ? <span className="text-[var(--color-muted)]"> ×{line.quantity}</span> : null}
+                </span>
+                <span className="shrink-0 font-medium text-[var(--color-text)]">{formatPeso(line.line_total)}</span>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-2 flex items-center justify-between border-t border-[var(--color-border)] pt-2">
+            <span className="text-[13px] font-semibold text-[var(--color-text)]">Total to settle at check-out</span>
+            <span className="text-lg font-bold text-[var(--color-primary)]">{formatPeso(activeFolio.grand_total_due)}</span>
+          </div>
+        </section>
+      ) : null}
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Link
@@ -1080,6 +1164,7 @@ export function MyBookingsClient({
           panelClassName="max-h-[calc(100dvh-0.9rem)] border-[var(--color-border)] bg-white pb-[calc(1rem+env(safe-area-inset-bottom))]"
           onClose={() => {
             setDetails(null);
+            setFolio(null);
           }}
         >
             {detailsLoading ? <p className="text-sm text-[var(--color-muted)]" role="status">Loading details...</p> : null}
@@ -1196,6 +1281,32 @@ export function MyBookingsClient({
                     </section>
                   );
                 })()}
+
+                {folio && folio.addons.length > 0 ? (
+                  <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-4" aria-label="Stay charges">
+                    <h4 className="text-sm font-semibold text-[var(--color-text)]">Your stay charges</h4>
+                    <p className="mt-0.5 text-xs text-[var(--color-muted)]">
+                      Services you requested during your stay. These are added to your bill and settled at check-out.
+                    </p>
+                    <ul className="mt-3 space-y-1.5 text-sm">
+                      {folio.addons.map((line) => (
+                        <li key={line.request_id} className="flex items-center justify-between gap-2">
+                          <span className="min-w-0 truncate text-[var(--color-text)]">
+                            {line.service_name}
+                            {line.quantity > 1 ? <span className="text-[var(--color-muted)]"> ×{line.quantity}</span> : null}
+                          </span>
+                          <span className="shrink-0 font-medium text-[var(--color-text)]">{formatPeso(line.line_total)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="mt-2 flex items-center justify-between border-t border-[var(--color-border)] pt-2">
+                      <span className="text-[13px] font-semibold text-[var(--color-text)]">Total to settle at check-out</span>
+                      <span className="text-lg font-bold text-[var(--color-text)]">{formatPeso(folio.grand_total_due)}</span>
+                    </div>
+                  </section>
+                ) : folioLoading ? (
+                  <p className="text-xs text-[var(--color-muted)]" role="status">Loading your stay charges…</p>
+                ) : null}
               </div>
             ) : null}
         </ModalDialog>
