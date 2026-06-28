@@ -35,21 +35,21 @@ export default async function TourDetailPage({
         </Link>
 
         <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{service.service_name}</h1>
-        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm muted-text">
+        <div className="mt-1 flex items-center gap-x-2.5 overflow-x-auto whitespace-nowrap text-sm font-medium text-[var(--color-text)] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <span className="inline-flex items-center gap-1">
             <Clock className="h-4 w-4" />
             {schedule}
           </span>
           {service.max_pax ? (
             <>
-              <span aria-hidden>·</span>
+              <span aria-hidden className="text-[var(--color-muted)]">·</span>
               <span className="inline-flex items-center gap-1">
                 <Users className="h-4 w-4" />
                 Up to {service.max_pax} guests
               </span>
             </>
           ) : null}
-          <span aria-hidden>·</span>
+          <span aria-hidden className="text-[var(--color-muted)]">·</span>
           <span className="inline-flex items-center gap-1">
             <MapPin className="h-4 w-4" />
             Olongapo, Zambales

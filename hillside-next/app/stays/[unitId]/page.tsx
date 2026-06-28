@@ -54,7 +54,7 @@ export default async function ListingDetailPage({
         </Link>
 
         <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{unit.name}</h1>
-        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm muted-text">
+        <div className="mt-1 flex items-center gap-x-2.5 overflow-x-auto whitespace-nowrap text-sm font-medium text-[var(--color-text)] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {hasReviews ? (
             <span className="inline-flex items-center gap-1 text-[var(--color-text)]">
               <Star className="h-4 w-4 fill-[var(--color-star)] text-[var(--color-star)]" />
@@ -67,14 +67,14 @@ export default async function ListingDetailPage({
               New
             </span>
           )}
-          <span aria-hidden>·</span>
+          <span aria-hidden className="text-[var(--color-muted)]">·</span>
           <span>{unitTypeLabel(unit.type)}</span>
-          <span aria-hidden>·</span>
+          <span aria-hidden className="text-[var(--color-muted)]">·</span>
           <span className="inline-flex items-center gap-1">
             <Users className="h-4 w-4" />
             Up to {unit.capacity} guests
           </span>
-          <span aria-hidden>·</span>
+          <span aria-hidden className="text-[var(--color-muted)]">·</span>
           <span className="inline-flex items-center gap-1">
             <MapPin className="h-4 w-4" />
             Olongapo, Zambales
