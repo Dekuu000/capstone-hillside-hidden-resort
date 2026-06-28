@@ -12,6 +12,7 @@ from app.core.chains import get_active_chain, get_chain_registry
 from app.core.config import settings
 from app.integrations.escrow_chain import release_reservation_escrow_onchain
 from app.integrations.supabase_client import (
+    get_reservation_folio,
     perform_checkin as perform_checkin_rpc,
     perform_checkout as perform_checkout_rpc,
     get_reservation_by_id,
@@ -381,11 +382,16 @@ def perform_checkout(
     if not row:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation not found")
 
-    balance_due = float(row.get("balance_due") or 0)
-    if balance_due > 0:
+    # The full folio must clear before check-out: room balance + open add-on charges.
+    # Staff may still check out with an outstanding folio by providing an override
+    # reason (a deliberate "bill later").
+    folio = get_reservation_folio(payload.reservation_id)
+    amount_due = float((folio or {}).get("grand_total_due") if folio else (row.get("balance_due") or 0))
+    has_override = bool(payload.override_reason and payload.override_reason.strip())
+    if amount_due > 0 and not has_override:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Remaining balance must be settled before check-out. Outstanding: {balance_due:.2f}",
+            detail=f"Settle the folio (room + add-ons) before check-out, or override with a reason. Outstanding: {amount_due:.2f}",
         )
 
     try:

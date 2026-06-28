@@ -38,6 +38,8 @@ from app.integrations.supabase_client import (
     get_reservation_by_id,
     get_reservation_amounts,
     get_reservation_folio,
+    settle_reservation_folio,
+    notify_ops_payment_received,
     get_dynamic_pricing_signals,
     get_reservation_quick_stats,
     list_recent_reservations,
@@ -59,6 +61,7 @@ from app.schemas.common import (
 )
 from app.schemas.common import (
     CancelReservationResponse,
+    FolioSettleRequest,
     ReservationFolioResponse,
     ReservationStatusUpdateRequest,
     ReservationStatusUpdateResponse,
@@ -1265,6 +1268,38 @@ def get_reservation_folio_route(
     folio = get_reservation_folio(reservation_id)
     if not folio:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation not found")
+    return folio
+
+
+@router.post("/{reservation_id}/folio/settle", response_model=ReservationFolioResponse)
+def settle_reservation_folio_route(
+    reservation_id: str,
+    payload: FolioSettleRequest,
+    auth: AuthContext = Depends(require_operations),
+):
+    """Front Desk collects the whole folio (room balance + open add-ons) at the desk:
+    records the room balance as an on-site payment and marks the add-ons settled."""
+    row = _get_reservation_or_404(reservation_id)
+    before = get_reservation_folio(reservation_id)
+    collected = float((before or {}).get("grand_total_due") or 0)
+    try:
+        folio = settle_reservation_folio(
+            access_token=auth.access_token,
+            reservation_id=reservation_id,
+            method=payload.method,
+        )
+    except RuntimeError as exc:
+        raise_http_from_runtime_error(exc, default_status=status.HTTP_400_BAD_REQUEST)
+    if not folio:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation not found")
+    if collected > 0:
+        notify_ops_payment_received(
+            reservation=row,
+            amount=collected,
+            channel="on_site",
+            method=payload.method,
+            payment_ref=f"folio:{reservation_id}",
+        )
     return folio
 
 

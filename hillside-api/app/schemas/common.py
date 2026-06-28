@@ -265,6 +265,10 @@ class ReservationFolioResponse(BaseModel):
     grand_total_due: float
 
 
+class FolioSettleRequest(BaseModel):
+    method: Literal["cash", "gcash", "bank", "card"] = "cash"
+
+
 class TourReservationCreateRequest(BaseModel):
     service_id: str
     visit_date: date

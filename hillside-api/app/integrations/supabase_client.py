@@ -464,6 +464,65 @@ def get_reservation_folio(reservation_id: str) -> dict[str, Any] | None:
     }
 
 
+def settle_reservation_folio(
+    *,
+    access_token: str,
+    reservation_id: str,
+    method: str,
+) -> dict[str, Any] | None:
+    """Collect the whole folio at the desk: record the room balance as an on-site
+    payment (if any) and mark every open add-on charge settled with the same tender.
+    Runs under the staff caller's auth (operations RLS / RPC role check). Returns the
+    refreshed (now-zeroed) folio."""
+    folio = get_reservation_folio(reservation_id)
+    if not folio:
+        return None
+    room_balance = float(folio.get("room_balance") or 0)
+    if room_balance > 0:
+        record_on_site_payment(
+            access_token=access_token,
+            reservation_id=reservation_id,
+            amount=room_balance,
+            method=method,
+            reference_no=None,
+        )
+    open_ids = [str(a.get("request_id")) for a in folio.get("addons", []) if a.get("request_id")]
+    if open_ids:
+        client = get_supabase_user_scoped_client(access_token)
+        client.table("resort_service_requests").update(
+            {
+                "settled_at": datetime.now(timezone.utc).isoformat(),
+                "settled_method": method,
+            }
+        ).in_("request_id", open_ids).execute()
+    return get_reservation_folio(reservation_id)
+
+
+def waive_service_charge(
+    *,
+    access_token: str,
+    request_id: str,
+    waived_by_user_id: str,
+) -> dict[str, Any] | None:
+    """Comp an add-on charge (staff). Removes it from the folio without collecting."""
+    client = get_supabase_user_scoped_client(access_token)
+    client.table("resort_service_requests").update(
+        {
+            "waived": True,
+            "waived_by_user_id": waived_by_user_id,
+            "waived_at": datetime.now(timezone.utc).isoformat(),
+        }
+    ).eq("request_id", request_id).execute()
+    rows = (
+        client.table("resort_service_requests")
+        .select(RESORT_SERVICE_REQUEST_SELECT)
+        .eq("request_id", request_id)
+        .limit(1)
+        .execute()
+    ).data or []
+    return rows[0] if rows else None
+
+
 def get_reservation_by_code(reservation_code: str) -> dict[str, Any] | None:
     client = get_supabase_client()
     response = (
