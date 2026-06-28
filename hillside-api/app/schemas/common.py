@@ -865,6 +865,12 @@ class ResortServiceRequestItem(BaseModel):
     preferred_time: datetime | None = None
     notes: str | None = None
     status: Literal["new", "in_progress", "done", "cancelled"]
+    # Folio charge: price snapshotted at request time. The request is a billable
+    # charge when status="done" and line_total>0 and not settled and not waived.
+    unit_price: float = 0
+    line_total: float = 0
+    settled_at: datetime | None = None
+    waived: bool = False
     requested_at: datetime
     processed_at: datetime | None = None
     processed_by_user_id: str | None = None

@@ -1050,6 +1050,10 @@ export type ResortServiceRequestItem = {
   preferred_time?: string | null;
   notes?: string | null;
   status: ResortServiceRequestStatus;
+  unit_price?: number;
+  line_total?: number;
+  settled_at?: string | null;
+  waived?: boolean;
   requested_at: string;
   processed_at?: string | null;
   processed_by_user_id?: string | null;
