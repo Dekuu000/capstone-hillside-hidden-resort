@@ -44,7 +44,7 @@ export function ListingCard({ unit, query, priority = false }: ListingCardProps)
             4.9
           </span>
         </div>
-        <p className="flex items-center gap-1.5 text-sm muted-text">
+        <p className="flex items-center gap-1.5 text-sm font-medium text-[var(--color-secondary)]">
           <Users className="h-3.5 w-3.5" />
           Up to {unit.capacity} guests
         </p>
