@@ -282,6 +282,8 @@ export const reservationServiceBookingSchema = z.object({
   service: z
     .object({
       service_name: z.string().optional().nullable(),
+      image_urls: z.array(z.string()).optional().nullable(),
+      image_thumb_urls: z.array(z.string()).optional().nullable(),
     })
     .optional()
     .nullable(),

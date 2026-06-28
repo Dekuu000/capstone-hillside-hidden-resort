@@ -90,7 +90,13 @@ const TOUR_BANNERS = [
 /** Photo-forward banner per booking: a real unit photo when present, else a
  *  stable per-type Unsplash image so each trip card looks distinct. */
 function bookingBannerUrl(booking: Booking, isTour: boolean): string {
-  if (!isTour) {
+  // Prefer the real uploaded photo of the booked tour/unit; only fall back to a
+  // deterministic placeholder when the listing has no image yet.
+  if (isTour) {
+    const service = booking.service_bookings?.find((entry) => entry.service)?.service;
+    const real = (service?.image_urls || []).find((url) => /^https?:\/\//i.test(url)) || "";
+    if (/^https?:\/\//i.test(real)) return real;
+  } else {
     const unit = booking.units?.find((entry) => entry.unit)?.unit;
     const real = (unit?.image_urls || []).find((url) => /^https?:\/\//i.test(url)) || unit?.image_url || "";
     if (/^https?:\/\//i.test(real)) return real;

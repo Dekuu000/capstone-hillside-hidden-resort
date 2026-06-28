@@ -343,6 +343,8 @@ export type ReservationServiceBooking = {
   kid_qty?: number | null;
   service?: {
     service_name?: string | null;
+    image_urls?: string[] | null;
+    image_thumb_urls?: string[] | null;
   } | null;
 };
 
