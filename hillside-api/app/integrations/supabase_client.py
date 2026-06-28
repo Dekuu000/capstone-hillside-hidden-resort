@@ -931,7 +931,11 @@ def _attach_open_charges_totals(rows: list[dict[str, Any]]) -> None:
             rid = str(row.get("reservation_id") or "")
             row["open_charges_total"] = round(totals.get(rid, 0.0), 2)
     except Exception:  # noqa: BLE001 - best-effort enrichment, never break the list
-        logger.debug("Failed to attach open-charge totals to reservation list", exc_info=True)
+        import logging
+
+        logging.getLogger(__name__).debug(
+            "Failed to attach open-charge totals to reservation list", exc_info=True
+        )
 
 
 def list_recent_reservations(
