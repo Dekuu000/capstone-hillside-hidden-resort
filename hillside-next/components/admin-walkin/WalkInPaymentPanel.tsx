@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Loader2, Wallet } from "lucide-react";
 import { onSitePaymentResponseSchema } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
-import { getApiErrorMessage } from "../../lib/apiError";
+import { getApiErrorMessage, getHttpErrorStatus } from "../../lib/apiError";
 import { formatPhpPeso as toPeso } from "../../lib/formatCurrency";
 import { Select } from "../shared/Select";
 
@@ -92,7 +92,15 @@ export function WalkInPaymentPanel({
         amount: numericAmount,
       });
     } catch (caught) {
-      setError(getApiErrorMessage(caught, "Couldn't record the payment. Open the Payments page to try there."));
+      // Front Desk is authorized for on-site payments, so a 401/403 here means the
+      // login session has expired (not a real permission denial) — say so plainly
+      // instead of surfacing the backend's misleading "access required" text.
+      const status = getHttpErrorStatus(caught);
+      if (status === 401 || status === 403) {
+        setError("Your session has expired — please sign in again, then record the payment.");
+      } else {
+        setError(getApiErrorMessage(caught, "Couldn't record the payment. Open the Payments page to try there."));
+      }
     } finally {
       setBusy(false);
     }
