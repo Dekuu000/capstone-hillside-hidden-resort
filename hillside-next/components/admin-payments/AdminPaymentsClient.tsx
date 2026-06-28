@@ -15,8 +15,6 @@ import type {
 import {
   adminPaymentsResponseSchema,
   onSitePaymentResponseSchema,
-  paymentRejectResponseSchema,
-  paymentVerifyResponseSchema,
   reservationListItemSchema,
 } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
@@ -31,7 +29,6 @@ import { getSupabaseBrowserClient } from "../../lib/supabase";
 import { FancyDatePicker } from "../shared/FancyDatePicker";
 import { AdminPageHeader } from "../layout/AdminPageHeader";
 import { DataFreshnessBadge } from "../shared/DataFreshnessBadge";
-import { Modal } from "../shared/Modal";
 import { Pagination } from "../shared/Pagination";
 import { Select } from "../shared/Select";
 
@@ -57,10 +54,8 @@ const WORKFLOW_FILTERS: Array<{ id: PaymentWorkflowFilter; label: string }> = [
   { id: "all", label: "All" },
   { id: "online", label: "Online" },
   { id: "walk_in", label: "Walk-in" },
-  { id: "to_review", label: "To Review" },
   { id: "paid", label: "Paid" },
   { id: "partial", label: "Partial" },
-  { id: "rejected", label: "Declined" },
 ];
 
 function workflowToApiTab(filter: PaymentWorkflowFilter): AdminPaymentsTab {
@@ -106,7 +101,6 @@ function getPaymentSource(payment: AdminPaymentItem): "online" | "walk_in" {
 export function AdminPaymentsClient({
   initialToken = null,
   initialData = null,
-  initialTab = "to_review",
   initialSearch = "",
   initialPage = 1,
 }: AdminPaymentsClientProps) {
@@ -114,18 +108,18 @@ export function AdminPaymentsClient({
   const searchParams = useSearchParams();
   const { showToast } = useToast();
 
-  const [workflowFilter, setWorkflowFilter] = useState<PaymentWorkflowFilter>(
-    initialTab === "to_review" ? "to_review" : initialTab === "rejected" ? "rejected" : "all",
-  );
-  const [tab, setTab] = useState<AdminPaymentsTab>(workflowToApiTab(initialTab === "to_review" ? "to_review" : initialTab === "rejected" ? "rejected" : "all"));
+  // Manual payment review was retired (online GCash is gateway-verified; walk-ins
+  // are cash). The console opens on All and filters by source/state.
+  const [workflowFilter, setWorkflowFilter] = useState<PaymentWorkflowFilter>("all");
+  const [tab, setTab] = useState<AdminPaymentsTab>("all");
   const [searchInput, setSearchInput] = useState(initialSearch);
   const [searchValue, setSearchValue] = useState(initialSearch);
   const [page, setPage] = useState(Math.max(1, initialPage));
   const [tabCounts, setTabCounts] = useState<TabCounts>({
-    to_review: initialTab === "to_review" ? initialData?.count ?? 0 : 0,
-    verified: initialTab === "verified" ? initialData?.count ?? 0 : 0,
-    rejected: initialTab === "rejected" ? initialData?.count ?? 0 : 0,
-    all: initialTab === "all" ? initialData?.count ?? 0 : 0,
+    to_review: 0,
+    verified: 0,
+    rejected: 0,
+    all: initialData?.count ?? 0,
   });
 
   const [items, setItems] = useState<AdminPaymentItem[]>(initialData?.items ?? []);
@@ -152,10 +146,6 @@ export function AdminPaymentsClient({
   const [amountPreset, setAmountPreset] = useState<"full" | "half" | "custom" | null>(null);
   const amountInputRef = useRef<HTMLInputElement | null>(null);
 
-  const [rejectTarget, setRejectTarget] = useState<AdminPaymentItem | null>(null);
-  const [rejectReason, setRejectReason] = useState("");
-  const [rejectBusy, setRejectBusy] = useState(false);
-  const [rejectError, setRejectError] = useState<string | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [methodFilter, setMethodFilter] = useState("");
   const [fromDateFilter, setFromDateFilter] = useState("");
@@ -352,139 +342,16 @@ export function AdminPaymentsClient({
     const isInitialState =
       initialData &&
       page === Math.max(1, initialPage) &&
-      tab === initialTab &&
+      tab === "all" &&
       searchValue === initialSearch;
     if (isInitialState) return;
     void fetchList();
-  }, [fetchList, initialData, initialPage, initialSearch, initialTab, page, searchValue, tab, token]);
+  }, [fetchList, initialData, initialPage, initialSearch, page, searchValue, tab, token]);
 
   useEffect(() => {
     if (!token) return;
     void fetchTabCounts();
   }, [fetchTabCounts, token]);
-
-  const verifyPayment = useCallback(
-    async (paymentId: string) => {
-      if (!token) return;
-      setError(null);
-      try {
-        const payload = { payment_id: paymentId };
-        const outcome = await syncAwareMutation<typeof payload, { ok: true; payment_id: string; status: "verified" }>({
-          path: `/v2/payments/${encodeURIComponent(paymentId)}/verify`,
-          method: "POST",
-          payload,
-          parser: paymentVerifyResponseSchema,
-          accessToken: token,
-          entityType: "payment_submission",
-          action: "payments.verify",
-          entityId: paymentId,
-          buildOptimisticResponse: () => ({ ok: true, payment_id: paymentId, status: "verified" }),
-        });
-
-        if (outcome.mode === "online") {
-          setNotice("Payment verified.");
-          showToast({
-            type: "success",
-            title: "Payment verified",
-            message: "The payment is now marked as verified.",
-          });
-          await fetchList();
-          await fetchTabCounts();
-        } else {
-          setNotice("Payment verification queued for sync.");
-          setItems((prev) =>
-            prev.map((item) =>
-              item.payment_id === paymentId
-                ? {
-                    ...item,
-                    status: "verified",
-                    verified_at: new Date().toISOString(),
-                    rejected_reason: null,
-                    rejected_at: null,
-                  }
-                : item,
-            ),
-          );
-          showToast({
-            type: "info",
-            title: "Saved offline",
-            message: "Payment verification queued and will sync when internet is available.",
-          });
-        }
-      } catch (unknownError) {
-        setError(getApiErrorMessage(unknownError, "Failed to verify payment."));
-      }
-    },
-    [fetchList, fetchTabCounts, showToast, token],
-  );
-
-  const confirmReject = useCallback(async () => {
-    if (!token || !rejectTarget) return;
-    const reason = rejectReason.trim();
-    if (reason.length < 5) {
-      setRejectError("Reason must be at least 5 characters.");
-      return;
-    }
-
-    setRejectBusy(true);
-    setRejectError(null);
-    try {
-      const targetPaymentId = rejectTarget.payment_id;
-      const payload = { payment_id: targetPaymentId, reason };
-      const outcome = await syncAwareMutation<typeof payload, { ok: true; payment_id: string; status: "rejected"; reason: string }>({
-        path: `/v2/payments/${encodeURIComponent(targetPaymentId)}/reject`,
-        method: "POST",
-        payload,
-        parser: paymentRejectResponseSchema,
-        accessToken: token,
-        entityType: "payment_submission",
-        action: "payments.reject",
-        entityId: targetPaymentId,
-        buildOptimisticResponse: () => ({
-          ok: true,
-          payment_id: targetPaymentId,
-          status: "rejected",
-          reason,
-        }),
-      });
-
-      setRejectTarget(null);
-      setRejectReason("");
-      if (outcome.mode === "online") {
-        setNotice("Payment rejected.");
-        showToast({
-          type: "success",
-          title: "Payment rejected",
-          message: "The guest can now resubmit proof of payment.",
-        });
-        await fetchList();
-        await fetchTabCounts();
-      } else {
-        setNotice("Payment rejection queued for sync.");
-        setItems((prev) =>
-          prev.map((item) =>
-            item.payment_id === targetPaymentId
-              ? {
-                  ...item,
-                  status: "rejected",
-                  rejected_reason: reason,
-                  rejected_at: new Date().toISOString(),
-                }
-              : item,
-          ),
-        );
-        showToast({
-          type: "info",
-          title: "Saved offline",
-          message: "Payment rejection queued and will sync when internet is available.",
-        });
-      }
-    } catch (unknownError) {
-      setRejectError(getApiErrorMessage(unknownError, "Failed to reject payment."));
-    } finally {
-      setRejectBusy(false);
-    }
-  }, [fetchList, fetchTabCounts, rejectReason, rejectTarget, showToast, token]);
 
   const openProof = useCallback(async (payment: AdminPaymentItem) => {
     if (!payment.proof_url) return;
@@ -1152,30 +1019,6 @@ export function AdminPaymentsClient({
                       </button>
                     ) : null}
                   </div>
-                  {isToReview ? (
-                    <div className="flex gap-2 pt-1">
-                      <button
-                        type="button"
-                        onClick={() => void verifyPayment(payment.payment_id)}
-                        disabled={isCancelledReservation || !hasEvidence}
-                        className="flex-1 rounded-lg border border-[var(--color-primary)] bg-[var(--color-primary)] px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        Verify
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setRejectTarget(payment);
-                          setRejectReason("");
-                          setRejectError(null);
-                        }}
-                        disabled={isCancelledReservation || !hasEvidence}
-                        className="flex-1 rounded-lg border border-red-600 bg-red-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        Decline
-                      </button>
-                    </div>
-                  ) : null}
                 </div>
               );
             })}
@@ -1197,7 +1040,6 @@ export function AdminPaymentsClient({
                   <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em]">Proof</th>
                   {showVerifiedCols ? <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em]">Verified</th> : null}
                   {showRejectedCols ? <th className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em]">Declined</th> : null}
-                  {isToReview ? <th className="px-3 py-2.5 text-right text-[11px] font-semibold uppercase tracking-[0.12em]">Actions</th> : null}
                 </tr>
               </thead>
               <tbody>
@@ -1295,32 +1137,6 @@ export function AdminPaymentsClient({
                           </span>
                         </td>
                       ) : null}
-                      {isToReview ? (
-                        <td className="px-3 py-2.5 align-top text-right">
-                          <div className="inline-flex gap-2">
-                            <button
-                              type="button"
-                              onClick={() => void verifyPayment(payment.payment_id)}
-                              disabled={isCancelledReservation || !hasEvidence}
-                              className="rounded-lg border border-[var(--color-primary)] bg-[var(--color-primary)] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)] disabled:cursor-not-allowed disabled:opacity-40"
-                            >
-                              Verify
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setRejectTarget(payment);
-                                setRejectReason("");
-                                setRejectError(null);
-                              }}
-                              disabled={isCancelledReservation || !hasEvidence}
-                              className="rounded-lg border border-red-600 bg-red-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-200 disabled:cursor-not-allowed disabled:opacity-40"
-                            >
-                              Decline
-                            </button>
-                          </div>
-                        </td>
-                      ) : null}
                     </tr>
                   );
                 })}
@@ -1341,56 +1157,6 @@ export function AdminPaymentsClient({
         </div>
       ) : null}
 
-      {rejectTarget ? (
-        <Modal
-          open
-          onClose={() => {
-            if (rejectBusy) return;
-            setRejectTarget(null);
-            setRejectReason("");
-            setRejectError(null);
-          }}
-          title="Decline payment submission"
-          description="This notifies the guest that the submitted proof/reference could not be verified. They can resubmit payment proof."
-          size="md"
-          footer={
-            <>
-              <button
-                type="button"
-                onClick={() => {
-                  if (rejectBusy) return;
-                  setRejectTarget(null);
-                  setRejectReason("");
-                  setRejectError(null);
-                }}
-                disabled={rejectBusy}
-                className="inline-flex h-11 items-center justify-center rounded-xl border border-[var(--color-border)] bg-white px-4 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => void confirmReject()}
-                disabled={rejectBusy || rejectReason.trim().length < 5}
-                className="inline-flex h-11 items-center justify-center rounded-xl bg-red-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700 disabled:opacity-50"
-              >
-                {rejectBusy ? "Declining..." : "Confirm Decline"}
-              </button>
-            </>
-          }
-        >
-          <textarea
-            value={rejectReason}
-            onChange={(event) => setRejectReason(event.target.value)}
-            placeholder="e.g., Reference number not found in GCash records."
-            className="min-h-[120px] w-full rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)] focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
-          />
-          <p className="mt-1 text-xs text-[var(--color-muted)]">Minimum 5 characters.</p>
-          {rejectError ? (
-            <p className="mt-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{rejectError}</p>
-          ) : null}
-        </Modal>
-      ) : null}
     </section>
   );
 }
