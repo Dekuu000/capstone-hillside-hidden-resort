@@ -96,7 +96,6 @@ export function CameraScanPanel({
               <span className="scanner-corner scanner-corner-tr" />
               <span className="scanner-corner scanner-corner-bl" />
               <span className="scanner-corner scanner-corner-br" />
-              {!scanPulse ? <span className="scanner-sweep" /> : null}
               {scanPulse ? (
                 <span className="scanner-success absolute left-1/2 top-1/2">
                   <CheckCircle2 className="h-16 w-16 text-emerald-400" aria-hidden="true" />
