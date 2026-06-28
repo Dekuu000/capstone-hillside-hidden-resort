@@ -274,7 +274,7 @@ export function GuestServicesClient({ accessToken }: Props) {
           items={CATEGORY_TABS.map((tab) => ({ id: tab.id, label: tab.label }))}
           value={category}
           onChange={(id) => setCategory(id as ResortServiceCategory)}
-          className="grid-cols-2 bg-white sm:grid-cols-2"
+          className="grid-cols-2 bg-white sm:inline-grid sm:w-fit sm:grid-cols-[minmax(7rem,auto)_minmax(7rem,auto)]"
           tabClassName="h-11 rounded-2xl px-3 text-sm font-semibold"
           activeClassName="border border-[var(--color-secondary)] bg-teal-50 text-[var(--color-secondary)] shadow-sm"
           inactiveClassName="border border-[var(--color-border)] bg-white text-slate-500 hover:bg-slate-50"
