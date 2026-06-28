@@ -414,32 +414,35 @@ def get_reservation_folio(reservation_id: str) -> dict[str, Any] | None:
     """The guest folio for a reservation: the room balance plus any open add-on
     charges (fulfilled service requests that aren't settled or waived). The desk
     collects ``grand_total_due`` at check-out. Caller enforces auth/ownership."""
-    client = get_supabase_client()
-    res_rows = (
-        client.table("reservations")
-        .select("reservation_id,reservation_code,status,total_amount,amount_paid_verified")
-        .eq("reservation_id", reservation_id)
-        .limit(1)
-        .execute()
-    ).data or []
-    if not res_rows:
-        return None
-    res = res_rows[0]
-    room_total = float(res.get("total_amount") or 0)
-    room_paid = float(res.get("amount_paid_verified") or 0)
-    room_balance = max(0.0, room_total - room_paid)
+    try:
+        client = get_supabase_client()
+        res_rows = (
+            client.table("reservations")
+            .select("reservation_id,reservation_code,status,total_amount,amount_paid_verified")
+            .eq("reservation_id", reservation_id)
+            .limit(1)
+            .execute()
+        ).data or []
+        if not res_rows:
+            return None
+        res = res_rows[0]
+        room_total = float(res.get("total_amount") or 0)
+        room_paid = float(res.get("amount_paid_verified") or 0)
+        room_balance = max(0.0, room_total - room_paid)
 
-    addon_rows = (
-        client.table("resort_service_requests")
-        .select("request_id,quantity,unit_price,line_total,service_item:resort_services(service_name)")
-        .eq("reservation_id", reservation_id)
-        .eq("status", "done")
-        .eq("waived", False)
-        .is_("settled_at", "null")
-        .gt("line_total", 0)
-        .order("requested_at", desc=False)
-        .execute()
-    ).data or []
+        addon_rows = (
+            client.table("resort_service_requests")
+            .select("request_id,quantity,unit_price,line_total,service_item:resort_services(service_name)")
+            .eq("reservation_id", reservation_id)
+            .eq("status", "done")
+            .eq("waived", False)
+            .is_("settled_at", "null")
+            .gt("line_total", 0)
+            .order("requested_at", desc=False)
+            .execute()
+        ).data or []
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
     addons = [
         {
             "request_id": str(row.get("request_id") or ""),

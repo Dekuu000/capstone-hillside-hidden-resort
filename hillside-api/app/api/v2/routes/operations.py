@@ -384,8 +384,13 @@ def perform_checkout(
 
     # The full folio must clear before check-out: room balance + open add-on charges.
     # Staff may still check out with an outstanding folio by providing an override
-    # reason (a deliberate "bill later").
-    folio = get_reservation_folio(payload.reservation_id)
+    # reason (a deliberate "bill later"). If the folio read fails, degrade to the
+    # room-balance guard rather than spuriously blocking a legitimate check-out.
+    try:
+        folio = get_reservation_folio(payload.reservation_id)
+    except RuntimeError:
+        logger.exception("Folio lookup failed on check-out (reservation_id=%s)", payload.reservation_id)
+        folio = None
     amount_due = float((folio or {}).get("grand_total_due") if folio else (row.get("balance_due") or 0))
     has_override = bool(payload.override_reason and payload.override_reason.strip())
     if amount_due > 0 and not has_override:
