@@ -11,6 +11,7 @@ from app.integrations.supabase_client import (
     update_resort_service_request_status,
     update_service,
     update_service_images,
+    waive_service_charge,
 )
 from app.schemas.common import (
     ResortServiceRequestItem,
@@ -182,4 +183,23 @@ def patch_admin_service_request(
     if not row:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Service request not found.")
     notify_guest_service_request(row)
+    return row
+
+
+@router.post("/requests/{request_id}/waive", response_model=ResortServiceRequestItem)
+def waive_admin_service_request(
+    request_id: str,
+    auth: AuthContext = Depends(require_operations),
+):
+    """Comp an add-on charge — removes it from the guest's folio without collecting."""
+    try:
+        row = waive_service_charge(
+            access_token=auth.access_token,
+            request_id=request_id,
+            waived_by_user_id=auth.user_id,
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+    if not row:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Service request not found.")
     return row

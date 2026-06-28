@@ -123,6 +123,10 @@ RESORT_SERVICE_REQUEST_SELECT = """
     preferred_time,
     notes,
     status,
+    unit_price,
+    line_total,
+    settled_at,
+    waived,
     requested_at,
     processed_at,
     processed_by_user_id,
@@ -403,6 +407,134 @@ def get_reservation_amounts(reservation_id: str) -> dict[str, Any] | None:
         .execute()
     )
     rows = response.data or []
+    return rows[0] if rows else None
+
+
+def get_reservation_folio(reservation_id: str) -> dict[str, Any] | None:
+    """The guest folio for a reservation: the room balance plus any open add-on
+    charges (fulfilled service requests that aren't settled or waived). The desk
+    collects ``grand_total_due`` at check-out. Caller enforces auth/ownership."""
+    try:
+        client = get_supabase_client()
+        res_rows = (
+            client.table("reservations")
+            .select("reservation_id,reservation_code,status,total_amount,amount_paid_verified")
+            .eq("reservation_id", reservation_id)
+            .limit(1)
+            .execute()
+        ).data or []
+        if not res_rows:
+            return None
+        res = res_rows[0]
+        room_total = float(res.get("total_amount") or 0)
+        room_paid = float(res.get("amount_paid_verified") or 0)
+        room_balance = max(0.0, room_total - room_paid)
+
+        addon_rows = (
+            client.table("resort_service_requests")
+            .select("request_id,quantity,unit_price,line_total,service_item:resort_services(service_name)")
+            .eq("reservation_id", reservation_id)
+            .eq("status", "done")
+            .eq("waived", False)
+            .is_("settled_at", "null")
+            .gt("line_total", 0)
+            .order("requested_at", desc=False)
+            .execute()
+        ).data or []
+
+        # Requests the guest raised that staff haven't fulfilled yet — not billable,
+        # surfaced as a check-out warning so the desk can deliver/cancel first.
+        pending_resp = (
+            client.table("resort_service_requests")
+            .select("request_id", count="exact")
+            .eq("reservation_id", reservation_id)
+            .in_("status", ["new", "in_progress"])
+            .execute()
+        )
+        pending_request_count = int(pending_resp.count or 0)
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+    addons = [
+        {
+            "request_id": str(row.get("request_id") or ""),
+            "service_name": str((row.get("service_item") or {}).get("service_name") or "Service"),
+            "quantity": int(row.get("quantity") or 1),
+            "unit_price": float(row.get("unit_price") or 0),
+            "line_total": float(row.get("line_total") or 0),
+        }
+        for row in addon_rows
+    ]
+    addons_subtotal = round(sum(a["line_total"] for a in addons), 2)
+    return {
+        "reservation_id": str(res.get("reservation_id") or ""),
+        "reservation_code": str(res.get("reservation_code") or ""),
+        "status": str(res.get("status") or ""),
+        "room_total": round(room_total, 2),
+        "room_paid": round(room_paid, 2),
+        "room_balance": round(room_balance, 2),
+        "addons": addons,
+        "addons_subtotal": addons_subtotal,
+        "grand_total_due": round(room_balance + addons_subtotal, 2),
+        "pending_request_count": pending_request_count,
+    }
+
+
+def settle_reservation_folio(
+    *,
+    access_token: str,
+    reservation_id: str,
+    method: str,
+) -> dict[str, Any] | None:
+    """Collect the whole folio at the desk: record the room balance as an on-site
+    payment (if any) and mark every open add-on charge settled with the same tender.
+    Runs under the staff caller's auth (operations RLS / RPC role check). Returns the
+    refreshed (now-zeroed) folio."""
+    folio = get_reservation_folio(reservation_id)
+    if not folio:
+        return None
+    room_balance = float(folio.get("room_balance") or 0)
+    if room_balance > 0:
+        record_on_site_payment(
+            access_token=access_token,
+            reservation_id=reservation_id,
+            amount=room_balance,
+            method=method,
+            reference_no=None,
+        )
+    open_ids = [str(a.get("request_id")) for a in folio.get("addons", []) if a.get("request_id")]
+    if open_ids:
+        client = get_supabase_user_scoped_client(access_token)
+        client.table("resort_service_requests").update(
+            {
+                "settled_at": datetime.now(timezone.utc).isoformat(),
+                "settled_method": method,
+            }
+        ).in_("request_id", open_ids).execute()
+    return get_reservation_folio(reservation_id)
+
+
+def waive_service_charge(
+    *,
+    access_token: str,
+    request_id: str,
+    waived_by_user_id: str,
+) -> dict[str, Any] | None:
+    """Comp an add-on charge (staff). Removes it from the folio without collecting."""
+    client = get_supabase_user_scoped_client(access_token)
+    client.table("resort_service_requests").update(
+        {
+            "waived": True,
+            "waived_by_user_id": waived_by_user_id,
+            "waived_at": datetime.now(timezone.utc).isoformat(),
+        }
+    ).eq("request_id", request_id).execute()
+    rows = (
+        client.table("resort_service_requests")
+        .select(RESORT_SERVICE_REQUEST_SELECT)
+        .eq("request_id", request_id)
+        .limit(1)
+        .execute()
+    ).data or []
     return rows[0] if rows else None
 
 
@@ -769,6 +901,43 @@ def _attach_latest_webhook_audit(payments: list[dict[str, Any]]) -> list[dict[st
     return enriched
 
 
+def _attach_open_charges_totals(rows: list[dict[str, Any]]) -> None:
+    """Stamp each reservation row with ``open_charges_total`` — the sum of its
+    fulfilled (status='done'), unsettled, un-waived add-on charges. One batched
+    query for the whole page so the list stays cheap. Best-effort: on any error
+    every row simply keeps a 0 total."""
+    ids = [str(r.get("reservation_id")) for r in rows if r.get("reservation_id")]
+    for row in rows:
+        row.setdefault("open_charges_total", 0.0)
+    if not ids:
+        return
+    try:
+        client = get_supabase_client()
+        resp = (
+            client.table("resort_service_requests")
+            .select("reservation_id,line_total")
+            .in_("reservation_id", ids)
+            .eq("status", "done")
+            .eq("waived", False)
+            .is_("settled_at", "null")
+            .gt("line_total", 0)
+            .execute()
+        )
+        totals: dict[str, float] = {}
+        for charge in resp.data or []:
+            rid = str(charge.get("reservation_id") or "")
+            totals[rid] = totals.get(rid, 0.0) + float(charge.get("line_total") or 0)
+        for row in rows:
+            rid = str(row.get("reservation_id") or "")
+            row["open_charges_total"] = round(totals.get(rid, 0.0), 2)
+    except Exception:  # noqa: BLE001 - best-effort enrichment, never break the list
+        import logging
+
+        logging.getLogger(__name__).debug(
+            "Failed to attach open-charge totals to reservation list", exc_info=True
+        )
+
+
 def list_recent_reservations(
     *,
     limit: int = 10,
@@ -797,6 +966,7 @@ def list_recent_reservations(
             lambda: base_query.range(offset, offset + limit - 1).execute(),
         )
         rows = [_normalize_reservation_row(row) for row in (response.data or [])]
+        _attach_open_charges_totals(rows)
         return rows, int(response.count or 0)
 
     full_response = _timed_execute(
@@ -805,7 +975,9 @@ def list_recent_reservations(
     )
     rows = full_response.data or []
     filtered_rows = [_normalize_reservation_row(row) for row in rows if _matches_search(row, search_term)]
-    return filtered_rows[offset : offset + limit], len(filtered_rows)
+    page = filtered_rows[offset : offset + limit]
+    _attach_open_charges_totals(page)
+    return page, len(filtered_rows)
 
 
 def get_reservation_quick_stats(*, today: str) -> dict[str, int]:

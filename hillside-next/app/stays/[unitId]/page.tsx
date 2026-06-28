@@ -42,7 +42,7 @@ export default async function ListingDetailPage({
   const hasReviews = reviews.summary.review_count > 0;
 
   return (
-    <main className={`flex min-h-screen flex-col bg-[var(--color-background)]${auth ? " pb-24 md:pb-0" : ""}`}>
+    <main className={`flex min-h-screen flex-col bg-[var(--color-background)]${auth ? " pb-[calc(104px_+_env(safe-area-inset-bottom))] md:pb-0" : ""}`}>
 
       <div className="mx-auto w-full max-w-[1120px] px-4 py-6 md:px-6 lg:px-8">
         <Link
@@ -54,29 +54,29 @@ export default async function ListingDetailPage({
         </Link>
 
         <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{unit.name}</h1>
-        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm muted-text">
+        <div className="mt-1 flex items-center gap-x-1 overflow-hidden whitespace-nowrap text-[10px] font-medium text-[var(--color-text)] sm:gap-x-2.5 sm:text-sm">
           {hasReviews ? (
             <span className="inline-flex items-center gap-1 text-[var(--color-text)]">
-              <Star className="h-4 w-4 fill-[var(--color-cta)] text-[var(--color-cta)]" />
+              <Star className="h-3 w-3 fill-[var(--color-star)] text-[var(--color-star)] sm:h-4 sm:w-4" />
               {reviews.summary.average_rating.toFixed(1)}
               <span className="muted-text">({reviews.summary.review_count})</span>
             </span>
           ) : (
             <span className="inline-flex items-center gap-1">
-              <Star className="h-4 w-4 text-[var(--color-border)]" />
+              <Star className="h-3 w-3 text-[var(--color-border)] sm:h-4 sm:w-4" />
               New
             </span>
           )}
-          <span aria-hidden>·</span>
+          <span aria-hidden className="text-[var(--color-muted)]">·</span>
           <span>{unitTypeLabel(unit.type)}</span>
-          <span aria-hidden>·</span>
+          <span aria-hidden className="text-[var(--color-muted)]">·</span>
           <span className="inline-flex items-center gap-1">
-            <Users className="h-4 w-4" />
+            <Users className="h-3 w-3 sm:h-4 sm:w-4" />
             Up to {unit.capacity} guests
           </span>
-          <span aria-hidden>·</span>
+          <span aria-hidden className="text-[var(--color-muted)]">·</span>
           <span className="inline-flex items-center gap-1">
-            <MapPin className="h-4 w-4" />
+            <MapPin className="h-3 w-3 sm:h-4 sm:w-4" />
             Olongapo, Zambales
           </span>
         </div>
@@ -116,7 +116,7 @@ export default async function ListingDetailPage({
               {hasReviews ? (
                 <>
                   <p className="mt-1 inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--color-text)]">
-                    <Star className="h-4 w-4 fill-[var(--color-cta)] text-[var(--color-cta)]" />
+                    <Star className="h-4 w-4 fill-[var(--color-star)] text-[var(--color-star)]" />
                     {reviews.summary.average_rating.toFixed(1)} · {reviews.summary.review_count} review
                     {reviews.summary.review_count === 1 ? "" : "s"} from verified stays
                   </p>
@@ -128,7 +128,7 @@ export default async function ListingDetailPage({
                             {[1, 2, 3, 4, 5].map((n) => (
                               <Star
                                 key={n}
-                                className={`h-3.5 w-3.5 ${n <= review.rating ? "fill-[var(--color-cta)] text-[var(--color-cta)]" : "fill-transparent text-[var(--color-border)]"}`}
+                                className={`h-3.5 w-3.5 ${n <= review.rating ? "fill-[var(--color-star)] text-[var(--color-star)]" : "fill-transparent text-[var(--color-border)]"}`}
                                 aria-hidden="true"
                               />
                             ))}

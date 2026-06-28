@@ -91,7 +91,7 @@ export function DepositPolicyDialog({
             type="button"
             onClick={onConfirm}
             disabled={busy}
-            className="flex h-11 items-center justify-center gap-2 rounded-2xl bg-[var(--color-cta)] px-4 text-sm font-semibold text-white transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60 sm:px-5"
+            className="flex h-11 items-center justify-center gap-2 rounded-2xl bg-[var(--color-primary)] px-4 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60 sm:px-5"
           >
             {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
             {busy ? "Redirecting to GCash…" : `Agree & pay ${formatPhpPeso(payNow)}`}

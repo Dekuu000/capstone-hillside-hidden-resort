@@ -11,7 +11,6 @@ import { Select } from "../shared/Select";
 import { Skeleton } from "../shared/Skeleton";
 import { StatusPill } from "../shared/StatusPill";
 import { SyncAlertBanner } from "../shared/SyncAlertBanner";
-import { Tabs } from "../shared/Tabs";
 import { loadMapSnapshot, saveMapSnapshot } from "../../lib/offlineSync/store";
 import { guestMapLocations } from "../../data/guestMapLocations";
 import { guestTrailEdges } from "../../data/guestMapGraph";
@@ -26,11 +25,6 @@ const FALLBACK_AMENITIES: GuestMapAmenityPin[] = guestMapLocations;
 // Resort is compact; keep ETA estimates short and practical for on-site walking.
 const WALK_MINUTES_SCALE = 0.08;
 const WALK_MINUTES_MAX = 9;
-
-type RouteDifficulty = {
-  label: "Easy" | "Moderate" | "Long";
-  tone: "success" | "warn" | "error";
-};
 
 async function loadAmenityPack(): Promise<GuestMapAmenityPin[]> {
   const fallback = FALLBACK_AMENITIES;
@@ -147,12 +141,6 @@ function routeDistance(path: string[], pinById: Map<string, GuestMapAmenityPin>)
   return total;
 }
 
-function resolveRouteDifficulty(minutes: number): RouteDifficulty {
-  if (minutes <= 4) return { label: "Easy", tone: "success" };
-  if (minutes <= 8) return { label: "Moderate", tone: "warn" };
-  return { label: "Long", tone: "error" };
-}
-
 function routeSteps(path: string[], pinById: Map<string, GuestMapAmenityPin>) {
   if (path.length <= 1) return ["You are already at your selected destination."];
   const steps: string[] = [];
@@ -260,10 +248,6 @@ export function GuestMapClient() {
       Math.max(1, Math.round(totalDistance * WALK_MINUTES_SCALE)),
     );
   }, [pathPinIds, pinById]);
-  const routeDifficulty = useMemo(
-    () => (etaMinutes > 0 ? resolveRouteDifficulty(etaMinutes) : null),
-    [etaMinutes],
-  );
   const swapRoutePoints = () => {
     if (!originAmenityId || !activeAmenityId) return;
     setOriginAmenityId(activeAmenityId);
@@ -283,14 +267,14 @@ export function GuestMapClient() {
   return (
     <div className="space-y-4">
       <section className="surface p-4">
-        <div className="flex flex-wrap items-start justify-between gap-2.5">
-          <div>
+        <div className="flex items-start justify-between gap-2.5">
+          <div className="min-w-0">
             <h2 className="text-xl font-semibold text-[var(--color-text)]">Getting around the resort</h2>
             <p className="mt-1 text-sm text-[var(--color-muted)]">
-              Pick a start and destination for walking directions between trails and facilities. Works offline — no GPS needed.
+              Walking directions between trails and facilities.
             </p>
           </div>
-          <div className="flex w-full flex-wrap items-center gap-2 md:w-auto">
+          <div className="flex h-7 shrink-0 items-center gap-2">
             <NetworkStatusBadge />
             {etaMinutes > 0 ? (
               <StatusPill
@@ -299,40 +283,37 @@ export function GuestMapClient() {
                 icon={<Route className="h-3.5 w-3.5" aria-hidden="true" />}
               />
             ) : null}
-            {routeDifficulty ? (
-              <StatusPill label={routeDifficulty.label} tone={routeDifficulty.tone} />
-            ) : null}
-            <div className="flex w-full items-center justify-between sm:ml-auto sm:w-auto sm:justify-start sm:gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  const target = document.getElementById("route-controls");
-                  target?.scrollIntoView({ behavior: "smooth", block: "start" });
-                }}
-                className="inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)]"
-              >
-                <Route className="h-3.5 w-3.5" aria-hidden="true" />
-                Select route
-              </button>
-            </div>
           </div>
         </div>
 
-        <div id="route-controls" className="mt-3">
-          <Tabs
-            items={[
-              { id: "all", label: "All" },
-              { id: "trail", label: "Trails" },
-              { id: "facility", label: "Facilities" },
-            ]}
-            value={kindFilter}
-            onChange={(next) => setKindFilter(next as "all" | "trail" | "facility")}
-            ariaLabel="Map pin filter"
-            className="w-full grid-cols-3 border-none bg-transparent p-0 sm:max-w-md sm:grid-cols-3"
-            tabClassName="h-11 rounded-2xl px-3 text-sm font-semibold"
-            activeClassName="border border-[var(--color-secondary)] bg-[color:color-mix(in_srgb,var(--color-secondary)_12%,white)] text-[var(--color-secondary)] shadow-sm"
-            inactiveClassName="border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-muted)] hover:bg-[var(--color-background)]"
-          />
+        <div
+          id="route-controls"
+          role="group"
+          aria-label="Map pin filter"
+          className="mt-3 grid grid-cols-3 gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-2 shadow-[var(--shadow-sm)] sm:max-w-md"
+        >
+          {[
+            { id: "all", label: "All" },
+            { id: "trail", label: "Trails" },
+            { id: "facility", label: "Facilities" },
+          ].map(({ id, label }) => {
+            const active = kindFilter === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                aria-pressed={active}
+                onClick={() => setKindFilter(id as "all" | "trail" | "facility")}
+                className={`inline-flex h-11 items-center justify-center rounded-xl px-3 text-sm font-semibold transition ${
+                  active
+                    ? "bg-[var(--color-primary)] text-white shadow-sm"
+                    : "bg-transparent text-[var(--color-muted)] hover:bg-[var(--color-background)]"
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
 
         <div className="mt-3 grid gap-2.5 sm:grid-cols-[1fr_auto_1fr] sm:items-end">

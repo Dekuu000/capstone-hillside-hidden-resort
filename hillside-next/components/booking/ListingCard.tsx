@@ -40,11 +40,11 @@ export function ListingCard({ unit, query, priority = false }: ListingCardProps)
           </h3>
           {/* Static showcase rating until a reviews system exists. */}
           <span className="flex shrink-0 items-center gap-1 text-sm text-[var(--color-text)]">
-            <Star className="h-3.5 w-3.5 fill-[var(--color-cta)] text-[var(--color-cta)]" />
+            <Star className="h-3.5 w-3.5 fill-[var(--color-star)] text-[var(--color-star)]" />
             4.9
           </span>
         </div>
-        <p className="flex items-center gap-1.5 text-sm muted-text">
+        <p className="flex items-center gap-1.5 text-sm font-medium text-[var(--color-secondary)]">
           <Users className="h-3.5 w-3.5" />
           Up to {unit.capacity} guests
         </p>

@@ -13,6 +13,7 @@ import type {
   QrToken,
   ReservationListItem as Booking,
   ReservationCancelResponse,
+  ReservationFolio,
   ReservationPolicyOutcome,
 } from "../../../packages/shared/src/types";
 import { computeStayDepositPreview } from "../../../packages/shared/src/types";
@@ -21,6 +22,7 @@ import {
   myReviewsResponseSchema,
   qrTokenSchema,
   reservationCancelResponseSchema,
+  reservationFolioResponseSchema,
   reservationListItemSchema,
   reviewItemSchema,
 } from "../../../packages/shared/src/schemas";
@@ -60,6 +62,8 @@ type MyBookingsClientProps = {
   initialData?: BookingsResponse | null;
   initialFocusReservationId?: string | null;
   staySnapshot?: StaySnapshot | null;
+  activeStayId?: string | null;
+  activeStayStatus?: string | null;
 };
 
 const TAB_LABELS: Record<TabKey, string> = {
@@ -239,6 +243,8 @@ export function MyBookingsClient({
   initialData = null,
   initialFocusReservationId = null,
   staySnapshot = null,
+  activeStayId = null,
+  activeStayStatus = null,
 }: MyBookingsClientProps) {
   const router = useRouter();
   const token = initialToken;
@@ -262,6 +268,36 @@ export function MyBookingsClient({
   const [details, setDetails] = useState<Booking | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [detailsError, setDetailsError] = useState<string | null>(null);
+  // Running stay charges (add-ons requested during the stay + any room balance),
+  // collected at check-out. Room stays only.
+  const [folio, setFolio] = useState<ReservationFolio | null>(null);
+  const [folioLoading, setFolioLoading] = useState(false);
+  // Folio for the guest's in-progress (checked-in) stay, shown at the top of My
+  // Trips so they can watch add-ons accrue toward what they settle at check-out.
+  const [activeFolio, setActiveFolio] = useState<ReservationFolio | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!token || !activeStayId || activeStayStatus !== "checked_in") {
+      setActiveFolio(null);
+      return;
+    }
+    void apiFetch(
+      `/v2/reservations/${encodeURIComponent(activeStayId)}/folio`,
+      { method: "GET" },
+      token,
+      reservationFolioResponseSchema,
+    )
+      .then((data) => {
+        if (!cancelled) setActiveFolio(data);
+      })
+      .catch(() => {
+        if (!cancelled) setActiveFolio(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [token, activeStayId, activeStayStatus]);
 
   const [cancelFor, setCancelFor] = useState<Booking | null>(null);
   const [cancelBusy, setCancelBusy] = useState(false);
@@ -452,6 +488,27 @@ export function MyBookingsClient({
           reservationListItemSchema,
         );
         setDetails(data);
+        // Pull the running stay charges for an in-progress/just-finished room stay so the
+        // guest can see add-ons accruing toward what they settle at check-out.
+        const isTour = (data.service_bookings?.length ?? 0) > 0;
+        if (!isTour && ["confirmed", "checked_in", "checked_out"].includes(data.status)) {
+          setFolioLoading(true);
+          try {
+            const stayFolio = await apiFetch(
+              `/v2/reservations/${encodeURIComponent(reservationId)}/folio`,
+              { method: "GET" },
+              token,
+              reservationFolioResponseSchema,
+            );
+            setFolio(stayFolio);
+          } catch {
+            setFolio(null);
+          } finally {
+            setFolioLoading(false);
+          }
+        } else {
+          setFolio(null);
+        }
       } catch (unknownError) {
         setDetailsError(getApiErrorMessage(unknownError, "Failed to load booking details."));
       } finally {
@@ -673,61 +730,85 @@ export function MyBookingsClient({
     );
   }
 
+  const guestIntro = (
+    <GuestPageIntro
+      testId="guest-hero"
+      title="My trips"
+      subtitle="Your bookings, payments, and check-in passes."
+    />
+  );
+  const quickActions = (
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <Link
+        href="/stays"
+        className="group flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 transition hover:shadow-[var(--shadow-md)]"
+      >
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[color:color-mix(in_srgb,var(--color-secondary)_14%,white)] text-[var(--color-secondary)]">
+          <Calendar className="h-4 w-4" />
+        </span>
+        <span className="text-sm font-semibold text-[var(--color-text)] group-hover:underline">Book a stay</span>
+      </Link>
+      <Link
+        href="/tours"
+        className="group flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 transition hover:shadow-[var(--shadow-md)]"
+      >
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[color:color-mix(in_srgb,var(--color-secondary)_14%,white)] text-[var(--color-secondary)]">
+          <Calendar className="h-4 w-4" />
+        </span>
+        <span className="text-sm font-semibold text-[var(--color-text)] group-hover:underline">Tours</span>
+      </Link>
+      <Link
+        href="/guest/map"
+        className="group flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 transition hover:shadow-[var(--shadow-md)]"
+      >
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[color:color-mix(in_srgb,var(--color-secondary)_14%,white)] text-[var(--color-secondary)]">
+          <MapPin className="h-4 w-4" />
+        </span>
+        <span className="text-sm font-semibold text-[var(--color-text)] group-hover:underline">Resort map</span>
+      </Link>
+      <Link
+        href="/guest/services"
+        className="group flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 transition hover:shadow-[var(--shadow-md)]"
+      >
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[color:color-mix(in_srgb,var(--color-secondary)_14%,white)] text-[var(--color-secondary)]">
+          <Bell className="h-4 w-4" />
+        </span>
+        <span className="text-sm font-semibold text-[var(--color-text)] group-hover:underline">Services</span>
+      </Link>
+    </div>
+  );
+  const stayCard = staySnapshot ? (
+    <StaySnapshotCard
+      nextStayDate={staySnapshot.nextStayDate}
+      outstandingBalance={staySnapshot.outstandingBalance}
+      qrStatus={staySnapshot.qrStatus}
+      stayChargesTotal={
+        activeFolio && activeFolio.addons.length > 0 ? formatPeso(activeFolio.grand_total_due) : null
+      }
+      stayChargeLines={
+        activeFolio
+          ? activeFolio.addons.map((line) => ({
+              id: line.request_id,
+              label: line.quantity > 1 ? `${line.service_name} ×${line.quantity}` : line.service_name,
+              amount: formatPeso(line.line_total),
+            }))
+          : []
+      }
+    />
+  ) : null;
+
   return (
     <section className="mx-auto flex w-full max-w-[1240px] flex-col gap-5 overflow-x-hidden lg:gap-5">
-      <GuestPageIntro
-        testId="guest-hero"
-        title="My trips"
-        subtitle="Your bookings, payments, and check-in passes."
-        aside={
-          staySnapshot ? (
-            <StaySnapshotCard
-              nextStayDate={staySnapshot.nextStayDate}
-              outstandingBalance={staySnapshot.outstandingBalance}
-              qrStatus={staySnapshot.qrStatus}
-            />
-          ) : undefined
-        }
-      />
-
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Link
-          href="/stays"
-          className="group flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 transition hover:shadow-[var(--shadow-md)]"
-        >
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[color:color-mix(in_srgb,var(--color-secondary)_14%,white)] text-[var(--color-secondary)]">
-            <Calendar className="h-4 w-4" />
-          </span>
-          <span className="text-sm font-semibold text-[var(--color-text)] group-hover:underline">Book a stay</span>
-        </Link>
-        <Link
-          href="/tours"
-          className="group flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 transition hover:shadow-[var(--shadow-md)]"
-        >
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[color:color-mix(in_srgb,var(--color-secondary)_14%,white)] text-[var(--color-secondary)]">
-            <Calendar className="h-4 w-4" />
-          </span>
-          <span className="text-sm font-semibold text-[var(--color-text)] group-hover:underline">Tours</span>
-        </Link>
-        <Link
-          href="/guest/map"
-          className="group flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 transition hover:shadow-[var(--shadow-md)]"
-        >
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[color:color-mix(in_srgb,var(--color-secondary)_14%,white)] text-[var(--color-secondary)]">
-            <MapPin className="h-4 w-4" />
-          </span>
-          <span className="text-sm font-semibold text-[var(--color-text)] group-hover:underline">Resort map</span>
-        </Link>
-        <Link
-          href="/guest/services"
-          className="group flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 transition hover:shadow-[var(--shadow-md)]"
-        >
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[color:color-mix(in_srgb,var(--color-secondary)_14%,white)] text-[var(--color-secondary)]">
-            <Bell className="h-4 w-4" />
-          </span>
-          <span className="text-sm font-semibold text-[var(--color-text)] group-hover:underline">Services</span>
-        </Link>
-      </div>
+      {guestIntro}
+      {/* Desktop: the "Your stay" card is a right rail that spans the quick actions
+          and the tabs/search block; the title sits full-width above. Mobile: title,
+          card, quick actions, tabs (DOM order keeps the card right under the title). */}
+      <div className={stayCard ? "lg:grid lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start lg:gap-6" : undefined}>
+        {stayCard ? (
+          <div className="mb-5 w-full lg:col-start-2 lg:row-start-1 lg:mb-0 lg:w-[380px]">{stayCard}</div>
+        ) : null}
+        <div className="flex min-w-0 flex-col gap-5 lg:col-start-1 lg:row-start-1">
+          {quickActions}
 
       <section className="rounded-[2rem] border border-[var(--color-border)] bg-white p-4 shadow-sm lg:p-5">
         <div className="lg:hidden" data-testid="guest-tabs">
@@ -783,7 +864,7 @@ export function MyBookingsClient({
           </div>
         </div>
 
-        <div className="hidden lg:flex lg:items-center lg:justify-between lg:gap-3">
+        <div className="hidden lg:flex lg:flex-col lg:gap-3">
           <BookingStatusTabs
             items={(Object.keys(TAB_LABELS) as TabKey[]).map((key) => ({
               id: key,
@@ -816,13 +897,15 @@ export function MyBookingsClient({
               setSearchValue("");
             }}
             placeholder="Search booking, unit, date"
-            className="w-[390px]"
+            className="w-full"
           />
         </div>
         <div className="mt-3 lg:mt-4">
           <p className="truncate text-sm text-[var(--color-muted)]">{TAB_HINTS[tab]}</p>
         </div>
       </section>
+        </div>
+      </div>
 
       {error || actionMessage || cachedViewMeta ? (
         <div className="mb-1">
@@ -924,11 +1007,11 @@ export function MyBookingsClient({
                       setQrError(null);
                       setQrSecondsLeft(0);
                     }}
-                    className="absolute bottom-3 right-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-[var(--color-text)] shadow-[var(--shadow-md)] transition hover:scale-105"
+                    className="group/qr absolute bottom-3 right-3 inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-[var(--color-secondary)] shadow-lg ring-1 ring-black/5 backdrop-blur-md transition duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-xl hover:ring-2 hover:ring-[color:color-mix(in_srgb,var(--color-secondary)_45%,white)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-secondary)] active:translate-y-0"
                     aria-label="Show check-in QR"
                     title="Show QR"
                   >
-                    <QrCode className="h-4 w-4 shrink-0 stroke-[2.2]" aria-hidden="true" />
+                    <QrCode className="h-[18px] w-[18px] shrink-0 stroke-[2.2] transition-transform duration-200 group-hover/qr:scale-110" aria-hidden="true" />
                   </button>
                 ) : null}
               </div>
@@ -1034,7 +1117,7 @@ export function MyBookingsClient({
                   <div className="mt-4 flex flex-col gap-2 border-t border-[var(--color-border)] pt-3 sm:flex-row sm:items-center sm:justify-between">
                     {reviewedByReservation.has(booking.reservation_id) ? (
                       <span className="inline-flex items-center gap-1.5 text-sm text-[var(--color-muted)]">
-                        <Star className="h-4 w-4 fill-[var(--color-cta)] text-[var(--color-cta)]" aria-hidden="true" />
+                        <Star className="h-4 w-4 fill-[var(--color-star)] text-[var(--color-star)]" aria-hidden="true" />
                         You rated this stay {reviewedByReservation.get(booking.reservation_id)}/5
                       </span>
                     ) : (
@@ -1080,6 +1163,7 @@ export function MyBookingsClient({
           panelClassName="max-h-[calc(100dvh-0.9rem)] border-[var(--color-border)] bg-white pb-[calc(1rem+env(safe-area-inset-bottom))]"
           onClose={() => {
             setDetails(null);
+            setFolio(null);
           }}
         >
             {detailsLoading ? <p className="text-sm text-[var(--color-muted)]" role="status">Loading details...</p> : null}
@@ -1196,6 +1280,32 @@ export function MyBookingsClient({
                     </section>
                   );
                 })()}
+
+                {folio && folio.addons.length > 0 ? (
+                  <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-background)] p-4" aria-label="Stay charges">
+                    <h4 className="text-sm font-semibold text-[var(--color-text)]">Your stay charges</h4>
+                    <p className="mt-0.5 text-xs text-[var(--color-muted)]">
+                      Services you requested during your stay. These are added to your bill and settled at check-out.
+                    </p>
+                    <ul className="mt-3 space-y-1.5 text-sm">
+                      {folio.addons.map((line) => (
+                        <li key={line.request_id} className="flex items-center justify-between gap-2">
+                          <span className="min-w-0 truncate text-[var(--color-text)]">
+                            {line.service_name}
+                            {line.quantity > 1 ? <span className="text-[var(--color-muted)]"> ×{line.quantity}</span> : null}
+                          </span>
+                          <span className="shrink-0 font-medium text-[var(--color-text)]">{formatPeso(line.line_total)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="mt-2 flex items-center justify-between border-t border-[var(--color-border)] pt-2">
+                      <span className="text-[13px] font-semibold text-[var(--color-text)]">Total to settle at check-out</span>
+                      <span className="text-lg font-bold text-[var(--color-text)]">{formatPeso(folio.grand_total_due)}</span>
+                    </div>
+                  </section>
+                ) : folioLoading ? (
+                  <p className="text-xs text-[var(--color-muted)]" role="status">Loading your stay charges…</p>
+                ) : null}
               </div>
             ) : null}
         </ModalDialog>
@@ -1314,7 +1424,7 @@ export function MyBookingsClient({
                 className="rounded-full p-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:color-mix(in_srgb,var(--color-secondary)_30%,white)]"
               >
                 <Star
-                  className={`h-9 w-9 ${value <= reviewRating ? "fill-[var(--color-cta)] text-[var(--color-cta)]" : "fill-transparent text-[var(--color-border)]"}`}
+                  className={`h-9 w-9 ${value <= reviewRating ? "fill-[var(--color-star)] text-[var(--color-star)]" : "fill-transparent text-[var(--color-border)]"}`}
                   aria-hidden="true"
                 />
               </button>

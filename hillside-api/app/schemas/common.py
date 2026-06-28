@@ -243,6 +243,36 @@ class ReservationResponse(ReservationPaymentPolicyMetadata):
     ai_recommendation: AiRecommendation | None = None
 
 
+class FolioAddonLine(BaseModel):
+    request_id: str
+    service_name: str
+    quantity: int
+    unit_price: float
+    line_total: float
+
+
+class ReservationFolioResponse(BaseModel):
+    """Room balance + open add-on charges. ``grand_total_due`` is what the desk
+    collects at check-out."""
+    reservation_id: str
+    reservation_code: str
+    status: str
+    room_total: float
+    room_paid: float
+    room_balance: float
+    addons: list[FolioAddonLine] = []
+    addons_subtotal: float
+    grand_total_due: float
+    # Requests the guest raised that staff haven't fulfilled yet (status new /
+    # in_progress). NOT billable — surfaced as a check-out warning so the desk can
+    # deliver-and-bill or cancel before clearing the guest.
+    pending_request_count: int = 0
+
+
+class FolioSettleRequest(BaseModel):
+    method: Literal["cash", "gcash", "bank", "card"] = "cash"
+
+
 class TourReservationCreateRequest(BaseModel):
     service_id: str
     visit_date: date
@@ -567,6 +597,10 @@ class ReservationListItem(ReservationPaymentPolicyMetadata):
     promo_code: str | None = None
     amount_paid_verified: float | None = None
     balance_due: float | None = None
+    # Fulfilled (delivered) add-on charges that are not yet settled or waived — the
+    # "open charges" the desk collects at check-out. Lets the list flag who needs
+    # settling before staff drill into the reservation. 0 when there are none.
+    open_charges_total: float = 0
     guest_count: int | None = None
     notes: str | None = None
     reservation_source: Literal["online", "walk_in"] = "online"
@@ -865,6 +899,12 @@ class ResortServiceRequestItem(BaseModel):
     preferred_time: datetime | None = None
     notes: str | None = None
     status: Literal["new", "in_progress", "done", "cancelled"]
+    # Folio charge: price snapshotted at request time. The request is a billable
+    # charge when status="done" and line_total>0 and not settled and not waived.
+    unit_price: float = 0
+    line_total: float = 0
+    settled_at: datetime | None = None
+    waived: bool = False
     requested_at: datetime
     processed_at: datetime | None = None
     processed_by_user_id: str | None = None

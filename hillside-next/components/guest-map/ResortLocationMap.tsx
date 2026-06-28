@@ -51,26 +51,26 @@ export function ResortLocationMap() {
           </span>
           <div className="min-w-0">
             <p className="font-semibold text-[var(--color-text)]">{RESORT_NAME}</p>
-            <p className="text-sm muted-text">{RESORT_ADDRESS}</p>
+            <p className="truncate text-[10px] muted-text sm:text-sm">{RESORT_ADDRESS}</p>
           </div>
         </div>
-        <div className="flex shrink-0 flex-wrap gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:shrink-0">
           <a
             href={DIRECTIONS_URL}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[var(--color-cta)] px-4 text-sm font-semibold text-white transition hover:brightness-95"
+            className="inline-flex h-11 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-[var(--color-cta)] px-3 text-sm font-semibold text-white transition hover:brightness-95 sm:gap-2 sm:px-4"
           >
-            <Navigation className="h-4 w-4" aria-hidden="true" />
+            <Navigation className="h-4 w-4 shrink-0" aria-hidden="true" />
             Get directions
           </a>
           <a
             href={VIEW_URL}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-[var(--color-border)] px-4 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)]"
+            className="inline-flex h-11 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-[var(--color-border)] px-3 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] sm:gap-2 sm:px-4"
           >
-            <ExternalLink className="h-4 w-4" aria-hidden="true" />
+            <ExternalLink className="h-4 w-4 shrink-0" aria-hidden="true" />
             Open in Maps
           </a>
         </div>

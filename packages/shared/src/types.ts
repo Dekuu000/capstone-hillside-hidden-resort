@@ -362,6 +362,8 @@ export type ReservationListItem = ReservationPaymentPolicyMetadata & {
   promo_code?: string | null;
   amount_paid_verified?: number | null;
   balance_due?: number | null;
+  /** Fulfilled, unsettled add-on charges due at check-out (0 when none). */
+  open_charges_total?: number | null;
   guest_count?: number | null;
   notes?: string | null;
   updated_at?: string | null;
@@ -606,6 +608,28 @@ export type ReservationCreateResponse = ReservationPaymentPolicyMetadata & {
   balance_due?: number | null;
   escrow_ref?: EscrowRef | null;
   ai_recommendation?: PricingRecommendation | null;
+};
+
+export type FolioAddonLine = {
+  request_id: string;
+  service_name: string;
+  quantity: number;
+  unit_price: number;
+  line_total: number;
+};
+
+export type ReservationFolio = {
+  reservation_id: string;
+  reservation_code: string;
+  status: string;
+  room_total: number;
+  room_paid: number;
+  room_balance: number;
+  addons: FolioAddonLine[];
+  addons_subtotal: number;
+  grand_total_due: number;
+  /** Requests not yet fulfilled (new/in_progress) — not billable; a check-out warning. */
+  pending_request_count?: number;
 };
 
 export type TourReservationCreateRequest = {
@@ -1050,6 +1074,10 @@ export type ResortServiceRequestItem = {
   preferred_time?: string | null;
   notes?: string | null;
   status: ResortServiceRequestStatus;
+  unit_price?: number;
+  line_total?: number;
+  settled_at?: string | null;
+  waived?: boolean;
   requested_at: string;
   processed_at?: string | null;
   processed_by_user_id?: string | null;

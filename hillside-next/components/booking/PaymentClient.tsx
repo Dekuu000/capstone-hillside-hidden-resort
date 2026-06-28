@@ -127,7 +127,7 @@ export function PaymentClient({ token, reservationId }: { token: string; reserva
             type="button"
             onClick={() => setPolicyOpen(true)}
             disabled={redirecting}
-            className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-cta)] text-base font-semibold text-white transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-primary)] text-base font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {redirecting ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
             {redirecting ? "Redirecting to GCash…" : `Pay ${formatPeso(totals.deposit)} with GCash`}

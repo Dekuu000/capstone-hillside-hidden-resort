@@ -11,7 +11,7 @@ export default async function GuestMapPage() {
     <GuestShell initialEmail={emailHint}>
       <GuestPageIntro
         title="Resort map"
-        subtitle="Find the resort and get directions, then navigate trails and facilities — the resort guide works offline, no GPS needed."
+        subtitle="Find your way around the resort — works offline."
       />
       <ResortLocationMap />
       <GuestMapClient />

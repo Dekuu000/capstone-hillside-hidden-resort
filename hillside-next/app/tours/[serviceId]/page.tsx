@@ -23,7 +23,7 @@ export default async function TourDetailPage({
   const schedule = tourSchedule(service);
 
   return (
-    <main className={`flex min-h-screen flex-col bg-[var(--color-background)]${auth ? " pb-24 md:pb-0" : ""}`}>
+    <main className={`flex min-h-screen flex-col bg-[var(--color-background)]${auth ? " pb-[calc(104px_+_env(safe-area-inset-bottom))] md:pb-0" : ""}`}>
 
       <div className="mx-auto w-full max-w-[1120px] px-4 py-6 md:px-6 lg:px-8">
         <Link
@@ -35,23 +35,23 @@ export default async function TourDetailPage({
         </Link>
 
         <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{service.service_name}</h1>
-        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm muted-text">
+        <div className="mt-1 flex items-center gap-x-1 overflow-hidden whitespace-nowrap text-[10px] font-medium text-[var(--color-text)] sm:gap-x-2.5 sm:text-sm">
           <span className="inline-flex items-center gap-1">
-            <Clock className="h-4 w-4" />
+            <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
             {schedule}
           </span>
           {service.max_pax ? (
             <>
-              <span aria-hidden>·</span>
+              <span aria-hidden className="text-[var(--color-muted)]">·</span>
               <span className="inline-flex items-center gap-1">
-                <Users className="h-4 w-4" />
+                <Users className="h-3 w-3 sm:h-4 sm:w-4" />
                 Up to {service.max_pax} guests
               </span>
             </>
           ) : null}
-          <span aria-hidden>·</span>
+          <span aria-hidden className="text-[var(--color-muted)]">·</span>
           <span className="inline-flex items-center gap-1">
-            <MapPin className="h-4 w-4" />
+            <MapPin className="h-3 w-3 sm:h-4 sm:w-4" />
             Olongapo, Zambales
           </span>
         </div>

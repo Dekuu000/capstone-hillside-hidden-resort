@@ -354,7 +354,7 @@ export function ReserveClient({ token, email }: { token: string; email: string |
                 type="button"
                 onClick={() => setPolicyOpen(true)}
                 disabled={busy}
-                className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-cta)] text-base font-semibold text-white transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-primary)] text-base font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
                 {busy ? "Redirecting to GCash…" : `Pay ${formatPhpPeso(payNow)} with GCash`}

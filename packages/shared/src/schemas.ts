@@ -303,6 +303,7 @@ export const reservationListItemSchema = z.object({
   promo_code: z.string().optional().nullable(),
   amount_paid_verified: z.number().optional().nullable(),
   balance_due: z.number().optional().nullable(),
+  open_charges_total: z.number().optional().nullable(),
   ...reservationPaymentPolicyMetadataShape,
   guest_count: z.number().int().positive().optional().nullable(),
   notes: z.string().optional().nullable(),
@@ -551,6 +552,27 @@ export const reservationCreateResponseSchema = z.object({
   ...reservationPaymentPolicyMetadataShape,
   escrow_ref: escrowRefSchema.optional().nullable(),
   ai_recommendation: pricingRecommendationSchema.optional().nullable(),
+});
+
+export const folioAddonLineSchema = z.object({
+  request_id: z.string(),
+  service_name: z.string(),
+  quantity: z.number(),
+  unit_price: z.number(),
+  line_total: z.number(),
+});
+
+export const reservationFolioResponseSchema = z.object({
+  reservation_id: z.string(),
+  reservation_code: z.string(),
+  status: z.string(),
+  room_total: z.number(),
+  room_paid: z.number(),
+  room_balance: z.number(),
+  addons: z.array(folioAddonLineSchema),
+  addons_subtotal: z.number(),
+  grand_total_due: z.number(),
+  pending_request_count: z.number().optional(),
 });
 
 export const tourReservationCreateRequestSchema = z.object({
@@ -1064,6 +1086,10 @@ export const resortServiceRequestItemSchema = z.object({
   preferred_time: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
   status: resortServiceRequestStatusSchema,
+  unit_price: z.number().optional(),
+  line_total: z.number().optional(),
+  settled_at: z.string().optional().nullable(),
+  waived: z.boolean().optional(),
   requested_at: z.string().min(1),
   processed_at: z.string().optional().nullable(),
   processed_by_user_id: z.string().optional().nullable(),

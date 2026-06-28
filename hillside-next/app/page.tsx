@@ -37,7 +37,7 @@ export default async function HomePage() {
   const [units, services] = await Promise.all([fetchPublicUnits({ limit: 60 }), fetchPublicServices()]);
 
   return (
-    <main className={`flex min-h-screen flex-col bg-[var(--color-background)]${auth ? " pb-24 md:pb-0" : ""}`}>
+    <main className={`flex min-h-screen flex-col bg-[var(--color-background)]${auth ? " pb-[calc(104px_+_env(safe-area-inset-bottom))] md:pb-0" : ""}`}>
 
       {/* Hero */}
       <section className="relative flex min-h-[68vh] flex-col justify-end overflow-hidden bg-[#0e2740] md:block md:min-h-0">

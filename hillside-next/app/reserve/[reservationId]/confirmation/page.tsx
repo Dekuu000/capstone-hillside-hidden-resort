@@ -47,7 +47,7 @@ export default async function ConfirmationPage({
     .join(", ");
 
   return (
-    <main className="flex min-h-screen flex-col bg-[var(--color-background)] pb-24 md:pb-0">
+    <main className="flex min-h-screen flex-col bg-[var(--color-background)] pb-[calc(104px_+_env(safe-area-inset-bottom))] md:pb-0">
 
       <div className="mx-auto w-full max-w-[640px] px-4 py-12 md:px-6">
         <div className="flex flex-col items-center text-center">

@@ -82,7 +82,7 @@ export function PaymentResultClient({ token, reservationId }: { token: string; r
             <div className="mt-6 flex flex-col gap-2">
               <Link
                 href="/guest/my-stay"
-                className="flex h-12 items-center justify-center rounded-2xl bg-[var(--color-cta)] text-base font-semibold text-white transition hover:brightness-95"
+                className="flex h-12 items-center justify-center rounded-2xl bg-[var(--color-primary)] text-base font-semibold text-white transition hover:brightness-110"
               >
                 View my stay &amp; QR code
               </Link>

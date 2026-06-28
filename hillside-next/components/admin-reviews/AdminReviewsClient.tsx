@@ -19,7 +19,7 @@ function Stars({ rating }: { rating: number }) {
       {[1, 2, 3, 4, 5].map((n) => (
         <Star
           key={n}
-          className={`h-3.5 w-3.5 ${n <= rating ? "fill-[var(--color-cta)] text-[var(--color-cta)]" : "fill-transparent text-[var(--color-border)]"}`}
+          className={`h-3.5 w-3.5 ${n <= rating ? "fill-[var(--color-star)] text-[var(--color-star)]" : "fill-transparent text-[var(--color-border)]"}`}
           aria-hidden="true"
         />
       ))}
