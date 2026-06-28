@@ -243,6 +243,28 @@ class ReservationResponse(ReservationPaymentPolicyMetadata):
     ai_recommendation: AiRecommendation | None = None
 
 
+class FolioAddonLine(BaseModel):
+    request_id: str
+    service_name: str
+    quantity: int
+    unit_price: float
+    line_total: float
+
+
+class ReservationFolioResponse(BaseModel):
+    """Room balance + open add-on charges. ``grand_total_due`` is what the desk
+    collects at check-out."""
+    reservation_id: str
+    reservation_code: str
+    status: str
+    room_total: float
+    room_paid: float
+    room_balance: float
+    addons: list[FolioAddonLine] = []
+    addons_subtotal: float
+    grand_total_due: float
+
+
 class TourReservationCreateRequest(BaseModel):
     service_id: str
     visit_date: date

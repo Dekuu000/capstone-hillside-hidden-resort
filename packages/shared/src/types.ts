@@ -608,6 +608,26 @@ export type ReservationCreateResponse = ReservationPaymentPolicyMetadata & {
   ai_recommendation?: PricingRecommendation | null;
 };
 
+export type FolioAddonLine = {
+  request_id: string;
+  service_name: string;
+  quantity: number;
+  unit_price: number;
+  line_total: number;
+};
+
+export type ReservationFolio = {
+  reservation_id: string;
+  reservation_code: string;
+  status: string;
+  room_total: number;
+  room_paid: number;
+  room_balance: number;
+  addons: FolioAddonLine[];
+  addons_subtotal: number;
+  grand_total_due: number;
+};
+
 export type TourReservationCreateRequest = {
   service_id: string;
   visit_date: string;

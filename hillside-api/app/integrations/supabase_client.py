@@ -410,6 +410,60 @@ def get_reservation_amounts(reservation_id: str) -> dict[str, Any] | None:
     return rows[0] if rows else None
 
 
+def get_reservation_folio(reservation_id: str) -> dict[str, Any] | None:
+    """The guest folio for a reservation: the room balance plus any open add-on
+    charges (fulfilled service requests that aren't settled or waived). The desk
+    collects ``grand_total_due`` at check-out. Caller enforces auth/ownership."""
+    client = get_supabase_client()
+    res_rows = (
+        client.table("reservations")
+        .select("reservation_id,reservation_code,status,total_amount,amount_paid_verified")
+        .eq("reservation_id", reservation_id)
+        .limit(1)
+        .execute()
+    ).data or []
+    if not res_rows:
+        return None
+    res = res_rows[0]
+    room_total = float(res.get("total_amount") or 0)
+    room_paid = float(res.get("amount_paid_verified") or 0)
+    room_balance = max(0.0, room_total - room_paid)
+
+    addon_rows = (
+        client.table("resort_service_requests")
+        .select("request_id,quantity,unit_price,line_total,service_item:resort_services(service_name)")
+        .eq("reservation_id", reservation_id)
+        .eq("status", "done")
+        .eq("waived", False)
+        .is_("settled_at", "null")
+        .gt("line_total", 0)
+        .order("requested_at", desc=False)
+        .execute()
+    ).data or []
+    addons = [
+        {
+            "request_id": str(row.get("request_id") or ""),
+            "service_name": str((row.get("service_item") or {}).get("service_name") or "Service"),
+            "quantity": int(row.get("quantity") or 1),
+            "unit_price": float(row.get("unit_price") or 0),
+            "line_total": float(row.get("line_total") or 0),
+        }
+        for row in addon_rows
+    ]
+    addons_subtotal = round(sum(a["line_total"] for a in addons), 2)
+    return {
+        "reservation_id": str(res.get("reservation_id") or ""),
+        "reservation_code": str(res.get("reservation_code") or ""),
+        "status": str(res.get("status") or ""),
+        "room_total": round(room_total, 2),
+        "room_paid": round(room_paid, 2),
+        "room_balance": round(room_balance, 2),
+        "addons": addons,
+        "addons_subtotal": addons_subtotal,
+        "grand_total_due": round(room_balance + addons_subtotal, 2),
+    }
+
+
 def get_reservation_by_code(reservation_code: str) -> dict[str, Any] | None:
     client = get_supabase_client()
     response = (

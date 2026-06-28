@@ -553,6 +553,26 @@ export const reservationCreateResponseSchema = z.object({
   ai_recommendation: pricingRecommendationSchema.optional().nullable(),
 });
 
+export const folioAddonLineSchema = z.object({
+  request_id: z.string(),
+  service_name: z.string(),
+  quantity: z.number(),
+  unit_price: z.number(),
+  line_total: z.number(),
+});
+
+export const reservationFolioResponseSchema = z.object({
+  reservation_id: z.string(),
+  reservation_code: z.string(),
+  status: z.string(),
+  room_total: z.number(),
+  room_paid: z.number(),
+  room_balance: z.number(),
+  addons: z.array(folioAddonLineSchema),
+  addons_subtotal: z.number(),
+  grand_total_due: z.number(),
+});
+
 export const tourReservationCreateRequestSchema = z.object({
   service_id: z.string().min(1),
   visit_date: z.string().min(1),

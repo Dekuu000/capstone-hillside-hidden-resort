@@ -37,6 +37,7 @@ from app.integrations.supabase_client import (
     get_reservation_by_code,
     get_reservation_by_id,
     get_reservation_amounts,
+    get_reservation_folio,
     get_dynamic_pricing_signals,
     get_reservation_quick_stats,
     list_recent_reservations,
@@ -58,6 +59,7 @@ from app.schemas.common import (
 )
 from app.schemas.common import (
     CancelReservationResponse,
+    ReservationFolioResponse,
     ReservationStatusUpdateRequest,
     ReservationStatusUpdateResponse,
     ReservationAdminDetailItem,
@@ -1248,6 +1250,22 @@ def get_reservation(
         ):
             row[field] = None
     return row
+
+
+@router.get("/{reservation_id}/folio", response_model=ReservationFolioResponse)
+def get_reservation_folio_route(
+    reservation_id: str,
+    auth: AuthContext = Depends(require_authenticated),
+):
+    """The reservation's folio: room balance + open add-on charges (fulfilled, unsettled
+    service requests). The guest sees their own; staff see any. grand_total_due is what
+    the desk collects at check-out."""
+    row = _get_reservation_or_404(reservation_id)
+    ensure_reservation_access(auth, row)
+    folio = get_reservation_folio(reservation_id)
+    if not folio:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation not found")
+    return folio
 
 
 @router.patch("/{reservation_id}/status", response_model=ReservationStatusUpdateResponse)
