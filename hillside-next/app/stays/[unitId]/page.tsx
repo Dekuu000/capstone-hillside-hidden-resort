@@ -54,16 +54,16 @@ export default async function ListingDetailPage({
         </Link>
 
         <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{unit.name}</h1>
-        <div className="mt-1 flex items-center gap-x-2.5 overflow-x-auto whitespace-nowrap text-sm font-medium text-[var(--color-text)] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="mt-1 flex items-center gap-x-1 overflow-hidden whitespace-nowrap text-[10px] font-medium text-[var(--color-text)] sm:gap-x-2.5 sm:text-sm">
           {hasReviews ? (
             <span className="inline-flex items-center gap-1 text-[var(--color-text)]">
-              <Star className="h-4 w-4 fill-[var(--color-star)] text-[var(--color-star)]" />
+              <Star className="h-3 w-3 fill-[var(--color-star)] text-[var(--color-star)] sm:h-4 sm:w-4" />
               {reviews.summary.average_rating.toFixed(1)}
               <span className="muted-text">({reviews.summary.review_count})</span>
             </span>
           ) : (
             <span className="inline-flex items-center gap-1">
-              <Star className="h-4 w-4 text-[var(--color-border)]" />
+              <Star className="h-3 w-3 text-[var(--color-border)] sm:h-4 sm:w-4" />
               New
             </span>
           )}
@@ -71,12 +71,12 @@ export default async function ListingDetailPage({
           <span>{unitTypeLabel(unit.type)}</span>
           <span aria-hidden className="text-[var(--color-muted)]">·</span>
           <span className="inline-flex items-center gap-1">
-            <Users className="h-4 w-4" />
+            <Users className="h-3 w-3 sm:h-4 sm:w-4" />
             Up to {unit.capacity} guests
           </span>
           <span aria-hidden className="text-[var(--color-muted)]">·</span>
           <span className="inline-flex items-center gap-1">
-            <MapPin className="h-4 w-4" />
+            <MapPin className="h-3 w-3 sm:h-4 sm:w-4" />
             Olongapo, Zambales
           </span>
         </div>
