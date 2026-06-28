@@ -19,7 +19,7 @@ export function GuestPageIntro({
   return (
     <header
       data-testid={testId}
-      className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"
+      className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"
     >
       <div className="min-w-0">
         <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{title}</h1>
