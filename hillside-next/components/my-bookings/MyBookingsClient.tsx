@@ -803,14 +803,14 @@ export function MyBookingsClient({
       {/* Desktop: the "Your stay" card is a right rail that spans the quick actions
           and the tabs/search block; the title sits full-width above. Mobile: title,
           card, quick actions, tabs (DOM order keeps the card right under the title). */}
-      <div className={stayCard ? "lg:grid lg:grid-cols-[minmax(0,1fr)_380px] lg:items-stretch lg:gap-6" : undefined}>
+      <div className={stayCard ? "lg:grid lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start lg:gap-6" : undefined}>
         {stayCard ? (
-          <div className="mb-5 w-full lg:col-start-2 lg:row-start-1 lg:mb-0 lg:flex lg:w-[380px]">{stayCard}</div>
+          <div className="mb-5 w-full lg:col-start-2 lg:row-start-1 lg:mb-0 lg:w-[380px]">{stayCard}</div>
         ) : null}
         <div className="flex min-w-0 flex-col gap-5 lg:col-start-1 lg:row-start-1">
           {quickActions}
 
-      <section className="rounded-[2rem] border border-[var(--color-border)] bg-white p-4 shadow-sm lg:flex lg:flex-1 lg:flex-col">
+      <section className="rounded-[2rem] border border-[var(--color-border)] bg-white p-4 shadow-sm lg:p-5">
         <div className="lg:hidden" data-testid="guest-tabs">
           <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <button
@@ -900,7 +900,7 @@ export function MyBookingsClient({
             className="w-full"
           />
         </div>
-        <div className="mt-3 lg:mt-auto lg:pt-4">
+        <div className="mt-3 lg:mt-4">
           <p className="truncate text-sm text-[var(--color-muted)]">{TAB_HINTS[tab]}</p>
         </div>
       </section>
@@ -1007,11 +1007,11 @@ export function MyBookingsClient({
                       setQrError(null);
                       setQrSecondsLeft(0);
                     }}
-                    className="absolute bottom-3 right-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-[var(--color-text)] shadow-[var(--shadow-md)] transition hover:scale-105"
+                    className="group/qr absolute bottom-3 right-3 inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-[var(--color-secondary)] shadow-lg ring-1 ring-black/5 backdrop-blur-md transition duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-xl hover:ring-2 hover:ring-[color:color-mix(in_srgb,var(--color-secondary)_45%,white)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-secondary)] active:translate-y-0"
                     aria-label="Show check-in QR"
                     title="Show QR"
                   >
-                    <QrCode className="h-4 w-4 shrink-0 stroke-[2.2]" aria-hidden="true" />
+                    <QrCode className="h-[18px] w-[18px] shrink-0 stroke-[2.2] transition-transform duration-200 group-hover/qr:scale-110" aria-hidden="true" />
                   </button>
                 ) : null}
               </div>
