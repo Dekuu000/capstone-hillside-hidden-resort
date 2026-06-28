@@ -349,13 +349,15 @@ export function GuestServicesClient({ accessToken }: Props) {
                       <p className="text-xs text-[var(--color-muted)]">ETA {service.eta_minutes ?? "-"} mins</p>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedService(service)}
-                    className="guest-primary-cta mt-3"
-                  >
-                    Request Service
-                  </button>
+                  <div className="mt-3 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedService(service)}
+                      className="guest-primary-cta"
+                    >
+                      Request Service
+                    </button>
+                  </div>
                 </InsetPanel>
               ))}
             </div>
