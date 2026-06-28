@@ -864,7 +864,7 @@ export function MyBookingsClient({
           </div>
         </div>
 
-        <div className="hidden lg:flex lg:items-center lg:justify-between lg:gap-3">
+        <div className="hidden lg:flex lg:flex-col lg:gap-3">
           <BookingStatusTabs
             items={(Object.keys(TAB_LABELS) as TabKey[]).map((key) => ({
               id: key,
@@ -897,7 +897,7 @@ export function MyBookingsClient({
               setSearchValue("");
             }}
             placeholder="Search booking, unit, date"
-            className="w-[390px]"
+            className="w-full"
           />
         </div>
         <div className="mt-3 lg:mt-4">
