@@ -983,20 +983,26 @@ def create_tour_reservation(
     reservation_id = str(created.get("reservation_id") or "")
     source_value = _resolve_tour_reservation_source(auth_role=auth.role, is_advance=payload.is_advance)
     _persist_reservation_source(reservation_id=reservation_id, source_value=source_value)
-    pricing_signals = _load_pricing_signals(target_date=payload.visit_date)
-    ai_recommendation = _maybe_get_ai_recommendation(
-        reservation_id=reservation_id,
-        context={
-            "visit_date": payload.visit_date.isoformat(),
-            "total_amount": total_amount,
-            "nights": 1,
-            "unit_count": 1,
-            "party_size": payload.adult_qty + payload.kid_qty,
-            "is_weekend": payload.visit_date.weekday() >= 5,
-            "is_tour": True,
-            "occupancy_context": pricing_signals,
-        },
-    )
+    # Walk-in tours are same-day desk bookings — skip the AI demand recommendation
+    # and the 45-day pricing-signals query (a remote AI call + a DB aggregate) so the
+    # create returns fast. The demand insight isn't actionable at the counter.
+    if source_value == "walk_in":
+        ai_recommendation = None
+    else:
+        pricing_signals = _load_pricing_signals(target_date=payload.visit_date)
+        ai_recommendation = _maybe_get_ai_recommendation(
+            reservation_id=reservation_id,
+            context={
+                "visit_date": payload.visit_date.isoformat(),
+                "total_amount": total_amount,
+                "nights": 1,
+                "unit_count": 1,
+                "party_size": payload.adult_qty + payload.kid_qty,
+                "is_weekend": payload.visit_date.weekday() >= 5,
+                "is_tour": True,
+                "occupancy_context": pricing_signals,
+            },
+        )
     response = ReservationResponse(
         reservation_id=reservation_id,
         reservation_code=str(created.get("reservation_code") or ""),
@@ -1076,22 +1082,9 @@ def create_walk_in_stay_reservation(
 
     reservation_id = str(created.get("reservation_id") or "")
     _persist_reservation_source(reservation_id=reservation_id, source_value="walk_in")
-    pricing_signals = _load_pricing_signals(target_date=payload.check_in_date)
-    ai_recommendation = _maybe_get_ai_recommendation(
-        reservation_id=reservation_id,
-        context={
-            "check_in_date": payload.check_in_date.isoformat(),
-            "check_out_date": payload.check_out_date.isoformat(),
-            "total_amount": total_amount,
-            "nights": nights,
-            "unit_count": len(payload.unit_ids),
-            "party_size": sum(int(unit_map[unit_id].get("capacity") or 1) for unit_id in payload.unit_ids),
-            "is_weekend": payload.check_in_date.weekday() >= 5,
-            "is_tour": False,
-            "occupancy_context": pricing_signals,
-            "walk_in": True,
-        },
-    )
+    # Walk-in stays are same-day desk bookings — skip the AI demand recommendation
+    # and the 45-day pricing-signals query so the create returns fast. (The walk-in
+    # stay screen doesn't surface the demand insight anyway.)
     response = ReservationResponse(
         reservation_id=reservation_id,
         reservation_code=str(created.get("reservation_code") or ""),
@@ -1099,7 +1092,7 @@ def create_walk_in_stay_reservation(
         **_reservation_policy_fields(created, is_tour=False),
         escrow_ref=_maybe_apply_escrow_shadow_write(reservation_id),
         guest_pass_ref=_schedule_guest_pass_mint(background_tasks, reservation_id),
-        ai_recommendation=ai_recommendation,
+        ai_recommendation=None,
     )
     _store_reservation_idempotency_receipt(
         route_key="reservations.walk_in.create",

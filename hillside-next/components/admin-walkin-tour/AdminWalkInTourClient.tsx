@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertCircle, Loader2, Phone, Tag, User } from "lucide-react";
+import { AlertCircle, CalendarCheck, Loader2, Phone, Tag, User } from "lucide-react";
 import type {
   PricingRecommendation,
   PromoValidationResult,
@@ -22,7 +22,8 @@ import { todayPlusLocalIsoDate } from "../../lib/dateIso";
 import { formatPhpPeso as toPeso } from "../../lib/formatCurrency";
 import { tourMinPayNow, tourTotal } from "../../lib/booking/pricing";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
-import { FancyDatePicker } from "../shared/FancyDatePicker";
+import { formatTime12 } from "../../lib/catalog";
+import { formatDateWithYear } from "../../lib/dateDisplay";
 import { Select } from "../shared/Select";
 import { useToast } from "../shared/ToastProvider";
 
@@ -52,7 +53,9 @@ export function AdminWalkInTourClient({
   const [servicesError, setServicesError] = useState<string | null>(null);
 
   const [serviceId, setServiceId] = useState("");
-  const [visitDate, setVisitDate] = useState(todayPlusLocalIsoDate(0));
+  // Walk-ins are same-day by definition — the visit date is locked to today
+  // (guests use the online flow for advance tours), so it never changes.
+  const [visitDate] = useState(todayPlusLocalIsoDate(0));
   // Held as strings so the fields can be cleared (empty) on delete and so a
   // typed digit replaces the value instead of appending to a stuck "0".
   const [adultQty, setAdultQty] = useState("1");
@@ -328,15 +331,22 @@ export function AdminWalkInTourClient({
                 placeholder="Select a service"
                 options={services.map((service) => ({
                   value: service.service_id,
-                  label: `${service.service_name} (${service.start_time || "--"}-${service.end_time || "--"})`,
+                  label: `${service.service_name} (${formatTime12(service.start_time) || "--"} – ${formatTime12(service.end_time) || "--"})`,
                 }))}
               />
               {servicesLoading ? <span className="inline-flex items-center gap-1 text-xs text-[var(--color-muted)]"><Loader2 className="h-3 w-3 animate-spin" /> Loading active tours...</span> : null}
               {servicesError ? <span className="text-xs text-red-600">{servicesError}</span> : null}
             </label>
 
-            <div className="sm:col-span-2">
-              <FancyDatePicker label="Visit date" value={visitDate} onChange={setVisitDate} min={todayPlusLocalIsoDate(0)} />
+            <div className="grid gap-1 text-sm text-[var(--color-text)] sm:col-span-2">
+              <span>Visit date</span>
+              <div className="flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2">
+                <CalendarCheck className="h-4 w-4 shrink-0 text-[var(--color-secondary)]" aria-hidden="true" />
+                <span className="font-semibold">Today · {formatDateWithYear(visitDate)}</span>
+                <span className="ml-auto rounded-full bg-[color:color-mix(in_srgb,var(--color-secondary)_12%,white)] px-2 py-0.5 text-[11px] font-semibold text-[var(--color-secondary)]">
+                  Same-day walk-in
+                </span>
+              </div>
             </div>
 
             <label className="grid gap-1 text-sm text-[var(--color-text)]">
@@ -366,16 +376,6 @@ export function AdminWalkInTourClient({
                 className="rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 outline-none ring-[var(--color-secondary)]/20 transition focus:ring-2"
               />
             </label>
-          </div>
-
-          <div className="mt-3 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => setVisitDate(todayPlusLocalIsoDate(0))}
-              className="inline-flex h-8 items-center rounded-full border border-[var(--color-border)] bg-white px-3 text-xs font-semibold text-[var(--color-text)]"
-            >
-              Same-day tour
-            </button>
           </div>
         </div>
 

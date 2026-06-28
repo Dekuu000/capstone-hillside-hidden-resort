@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { AlertCircle, CheckCircle2, Loader2, Phone, Tag, User, Users, Wallet } from "lucide-react";
+import { AlertCircle, CalendarCheck, CheckCircle2, Loader2, Phone, Tag, User, Users, Wallet } from "lucide-react";
 import type { AvailableUnitsResponse, PromoValidationResult, ReservationCreateResponse, ReservationListItem } from "../../../packages/shared/src/types";
 import { availableUnitsResponseSchema, promoValidationResultSchema, reservationCreateResponseSchema, reservationListItemSchema } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
@@ -12,6 +12,7 @@ import { formatPhpPeso as toPeso } from "../../lib/formatCurrency";
 import { getUnitNightlyRate } from "../../lib/booking/pricing";
 import { syncAwareMutation } from "../../lib/offlineSync/mutation";
 import { getUnitLabel } from "../../lib/unitLabel";
+import { formatDateWithYear } from "../../lib/dateDisplay";
 import { FancyDatePicker } from "../shared/FancyDatePicker";
 import { useToast } from "../shared/ToastProvider";
 
@@ -24,7 +25,9 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
   const { showToast } = useToast();
   const token = initialToken;
 
-  const [checkInDate, setCheckInDate] = useState(todayPlusLocalIsoDate(0));
+  // Walk-ins are same-day by definition — check-in is locked to today (guests use
+  // the online flow for advance stays), so it never changes; only check-out is picked.
+  const [checkInDate] = useState(todayPlusLocalIsoDate(0));
   const [checkOutDate, setCheckOutDate] = useState(todayPlusLocalIsoDate(1));
   // Party size — drives pax-based pricing for event spaces (Evergreen/Pinecrest)
   // exactly like the online guest flow. Held as a string so the field is clearable.
@@ -499,12 +502,21 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)] text-xs font-bold text-white">1</span>
             <div>
               <h2 className="text-lg font-semibold text-[var(--color-text)]">Dates &amp; room</h2>
-              <p className="text-xs text-[var(--color-muted)]">Pick the stay dates, then choose an available room.</p>
+              <p className="text-xs text-[var(--color-muted)]">Check-in is today — pick the check-out date, then choose a room.</p>
             </div>
           </div>
 
           <div className="mb-4 grid gap-3 sm:grid-cols-2">
-            <FancyDatePicker label="Check-in" value={checkInDate} onChange={setCheckInDate} min={todayPlusLocalIsoDate(0)} />
+            <div className="grid gap-1 text-sm text-[var(--color-text)]">
+              <span>Check-in</span>
+              <div className="flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2">
+                <CalendarCheck className="h-4 w-4 shrink-0 text-[var(--color-secondary)]" aria-hidden="true" />
+                <span className="font-semibold">Today · {formatDateWithYear(checkInDate)}</span>
+                <span className="ml-auto rounded-full bg-[color:color-mix(in_srgb,var(--color-secondary)_12%,white)] px-2 py-0.5 text-[11px] font-semibold text-[var(--color-secondary)]">
+                  Same-day walk-in
+                </span>
+              </div>
+            </div>
             <FancyDatePicker
               label="Check-out"
               value={checkOutDate}
@@ -530,18 +542,6 @@ export function AdminWalkInStayClient({ initialToken = null, embedded = false }:
             </div>
             <span className="text-xs text-[var(--color-muted)]">Prices event spaces (Evergreen, Pinecrest) by headcount — same as online booking.</span>
           </label>
-          <div className="mb-4 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setCheckInDate(todayPlusLocalIsoDate(0));
-                setCheckOutDate(todayPlusLocalIsoDate(1));
-              }}
-              className="inline-flex h-8 items-center rounded-full border border-[var(--color-border)] bg-white px-3 text-xs font-semibold text-[var(--color-text)]"
-            >
-              Same-day stay
-            </button>
-          </div>
 
           {unitsLoading ? (
             <div className="flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-background)] p-4 text-sm text-[var(--color-muted)]">
