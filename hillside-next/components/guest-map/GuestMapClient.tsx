@@ -11,7 +11,6 @@ import { Select } from "../shared/Select";
 import { Skeleton } from "../shared/Skeleton";
 import { StatusPill } from "../shared/StatusPill";
 import { SyncAlertBanner } from "../shared/SyncAlertBanner";
-import { Tabs } from "../shared/Tabs";
 import { loadMapSnapshot, saveMapSnapshot } from "../../lib/offlineSync/store";
 import { guestMapLocations } from "../../data/guestMapLocations";
 import { guestTrailEdges } from "../../data/guestMapGraph";
@@ -287,21 +286,34 @@ export function GuestMapClient() {
           </div>
         </div>
 
-        <div id="route-controls" className="mt-3">
-          <Tabs
-            items={[
-              { id: "all", label: "All" },
-              { id: "trail", label: "Trails" },
-              { id: "facility", label: "Facilities" },
-            ]}
-            value={kindFilter}
-            onChange={(next) => setKindFilter(next as "all" | "trail" | "facility")}
-            ariaLabel="Map pin filter"
-            className="w-full grid-cols-3 border-none bg-transparent p-0 sm:max-w-md sm:grid-cols-3"
-            tabClassName="h-11 rounded-2xl px-3 text-sm font-semibold"
-            activeClassName="border border-[var(--color-secondary)] bg-[color:color-mix(in_srgb,var(--color-secondary)_12%,white)] text-[var(--color-secondary)] shadow-sm"
-            inactiveClassName="border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-muted)] hover:bg-[var(--color-background)]"
-          />
+        <div
+          id="route-controls"
+          role="group"
+          aria-label="Map pin filter"
+          className="mt-3 grid grid-cols-3 gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-2 shadow-[var(--shadow-sm)] sm:max-w-md"
+        >
+          {[
+            { id: "all", label: "All" },
+            { id: "trail", label: "Trails" },
+            { id: "facility", label: "Facilities" },
+          ].map(({ id, label }) => {
+            const active = kindFilter === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                aria-pressed={active}
+                onClick={() => setKindFilter(id as "all" | "trail" | "facility")}
+                className={`inline-flex h-11 items-center justify-center rounded-xl px-3 text-sm font-semibold transition ${
+                  active
+                    ? "bg-[var(--color-primary)] text-white shadow-sm"
+                    : "bg-transparent text-[var(--color-muted)] hover:bg-[var(--color-background)]"
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
 
         <div className="mt-3 grid gap-2.5 sm:grid-cols-[1fr_auto_1fr] sm:items-end">
