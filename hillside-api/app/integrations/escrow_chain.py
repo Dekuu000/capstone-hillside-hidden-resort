@@ -233,6 +233,20 @@ def _build_eip1559_fee_params(w3) -> dict[str, int]:
     }
 
 
+def _submit_escrow_tx(w3, signed_tx):
+    """Broadcast a signed escrow tx and return its hash WITHOUT blocking on the
+    receipt. Waiting for a public-testnet receipt can take 15-40s, and the lock/
+    release/refund calls all run on request paths a user is waiting on (booking,
+    QR check-in, cancellation). Escrow is recorded optimistically with the returned
+    hash; the escrow reconciliation monitor confirms the mined state asynchronously
+    and surfaces any rare revert/drop as a mismatch. web3.py renamed the signed
+    attribute (rawTransaction -> raw_transaction), so accept either."""
+    raw = getattr(signed_tx, "raw_transaction", None)
+    if raw is None:
+        raw = getattr(signed_tx, "rawTransaction")
+    return w3.eth.send_raw_transaction(raw)
+
+
 def lock_reservation_escrow_onchain(
     *,
     chain: ChainConfig,
@@ -283,28 +297,17 @@ def lock_reservation_escrow_onchain(
         }
     )
     signed = account.sign_transaction(tx)
-    tx_hash_bytes = w3.eth.send_raw_transaction(signed.raw_transaction)
-    receipt = w3.eth.wait_for_transaction_receipt(
-        tx_hash_bytes,
-        timeout=settings.escrow_tx_receipt_timeout_sec,
-    )
-
-    if int(receipt.status or 0) != 1:
-        raise RuntimeError("On-chain escrow lock transaction reverted.")
-
-    event_index = 0
-    try:
-        events = contract.events.EscrowLocked().process_receipt(receipt)
-        if events:
-            event_index = int(events[0]["logIndex"])
-    except Exception:  # noqa: BLE001
-        # Event decoding fallback: keep tx success and default event index.
-        event_index = 0
+    # Submit and return immediately — do NOT block on wait_for_transaction_receipt().
+    # On public testnets a receipt can take 15-40s to mine, and this runs on the
+    # booking/payment path the guest is actively waiting on. We record the escrow
+    # optimistically with the submitted tx hash; the escrow reconciliation monitor
+    # confirms the on-chain state asynchronously and flags any rare revert/drop.
+    tx_hash_bytes = _submit_escrow_tx(w3, signed)
 
     return EscrowLockResult(
         tx_hash=Web3.to_hex(tx_hash_bytes),
         onchain_booking_id=Web3.to_hex(booking_id),
-        event_index=event_index,
+        event_index=0,
     )
 
 
@@ -364,27 +367,15 @@ def release_reservation_escrow_onchain(
         }
     )
     signed = account.sign_transaction(tx)
-    tx_hash_bytes = w3.eth.send_raw_transaction(signed.raw_transaction)
-    receipt = w3.eth.wait_for_transaction_receipt(
-        tx_hash_bytes,
-        timeout=settings.escrow_tx_receipt_timeout_sec,
-    )
-
-    if int(receipt.status or 0) != 1:
-        raise RuntimeError("On-chain escrow release transaction reverted.")
-
-    event_index = 0
-    try:
-        events = contract.events.EscrowReleased().process_receipt(receipt)
-        if events:
-            event_index = int(events[0]["logIndex"])
-    except Exception:  # noqa: BLE001
-        event_index = 0
+    # Submit and return immediately (see lock_reservation_escrow_onchain). Releasing
+    # runs during the QR check-in scan, so blocking on the receipt would stall the
+    # front desk; reconciliation confirms the settlement asynchronously.
+    tx_hash_bytes = _submit_escrow_tx(w3, signed)
 
     return EscrowSettlementResult(
         tx_hash=Web3.to_hex(tx_hash_bytes),
         onchain_booking_id=booking_id_hex,
-        event_index=event_index,
+        event_index=0,
     )
 
 
@@ -434,27 +425,14 @@ def refund_reservation_escrow_onchain(
         }
     )
     signed = account.sign_transaction(tx)
-    tx_hash_bytes = w3.eth.send_raw_transaction(signed.raw_transaction)
-    receipt = w3.eth.wait_for_transaction_receipt(
-        tx_hash_bytes,
-        timeout=settings.escrow_tx_receipt_timeout_sec,
-    )
-
-    if int(receipt.status or 0) != 1:
-        raise RuntimeError("On-chain escrow refund transaction reverted.")
-
-    event_index = 0
-    try:
-        events = contract.events.EscrowRefunded().process_receipt(receipt)
-        if events:
-            event_index = int(events[0]["logIndex"])
-    except Exception:  # noqa: BLE001
-        event_index = 0
+    # Submit and return immediately (see lock_reservation_escrow_onchain). Refunds run
+    # during a paid cancellation; reconciliation confirms the settlement asynchronously.
+    tx_hash_bytes = _submit_escrow_tx(w3, signed)
 
     return EscrowSettlementResult(
         tx_hash=Web3.to_hex(tx_hash_bytes),
         onchain_booking_id=booking_id_hex,
-        event_index=event_index,
+        event_index=0,
     )
 
 

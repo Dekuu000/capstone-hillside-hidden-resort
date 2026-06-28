@@ -152,16 +152,17 @@ export function ReserveClient({ token, email }: { token: string; email: string |
     setBusy(true);
     setError(null);
     try {
+      // Persist contact details in the background — best-effort, and must not sit on
+      // the critical path before payment. Fire it concurrently with the booking
+      // create so it never adds a round-trip to the GCash redirect.
       if (name.trim() || phone.trim()) {
-        try {
-          await apiFetch(
-            "/v2/me/profile",
-            { method: "PATCH", body: JSON.stringify({ name: name.trim() || null, phone: phone.trim() || null }) },
-            token,
-          );
-        } catch {
+        void apiFetch(
+          "/v2/me/profile",
+          { method: "PATCH", body: JSON.stringify({ name: name.trim() || null, phone: phone.trim() || null }) },
+          token,
+        ).catch(() => {
           /* contact update is best-effort; don't block the booking */
-        }
+        });
       }
 
       const payload = {
