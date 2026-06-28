@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { BedDouble, Check, Loader2 } from "lucide-react";
+import { BedDouble, Check, Loader2, RefreshCcw } from "lucide-react";
 import type { OperationsRoomItem, UnitOperationalStatus } from "../../../packages/shared/src/types";
+import { operationsSnapshotResponseSchema } from "../../../packages/shared/src/schemas";
 import { apiFetch } from "../../lib/apiClient";
 import { getApiErrorMessage } from "../../lib/apiError";
 
@@ -32,7 +33,29 @@ export function RoomStatusBoard({
 }) {
   const [board, setBoard] = useState<OperationsRoomItem[]>(initialBoard);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Pull the latest room statuses without a full page reload — picks up changes
+  // made elsewhere (a checkout flipping a room to dirty, or a manager edit).
+  const refresh = async () => {
+    if (!token || refreshing) return;
+    setRefreshing(true);
+    setError(null);
+    try {
+      const snap = await apiFetch(
+        "/v2/dashboard/operations",
+        { method: "GET" },
+        token,
+        operationsSnapshotResponseSchema,
+      );
+      setBoard(snap.room_board ?? []);
+    } catch (caught) {
+      setError(getApiErrorMessage(caught, "Couldn't refresh room status."));
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const counts = useMemo(() => {
     const c: Record<UnitOperationalStatus, number> = { cleaned: 0, occupied: 0, dirty: 0, maintenance: 0 };
@@ -65,11 +88,22 @@ export function RoomStatusBoard({
 
   return (
     <section className="surface p-5 sm:p-6">
-      <div className="flex items-center gap-2">
-        <BedDouble className="h-4 w-4 text-[var(--color-secondary)]" />
-        <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">
-          Room status · {board.length} active
-        </h2>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <BedDouble className="h-4 w-4 text-[var(--color-secondary)]" />
+          <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">
+            Room status · {board.length} active
+          </h2>
+        </div>
+        <button
+          type="button"
+          onClick={() => void refresh()}
+          disabled={refreshing}
+          className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-white px-2.5 text-xs font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] disabled:opacity-60"
+        >
+          <RefreshCcw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} aria-hidden="true" />
+          Refresh
+        </button>
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
