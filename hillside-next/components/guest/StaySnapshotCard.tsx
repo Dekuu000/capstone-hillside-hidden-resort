@@ -48,7 +48,7 @@ export function StaySnapshotCard({
         <span className={cn("inline-flex h-9 w-9 items-center justify-center rounded-full", dark ? "bg-teal-300/15 text-teal-300" : "bg-[color:color-mix(in_srgb,var(--color-secondary)_14%,white)] text-[var(--color-secondary)]")}>
           <CalendarDays className="h-5 w-5" />
         </span>
-        <h2 className={cn("font-bold", dark ? "text-lg text-white" : "text-lg text-[var(--color-primary)]")}>Stay snapshot</h2>
+        <h2 className={cn("font-bold", dark ? "text-lg text-white" : "text-lg text-[var(--color-primary)]")}>Your stay</h2>
       </div>
 
       <div className={cn("mt-4 divide-y text-sm", dark ? "divide-white/12 text-white/75" : "divide-[var(--color-border)] text-[var(--color-muted)]")}>
