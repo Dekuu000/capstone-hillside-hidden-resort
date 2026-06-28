@@ -802,6 +802,10 @@ export function AdminCheckinClient({
     }
     setScanLoading(true);
     setOutcome("scanning");
+    // Clear any previous guest's result so starting the camera cleanly means
+    // "scan the next guest" (Rescan button removed — Start does the reset).
+    setResult(null);
+    setDetail(null);
     setCameraPermissionError(null);
     await stopCamera();
     try {
@@ -1583,7 +1587,6 @@ export function AdminCheckinClient({
                   scanLoading={scanLoading}
                   permissionError={cameraPermissionError}
                   onToggleCamera={() => void toggleCamera()}
-                  onReset={() => void resetAll()}
                   onRetryPermission={() => void startCamera()}
                   canSwitchCamera={canSwitchCamera}
                   onSwitchCamera={() => void switchCamera()}
@@ -1597,7 +1600,7 @@ export function AdminCheckinClient({
                   cameraHeightClassName={tabletView ? "h-[320px] sm:h-[440px] md:h-[520px]" : undefined}
                 />
                 <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-xs text-[var(--color-muted)]">
-                  QR token rotates by server policy. Rescan if expired.
+                  QR token rotates by server policy. Scan again if expired.
                   {tokenSecondsLeft != null ? (
                     <span className="ml-2 font-semibold text-[var(--color-text)]">Expires in {tokenSecondsLeft}s</span>
                   ) : null}

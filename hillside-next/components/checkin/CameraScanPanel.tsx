@@ -1,4 +1,4 @@
-import { Camera, CameraOff, CheckCircle2, RefreshCcw, ScanLine, SwitchCamera, Zap } from "lucide-react";
+import { Camera, CameraOff, CheckCircle2, ScanLine, SwitchCamera, Zap } from "lucide-react";
 import { type StatusPillTone } from "../shared/StatusPill";
 import { ScanHints } from "./ScanHints";
 
@@ -19,7 +19,6 @@ export function CameraScanPanel({
   scanLoading,
   permissionError,
   onToggleCamera,
-  onReset,
   onRetryPermission,
   canSwitchCamera,
   onSwitchCamera,
@@ -39,7 +38,6 @@ export function CameraScanPanel({
   scanLoading: boolean;
   permissionError?: string | null;
   onToggleCamera: () => void;
-  onReset: () => void;
   onRetryPermission: () => void;
   canSwitchCamera: boolean;
   onSwitchCamera: () => void;
@@ -154,12 +152,12 @@ export function CameraScanPanel({
         ) : null}
       </div>
 
-      <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
+      <div className="mt-4">
         <button
           type="button"
           onClick={onToggleCamera}
           disabled={scanLoading}
-          className={`inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl px-5 text-sm font-semibold transition disabled:opacity-60 sm:w-auto sm:min-w-[190px] ${
+          className={`inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl px-5 text-sm font-semibold transition disabled:opacity-60 ${
             scanActive
               ? "border border-[var(--color-border)] bg-white text-[var(--color-text)] hover:bg-[var(--color-background)]"
               : "bg-[var(--color-primary)] text-white hover:brightness-110"
@@ -167,14 +165,6 @@ export function CameraScanPanel({
         >
           {scanActive ? <CameraOff className="h-4 w-4" /> : <Camera className="h-4 w-4" />}
           {scanLoading ? "Starting…" : scanActive ? "Stop camera" : "Start camera"}
-        </button>
-        <button
-          type="button"
-          onClick={onReset}
-          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-[var(--color-border)] bg-white px-5 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-background)] sm:w-auto sm:min-w-[140px]"
-        >
-          <RefreshCcw className="h-4 w-4" />
-          Rescan
         </button>
       </div>
 
