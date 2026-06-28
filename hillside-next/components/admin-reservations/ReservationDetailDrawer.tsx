@@ -483,7 +483,19 @@ export function ReservationDetailDrawer({
                           {copiedField === "total_due" ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
                         </button>
                       </div>
-                      <p className="mt-1 text-lg font-semibold text-[var(--color-text)]">{formatPeso(reservation.total_amount)}</p>
+                      <div className="mt-1 flex flex-wrap items-baseline gap-x-2">
+                        <p className="text-lg font-semibold text-[var(--color-text)]">{formatPeso(reservation.total_amount)}</p>
+                        {Number(reservation.discount_amount ?? 0) > 0 && reservation.original_total ? (
+                          <span className="text-xs font-medium text-[var(--color-muted)] line-through">
+                            {formatPeso(Number(reservation.original_total))}
+                          </span>
+                        ) : null}
+                      </div>
+                      {Number(reservation.discount_amount ?? 0) > 0 ? (
+                        <span className="mt-1.5 inline-flex w-fit items-center rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
+                          {reservation.promo_code ? `${reservation.promo_code} · ` : "Promo · "}−{formatPeso(Number(reservation.discount_amount ?? 0))}
+                        </span>
+                      ) : null}
                     </div>
                     <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 px-3 py-2">
                       <div className="flex items-center justify-between gap-2">
@@ -516,12 +528,6 @@ export function ReservationDetailDrawer({
                       <p className={`mt-1 text-2xl font-bold leading-none ${remainingBalanceClass}`}>{formatPeso(reservation.balance_due)}</p>
                     </div>
                   </div>
-                  {Number(reservation.discount_amount ?? 0) > 0 ? (
-                    <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800">
-                      Promo {reservation.promo_code ? `${reservation.promo_code} ` : ""}applied — {formatPeso(Number(reservation.discount_amount ?? 0))} off
-                      {reservation.original_total ? ` (subtotal ${formatPeso(Number(reservation.original_total))})` : ""}.
-                    </p>
-                  ) : null}
                   <div className="grid gap-2 text-sm md:grid-cols-3">
                     <p><span className="text-[var(--color-muted)]">Payment method:</span> {latestPayment?.method?.toUpperCase() || "-"}</p>
                     <p><span className="text-[var(--color-muted)]">Latest payment:</span> {formatDateTime(latestPayment?.created_at)}</p>
