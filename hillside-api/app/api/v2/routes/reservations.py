@@ -59,6 +59,7 @@ from app.schemas.common import (
     CancelReservationResponse,
     ReservationStatusUpdateRequest,
     ReservationStatusUpdateResponse,
+    ReservationAdminDetailItem,
     ReservationListItem,
     ReservationListResponse,
     ReservationQuickStatsResponse,
@@ -1174,13 +1175,28 @@ def get_reservation_by_reservation_code(
     return row
 
 
-@router.get("/{reservation_id}", response_model=ReservationListItem)
+@router.get("/{reservation_id}", response_model=ReservationAdminDetailItem)
 def get_reservation(
     reservation_id: str,
     auth: AuthContext = Depends(require_authenticated),
 ):
     row = _get_reservation_or_404(reservation_id)
     ensure_reservation_access(auth, row)
+    # The on-chain escrow + NFT guest-pass references are crypto internals shown only
+    # in the System-Admin "Blockchain / Ledger" panel. A guest may legitimately reach
+    # this route for their own booking, so strip those fields for anyone below
+    # super_admin (escrow_state stays — it is a plain status the QR gate needs).
+    if not role_at_least(auth.role, "super_admin"):
+        row = dict(row)
+        for field in (
+            "chain_key",
+            "chain_tx_hash",
+            "onchain_booking_id",
+            "guest_pass_token_id",
+            "guest_pass_tx_hash",
+            "guest_pass_reservation_hash",
+        ):
+            row[field] = None
     return row
 
 
