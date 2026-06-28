@@ -602,6 +602,8 @@ export type ReservationCreateResponse = ReservationPaymentPolicyMetadata & {
   reservation_id: string;
   reservation_code: string;
   status: ReservationStatus;
+  total_amount?: number | null;
+  balance_due?: number | null;
   escrow_ref?: EscrowRef | null;
   ai_recommendation?: PricingRecommendation | null;
 };

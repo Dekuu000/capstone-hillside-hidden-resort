@@ -544,6 +544,10 @@ export const reservationCreateResponseSchema = z.object({
   reservation_id: z.string().min(1),
   reservation_code: z.string().min(1),
   status: bookingStatusSchema,
+  // Authoritative totals echoed back so the desk can show the balance and prefill
+  // the inline "Take payment" panel without a second round-trip to fetch them.
+  total_amount: z.number().optional().nullable(),
+  balance_due: z.number().optional().nullable(),
   ...reservationPaymentPolicyMetadataShape,
   escrow_ref: escrowRefSchema.optional().nullable(),
   ai_recommendation: pricingRecommendationSchema.optional().nullable(),

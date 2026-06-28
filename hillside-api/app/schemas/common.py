@@ -234,6 +234,10 @@ class ReservationResponse(ReservationPaymentPolicyMetadata):
     reservation_id: str
     reservation_code: str
     status: BookingStatus
+    # Authoritative totals echoed back so the desk can show the balance and prefill
+    # the inline "Take payment" panel without a second round-trip to fetch them.
+    total_amount: float | None = None
+    balance_due: float | None = None
     escrow_ref: EscrowRef | None = None
     guest_pass_ref: GuestPassRef | None = None
     ai_recommendation: AiRecommendation | None = None

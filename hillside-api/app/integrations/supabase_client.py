@@ -390,6 +390,22 @@ def get_reservation_by_id(reservation_id: str) -> dict[str, Any] | None:
     return _normalize_reservation_row(rows[0]) if rows else None
 
 
+def get_reservation_amounts(reservation_id: str) -> dict[str, Any] | None:
+    """Lightweight amounts-only read (no joins) for echoing totals on the create
+    response. Far cheaper than get_reservation_by_id's nested select — used right
+    after the create RPC, which returns deposit fields but not the final total."""
+    client = get_supabase_client()
+    response = (
+        client.table("reservations")
+        .select("total_amount,amount_paid_verified,balance_due")
+        .eq("reservation_id", reservation_id)
+        .limit(1)
+        .execute()
+    )
+    rows = response.data or []
+    return rows[0] if rows else None
+
+
 def get_reservation_by_code(reservation_code: str) -> dict[str, Any] | None:
     client = get_supabase_client()
     response = (
