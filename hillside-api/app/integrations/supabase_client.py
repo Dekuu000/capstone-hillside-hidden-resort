@@ -3871,26 +3871,49 @@ def notify_ops_new_service_request(row: dict[str, Any] | None) -> None:
         return
 
 
-def notify_ops_payment_received(*, reservation: dict[str, Any] | None, amount: float | None = None) -> None:
-    """Tell managers a guest paid online (deposit received → booking confirmed).
-    Managers + System Admin only; Front Desk doesn't handle payments."""
+def notify_ops_payment_received(
+    *,
+    reservation: dict[str, Any] | None,
+    amount: float | None = None,
+    channel: str = "online",
+    method: str | None = None,
+    payment_ref: str | None = None,
+) -> None:
+    """Tell managers a payment came in. Managers + System Admin only.
+    - channel="online": guest paid the deposit online (PayMongo webhook).
+    - channel="on_site": Front Desk recorded a cash/desk payment — a walk-in's
+      payment or a guest settling their balance at the counter. `method` is the
+      tender (cash/gcash/bank/card) and `payment_ref` keys the dedupe so a booking
+      that takes several on-site payments notifies for each one."""
     try:
         if not isinstance(reservation, dict):
             return
         code = reservation.get("reservation_code") or "A reservation"
         reservation_id = str(reservation.get("reservation_id") or "")
-        amount_str = f" (₱{amount:,.0f})" if amount and amount > 0 else ""
+        amount_paren = f" (₱{amount:,.0f})" if amount and amount > 0 else ""
+        status = str(reservation.get("status") or "").lower()
+        if channel == "on_site":
+            method_labels = {"cash": "cash", "gcash": "GCash", "bank": "bank transfer", "card": "card"}
+            method_str = method_labels.get(str(method or "").lower(), "on-site")
+            tail = "the booking is now confirmed." if status == "confirmed" else "balance updated."
+            body = f"{code} paid{amount_paren} on-site ({method_str}) — {tail}"
+            event_type = "ops.payment_received_onsite"
+            dedupe = f"ops.payment_received_onsite:{reservation_id}:{payment_ref or amount}"
+        else:
+            body = f"{code} paid the deposit online{amount_paren} — the booking is now confirmed."
+            event_type = "ops.payment_received"
+            dedupe = f"ops.payment_received:{reservation_id}"
         emit_notification_to_roles(
             min_role="admin",
             category="payment",
-            event_type="ops.payment_received",
+            event_type=event_type,
             title="Payment received",
-            body=f"{code} paid the deposit online{amount_str} — the booking is now confirmed.",
+            body=body,
             severity="success",
             entity_type="reservation",
             entity_id=reservation_id,
             link="/admin/payments",
-            dedupe_prefix=f"ops.payment_received:{reservation_id}",
+            dedupe_prefix=dedupe,
         )
     except Exception:  # noqa: BLE001 - best-effort
         return

@@ -53,6 +53,16 @@ class Settings(BaseSettings):
     notification_retention_days: int = 90
     feature_checkin_welcome_notification: bool = False
     feature_checkin_schedule_bypass: bool = False
+
+    # In-process per-IP rate limiting for abuse-prone endpoints (no Redis/slowapi).
+    # Fixed window in seconds = 60; the per-minute caps below are generous for real
+    # use but blunt brute-force (promo codes) and floods. Tune via env if needed.
+    feature_rate_limiting: bool = True
+    rate_limit_auth_per_min: int = 30
+    rate_limit_promo_per_min: int = 20
+    rate_limit_qr_per_min: int = 60
+    rate_limit_webhook_per_min: int = 240
+
     qr_signing_secret: str = ""
     qr_signing_private_key: str = ""
     qr_rotation_seconds: int = 30
