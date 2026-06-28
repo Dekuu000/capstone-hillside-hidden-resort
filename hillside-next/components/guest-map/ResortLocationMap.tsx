@@ -51,7 +51,7 @@ export function ResortLocationMap() {
           </span>
           <div className="min-w-0">
             <p className="font-semibold text-[var(--color-text)]">{RESORT_NAME}</p>
-            <p className="text-sm muted-text">{RESORT_ADDRESS}</p>
+            <p className="truncate text-[10px] muted-text sm:text-sm">{RESORT_ADDRESS}</p>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2 sm:flex sm:shrink-0">
