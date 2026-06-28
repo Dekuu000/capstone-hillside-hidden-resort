@@ -35,7 +35,6 @@ import { ModalDialog } from "../shared/ModalDialog";
 import { Select } from "../shared/Select";
 import { Skeleton } from "../shared/Skeleton";
 import { SyncAlertBanner } from "../shared/SyncAlertBanner";
-import { Tabs } from "../shared/Tabs";
 import { useToast } from "../shared/ToastProvider";
 import { FancyDatePicker } from "../shared/FancyDatePicker";
 
@@ -43,9 +42,9 @@ type Props = {
   accessToken: string | null;
 };
 
-const CATEGORY_TABS: Array<{ id: ResortServiceCategory; label: string }> = [
-  { id: "room_service", label: "Room Service" },
-  { id: "spa", label: "Spa" },
+const CATEGORY_TABS: Array<{ id: ResortServiceCategory; label: string; Icon: typeof UtensilsCrossed }> = [
+  { id: "room_service", label: "Room Service", Icon: UtensilsCrossed },
+  { id: "spa", label: "Spa", Icon: Waves },
 ];
 
 const STATUS_LABEL: Record<string, string> = {
@@ -270,15 +269,31 @@ export function GuestServicesClient({ accessToken }: Props) {
   return (
     <div className="space-y-4">
       <section className="surface p-4">
-        <Tabs
-          items={CATEGORY_TABS.map((tab) => ({ id: tab.id, label: tab.label }))}
-          value={category}
-          onChange={(id) => setCategory(id as ResortServiceCategory)}
-          className="grid-cols-2 bg-white sm:inline-grid sm:w-fit sm:grid-cols-[minmax(7rem,auto)_minmax(7rem,auto)]"
-          tabClassName="h-11 rounded-2xl px-3 text-sm font-semibold"
-          activeClassName="border border-[var(--color-secondary)] bg-teal-50 text-[var(--color-secondary)] shadow-sm"
-          inactiveClassName="border border-[var(--color-border)] bg-white text-slate-500 hover:bg-slate-50"
-        />
+        <div
+          role="group"
+          aria-label="Service category"
+          className="grid grid-cols-2 gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-2 shadow-[var(--shadow-sm)] sm:mx-auto sm:w-full sm:max-w-[420px]"
+        >
+          {CATEGORY_TABS.map(({ id, label, Icon }) => {
+            const active = category === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                aria-pressed={active}
+                onClick={() => setCategory(id)}
+                className={`inline-flex h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition ${
+                  active
+                    ? "bg-[var(--color-primary)] text-white shadow-sm"
+                    : "bg-transparent text-[var(--color-muted)] hover:bg-[var(--color-background)]"
+                }`}
+              >
+                <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                {label}
+              </button>
+            );
+          })}
+        </div>
       </section>
       <div>
         {actionMessage ? (
