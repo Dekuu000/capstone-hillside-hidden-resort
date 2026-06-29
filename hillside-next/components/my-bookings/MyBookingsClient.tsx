@@ -146,9 +146,11 @@ function canShowQrForBooking(booking: { status: string; escrow_state?: string | 
   return !["released", "refunded", "failed"].includes(escrow);
 }
 
-/** "Check-in opens in 1d 3h" for a confirmed upcoming booking (8am local), else null. */
+/** "Check-in opens in 2d" for a confirmed upcoming booking. Check-in opens at the
+ *  start of the reservation date (Asia/Manila) to match the server gate — both
+ *  validate_qr_checkin and perform_checkin allow check-in any time on that date. */
 function formatCheckInCountdown(targetDate: string, now: Date): string | null {
-  const target = new Date(`${targetDate}T08:00:00+08:00`).getTime();
+  const target = new Date(`${targetDate}T00:00:00+08:00`).getTime();
   const diff = target - now.getTime();
   if (!Number.isFinite(diff)) return null;
   if (diff <= 0) return "Check-in is open now";
@@ -156,7 +158,8 @@ function formatCheckInCountdown(targetDate: string, now: Date): string | null {
   const days = Math.floor(totalMinutes / 1440);
   const hours = Math.floor((totalMinutes % 1440) / 60);
   const minutes = totalMinutes % 60;
-  const span = days > 0 ? `${days}d ${hours}h` : hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+  const span =
+    days > 0 ? (hours > 0 ? `${days}d ${hours}h` : `${days}d`) : hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
   return `Check-in opens in ${span}`;
 }
 
