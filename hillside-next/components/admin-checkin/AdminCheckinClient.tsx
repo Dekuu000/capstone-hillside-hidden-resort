@@ -1428,13 +1428,13 @@ export function AdminCheckinClient({
         reservationFolioResponseSchema,
       );
       setFolio(data);
-      showToast({ type: "success", title: "Folio settled", message: "Room balance and add-ons collected." });
+      showToast({ type: "success", title: "Charges collected", message: "Room balance and extras collected." });
       // Refresh the reservation so the room balance / outstanding gate clears.
       void apiFetch<ReservationItem>(`/v2/reservations/${encodeURIComponent(result.reservation_id)}`, { method: "GET" }, token, reservationListItemSchema)
         .then((row) => setDetail(row))
         .catch(() => undefined);
     } catch (e) {
-      showToast({ type: "error", title: "Couldn't settle folio", message: getApiErrorMessage(e, "Request failed.") });
+      showToast({ type: "error", title: "Couldn't collect charges", message: getApiErrorMessage(e, "Request failed.") });
     } finally {
       setFolioSettleBusy(false);
     }
@@ -2032,16 +2032,19 @@ export function AdminCheckinClient({
                 {canCheckout && folio && (folio.addons.length > 0 || folio.grand_total_due > 0) ? (
                   <div className="rounded-xl border border-[var(--color-border)] bg-white p-3">
                     <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm font-semibold text-[var(--color-text)]">Folio — settle at check-out</p>
+                      <p className="text-sm font-semibold text-[var(--color-text)]">Charges to collect at check-out</p>
                       {folio.grand_total_due > 0 ? (
-                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">Open</span>
+                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">Unpaid</span>
                       ) : (
-                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-800">Settled</span>
+                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-800">Paid</span>
                       )}
                     </div>
+                    <p className="mt-1 text-xs text-[var(--color-muted)]">
+                      Extras added during the stay (room service, etc.). Collect the total below before checking the guest out.
+                    </p>
                     {folio.room_balance > 0 ? (
                       <div className="mt-2 flex items-center justify-between text-sm">
-                        <span className="text-[var(--color-muted)]">Room balance</span>
+                        <span className="text-[var(--color-muted)]">Unpaid room balance</span>
                         <span className="font-medium text-[var(--color-text)]">{formatPeso(folio.room_balance)}</span>
                       </div>
                     ) : null}
@@ -2059,7 +2062,7 @@ export function AdminCheckinClient({
                       </ul>
                     ) : null}
                     <div className="mt-2 flex items-center justify-between border-t border-[var(--color-border)] pt-2">
-                      <span className="text-[13px] font-semibold text-[var(--color-text)]">Total due</span>
+                      <span className="text-[13px] font-semibold text-[var(--color-text)]">Total to collect</span>
                       <span className={`text-lg font-bold ${folio.grand_total_due > 0 ? "text-amber-700" : "text-emerald-700"}`}>
                         {formatPeso(folio.grand_total_due)}
                       </span>
@@ -2085,21 +2088,23 @@ export function AdminCheckinClient({
                           disabled={folioSettleBusy}
                           className="h-10 rounded-lg bg-[var(--color-primary)] px-3 text-xs font-semibold text-white shadow-sm transition hover:brightness-110 disabled:opacity-60"
                         >
-                          {folioSettleBusy ? "Settling…" : `Settle ${formatPeso(folio.grand_total_due)}`}
+                          {folioSettleBusy ? "Collecting…" : `Collect ${formatPeso(folio.grand_total_due)}`}
                         </button>
                       </div>
                     ) : (
-                      <p className="mt-2 text-xs text-emerald-700">Folio settled — you can record check-out.</p>
+                      <p className="mt-2 text-xs text-emerald-700">All charges collected — you can now check the guest out.</p>
                     )}
                   </div>
                 ) : null}
                 {canCheckout && folio && (folio.pending_request_count ?? 0) > 0 ? (
                   <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
                     <p className="text-sm font-semibold text-amber-800">
-                      Guest has {folio.pending_request_count} request{folio.pending_request_count === 1 ? "" : "s"} not yet fulfilled.
+                      {folio.pending_request_count} service request{folio.pending_request_count === 1 ? "" : "s"} still pending.
                     </p>
                     <p className="mt-1 text-xs text-amber-700">
-                      Not billed yet — deliver and mark them done in Services to add the charge, or cancel them, before check-out.
+                      {folio.pending_request_count === 1 ? "It hasn't" : "They haven't"} been charged yet. Finish{" "}
+                      {folio.pending_request_count === 1 ? "it" : "them"} (mark as done in Services) to add the charge, or
+                      cancel — before checking the guest out.
                     </p>
                   </div>
                 ) : null}
