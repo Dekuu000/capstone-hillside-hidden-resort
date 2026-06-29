@@ -114,6 +114,50 @@ def create_gcash_checkout_session(
     }
 
 
+def retrieve_checkout_session(session_id: str) -> dict[str, Any]:
+    """Fetch a checkout session from PayMongo (server-side, secret key). Used to
+    actively reconcile a payment when the guest returns, so confirmation never
+    depends solely on the async webhook. Raises :class:`PayMongoError` on failure."""
+    session_id = str(session_id or "").strip()
+    if not session_id:
+        raise PayMongoError("Missing checkout session id.")
+    base = str(settings.paymongo_base_url or "https://api.paymongo.com").rstrip("/")
+    try:
+        with httpx.Client(timeout=20.0) as client:
+            response = client.get(
+                f"{base}/v1/checkout_sessions/{session_id}",
+                headers={"Authorization": _auth_header()},
+            )
+    except httpx.HTTPError as exc:
+        raise PayMongoError(f"PayMongo request failed: {exc}") from exc
+    if response.status_code >= 400:
+        raise PayMongoError(f"PayMongo error {response.status_code}: {response.text[:500]}")
+    return response.json()
+
+
+def extract_checkout_payment(body: dict[str, Any]) -> tuple[bool, str | None]:
+    """Read a retrieved checkout-session payload and report ``(is_paid, payment_id)``.
+    A session is paid when any attached payment is ``paid`` (or the payment intent
+    reached ``succeeded``)."""
+    data = body.get("data") if isinstance(body.get("data"), dict) else {}
+    attrs = data.get("attributes") if isinstance(data.get("attributes"), dict) else {}
+
+    payments = attrs.get("payments") if isinstance(attrs.get("payments"), list) else []
+    for payment in payments:
+        if not isinstance(payment, dict):
+            continue
+        pay_attrs = payment.get("attributes") if isinstance(payment.get("attributes"), dict) else {}
+        if str(pay_attrs.get("status") or "").lower() == "paid":
+            return True, str(payment.get("id") or "") or None
+
+    intent = attrs.get("payment_intent") if isinstance(attrs.get("payment_intent"), dict) else {}
+    intent_attrs = intent.get("attributes") if isinstance(intent.get("attributes"), dict) else {}
+    if str(intent_attrs.get("status") or "").lower() in {"succeeded", "paid"}:
+        return True, str(intent.get("id") or "") or None
+
+    return False, None
+
+
 def verify_webhook_signature(*, raw_body: bytes, signature_header: str) -> bool:
     """Verify a PayMongo webhook signature header against the raw request body.
 
