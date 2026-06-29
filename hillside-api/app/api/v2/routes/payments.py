@@ -23,6 +23,7 @@ from app.integrations.supabase_client import (
     set_paymongo_payment_id,
     expire_pending_payment_hold_for_reservation,
     get_payment_by_reference_no,
+    get_latest_gateway_payment_for_reservation,
     get_reservation_by_id,
     list_admin_payments,
     list_payments_by_reservation,
@@ -353,9 +354,23 @@ def update_payment_intent(
     return {"ok": True}
 
 
+def _resolve_public_base_url(request: Request) -> str:
+    """Base URL for PayMongo success/cancel redirects. Prefer APP_PUBLIC_BASE_URL,
+    but if it's unset or still pointing at localhost (a common prod misconfig), fall
+    back to the request's Origin so guests aren't redirected to localhost."""
+    configured = str(settings.app_public_base_url or "").strip().rstrip("/")
+    if configured and "localhost" not in configured and "127.0.0.1" not in configured:
+        return configured
+    origin = str(request.headers.get("origin") or "").strip().rstrip("/")
+    if origin:
+        return origin
+    return configured or "http://localhost:3000"
+
+
 @router.post("/paymongo/checkout")
 def create_paymongo_checkout(
     payload: PaymongoCheckoutRequest,
+    request: Request,
     auth: AuthContext = Depends(require_authenticated),
 ):
     """Create a PayMongo Hosted Checkout (GCash) session for a reservation's
@@ -415,7 +430,7 @@ def create_paymongo_checkout(
         raise_http_from_runtime_error(exc, default_status=status.HTTP_503_SERVICE_UNAVAILABLE)
     payment_id = str(payment.get("payment_id") or "")
 
-    base = str(settings.app_public_base_url or "http://localhost:3000").rstrip("/")
+    base = _resolve_public_base_url(request)
     success_url = f"{base}/reserve/{payload.reservation_id}/pay/success"
     cancel_url = f"{base}/reserve/{payload.reservation_id}/pay/cancelled"
 
@@ -459,6 +474,97 @@ def create_paymongo_checkout(
         "checkout_session_id": session["checkout_session_id"],
         "payment_id": payment_id,
     }
+
+
+@router.post("/paymongo/{reservation_id}/reconcile")
+def reconcile_paymongo_payment(
+    reservation_id: str,
+    auth: AuthContext = Depends(require_authenticated),
+):
+    """Active payment reconciliation for the success page. Pulls the latest PayMongo
+    checkout state and verifies the payment if it's already paid — so confirmation
+    survives a cold-started API or a slow/missed webhook and the guest is never
+    stranded on "verifying". Idempotent: a no-op when already verified or not yet paid.
+    Returns ``status`` in {verified, pending, rejected, no_gateway_payment, not_applicable}."""
+    if str(settings.payment_mode or "").strip().lower() != "gateway" or not paymongo.is_configured():
+        return {"ok": True, "status": "not_applicable"}
+
+    try:
+        reservation = get_reservation_by_id(reservation_id)
+    except RuntimeError as exc:
+        raise_http_from_runtime_error(exc, default_status=status.HTTP_503_SERVICE_UNAVAILABLE)
+    if not reservation:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation not found")
+    ensure_reservation_access(auth, reservation)
+
+    # Already settled by the webhook (or otherwise) — nothing to do.
+    if str(reservation.get("status") or "").lower() in {"confirmed", "checked_in", "checked_out"}:
+        return {"ok": True, "status": "verified"}
+
+    try:
+        payment = get_latest_gateway_payment_for_reservation(reservation_id=reservation_id)
+    except RuntimeError as exc:
+        raise_http_from_runtime_error(exc, default_status=status.HTTP_503_SERVICE_UNAVAILABLE)
+    if not payment:
+        return {"ok": True, "status": "no_gateway_payment"}
+
+    payment_id = str(payment.get("payment_id") or "")
+    payment_status = str(payment.get("status") or "").lower()
+    if payment_status == "verified":
+        return {"ok": True, "status": "verified"}
+    if payment_status == "rejected":
+        return {"ok": True, "status": "rejected"}
+
+    session_id = str(payment.get("paymongo_checkout_session_id") or "")
+    if not session_id:
+        return {"ok": True, "status": "pending"}
+
+    try:
+        body = paymongo.retrieve_checkout_session(session_id)
+    except paymongo.PayMongoError as exc:
+        # Don't fail the guest's page — they keep polling and the webhook may still land.
+        logger.warning("PayMongo reconcile lookup failed (reservation_id=%s): %s", reservation_id, exc)
+        return {"ok": True, "status": "pending"}
+
+    is_paid, provider_payment_id = paymongo.extract_checkout_payment(body)
+    if not is_paid:
+        return {"ok": True, "status": "pending"}
+
+    # Paid on PayMongo but not yet verified here → run the SAME path the webhook uses.
+    try:
+        verify_payment_service_role(payment_id, approved=True)
+    except RuntimeError as exc:
+        # A concurrent webhook may have verified it first — the RPC guards re-verify.
+        if "already" in str(exc).lower():
+            return {"ok": True, "status": "verified"}
+        raise_http_from_runtime_error(exc, default_status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+    if provider_payment_id:
+        try:
+            set_paymongo_payment_id(payment_id=payment_id, provider_payment_id=provider_payment_id)
+        except RuntimeError:
+            logger.warning("Could not store PayMongo payment id for %s", payment_id)
+
+    # Deposit is paid → lock escrow (shadow / on-chain). Idempotent + non-blocking.
+    try:
+        from app.api.v2.routes.reservations import _maybe_apply_escrow_shadow_write
+
+        _maybe_apply_escrow_shadow_write(reservation_id)
+    except Exception:  # noqa: BLE001
+        logger.warning("Escrow lock after reconcile failed (reservation_id=%s)", reservation_id, exc_info=True)
+
+    # Managers: a guest paid online — booking is now confirmed (best-effort).
+    try:
+        paid_reservation = get_reservation_by_id(reservation_id)
+        if paid_reservation:
+            notify_ops_payment_received(
+                reservation=paid_reservation,
+                amount=float(paid_reservation.get("amount_paid_verified") or 0),
+            )
+    except Exception:  # noqa: BLE001
+        logger.warning("ops payment-received notify failed (reservation_id=%s)", reservation_id, exc_info=True)
+
+    return {"ok": True, "status": "verified"}
 
 
 @router.post("/on-site", response_model=OnSitePaymentResponse)

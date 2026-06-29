@@ -64,6 +64,20 @@ function qrStatusLabel(status: string): string {
   return "No QR yet";
 }
 
+/** Friendly unit name(s) for the review modal, so guests never see the raw
+ *  reservation code. Returns "" when there's no nameable unit. */
+function stayNameForBooking(booking: Booking | null): string {
+  if (!booking) return "";
+  const names = (booking.units || [])
+    .map((item) => item.unit?.name)
+    .filter((name): name is string => Boolean(name && name.trim()))
+    .map((name) => {
+      const label = getUnitLabel(name);
+      return label.subtitle ? `${label.title} (${label.subtitle})` : label.title;
+    });
+  return names.join(", ");
+}
+
 type MyBookingsClientProps = {
   initialToken?: string | null;
   initialSessionEmail?: string | null;
@@ -1188,7 +1202,7 @@ export function MyBookingsClient({
                   </div>
                 ) : null}
 
-                {booking.status === "checked_out" ? (
+                {booking.status === "checked_out" && !isTour ? (
                   <div className="mt-4 flex flex-col gap-2 border-t border-[var(--color-border)] pt-3 sm:flex-row sm:items-center sm:justify-between">
                     {reviewedByReservation.has(booking.reservation_id) ? (
                       <span className="inline-flex items-center gap-1.5 text-sm text-[var(--color-muted)]">
@@ -1484,7 +1498,16 @@ export function MyBookingsClient({
           onClose={() => setReviewFor(null)}
         >
           <p className="text-sm text-[var(--color-muted)]">
-            How was your stay at <strong className="text-[var(--color-text)]">{reviewFor.reservation_code}</strong>?
+            {(() => {
+              const name = stayNameForBooking(reviewFor);
+              return name ? (
+                <>
+                  How was your stay at <strong className="text-[var(--color-text)]">{name}</strong>?
+                </>
+              ) : (
+                <>How was your stay?</>
+              );
+            })()}
           </p>
 
           <div className="mt-4 flex items-center justify-center gap-2" role="radiogroup" aria-label="Rating">

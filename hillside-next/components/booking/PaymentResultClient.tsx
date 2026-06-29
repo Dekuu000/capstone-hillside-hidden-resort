@@ -25,6 +25,28 @@ export function PaymentResultClient({ token, reservationId }: { token: string; r
     const tick = async () => {
       if (stopped.current) return;
       attempts += 1;
+
+      // Active reconcile with PayMongo (on the first tick + every ~3rd one) so
+      // confirmation doesn't hinge on the async webhook — survives a cold-started
+      // API or a slow/missed delivery. Idempotent + cheap on the server.
+      if (attempts === 1 || attempts % 3 === 0) {
+        try {
+          const r = await apiFetch<{ status?: string }>(
+            `/v2/payments/paymongo/${encodeURIComponent(reservationId)}/reconcile`,
+            { method: "POST" },
+            token,
+          );
+          if (!stopped.current && r?.status === "verified") {
+            setPhase("confirmed");
+            stopped.current = true;
+            return;
+          }
+        } catch {
+          // ignore — fall through to the booking poll below
+        }
+        if (stopped.current) return;
+      }
+
       try {
         const data = await apiFetch(
           `/v2/me/bookings/${encodeURIComponent(reservationId)}`,

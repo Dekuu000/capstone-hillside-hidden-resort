@@ -2471,6 +2471,29 @@ def get_payment_by_id(*, payment_id: str) -> dict[str, Any] | None:
         raise _runtime_error_from_exception(exc) from exc
 
 
+def get_latest_gateway_payment_for_reservation(*, reservation_id: str) -> dict[str, Any] | None:
+    """The most recent PayMongo checkout payment for a reservation, used to actively
+    reconcile its status when the guest returns from hosted checkout."""
+    value = str(reservation_id or "").strip()
+    if not value:
+        return None
+    try:
+        client = get_supabase_client()
+        response = (
+            client.table("payments")
+            .select("payment_id,reservation_id,status,paymongo_checkout_session_id,paymongo_payment_id")
+            .eq("reservation_id", value)
+            .not_.is_("paymongo_checkout_session_id", "null")
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        rows = response.data or []
+        return rows[0] if rows else None
+    except Exception as exc:  # noqa: BLE001
+        raise _runtime_error_from_exception(exc) from exc
+
+
 def set_paymongo_payment_id(*, payment_id: str, provider_payment_id: str) -> None:
     """Store the PayMongo payment id (pay_...) on our payment row for audit."""
     try:
