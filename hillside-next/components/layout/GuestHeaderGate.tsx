@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { SearchNav } from "../booking/SearchNav";
 import { GuestBottomNav } from "../guest/GuestBottomNav";
+import { CheckinWelcomeToast } from "../guest/CheckinWelcomeToast";
 import { safeGetSession } from "../../lib/supabase";
 
 // Guest-facing routes that share the one persistent header. Anything else
@@ -65,6 +66,7 @@ export function GuestHeaderGate({
       ) : null}
       {children}
       {showBottomNav ? <GuestBottomNav /> : null}
+      {authed && showHeader ? <CheckinWelcomeToast /> : null}
     </>
   );
 }

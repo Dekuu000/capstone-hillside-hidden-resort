@@ -17,6 +17,7 @@ from app.integrations.supabase_client import (
     perform_checkout as perform_checkout_rpc,
     get_reservation_by_id,
     list_reservation_unit_ids,
+    notify_guest_checkin,
     validate_qr_checkin,
     update_units_operational_status,
     update_reservation_policy_metadata,
@@ -303,6 +304,9 @@ def perform_checkin(
     except RuntimeError:
         # Do not block check-in if unit status sync fails; keep operation successful.
         logger.exception("Unit status sync failed on check-in (reservation_id=%s)", payload.reservation_id)
+
+    # Confirm the check-in in the guest's notification bell (best-effort).
+    notify_guest_checkin(row)
 
     release_outcome = _maybe_release_escrow_on_checkin(row)
     if release_outcome.state == "released":

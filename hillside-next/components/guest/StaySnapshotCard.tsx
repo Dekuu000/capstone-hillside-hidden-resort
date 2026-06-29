@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarDays, ChevronDown, QrCode, Receipt, Wallet } from "lucide-react";
+import { CalendarDays, CheckCircle2, ChevronDown, QrCode, Receipt, Wallet } from "lucide-react";
 import { cn } from "../../lib/cn";
 
 export type StayChargeLine = {
@@ -18,6 +18,9 @@ type StaySnapshotCardProps = {
   stayChargesTotal?: string | null;
   /** Itemized add-on lines revealed when the guest expands the charges row. */
   stayChargeLines?: StayChargeLine[];
+  /** True once staff has scanned the QR and the stay is in progress — shows a
+   *  celebratory "you're checked in" banner so the guest gets clear confirmation. */
+  checkedIn?: boolean;
   dark?: boolean;
   testId?: string;
 };
@@ -28,6 +31,7 @@ export function StaySnapshotCard({
   qrStatus,
   stayChargesTotal = null,
   stayChargeLines = [],
+  checkedIn = false,
   dark = false,
   testId = "stay-snapshot-card",
 }: StaySnapshotCardProps) {
@@ -51,11 +55,24 @@ export function StaySnapshotCard({
         <h2 className={cn("font-bold", dark ? "text-lg text-white" : "text-lg text-[var(--color-primary)]")}>Your stay</h2>
       </div>
 
+      {checkedIn ? (
+        <div
+          data-testid="checked-in-banner"
+          className={cn(
+            "mt-4 flex items-center gap-2 rounded-2xl px-3 py-2.5 text-sm font-semibold",
+            dark ? "bg-emerald-400/15 text-emerald-200" : "bg-emerald-50 text-emerald-700",
+          )}
+        >
+          <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+          You&apos;re checked in — enjoy your stay
+        </div>
+      ) : null}
+
       <div className={cn("mt-4 divide-y text-sm lg:mt-5", dark ? "divide-white/12 text-white/75" : "divide-[var(--color-border)] text-[var(--color-muted)]")}>
         <div className="flex items-center justify-between py-2.5">
           <div className="flex items-center gap-3">
             <CalendarDays className="h-4 w-4" />
-            <span>Next stay date</span>
+            <span>{checkedIn ? "Staying now" : "Next stay date"}</span>
           </div>
           <span className={cn("font-semibold", dark ? "text-white" : "text-[var(--color-text)]")}>{nextStayDate}</span>
         </div>
@@ -69,10 +86,10 @@ export function StaySnapshotCard({
         <div className="flex items-center justify-between py-2.5">
           <div className="flex items-center gap-3">
             <QrCode className="h-4 w-4" />
-            <span>QR status</span>
+            <span>{checkedIn ? "Status" : "QR status"}</span>
           </div>
           <span className={cn("rounded-full px-3 py-1 text-xs font-bold", dark ? "bg-white/15 text-white" : "border border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-text)]")}>
-            {qrStatus}
+            {checkedIn ? "Checked in" : qrStatus}
           </span>
         </div>
 
