@@ -297,6 +297,21 @@ export function MyBookingsClient({
     snapshot: StaySnapshot | null;
   }>({ id: activeStayId, status: activeStayStatus, snapshot: staySnapshot });
 
+  // Celebratory check-in popup, shown once per reservation (the first time My
+  // Trips loads — or live-polls — into a checked_in state), then never nags again.
+  const [welcomeStayId, setWelcomeStayId] = useState<string | null>(null);
+  useEffect(() => {
+    if (stayInfo.status !== "checked_in" || !stayInfo.id) return;
+    const key = `hs_checkin_welcomed:${stayInfo.id}`;
+    try {
+      if (window.localStorage.getItem(key)) return;
+      window.localStorage.setItem(key, "1");
+    } catch {
+      /* storage blocked — still show once this session */
+    }
+    setWelcomeStayId(stayInfo.id);
+  }, [stayInfo.status, stayInfo.id]);
+
   useEffect(() => {
     if (!token) return;
     let cancelled = false;
@@ -1521,6 +1536,33 @@ export function MyBookingsClient({
               className="guest-primary-cta min-h-10 min-w-[140px] px-3 text-sm"
             >
               {reviewBusy ? "Submitting…" : "Submit review"}
+            </button>
+          </div>
+        </ModalDialog>
+      ) : null}
+
+      {welcomeStayId ? (
+        <ModalDialog
+          titleId="checkin-welcome-title"
+          title="You're checked in"
+          onClose={() => setWelcomeStayId(null)}
+          maxWidthClass="md:max-w-md"
+          panelClassName="text-center"
+        >
+          <div className="flex flex-col items-center gap-3 px-2 pb-2 pt-1">
+            <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+              <CircleCheck className="h-8 w-8" aria-hidden="true" />
+            </span>
+            <p className="text-base font-semibold text-[var(--color-text)]">Welcome to Hillside Hidden Resort!</p>
+            <p className="text-sm muted-text">
+              Your stay is now active. Any add-ons you request will appear under <span className="font-semibold">Stay charges</span> and are settled at check-out. Enjoy your stay!
+            </p>
+            <button
+              type="button"
+              onClick={() => setWelcomeStayId(null)}
+              className="mt-2 flex h-11 w-full items-center justify-center rounded-2xl bg-[var(--color-primary)] text-sm font-semibold text-white transition hover:brightness-110"
+            >
+              Got it
             </button>
           </div>
         </ModalDialog>

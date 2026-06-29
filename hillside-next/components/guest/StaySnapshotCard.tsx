@@ -72,7 +72,7 @@ export function StaySnapshotCard({
         <div className="flex items-center justify-between py-2.5">
           <div className="flex items-center gap-3">
             <CalendarDays className="h-4 w-4" />
-            <span>Next stay date</span>
+            <span>{checkedIn ? "Staying now" : "Next stay date"}</span>
           </div>
           <span className={cn("font-semibold", dark ? "text-white" : "text-[var(--color-text)]")}>{nextStayDate}</span>
         </div>
@@ -86,10 +86,10 @@ export function StaySnapshotCard({
         <div className="flex items-center justify-between py-2.5">
           <div className="flex items-center gap-3">
             <QrCode className="h-4 w-4" />
-            <span>QR status</span>
+            <span>{checkedIn ? "Status" : "QR status"}</span>
           </div>
           <span className={cn("rounded-full px-3 py-1 text-xs font-bold", dark ? "bg-white/15 text-white" : "border border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-text)]")}>
-            {qrStatus}
+            {checkedIn ? "Checked in" : qrStatus}
           </span>
         </div>
 
