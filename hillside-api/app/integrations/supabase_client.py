@@ -3950,6 +3950,34 @@ def notify_guest_payment_decision(*, payment_id: str, approved: bool) -> None:
         return
 
 
+def notify_guest_checkin(reservation_row: dict[str, Any] | None) -> None:
+    """Drop a "you're checked in" notification in the guest's bell when staff
+    scans their QR. Separate from the staff-facing AI welcome record in
+    guest_welcome_notifications — this is the guest's own confirmation."""
+    try:
+        if not isinstance(reservation_row, dict):
+            return
+        guest_user_id = reservation_row.get("guest_user_id")
+        if not guest_user_id:
+            return
+        reservation_id = str(reservation_row.get("reservation_id") or "")
+        code = reservation_row.get("reservation_code") or "your booking"
+        emit_notification(
+            recipient_user_id=str(guest_user_id),
+            category="checkin",
+            event_type="reservation.checked_in",
+            title="You're checked in",
+            body=f"Welcome to Hillside Hidden Resort! Your stay ({code}) is now active — enjoy your stay.",
+            severity="success",
+            entity_type="reservation",
+            entity_id=reservation_id,
+            link="/my-bookings",
+            dedupe_key=f"reservation.checked_in:{reservation_id}",
+        )
+    except Exception:  # noqa: BLE001 - best-effort
+        return
+
+
 def notify_guest_service_request(row: dict[str, Any] | None) -> None:
     """Notify the guest when their resort-service request changes state."""
     try:
