@@ -4,8 +4,10 @@
   color-scheme: light;
   /* Brand palette from the logo: navy wordmark + teal accent + sun-orange action */
   --color-primary: #13304c;
-  --color-secondary: #0f8a7e;
-  --color-cta: #d56a24;
+  /* Teal and orange are darkened slightly from the original logo tones
+     (#0f8a7e / #d56a24) so text and button labels meet WCAG 2.1 AA (4.5:1). */
+  --color-secondary: #0e7d72;
+  --color-cta: #b75b1f;
   /* Gold rating star (review stars), kept distinct from the orange action color */
   --color-star: #fbbf24;
   --color-background: #f5f7f8;
@@ -13,10 +15,10 @@
   --color-text: #15222e;
   --color-muted: #5c6b78;
   --color-border: #e2e8ec;
-  --color-success: #1f8f63;
-  --color-warn: #c06a16;
+  --color-success: #1c7f58;
+  --color-warn: #a85d13;
   --color-error: #c0392b;
-  --color-info: #0f8a7e;
+  --color-info: #0e7d72;
   --space-xs: 4px;
   --space-sm: 8px;
   --space-md: 16px;

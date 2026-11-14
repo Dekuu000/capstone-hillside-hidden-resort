@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, LayoutGrid, X } from "lucide-react";
 
@@ -15,7 +15,15 @@ export function ListingGallery({ images, alt }: { images: string[]; alt: string 
   const count = photos.length;
   const [lightbox, setLightbox] = useState<number | null>(null);
 
-  const open = (index: number) => setLightbox(index);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  // Element that opened the lightbox, so focus can return to it on close.
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+
+  const open = (index: number) => {
+    returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setLightbox(index);
+  };
   const close = useCallback(() => setLightbox(null), []);
   const prev = useCallback(() => setLightbox((i) => (i === null ? i : (i - 1 + count) % count)), [count]);
   const next = useCallback(() => setLightbox((i) => (i === null ? i : (i + 1) % count)), [count]);
@@ -26,6 +34,22 @@ export function ListingGallery({ images, alt }: { images: string[]; alt: string 
       if (event.key === "Escape") close();
       else if (event.key === "ArrowLeft") prev();
       else if (event.key === "ArrowRight") next();
+      else if (event.key === "Tab" && dialogRef.current) {
+        // Keep keyboard focus inside the dialog while it is open.
+        const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>("button:not([disabled])"));
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        const active = document.activeElement;
+        const outside = !dialogRef.current.contains(active);
+        if (event.shiftKey && (active === first || outside)) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && (active === last || outside)) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
     };
     document.addEventListener("keydown", onKey);
     const previousOverflow = document.body.style.overflow;
@@ -35,6 +59,18 @@ export function ListingGallery({ images, alt }: { images: string[]; alt: string 
       document.body.style.overflow = previousOverflow;
     };
   }, [lightbox, close, prev, next]);
+
+  // Move focus into the dialog when it opens and back to the trigger when it closes.
+  const isOpen = lightbox !== null;
+  useEffect(() => {
+    if (!isOpen) return;
+    closeButtonRef.current?.focus();
+    return () => {
+      const trigger = returnFocusRef.current;
+      returnFocusRef.current = null;
+      if (trigger && document.contains(trigger)) trigger.focus();
+    };
+  }, [isOpen]);
 
   if (count === 0) return null;
 
@@ -117,8 +153,10 @@ export function ListingGallery({ images, alt }: { images: string[]; alt: string 
           aria-modal="true"
           aria-label={`${alt} photo viewer`}
           onClick={close}
+          ref={dialogRef}
         >
           <button
+            ref={closeButtonRef}
             type="button"
             onClick={close}
             aria-label="Close photo viewer"

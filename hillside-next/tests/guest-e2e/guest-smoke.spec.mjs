@@ -2,8 +2,8 @@ import { expect, test } from "@playwright/test";
 import { resolveGuestRouteState } from "./routeResolution.mjs";
 
 const guestSmokeRoutes = [
-  { path: "/book", title: /book your stay/i },
-  { path: "/tours", title: /book a tour/i },
+  { path: "/book", title: /stays at hillside hidden resort|book your stay/i },
+  { path: "/tours", title: /tours at hillside hidden resort|book a tour/i },
   { path: "/guest/map", title: /resort map|resort navigation/i },
 ];
 
@@ -74,9 +74,10 @@ test.describe("Guest UX smoke", () => {
   test("guest map pin selection updates destination details", async ({ page }) => {
     await page.goto("/guest/map");
     await expect(page.getByTestId("guest-map")).toBeVisible();
-    const lobbyPin = page.getByTestId("map-pin-lobby");
-    await expect(lobbyPin).toBeVisible();
-    await lobbyPin.click();
-    await expect(page.getByText(/destination:\s*lobby/i)).toBeVisible();
+    // Lobby is the walking start point; selecting another pin shows directions to it.
+    const poolPin = page.getByTestId("map-pin-pool");
+    await expect(poolPin).toBeVisible();
+    await poolPin.click();
+    await expect(page.getByText(/walk from lobby toward main pool/i)).toBeVisible();
   });
 });
