@@ -1,62 +1,59 @@
 import { expect, test } from "@playwright/test";
 import { signInGuestAndOpenBook } from "./guestAuthFlow.mjs";
-import { resolveGuestRouteState } from "./routeResolution.mjs";
 
+// Read-only guardrails for the redesigned booking flow: the tests stop at the
+// Reserve action and never submit, so no reservation is created.
 test.describe("Guest authenticated booking guardrails", () => {
-  test("book flow shows guided stepper and disabled CTA reason before selection", async ({ page }) => {
+  test("stay search shows date and guest controls for a signed-in guest", async ({ page }) => {
     test.setTimeout(90_000);
     await signInGuestAndOpenBook(page);
 
-    await expect(page.getByTestId("guest-booking-stepper")).toBeVisible();
-    await expect(page.getByRole("button", { name: /confirm booking/i })).toBeDisabled();
-    await expect(page.getByTestId("booking-cta-reason")).toContainText(/select at least one unit/i);
+    await expect(page).toHaveURL(/\/(book|stays)/);
+    await expect(page.getByRole("heading", { name: /stays at hillside hidden resort/i })).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByRole("button", { name: /check-in/i }).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: /check-out/i }).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: /increase guests/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^search$/i })).toBeVisible();
+    // Signed-in guests see the guest navigation, not the public Sign in link.
+    await expect(page.getByRole("link", { name: /^sign in$/i })).toHaveCount(0);
   });
 
-  test("book flow can select a unit and reach confirm step without submission", async ({ page }) => {
+  test("stay detail reaches the Reserve step without submission", async ({ page }) => {
     test.setTimeout(90_000);
     await signInGuestAndOpenBook(page);
 
-    const unitCards = page.locator("article[role='button']");
-    const hasUnitCard = await expect
-      .poll(async () => unitCards.count(), { timeout: 20_000 })
+    const stayLinks = page.locator('a[href^="/stays/"]');
+    const hasStay = await expect
+      .poll(async () => stayLinks.count(), { timeout: 20_000 })
       .toBeGreaterThan(0)
       .then(() => true)
       .catch(() => false);
-    test.skip(!hasUnitCard, "No selectable units found for current seeded dates; seed an always-available unit.");
+    test.skip(!hasStay, "No stays are listed for the current dataset.");
 
-    const firstCard = unitCards.first();
-    await firstCard.scrollIntoViewIfNeeded();
-    await firstCard.click();
-
-    await expect(firstCard.getByText(/selected \(tap to remove\)/i)).toBeVisible();
-
-    const confirmButton = page.getByRole("button", { name: /confirm booking/i });
-    await expect(confirmButton).toBeEnabled();
+    await stayLinks.first().click();
+    await expect(page).toHaveURL(/\/stays\/[0-9a-f-]+/);
+    const reserve = page.getByRole("button", { name: /^reserve$/i });
+    await expect(reserve).toBeVisible({ timeout: 20_000 });
+    await expect(reserve).toBeEnabled();
   });
 
-  test("tours shows helpful empty state before selecting a service", async ({ page }) => {
+  test("tour detail reaches the Reserve step without submission", async ({ page }) => {
     test.setTimeout(90_000);
     await signInGuestAndOpenBook(page);
     await page.goto("/tours", { waitUntil: "domcontentloaded" });
-    await page.waitForLoadState("domcontentloaded");
-    const routeState = await resolveGuestRouteState(page, {
-      main: async () => page.getByLabel(/select tour/i).isVisible().catch(() => false),
-      login: async () => {
-        if (page.url().includes("/login")) return true;
-        const signInGate = await page
-          .getByText(/sign in required to reserve a tour/i)
-          .first()
-          .isVisible()
-          .catch(() => false);
-        if (signInGate) return true;
-        return page.getByRole("link", { name: /sign in and continue/i }).isVisible().catch(() => false);
-      },
-    });
-    test.skip(routeState === "login", "Tours route resolved to auth gate in this environment.");
 
-    const serviceSelect = page.getByLabel(/select tour/i);
-    await expect(serviceSelect).toBeVisible({ timeout: 20_000 });
-    await serviceSelect.selectOption("");
-    await expect(page.getByTestId("tour-empty-state")).toBeVisible();
+    const tourLinks = page.locator('a[href^="/tours/"]');
+    const hasTour = await expect
+      .poll(async () => tourLinks.count(), { timeout: 20_000 })
+      .toBeGreaterThan(0)
+      .then(() => true)
+      .catch(() => false);
+    test.skip(!hasTour, "No tours are listed for the current dataset.");
+
+    await tourLinks.first().click();
+    await expect(page).toHaveURL(/\/tours\/[0-9a-f-]+/);
+    const reserve = page.getByRole("button", { name: /^reserve$/i });
+    await expect(reserve).toBeVisible({ timeout: 20_000 });
+    await expect(reserve).toBeEnabled();
   });
 });

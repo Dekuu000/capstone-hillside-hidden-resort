@@ -19,11 +19,15 @@ export async function signInGuestAndOpenBook(page) {
   await passwordInput.fill(normalizedPassword);
   await expect(passwordInput).toHaveValue(normalizedPassword, { timeout: 10_000 });
 
+  // The redesigned sign-in form no longer has a "Remember me" checkbox
+  // (sessions persist by default); tick it only when it is present.
   const rememberMe = page.getByRole("checkbox", { name: /remember me/i });
-  await rememberMe.setChecked(true);
-  await expect(rememberMe).toBeChecked();
+  if ((await rememberMe.count()) > 0) {
+    await rememberMe.setChecked(true);
+    await expect(rememberMe).toBeChecked();
+  }
 
-  const signIn = page.getByRole("button", { name: /sign in/i });
+  const signIn = page.getByRole("button", { name: /^sign in$/i });
   const canSubmit = await expect
     .poll(async () => signIn.isEnabled(), { timeout: 15_000 })
     .toBeTruthy()
@@ -31,6 +35,12 @@ export async function signInGuestAndOpenBook(page) {
     .catch(() => false);
   test.skip(!canSubmit, "Sign-in form did not become submittable with provided credentials in this environment.");
   await signIn.click();
+  // Wait for the sign-in to finish (the app leaves /login) before navigating on.
+  const signedIn = await page
+    .waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 30_000 })
+    .then(() => true)
+    .catch(() => false);
+  test.skip(!signedIn, "Guest credentials did not authenticate in this environment.");
 
   await page.goto("/book", { waitUntil: "domcontentloaded" });
   await page.waitForLoadState("domcontentloaded");

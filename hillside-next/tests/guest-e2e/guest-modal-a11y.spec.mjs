@@ -6,13 +6,24 @@ test.describe("Guest modal accessibility guardrails", () => {
     test.setTimeout(90_000);
     await signInGuestAndOpenBook(page);
 
-    const galleryButtons = page.locator("button", { hasText: /view photos/i });
+    // The photo gallery now lives on the stay detail page.
+    const stayLinks = page.locator('a[href^="/stays/"]');
+    const hasStay = await expect
+      .poll(async () => stayLinks.count(), { timeout: 20_000 })
+      .toBeGreaterThan(0)
+      .then(() => true)
+      .catch(() => false);
+    test.skip(!hasStay, "No stays are listed for the current dataset.");
+    await stayLinks.first().click();
+    await expect(page).toHaveURL(/\/stays\/[0-9a-f-]+/);
+
+    const galleryButtons = page.getByRole("button", { name: /view photo/i });
     const hasGalleryTrigger = await expect
       .poll(async () => galleryButtons.count(), { timeout: 20_000 })
       .toBeGreaterThan(0)
       .then(() => true)
       .catch(() => false);
-    test.skip(!hasGalleryTrigger, "No gallery trigger found on /book for this seed dataset; seed at least one available unit.");
+    test.skip(!hasGalleryTrigger, "The first stay has no photos in this dataset.");
     const galleryTrigger = galleryButtons.first();
 
     await galleryTrigger.scrollIntoViewIfNeeded();
