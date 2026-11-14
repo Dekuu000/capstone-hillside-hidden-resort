@@ -10,19 +10,19 @@ test.describe("Guest My Trips shell", () => {
 
     await expect(page.getByRole("heading", { name: /my trips/i })).toBeVisible({ timeout: 20_000 });
     await expect(page.getByRole("main").getByTestId("guest-hero")).toBeVisible();
-    await expect(page.getByRole("main").getByTestId("guest-tabs").first()).toBeVisible();
-    await expect(page.getByRole("main").getByTestId("guest-search").first()).toBeVisible();
+    await expect(page.getByRole("main").locator('[data-testid="guest-tabs"]:visible').first()).toBeVisible();
+    await expect(page.getByRole("main").locator('[data-testid="guest-search"]:visible').first()).toBeVisible();
 
-    const search = page.getByRole("main").getByTestId("guest-search").first().locator("input").first();
+    const search = page.getByRole("main").locator('[data-testid="guest-search"]:visible').first().locator("input").first();
     await search.fill(`zzz-no-booking-${Date.now()}`);
-    await expect(page.getByRole("main").getByTestId("guest-empty-state").first()).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByRole("main").locator('[data-testid="guest-empty-state"]:visible').first()).toBeVisible({ timeout: 20_000 });
 
     await page.getByTestId("book-stay-cta").click();
     await expect(page).toHaveURL(/\/(book|stays)/);
 
     await page.goto("/my-bookings", { waitUntil: "domcontentloaded" });
-    await page.getByRole("main").getByTestId("guest-search").first().locator("input").first().fill(`zzz-no-booking-${Date.now()}`);
-    await expect(page.getByRole("main").getByTestId("guest-empty-state").first()).toBeVisible({ timeout: 20_000 });
+    await page.getByRole("main").locator('[data-testid="guest-search"]:visible').first().locator("input").first().fill(`zzz-no-booking-${Date.now()}`);
+    await expect(page.getByRole("main").locator('[data-testid="guest-empty-state"]:visible').first()).toBeVisible({ timeout: 20_000 });
     await page.getByTestId("browse-tours-cta").click();
     await expect(page).toHaveURL(/\/tours/);
   });
@@ -35,7 +35,7 @@ test.describe("Guest My Trips shell", () => {
 
     await expect(page.getByRole("heading", { name: /my trips/i })).toBeVisible({ timeout: 20_000 });
     await expect(page.getByRole("main").getByTestId("guest-hero")).toBeVisible();
-    await expect(page.getByRole("main").getByTestId("guest-tabs").first()).toBeVisible();
+    await expect(page.getByRole("main").locator('[data-testid="guest-tabs"]:visible').first()).toBeVisible();
     await expect(page.getByTestId("guest-bottom-nav")).toBeVisible();
 
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
