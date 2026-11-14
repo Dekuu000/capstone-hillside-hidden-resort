@@ -14,7 +14,7 @@ test.describe("Guest UX smoke", () => {
       await page.goto(route.path);
       await page.waitForLoadState("domcontentloaded");
       await expect(page.getByRole("heading", { name: route.title })).toBeVisible({ timeout: 20_000 });
-      await expect(page.locator("main")).toBeVisible({ timeout: 20_000 });
+      await expect(page.getByRole("main")).toBeVisible({ timeout: 20_000 });
     });
   }
 

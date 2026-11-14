@@ -1,0 +1,44 @@
+<testsuites id="" name="" tests="16" failures="0" skipped="0" errors="0" time="68.938134">
+<testsuite name="guest-a11y.spec.mjs" timestamp="2026-11-14T07:39:21.982Z" hostname="chromium" tests="4" failures="0" skipped="0" time="8.995" errors="0">
+<testcase name="Guest UX accessibility smoke › axe scan: /book" classname="guest-a11y.spec.mjs" time="2.677">
+</testcase>
+<testcase name="Guest UX accessibility smoke › axe scan: /tours" classname="guest-a11y.spec.mjs" time="1.309">
+</testcase>
+<testcase name="Guest UX accessibility smoke › axe scan: /guest/services" classname="guest-a11y.spec.mjs" time="1.348">
+</testcase>
+<testcase name="Guest UX accessibility smoke › axe scan: /guest/map" classname="guest-a11y.spec.mjs" time="3.661">
+</testcase>
+</testsuite>
+<testsuite name="guest-book-auth-flow.spec.mjs" timestamp="2026-11-14T07:39:21.982Z" hostname="chromium" tests="3" failures="0" skipped="0" time="21.398" errors="0">
+<testcase name="Guest authenticated booking guardrails › stay search shows date and guest controls for a signed-in guest" classname="guest-book-auth-flow.spec.mjs" time="5.965">
+</testcase>
+<testcase name="Guest authenticated booking guardrails › stay detail reaches the Reserve step without submission" classname="guest-book-auth-flow.spec.mjs" time="7.235">
+</testcase>
+<testcase name="Guest authenticated booking guardrails › tour detail reaches the Reserve step without submission" classname="guest-book-auth-flow.spec.mjs" time="8.198">
+</testcase>
+</testsuite>
+<testsuite name="guest-modal-a11y.spec.mjs" timestamp="2026-11-14T07:39:21.982Z" hostname="chromium" tests="1" failures="0" skipped="0" time="6.673" errors="0">
+<testcase name="Guest modal accessibility guardrails › book gallery modal keeps dialog semantics and keyboard containment" classname="guest-modal-a11y.spec.mjs" time="6.673">
+</testcase>
+</testsuite>
+<testsuite name="guest-my-bookings-layout.spec.mjs" timestamp="2026-11-14T07:39:21.982Z" hostname="chromium" tests="2" failures="0" skipped="0" time="20.239" errors="0">
+<testcase name="Guest My Trips shell › desktop layout shows My Trips sections and empty-state CTA navigation" classname="guest-my-bookings-layout.spec.mjs" time="11.998">
+</testcase>
+<testcase name="Guest My Trips shell › mobile layout shows compact shell, bottom nav, and no horizontal overflow at 320" classname="guest-my-bookings-layout.spec.mjs" time="8.241">
+</testcase>
+</testsuite>
+<testsuite name="guest-smoke.spec.mjs" timestamp="2026-11-14T07:39:21.982Z" hostname="chromium" tests="6" failures="0" skipped="0" time="10.229" errors="0">
+<testcase name="Guest UX smoke › renders /book" classname="guest-smoke.spec.mjs" time="1.261">
+</testcase>
+<testcase name="Guest UX smoke › renders /tours" classname="guest-smoke.spec.mjs" time="1.109">
+</testcase>
+<testcase name="Guest UX smoke › renders /guest/map" classname="guest-smoke.spec.mjs" time="2.435">
+</testcase>
+<testcase name="Guest UX smoke › my-bookings route is reachable and shows session gate or content" classname="guest-smoke.spec.mjs" time="0.782">
+</testcase>
+<testcase name="Guest UX smoke › guest sync route resolves to sync center or auth gate" classname="guest-smoke.spec.mjs" time="1.686">
+</testcase>
+<testcase name="Guest UX smoke › guest map pin selection updates destination details" classname="guest-smoke.spec.mjs" time="2.956">
+</testcase>
+</testsuite>
+</testsuites>
