@@ -1,0 +1,1001 @@
+<testsuites id="" name="" tests="16" failures="6" skipped="0" errors="6" time="571.609533">
+<testsuite name="guest-a11y.spec.mjs" timestamp="2026-11-14T04:10:31.794Z" hostname="chromium" tests="4" failures="3" skipped="0" time="15.511" errors="0">
+<testcase name="Guest UX accessibility smoke › axe scan: /book" classname="guest-a11y.spec.mjs" time="7.932">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|e2e/test-results/guest-a11y-Guest-UX-accessibility-smoke-axe-scan-book-chromium/error-context.md]]
+]]>
+</system-out>
+<failure message="color-contrast (serious): Elements must meet minimum color contrast ratio thresholds" type="expect.toEqual">
+<![CDATA[  [chromium] › guest-a11y.spec.mjs:14:5 › Guest UX accessibility smoke › axe scan: /book ───────────
+
+    Error: color-contrast (serious): Elements must meet minimum color contrast ratio thresholds
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  -   1
+    + Received  + 373
+
+    - Array []
+    + Array [
+    +   Object {
+    +     "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+    +     "help": "Elements must meet minimum color contrast ratio thresholds",
+    +     "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/color-contrast?application=playwright",
+    +     "id": "color-contrast",
+    +     "impact": "serious",
+    +     "nodes": Array [
+    +       Object {
+    +         "all": Array [],
+    +         "any": Array [
+    +           Object {
+    +             "data": Object {
+    +               "bgColor": "#f5f7f8",
+    +               "contrastRatio": 3.94,
+    +               "expectedContrastRatio": "4.5:1",
+    +               "fgColor": "#0f8a7e",
+    +               "fontSize": "10.5pt (14px)",
+    +               "fontWeight": "normal",
+    +               "messageKey": null,
+    +             },
+    +             "id": "color-contrast",
+    +             "impact": "serious",
+    +             "message": "Element has insufficient color contrast of 3.94 (foreground color: #0f8a7e, background color: #f5f7f8, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+    +             "relatedNodes": Array [
+    +               Object {
+    +                 "html": "<main class=\"flex min-h-screen flex-col bg-[var(--color-background)]\">",
+    +                 "target": Array [
+    +                   "main",
+    +                 ],
+    +               },
+    +             ],
+    +           },
+    +         ],
+    +         "failureSummary": "Fix any of the following:
+    +   Element has insufficient color contrast of 3.94 (foreground color: #0f8a7e, background color: #f5f7f8, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+    +         "html": "<p class=\"flex items-center gap-1.5 text-sm font-medium text-[var(--color-secondary)]\">",
+    +         "impact": "serious",
+    +         "none": Array [],
+    +         "target": Array [
+    +           ".group.focus-visible\\:outline-none.block:nth-child(1) > .mt-3.space-y-1 > .gap-1\\.5.font-medium.text-\\[var\\(--color-secondary\\)\\]",
+    +         ],
+    +       },
+    +       Object {
+    +         "all": Array [],
+    +         "any": Array [
+    +           Object {
+    +             "data": Object {
+    +               "bgColor": "#f5f7f8",
+    +               "contrastRatio": 3.94,
+    +               "expectedContrastRatio": "4.5:1",
+    +               "fgColor": "#0f8a7e",
+    +               "fontSize": "10.5pt (14px)",
+    +               "fontWeight": "normal",
+    +               "messageKey": null,
+    +             },
+    +             "id": "color-contrast",
+    +             "impact": "serious",
+    +             "message": "Element has insufficient color contrast of 3.94 (foreground color: #0f8a7e, background color: #f5f7f8, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+    +             "relatedNodes": Array [
+    +               Object {
+    +                 "html": "<main class=\"flex min-h-screen flex-col bg-[var(--color-background)]\">",
+    +                 "target": Array [
+    +                   "main",
+    +                 ],
+    +               },
+    +             ],
+    +           },
+    +         ],
+    +         "failureSummary": "Fix any of the following:
+    +   Element has insufficient color contrast of 3.94 (foreground color: #0f8a7e, background color: #f5f7f8, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+    +         "html": "<p class=\"flex items-center gap-1.5 text-sm font-medium text-[var(--color-secondary)]\">",
+    +         "impact": "serious",
+    +         "none": Array [],
+    +         "target": Array [
+    +           ".group.focus-visible\\:outline-none.block:nth-child(2) > .mt-3.space-y-1 > .gap-1\\.5.font-medium.text-\\[var\\(--color-secondary\\)\\]",
+    +         ],
+    +       },
+    +       Object {
+    +         "all": Array [],
+    +         "any": Array [
+    +           Object {
+    +             "data": Object {
+    +               "bgColor": "#f5f7f8",
+    +               "contrastRatio": 3.94,
+    +               "expectedContrastRatio": "4.5:1",
+    +               "fgColor": "#0f8a7e",
+    +               "fontSize": "10.5pt (14px)",
+    +               "fontWeight": "normal",
+    +               "messageKey": null,
+    +             },
+    +             "id": "color-contrast",
+    +             "impact": "serious",
+    +             "message": "Element has insufficient color contrast of 3.94 (foreground color: #0f8a7e, background color: #f5f7f8, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+    +             "relatedNodes": Array [
+    +               Object {
+    +                 "html": "<main class=\"flex min-h-screen flex-col bg-[var(--color-background)]\">",
+    +                 "target": Array [
+    +                   "main",
+    +                 ],
+    +               },
+    +             ],
+    +           },
+    +         ],
+    +         "failureSummary": "Fix any of the following:
+    +   Element has insufficient color contrast of 3.94 (foreground color: #0f8a7e, background color: #f5f7f8, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+    +         "html": "<p class=\"flex items-center gap-1.5 text-sm font-medium text-[var(--color-secondary)]\">",
+    +         "impact": "serious",
+    +         "none": Array [],
+    +         "target": Array [
+    +           ".group.focus-visible\\:outline-none.block:nth-child(3) > .mt-3.space-y-1 > .gap-1\\.5.font-medium.text-\\[var\\(--color-secondary\\)\\]",
+    +         ],
+    +       },
+    +       Object {
+    +         "all": Array [],
+    +         "any": Array [
+    +           Object {
+    +             "data": Object {
+    +               "bgColor": "#f5f7f8",
+    +               "contrastRatio": 3.94,
+    +               "expectedContrastRatio": "4.5:1",
+    +               "fgColor": "#0f8a7e",
+    +               "fontSize": "10.5pt (14px)",
+    +               "fontWeight": "normal",
+    +               "messageKey": null,
+    +             },
+    +             "id": "color-contrast",
+    +             "impact": "serious",
+    +             "message": "Element has insufficient color contrast of 3.94 (foreground color: #0f8a7e, background color: #f5f7f8, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+    +             "relatedNodes": Array [
+    +               Object {
+    +                 "html": "<main class=\"flex min-h-screen flex-col bg-[var(--color-background)]\">",
+    +                 "target": Array [
+    +                   "main",
+    +                 ],
+    +               },
+    +             ],
+    +           },
+    +         ],
+    +         "failureSummary": "Fix any of the following:
+    +   Element has insufficient color contrast of 3.94 (foreground color: #0f8a7e, background color: #f5f7f8, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+    +         "html": "<p class=\"flex items-center gap-1.5 text-sm font-medium text-[var(--color-secondary)]\">",
+    +         "impact": "serious",
+    +         "none": Array [],
+    +         "target": Array [
+    +           ".group.focus-visible\\:outline-none.block:nth-child(4) > .mt-3.space-y-1 > .gap-1\\.5.font-medium.text-\\[var\\(--color-secondary\\)\\]",
+    +         ],
+    +       },
+    +       Object {
+    +         "all": Array [],
+    +         "any": Array [
+    +           Object {
+    +             "data": Object {
+    +               "bgColor": "#f5f7f8",
+    +               "contrastRatio": 3.94,
+    +               "expectedContrastRatio": "4.5:1",
+    +               "fgColor": "#0f8a7e",
+    +               "fontSize": "10.5pt (14px)",
+    +               "fontWeight": "normal",
+    +               "messageKey": null,
+    +             },
+    +             "id": "color-contrast",
+    +             "impact": "serious",
+    +             "message": "Element has insufficient color contrast of 3.94 (foreground color: #0f8a7e, background color: #f5f7f8, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+    +             "relatedNodes": Array [
+    +               Object {
+    +                 "html": "<main class=\"flex min-h-screen flex-col bg-[var(--color-background)]\">",
+    +                 "target": Array [
+    +                   "main",
+    +                 ],
+    +               },
+    +             ],
+    +           },
+    +         ],
+    +         "failureSummary": "Fix any of the following:
+    +   Element has insufficient color contrast of 3.94 (foreground color: #0f8a7e, background color: #f5f7f8, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+    +         "html": "<p class=\"flex items-center gap-1.5 text-sm font-medium text-[var(--color-secondary)]\">",
+    +         "impact": "serious",
+    +         "none": Array [],
+    +         "target": Array [
+    +           ".group.focus-visible\\:outline-none.block:nth-child(5) > .mt-3.space-y-1 > .gap-1\\.5.font-medium.text-\\[var\\(--color-secondary\\)\\]",
+    +         ],
+    +       },
+    +       Object {
+    +         "all": Array [],
+    +         "any": Array [
+    +           Object {
+    +             "data": Object {
+    +               "bgColor": "#f5f7f8",
+    +               "contrastRatio": 3.94,
+    +               "expectedContrastRatio": "4.5:1",
+    +               "fgColor": "#0f8a7e",
+    +               "fontSize": "10.5pt (14px)",
+    +               "fontWeight": "normal",
+    +               "messageKey": null,
+    +             },
+    +             "id": "color-contrast",
+    +             "impact": "serious",
+    +             "message": "Element has insufficient color contrast of 3.94 (foreground color: #0f8a7e, background color: #f5f7f8, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+    +             "relatedNodes": Array [
+    +               Object {
+    +                 "html": "<main class=\"flex min-h-screen flex-col bg-[var(--color-background)]\">",
+    +                 "target": Array [
+    +                   "main",
+    +                 ],
+    +               },
+    +             ],
+    +           },
+    +         ],
+    +         "failureSummary": "Fix any of the following:
+    +   Element has insufficient color contrast of 3.94 (foreground color: #0f8a7e, background color: #f5f7f8, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+    +         "html": "<p class=\"flex items-center gap-1.5 text-sm font-medium text-[var(--color-secondary)]\">",
+    +         "impact": "serious",
+    +         "none": Array [],
+    +         "target": Array [
+    +           ".group.focus-visible\\:outline-none.block:nth-child(6) > .mt-3.space-y-1 > .gap-1\\.5.font-medium.text-\\[var\\(--color-secondary\\)\\]",
+    +         ],
+    +       },
+    +       Object {
+    +         "all": Array [],
+    +         "any": Array [
+    +           Object {
+    +             "data": Object {
+    +               "bgColor": "#f5f7f8",
+    +               "contrastRatio": 3.94,
+    +               "expectedContrastRatio": "4.5:1",
+    +               "fgColor": "#0f8a7e",
+    +               "fontSize": "10.5pt (14px)",
+    +               "fontWeight": "normal",
+    +               "messageKey": null,
+    +             },
+    +             "id": "color-contrast",
+    +             "impact": "serious",
+    +             "message": "Element has insufficient color contrast of 3.94 (foreground color: #0f8a7e, background color: #f5f7f8, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+    +             "relatedNodes": Array [
+    +               Object {
+    +                 "html": "<main class=\"flex min-h-screen flex-col bg-[var(--color-background)]\">",
+    +                 "target": Array [
+    +                   "main",
+    +                 ],
+    +               },
+    +             ],
+    +           },
+    +         ],
+    +         "failureSummary": "Fix any of the following:
+    +   Element has insufficient color contrast of 3.94 (foreground color: #0f8a7e, background color: #f5f7f8, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+    +         "html": "<p class=\"flex items-center gap-1.5 text-sm font-medium text-[var(--color-secondary)]\">",
+    +         "impact": "serious",
+    +         "none": Array [],
+    +         "target": Array [
+    +           ".group.focus-visible\\:outline-none.block:nth-child(7) > .mt-3.space-y-1 > .gap-1\\.5.font-medium.text-\\[var\\(--color-secondary\\)\\]",
+    +         ],
+    +       },
+    +       Object {
+    +         "all": Array [],
+    +         "any": Array [
+    +           Object {
+    +             "data": Object {
+    +               "bgColor": "#f5f7f8",
+    +               "contrastRatio": 3.94,
+    +               "expectedContrastRatio": "4.5:1",
+    +               "fgColor": "#0f8a7e",
+    +               "fontSize": "10.5pt (14px)",
+    +               "fontWeight": "normal",
+    +               "messageKey": null,
+    +             },
+    +             "id": "color-contrast",
+    +             "impact": "serious",
+    +             "message": "Element has insufficient color contrast of 3.94 (foreground color: #0f8a7e, background color: #f5f7f8, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+    +             "relatedNodes": Array [
+    +               Object {
+    +                 "html": "<main class=\"flex min-h-screen flex-col bg-[var(--color-background)]\">",
+    +                 "target": Array [
+    +                   "main",
+    +                 ],
+    +               },
+    +             ],
+    +           },
+    +         ],
+    +         "failureSummary": "Fix any of the following:
+    +   Element has insufficient color contrast of 3.94 (foreground color: #0f8a7e, background color: #f5f7f8, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+    +         "html": "<p class=\"flex items-center gap-1.5 text-sm font-medium text-[var(--color-secondary)]\">",
+    +         "impact": "serious",
+    +         "none": Array [],
+    +         "target": Array [
+    +           ".group.focus-visible\\:outline-none.block:nth-child(8) > .mt-3.space-y-1 > .gap-1\\.5.font-medium.text-\\[var\\(--color-secondary\\)\\]",
+    +         ],
+    +       },
+    +       Object {
+    +         "all": Array [],
+    +         "any": Array [
+    +           Object {
+    +             "data": Object {
+    +               "bgColor": "#ffffff",
+    +               "contrastRatio": 4.23,
+    +               "expectedContrastRatio": "4.5:1",
+    +               "fgColor": "#0f8a7e",
+    +               "fontSize": "10.5pt (14px)",
+    +               "fontWeight": "normal",
+    +               "messageKey": null,
+    +             },
+    +             "id": "color-contrast",
+    +             "impact": "serious",
+    +             "message": "Element has insufficient color contrast of 4.23 (foreground color: #0f8a7e, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+    +             "relatedNodes": Array [
+    +               Object {
+    +                 "html": "<footer class=\"mt-auto hidden border-t border-[var(--color-border)] bg-[var(--color-surface)] md:block\">",
+    +                 "target": Array [
+    +                   "footer",
+    +                 ],
+    +               },
+    +             ],
+    +           },
+    +         ],
+    +         "failureSummary": "Fix any of the following:
+    +   Element has insufficient color contrast of 4.23 (foreground color: #0f8a7e, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+    +         "html": "<a class=\"font-semibold text-[var(--color-secondary)] transition hover:underline\" href=\"/privacy\">Privacy</a>",
+    +         "impact": "serious",
+    +         "none": Array [],
+    +         "target": Array [
+    +           "a[href$=\"privacy\"]",
+    +         ],
+    +       },
+    +       Object {
+    +         "all": Array [],
+    +         "any": Array [
+    +           Object {
+    +             "data": Object {
+    +               "bgColor": "#ffffff",
+    +               "contrastRatio": 4.23,
+    +               "expectedContrastRatio": "4.5:1",
+    +               "fgColor": "#0f8a7e",
+    +               "fontSize": "10.5pt (14px)",
+    +               "fontWeight": "normal",
+    +               "messageKey": null,
+    +             },
+    +             "id": "color-contrast",
+    +             "impact": "serious",
+    +             "message": "Element has insufficient color contrast of 4.23 (foreground color: #0f8a7e, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+    +             "relatedNodes": Array [
+    +               Object {
+    +                 "html": "<footer class=\"mt-auto hidden border-t border-[var(--color-border)] bg-[var(--color-surface)] md:block\">",
+    +                 "target": Array [
+    +                   "footer",
+    +                 ],
+    +               },
+    +             ],
+    +           },
+    +         ],
+    +         "failureSummary": "Fix any of the following:
+    +   Element has insufficient color contrast of 4.23 (foreground color: #0f8a7e, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+    +         "html": "<a class=\"font-semibold text-[var(--color-secondary)] transition hover:underline\" href=\"/terms\">Terms</a>",
+    +         "impact": "serious",
+    +         "none": Array [],
+    +         "target": Array [
+    +           "a[href$=\"terms\"]",
+    +         ],
+    +       },
+    +     ],
+    +     "tags": Array [
+    +       "cat.color",
+    +       "wcag2aa",
+    +       "wcag143",
+    +       "TTv5",
+    +       "TT13.c",
+    +       "EN-301-549",
+    +       "EN-9.1.4.3",
+    +       "ACT",
+    +       "RGAAv4",
+    +       "RGAA-3.2.1",
+    +     ],
+    +   },
+    + ]
+
+      50 |           .map((v) => `${v.id} (${v.impact}): ${v.help}`)
+      51 |           .join("\n"),
+    > 52 |       ).toEqual([]);
+         |         ^
+      53 |     });
+      54 |   }
+      55 | });
+        at /home/claude/e2e/tests/guest-e2e/guest-a11y.spec.mjs:52:9
+
+    Error Context: ../../test-results/guest-a11y-Guest-UX-accessibility-smoke-axe-scan-book-chromium/error-context.md
+]]>
+</failure>
+</testcase>
+<testcase name="Guest UX accessibility smoke › axe scan: /tours" classname="guest-a11y.spec.mjs" time="1.913">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|e2e/test-results/guest-a11y-Guest-UX-accessibility-smoke-axe-scan-tours-chromium/error-context.md]]
+]]>
+</system-out>
+<failure message="color-contrast (serious): Elements must meet minimum color contrast ratio thresholds" type="expect.toEqual">
+<![CDATA[  [chromium] › guest-a11y.spec.mjs:14:5 › Guest UX accessibility smoke › axe scan: /tours ──────────
+
+    Error: color-contrast (serious): Elements must meet minimum color contrast ratio thresholds
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  -   1
+    + Received  + 128
+
+    - Array []
+    + Array [
+    +   Object {
+    +     "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+    +     "help": "Elements must meet minimum color contrast ratio thresholds",
+    +     "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/color-contrast?application=playwright",
+    +     "id": "color-contrast",
+    +     "impact": "serious",
+    +     "nodes": Array [
+    +       Object {
+    +         "all": Array [],
+    +         "any": Array [
+    +           Object {
+    +             "data": Object {
+    +               "bgColor": "#ffffff",
+    +               "contrastRatio": 4.23,
+    +               "expectedContrastRatio": "4.5:1",
+    +               "fgColor": "#0f8a7e",
+    +               "fontSize": "10.5pt (14px)",
+    +               "fontWeight": "normal",
+    +               "messageKey": null,
+    +             },
+    +             "id": "color-contrast",
+    +             "impact": "serious",
+    +             "message": "Element has insufficient color contrast of 4.23 (foreground color: #0f8a7e, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+    +             "relatedNodes": Array [
+    +               Object {
+    +                 "html": "<section class=\"border-b border-[var(--color-border)] bg-[var(--color-surface)]\">",
+    +                 "target": Array [
+    +                   "section:nth-child(1)",
+    +                 ],
+    +               },
+    +             ],
+    +           },
+    +         ],
+    +         "failureSummary": "Fix any of the following:
+    +   Element has insufficient color contrast of 4.23 (foreground color: #0f8a7e, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+    +         "html": "<p class=\"text-sm font-semibold uppercase tracking-[0.25em] text-[var(--color-secondary)]\">Day passes &amp; experiences</p>",
+    +         "impact": "serious",
+    +         "none": Array [],
+    +         "target": Array [
+    +           ".uppercase",
+    +         ],
+    +       },
+    +       Object {
+    +         "all": Array [],
+    +         "any": Array [
+    +           Object {
+    +             "data": Object {
+    +               "bgColor": "#ffffff",
+    +               "contrastRatio": 4.23,
+    +               "expectedContrastRatio": "4.5:1",
+    +               "fgColor": "#0f8a7e",
+    +               "fontSize": "10.5pt (14px)",
+    +               "fontWeight": "normal",
+    +               "messageKey": null,
+    +             },
+    +             "id": "color-contrast",
+    +             "impact": "serious",
+    +             "message": "Element has insufficient color contrast of 4.23 (foreground color: #0f8a7e, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+    +             "relatedNodes": Array [
+    +               Object {
+    +                 "html": "<footer class=\"mt-auto hidden border-t border-[var(--color-border)] bg-[var(--color-surface)] md:block\">",
+    +                 "target": Array [
+    +                   "footer",
+    +                 ],
+    +               },
+    +             ],
+    +           },
+    +         ],
+    +         "failureSummary": "Fix any of the following:
+    +   Element has insufficient color contrast of 4.23 (foreground color: #0f8a7e, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+    +         "html": "<a class=\"font-semibold text-[var(--color-secondary)] transition hover:underline\" href=\"/privacy\">Privacy</a>",
+    +         "impact": "serious",
+    +         "none": Array [],
+    +         "target": Array [
+    +           "a[href$=\"privacy\"]",
+    +         ],
+    +       },
+    +       Object {
+    +         "all": Array [],
+    +         "any": Array [
+    +           Object {
+    +             "data": Object {
+    +               "bgColor": "#ffffff",
+    +               "contrastRatio": 4.23,
+    +               "expectedContrastRatio": "4.5:1",
+    +               "fgColor": "#0f8a7e",
+    +               "fontSize": "10.5pt (14px)",
+    +               "fontWeight": "normal",
+    +               "messageKey": null,
+    +             },
+    +             "id": "color-contrast",
+    +             "impact": "serious",
+    +             "message": "Element has insufficient color contrast of 4.23 (foreground color: #0f8a7e, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+    +             "relatedNodes": Array [
+    +               Object {
+    +                 "html": "<footer class=\"mt-auto hidden border-t border-[var(--color-border)] bg-[var(--color-surface)] md:block\">",
+    +                 "target": Array [
+    +                   "footer",
+    +                 ],
+    +               },
+    +             ],
+    +           },
+    +         ],
+    +         "failureSummary": "Fix any of the following:
+    +   Element has insufficient color contrast of 4.23 (foreground color: #0f8a7e, background color: #ffffff, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+    +         "html": "<a class=\"font-semibold text-[var(--color-secondary)] transition hover:underline\" href=\"/terms\">Terms</a>",
+    +         "impact": "serious",
+    +         "none": Array [],
+    +         "target": Array [
+    +           "a[href$=\"terms\"]",
+    +         ],
+    +       },
+    +     ],
+    +     "tags": Array [
+    +       "cat.color",
+    +       "wcag2aa",
+    +       "wcag143",
+    +       "TTv5",
+    +       "TT13.c",
+    +       "EN-301-549",
+    +       "EN-9.1.4.3",
+    +       "ACT",
+    +       "RGAAv4",
+    +       "RGAA-3.2.1",
+    +     ],
+    +   },
+    + ]
+
+      50 |           .map((v) => `${v.id} (${v.impact}): ${v.help}`)
+      51 |           .join("\n"),
+    > 52 |       ).toEqual([]);
+         |         ^
+      53 |     });
+      54 |   }
+      55 | });
+        at /home/claude/e2e/tests/guest-e2e/guest-a11y.spec.mjs:52:9
+
+    Error Context: ../../test-results/guest-a11y-Guest-UX-accessibility-smoke-axe-scan-tours-chromium/error-context.md
+]]>
+</failure>
+</testcase>
+<testcase name="Guest UX accessibility smoke › axe scan: /guest/services" classname="guest-a11y.spec.mjs" time="1.665">
+</testcase>
+<testcase name="Guest UX accessibility smoke › axe scan: /guest/map" classname="guest-a11y.spec.mjs" time="4.001">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|e2e/test-results/guest-a11y-Guest-UX-accessibility-smoke-axe-scan-guest-map-chromium/error-context.md]]
+]]>
+</system-out>
+<failure message="color-contrast (serious): Elements must meet minimum color contrast ratio thresholds" type="expect.toEqual">
+<![CDATA[  [chromium] › guest-a11y.spec.mjs:14:5 › Guest UX accessibility smoke › axe scan: /guest/map ──────
+
+    Error: color-contrast (serious): Elements must meet minimum color contrast ratio thresholds
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  -  1
+    + Received  + 93
+
+    - Array []
+    + Array [
+    +   Object {
+    +     "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+    +     "help": "Elements must meet minimum color contrast ratio thresholds",
+    +     "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/color-contrast?application=playwright",
+    +     "id": "color-contrast",
+    +     "impact": "serious",
+    +     "nodes": Array [
+    +       Object {
+    +         "all": Array [],
+    +         "any": Array [
+    +           Object {
+    +             "data": Object {
+    +               "bgColor": "#d56a24",
+    +               "contrastRatio": 3.54,
+    +               "expectedContrastRatio": "4.5:1",
+    +               "fgColor": "#ffffff",
+    +               "fontSize": "10.5pt (14px)",
+    +               "fontWeight": "normal",
+    +               "messageKey": null,
+    +             },
+    +             "id": "color-contrast",
+    +             "impact": "serious",
+    +             "message": "Element has insufficient color contrast of 3.54 (foreground color: #ffffff, background color: #d56a24, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+    +             "relatedNodes": Array [
+    +               Object {
+    +                 "html": "<a href=\"https://www.google.c...\" target=\"_blank\" rel=\"noreferrer\" class=\"inline-flex h-11 ite...\">",
+    +                 "target": Array [
+    +                   ".hover\\:brightness-95",
+    +                 ],
+    +               },
+    +             ],
+    +           },
+    +         ],
+    +         "failureSummary": "Fix any of the following:
+    +   Element has insufficient color contrast of 3.54 (foreground color: #ffffff, background color: #d56a24, font size: 10.5pt (14px), font weight: normal). Expected contrast ratio of 4.5:1",
+    +         "html": "<a href=\"https://www.google.c...\" target=\"_blank\" rel=\"noreferrer\" class=\"inline-flex h-11 ite...\">",
+    +         "impact": "serious",
+    +         "none": Array [],
+    +         "target": Array [
+    +           ".hover\\:brightness-95",
+    +         ],
+    +       },
+    +       Object {
+    +         "all": Array [],
+    +         "any": Array [
+    +           Object {
+    +             "data": Object {
+    +               "bgColor": "#d56a24",
+    +               "contrastRatio": 3.54,
+    +               "expectedContrastRatio": "4.5:1",
+    +               "fgColor": "#ffffff",
+    +               "fontSize": "8.3pt (11px)",
+    +               "fontWeight": "normal",
+    +               "messageKey": null,
+    +             },
+    +             "id": "color-contrast",
+    +             "impact": "serious",
+    +             "message": "Element has insufficient color contrast of 3.54 (foreground color: #ffffff, background color: #d56a24, font size: 8.3pt (11px), font weight: normal). Expected contrast ratio of 4.5:1",
+    +             "relatedNodes": Array [
+    +               Object {
+    +                 "html": "<button type=\"button\" data-testid=\"map-pin-lobby\" aria-pressed=\"true\" aria-label=\"Select location Lobb...\" class=\"absolute -translate-...\" style=\"left: 15%; top: 14%;\">",
+    +                 "target": Array [
+    +                   ".max-w-\\[160px\\]",
+    +                 ],
+    +               },
+    +             ],
+    +           },
+    +         ],
+    +         "failureSummary": "Fix any of the following:
+    +   Element has insufficient color contrast of 3.54 (foreground color: #ffffff, background color: #d56a24, font size: 8.3pt (11px), font weight: normal). Expected contrast ratio of 4.5:1",
+    +         "html": "<span class=\"truncate\">Lobby</span>",
+    +         "impact": "serious",
+    +         "none": Array [],
+    +         "target": Array [
+    +           ".max-w-\\[160px\\] > .truncate",
+    +         ],
+    +       },
+    +     ],
+    +     "tags": Array [
+    +       "cat.color",
+    +       "wcag2aa",
+    +       "wcag143",
+    +       "TTv5",
+    +       "TT13.c",
+    +       "EN-301-549",
+    +       "EN-9.1.4.3",
+    +       "ACT",
+    +       "RGAAv4",
+    +       "RGAA-3.2.1",
+    +     ],
+    +   },
+    + ]
+
+      50 |           .map((v) => `${v.id} (${v.impact}): ${v.help}`)
+      51 |           .join("\n"),
+    > 52 |       ).toEqual([]);
+         |         ^
+      53 |     });
+      54 |   }
+      55 | });
+        at /home/claude/e2e/tests/guest-e2e/guest-a11y.spec.mjs:52:9
+
+    Error Context: ../../test-results/guest-a11y-Guest-UX-accessibility-smoke-axe-scan-guest-map-chromium/error-context.md
+]]>
+</failure>
+</testcase>
+</testsuite>
+<testsuite name="guest-book-auth-flow.spec.mjs" timestamp="2026-11-14T04:10:31.794Z" hostname="chromium" tests="3" failures="0" skipped="0" time="270.145" errors="3">
+<testcase name="Guest authenticated booking guardrails › book flow shows guided stepper and disabled CTA reason before selection" classname="guest-book-auth-flow.spec.mjs" time="90.054">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|e2e/test-results/guest-book-auth-flow-Guest-d5543-CTA-reason-before-selection-chromium/error-context.md]]
+]]>
+</system-out>
+<error message="Test timeout of 90000ms exceeded." type="Error">
+<![CDATA[  [chromium] › guest-book-auth-flow.spec.mjs:6:3 › Guest authenticated booking guardrails › book flow shows guided stepper and disabled CTA reason before selection 
+
+    Test timeout of 90000ms exceeded.
+
+    Error: locator.setChecked: Test timeout of 90000ms exceeded.
+    Call log:
+      - waiting for getByRole('checkbox', { name: /remember me/i })
+
+
+       at guestAuthFlow.mjs:23
+
+      21 |
+      22 |   const rememberMe = page.getByRole("checkbox", { name: /remember me/i });
+    > 23 |   await rememberMe.setChecked(true);
+         |                    ^
+      24 |   await expect(rememberMe).toBeChecked();
+      25 |
+      26 |   const signIn = page.getByRole("button", { name: /sign in/i });
+        at signInGuestAndOpenBook (/home/claude/e2e/tests/guest-e2e/guestAuthFlow.mjs:23:20)
+        at /home/claude/e2e/tests/guest-e2e/guest-book-auth-flow.spec.mjs:8:5
+
+    Error Context: ../../test-results/guest-book-auth-flow-Guest-d5543-CTA-reason-before-selection-chromium/error-context.md
+]]>
+</error>
+</testcase>
+<testcase name="Guest authenticated booking guardrails › book flow can select a unit and reach confirm step without submission" classname="guest-book-auth-flow.spec.mjs" time="90.051">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|e2e/test-results/guest-book-auth-flow-Guest-c5a20-irm-step-without-submission-chromium/error-context.md]]
+]]>
+</system-out>
+<error message="Test timeout of 90000ms exceeded." type="Error">
+<![CDATA[  [chromium] › guest-book-auth-flow.spec.mjs:15:3 › Guest authenticated booking guardrails › book flow can select a unit and reach confirm step without submission 
+
+    Test timeout of 90000ms exceeded.
+
+    Error: locator.setChecked: Test timeout of 90000ms exceeded.
+    Call log:
+      - waiting for getByRole('checkbox', { name: /remember me/i })
+
+
+       at guestAuthFlow.mjs:23
+
+      21 |
+      22 |   const rememberMe = page.getByRole("checkbox", { name: /remember me/i });
+    > 23 |   await rememberMe.setChecked(true);
+         |                    ^
+      24 |   await expect(rememberMe).toBeChecked();
+      25 |
+      26 |   const signIn = page.getByRole("button", { name: /sign in/i });
+        at signInGuestAndOpenBook (/home/claude/e2e/tests/guest-e2e/guestAuthFlow.mjs:23:20)
+        at /home/claude/e2e/tests/guest-e2e/guest-book-auth-flow.spec.mjs:17:5
+
+    Error Context: ../../test-results/guest-book-auth-flow-Guest-c5a20-irm-step-without-submission-chromium/error-context.md
+]]>
+</error>
+</testcase>
+<testcase name="Guest authenticated booking guardrails › tours shows helpful empty state before selecting a service" classname="guest-book-auth-flow.spec.mjs" time="90.04">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|e2e/test-results/guest-book-auth-flow-Guest-d237b--before-selecting-a-service-chromium/error-context.md]]
+]]>
+</system-out>
+<error message="Test timeout of 90000ms exceeded." type="Error">
+<![CDATA[  [chromium] › guest-book-auth-flow.spec.mjs:37:3 › Guest authenticated booking guardrails › tours shows helpful empty state before selecting a service 
+
+    Test timeout of 90000ms exceeded.
+
+    Error: locator.setChecked: Test timeout of 90000ms exceeded.
+    Call log:
+      - waiting for getByRole('checkbox', { name: /remember me/i })
+
+
+       at guestAuthFlow.mjs:23
+
+      21 |
+      22 |   const rememberMe = page.getByRole("checkbox", { name: /remember me/i });
+    > 23 |   await rememberMe.setChecked(true);
+         |                    ^
+      24 |   await expect(rememberMe).toBeChecked();
+      25 |
+      26 |   const signIn = page.getByRole("button", { name: /sign in/i });
+        at signInGuestAndOpenBook (/home/claude/e2e/tests/guest-e2e/guestAuthFlow.mjs:23:20)
+        at /home/claude/e2e/tests/guest-e2e/guest-book-auth-flow.spec.mjs:39:5
+
+    Error Context: ../../test-results/guest-book-auth-flow-Guest-d237b--before-selecting-a-service-chromium/error-context.md
+]]>
+</error>
+</testcase>
+</testsuite>
+<testsuite name="guest-modal-a11y.spec.mjs" timestamp="2026-11-14T04:10:31.794Z" hostname="chromium" tests="1" failures="0" skipped="0" time="90.06" errors="1">
+<testcase name="Guest modal accessibility guardrails › book gallery modal keeps dialog semantics and keyboard containment" classname="guest-modal-a11y.spec.mjs" time="90.06">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|e2e/test-results/guest-modal-a11y-Guest-mod-5dc63-cs-and-keyboard-containment-chromium/error-context.md]]
+]]>
+</system-out>
+<error message="Test timeout of 90000ms exceeded." type="Error">
+<![CDATA[  [chromium] › guest-modal-a11y.spec.mjs:5:3 › Guest modal accessibility guardrails › book gallery modal keeps dialog semantics and keyboard containment 
+
+    Test timeout of 90000ms exceeded.
+
+    Error: locator.setChecked: Test timeout of 90000ms exceeded.
+    Call log:
+      - waiting for getByRole('checkbox', { name: /remember me/i })
+
+
+       at guestAuthFlow.mjs:23
+
+      21 |
+      22 |   const rememberMe = page.getByRole("checkbox", { name: /remember me/i });
+    > 23 |   await rememberMe.setChecked(true);
+         |                    ^
+      24 |   await expect(rememberMe).toBeChecked();
+      25 |
+      26 |   const signIn = page.getByRole("button", { name: /sign in/i });
+        at signInGuestAndOpenBook (/home/claude/e2e/tests/guest-e2e/guestAuthFlow.mjs:23:20)
+        at /home/claude/e2e/tests/guest-e2e/guest-modal-a11y.spec.mjs:7:5
+
+    Error Context: ../../test-results/guest-modal-a11y-Guest-mod-5dc63-cs-and-keyboard-containment-chromium/error-context.md
+]]>
+</error>
+</testcase>
+</testsuite>
+<testsuite name="guest-my-bookings-layout.spec.mjs" timestamp="2026-11-14T04:10:31.794Z" hostname="chromium" tests="2" failures="0" skipped="0" time="120.119" errors="2">
+<testcase name="Guest my-bookings redesigned shell › desktop layout shows premium guest sections and CTA navigation" classname="guest-my-bookings-layout.spec.mjs" time="60.067">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|e2e/test-results/guest-my-bookings-layout-G-8b3fe-sections-and-CTA-navigation-chromium/error-context.md]]
+]]>
+</system-out>
+<error message="Test timeout of 60000ms exceeded." type="Error">
+<![CDATA[  [chromium] › guest-my-bookings-layout.spec.mjs:5:3 › Guest my-bookings redesigned shell › desktop layout shows premium guest sections and CTA navigation 
+
+    Test timeout of 60000ms exceeded.
+
+    Error: locator.setChecked: Test timeout of 60000ms exceeded.
+    Call log:
+      - waiting for getByRole('checkbox', { name: /remember me/i })
+
+
+       at guestAuthFlow.mjs:23
+
+      21 |
+      22 |   const rememberMe = page.getByRole("checkbox", { name: /remember me/i });
+    > 23 |   await rememberMe.setChecked(true);
+         |                    ^
+      24 |   await expect(rememberMe).toBeChecked();
+      25 |
+      26 |   const signIn = page.getByRole("button", { name: /sign in/i });
+        at signInGuestAndOpenBook (/home/claude/e2e/tests/guest-e2e/guestAuthFlow.mjs:23:20)
+        at /home/claude/e2e/tests/guest-e2e/guest-my-bookings-layout.spec.mjs:6:5
+
+    Error Context: ../../test-results/guest-my-bookings-layout-G-8b3fe-sections-and-CTA-navigation-chromium/error-context.md
+]]>
+</error>
+</testcase>
+<testcase name="Guest my-bookings redesigned shell › mobile layout shows compact shell, bottom nav, and no horizontal overflow at 320" classname="guest-my-bookings-layout.spec.mjs" time="60.052">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|e2e/test-results/guest-my-bookings-layout-G-c7fce--horizontal-overflow-at-320-chromium/error-context.md]]
+]]>
+</system-out>
+<error message="Test timeout of 60000ms exceeded." type="Error">
+<![CDATA[  [chromium] › guest-my-bookings-layout.spec.mjs:33:3 › Guest my-bookings redesigned shell › mobile layout shows compact shell, bottom nav, and no horizontal overflow at 320 
+
+    Test timeout of 60000ms exceeded.
+
+    Error: locator.setChecked: Test timeout of 60000ms exceeded.
+    Call log:
+      - waiting for getByRole('checkbox', { name: /remember me/i })
+
+
+       at guestAuthFlow.mjs:23
+
+      21 |
+      22 |   const rememberMe = page.getByRole("checkbox", { name: /remember me/i });
+    > 23 |   await rememberMe.setChecked(true);
+         |                    ^
+      24 |   await expect(rememberMe).toBeChecked();
+      25 |
+      26 |   const signIn = page.getByRole("button", { name: /sign in/i });
+        at signInGuestAndOpenBook (/home/claude/e2e/tests/guest-e2e/guestAuthFlow.mjs:23:20)
+        at /home/claude/e2e/tests/guest-e2e/guest-my-bookings-layout.spec.mjs:34:5
+
+    Error Context: ../../test-results/guest-my-bookings-layout-G-c7fce--horizontal-overflow-at-320-chromium/error-context.md
+]]>
+</error>
+</testcase>
+</testsuite>
+<testsuite name="guest-smoke.spec.mjs" timestamp="2026-11-14T04:10:31.794Z" hostname="chromium" tests="6" failures="3" skipped="0" time="66.544" errors="0">
+<testcase name="Guest UX smoke › renders /book" classname="guest-smoke.spec.mjs" time="21.356">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|e2e/test-results/guest-smoke-Guest-UX-smoke-renders-book-chromium/error-context.md]]
+]]>
+</system-out>
+<failure message="expect(locator).toBeVisible() failed" type="expect.toBeVisible">
+<![CDATA[  [chromium] › guest-smoke.spec.mjs:12:5 › Guest UX smoke › renders /book ──────────────────────────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('heading', { name: /book your stay/i })
+    Expected: visible
+    Timeout: 20000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('heading', { name: /book your stay/i }) with timeout 20000ms
+      - waiting for getByRole('heading', { name: /book your stay/i })
+
+
+      14 |       await page.goto(route.path);
+      15 |       await page.waitForLoadState("domcontentloaded");
+    > 16 |       await expect(page.getByRole("heading", { name: route.title })).toBeVisible({ timeout: 20_000 });
+         |                                                                      ^
+      17 |       await expect(page.locator("main")).toBeVisible({ timeout: 20_000 });
+      18 |     });
+      19 |   }
+        at /home/claude/e2e/tests/guest-e2e/guest-smoke.spec.mjs:16:70
+
+    Error Context: ../../test-results/guest-smoke-Guest-UX-smoke-renders-book-chromium/error-context.md
+]]>
+</failure>
+</testcase>
+<testcase name="Guest UX smoke › renders /tours" classname="guest-smoke.spec.mjs" time="21.642">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|e2e/test-results/guest-smoke-Guest-UX-smoke-renders-tours-chromium/error-context.md]]
+]]>
+</system-out>
+<failure message="expect(locator).toBeVisible() failed" type="expect.toBeVisible">
+<![CDATA[  [chromium] › guest-smoke.spec.mjs:12:5 › Guest UX smoke › renders /tours ─────────────────────────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('heading', { name: /book a tour/i })
+    Expected: visible
+    Timeout: 20000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('heading', { name: /book a tour/i }) with timeout 20000ms
+      - waiting for getByRole('heading', { name: /book a tour/i })
+
+
+      14 |       await page.goto(route.path);
+      15 |       await page.waitForLoadState("domcontentloaded");
+    > 16 |       await expect(page.getByRole("heading", { name: route.title })).toBeVisible({ timeout: 20_000 });
+         |                                                                      ^
+      17 |       await expect(page.locator("main")).toBeVisible({ timeout: 20_000 });
+      18 |     });
+      19 |   }
+        at /home/claude/e2e/tests/guest-e2e/guest-smoke.spec.mjs:16:70
+
+    Error Context: ../../test-results/guest-smoke-Guest-UX-smoke-renders-tours-chromium/error-context.md
+]]>
+</failure>
+</testcase>
+<testcase name="Guest UX smoke › renders /guest/map" classname="guest-smoke.spec.mjs" time="2.944">
+</testcase>
+<testcase name="Guest UX smoke › my-bookings route is reachable and shows session gate or content" classname="guest-smoke.spec.mjs" time="1.083">
+</testcase>
+<testcase name="Guest UX smoke › guest sync route resolves to sync center or auth gate" classname="guest-smoke.spec.mjs" time="1.55">
+</testcase>
+<testcase name="Guest UX smoke › guest map pin selection updates destination details" classname="guest-smoke.spec.mjs" time="17.969">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|e2e/test-results/guest-smoke-Guest-UX-smoke-8e354-updates-destination-details-chromium/error-context.md]]
+]]>
+</system-out>
+<failure message="expect(locator).toBeVisible() failed" type="expect.toBeVisible">
+<![CDATA[  [chromium] › guest-smoke.spec.mjs:74:3 › Guest UX smoke › guest map pin selection updates destination details 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText(/destination:\s*lobby/i)
+    Expected: visible
+    Timeout: 15000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByText(/destination:\s*lobby/i) with timeout 15000ms
+      - waiting for getByText(/destination:\s*lobby/i)
+
+
+      78 |     await expect(lobbyPin).toBeVisible();
+      79 |     await lobbyPin.click();
+    > 80 |     await expect(page.getByText(/destination:\s*lobby/i)).toBeVisible();
+         |                                                           ^
+      81 |   });
+      82 | });
+      83 |
+        at /home/claude/e2e/tests/guest-e2e/guest-smoke.spec.mjs:80:59
+
+    Error Context: ../../test-results/guest-smoke-Guest-UX-smoke-8e354-updates-destination-details-chromium/error-context.md
+]]>
+</failure>
+</testcase>
+</testsuite>
+</testsuites>

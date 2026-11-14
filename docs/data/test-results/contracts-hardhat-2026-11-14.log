@@ -1,0 +1,11 @@
+Downloading compiler 0.8.24
+Compiled 2 Solidity files successfully (evm target: paris).
+
+
+  EscrowLedger
+    ✔ locks funds and emits aligned EscrowLocked event (548ms)
+
+
+  1 passing (550ms)
+
+EXIT 0
